@@ -16,7 +16,10 @@ import {
   User, 
   Loader2,
   Paperclip,
-  Sparkles
+  Sparkles,
+  Copy,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -94,49 +97,92 @@ export function AskAI() {
   };
 
   const renderAIResponse = (data: any) => {
+    // First check if we have pre-rendered content
     if (data.rendered) {
+      if (data.format === 'table') {
+        return (
+          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.rendered }} />
+        );
+      } else if (data.format === 'csv') {
+        return (
+          <div className="my-2">
+            <div className="flex items-center justify-between p-4 border rounded-md bg-muted/30">
+              <div>
+                <h4 className="font-medium">CSV Data Ready</h4>
+                <p className="text-sm text-muted-foreground">Click to download the generated CSV file</p>
+              </div>
+              <Button 
+                onClick={() => downloadCSV(data.rendered)}
+                variant="default"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download CSV
+              </Button>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.rendered }} />
       );
     }
 
-    if (data.rows && Array.isArray(data.rows)) {
+    // Check if we have structured rows data
+    if (Array.isArray(data.rows)) {
       const headers = data.rows.length > 0 ? Object.keys(data.rows[0]) : [];
       return (
         <div className="my-2">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {headers.map((header) => (
-                    <TableHead key={header} className="capitalize">
-                      {header.replace(/_/g, ' ')}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.rows.slice(0, 10).map((row: any, index: number) => (
-                  <TableRow key={index}>
+          <div className="rounded-md border overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background/95 backdrop-blur">
+                  <TableRow>
                     {headers.map((header) => (
-                      <TableCell key={header}>
-                        {row[header]?.toString() || "—"}
-                      </TableCell>
+                      <TableHead key={header} className="capitalize whitespace-nowrap">
+                        {header.replace(/_/g, ' ')}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data.rows.slice(0, 50).map((row: any, index: number) => (
+                    <TableRow key={index}>
+                      {headers.map((header) => (
+                        <TableCell key={header} className="max-w-[200px]">
+                          <div className="truncate" title={row[header]?.toString()}>
+                            {row[header]?.toString() || "—"}
+                          </div>
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
-          {data.rows.length > 10 && (
-            <p className="text-sm text-muted-foreground mt-2">
-              Showing 10 of {data.rows.length} rows
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-sm text-muted-foreground">
+              Showing {Math.min(50, data.rows.length)} of {data.rows.length} rows
             </p>
-          )}
+            {data.rows.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const csvContent = convertToCSV(data.rows);
+                  downloadCSV(csvContent);
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+            )}
+          </div>
         </div>
       );
     }
 
+    // Check if we have CSV data directly
     if (data.csv) {
       return (
         <div className="my-2">
@@ -147,7 +193,7 @@ export function AskAI() {
             </div>
             <Button 
               onClick={() => downloadCSV(data.csv)}
-              className="bg-green-600 hover:bg-green-700"
+              variant="default"
             >
               <Download className="h-4 w-4 mr-2" />
               Download CSV
@@ -157,23 +203,165 @@ export function AskAI() {
       );
     }
 
+    // Try to parse text as JSON
     if (data.text) {
-      return <p className="text-sm whitespace-pre-wrap">{data.text}</p>;
+      const sanitizedText = data.text.replace(/```json\n?|```\n?/g, '').trim();
+      
+      try {
+        const parsed = JSON.parse(sanitizedText);
+        
+        // If parsed JSON has rows array, render as table
+        if (Array.isArray(parsed.rows) && parsed.rows.length > 0) {
+          return renderAIResponse({ rows: parsed.rows });
+        }
+        
+        // Otherwise render as JSON viewer
+        return <JSONViewer data={parsed} />;
+      } catch {
+        // If not valid JSON, render as wrapped text
+        return (
+          <div className="max-w-[70ch]">
+            <p className="text-sm whitespace-pre-wrap break-words">{data.text}</p>
+          </div>
+        );
+      }
     }
 
+    // Fallback to JSON viewer
+    return <JSONViewer data={data} />;
+  };
+
+  const JSONViewer = ({ data }: { data: any }) => {
+    const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+    const { toast } = useToast();
+
+    const copyToClipboard = () => {
+      navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      toast({
+        title: "Copied",
+        description: "JSON data copied to clipboard",
+      });
+    };
+
+    const toggleCollapse = (key: string) => {
+      setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const renderValue = (value: any, key: string = '', depth: number = 0): React.ReactNode => {
+      if (value === null) return <span className="text-muted-foreground">null</span>;
+      if (value === undefined) return <span className="text-muted-foreground">undefined</span>;
+      
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        const keys = Object.keys(value);
+        const isCollapsed = collapsed[`${depth}-${key}`];
+        
+        return (
+          <div className="ml-4">
+            <button
+              onClick={() => toggleCollapse(`${depth}-${key}`)}
+              className="flex items-center text-sm hover:bg-muted rounded px-1 -ml-1"
+            >
+              {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              <span className="ml-1 font-mono">{`{${keys.length}}`}</span>
+            </button>
+            {!isCollapsed && (
+              <div className="ml-4 border-l border-border pl-2">
+                {keys.map((objKey) => (
+                  <div key={objKey} className="my-1">
+                    <span className="text-primary font-mono text-sm">"{objKey}"</span>
+                    <span className="text-muted-foreground">: </span>
+                    {renderValue(value[objKey], objKey, depth + 1)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      if (Array.isArray(value)) {
+        const isCollapsed = collapsed[`${depth}-${key}`];
+        
+        return (
+          <div className="ml-4">
+            <button
+              onClick={() => toggleCollapse(`${depth}-${key}`)}
+              className="flex items-center text-sm hover:bg-muted rounded px-1 -ml-1"
+            >
+              {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              <span className="ml-1 font-mono">[{value.length}]</span>
+            </button>
+            {!isCollapsed && (
+              <div className="ml-4 border-l border-border pl-2">
+                {value.slice(0, 10).map((item, index) => (
+                  <div key={index} className="my-1">
+                    <span className="text-muted-foreground font-mono text-sm">{index}: </span>
+                    {renderValue(item, `${key}-${index}`, depth + 1)}
+                  </div>
+                ))}
+                {value.length > 10 && (
+                  <div className="text-sm text-muted-foreground">... and {value.length - 10} more items</div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      if (typeof value === 'string') {
+        return <span className="text-green-600 dark:text-green-400 font-mono text-sm">"{value}"</span>;
+      }
+      
+      if (typeof value === 'number') {
+        return <span className="text-blue-600 dark:text-blue-400 font-mono text-sm">{value}</span>;
+      }
+      
+      if (typeof value === 'boolean') {
+        return <span className="text-purple-600 dark:text-purple-400 font-mono text-sm">{value.toString()}</span>;
+      }
+      
+      return <span className="font-mono text-sm break-all">{String(value)}</span>;
+    };
+
     return (
-      <pre className="text-sm bg-muted p-3 rounded text-wrap overflow-x-auto">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+      <div className="my-2 max-w-[70ch]">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-muted-foreground">JSON Response</span>
+          <Button variant="ghost" size="sm" onClick={copyToClipboard}>
+            <Copy className="h-3 w-3 mr-1" />
+            Copy
+          </Button>
+        </div>
+        <div className="bg-muted/30 rounded-lg p-3 text-sm font-mono overflow-x-auto">
+          {renderValue(data)}
+        </div>
+      </div>
     );
+  };
+
+  const convertToCSV = (rows: any[]): string => {
+    if (!rows.length) return '';
+    
+    const headers = Object.keys(rows[0]);
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => 
+        headers.map(header => {
+          const value = row[header]?.toString() || '';
+          return value.includes(',') ? `"${value.replace(/"/g, '""')}"` : value;
+        }).join(',')
+      )
+    ].join('\n');
+    
+    return csvContent;
   };
 
   const renderMessage = (message: ChatMessage) => {
     if (message.type === 'user') {
       return (
         <div className="flex justify-end mb-4">
-          <div className="bg-primary text-primary-foreground rounded-lg px-4 py-2 max-w-[80%]">
-            <p className="text-sm">{message.content}</p>
+          <div className="bg-primary text-primary-foreground rounded-lg px-4 py-2 max-w-[70ch]">
+            <p className="text-sm break-words whitespace-pre-wrap">{message.content}</p>
             <span className="text-xs opacity-70">
               {message.timestamp.toLocaleTimeString()}
             </span>
@@ -184,13 +372,15 @@ export function AskAI() {
 
     return (
       <div className="flex justify-start mb-4">
-        <div className="flex space-x-3 max-w-[90%]">
+        <div className="flex space-x-3 max-w-[85ch]">
           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
             <Bot className="h-4 w-4 text-primary" />
           </div>
-          <div className="bg-muted rounded-lg px-4 py-2 flex-1">
+          <div className="bg-muted rounded-lg px-4 py-2 flex-1 min-w-0">
             {message.data ? renderAIResponse(message.data) : (
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              <div className="max-w-[70ch]">
+                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+              </div>
             )}
             <span className="text-xs text-muted-foreground block mt-2">
               {message.timestamp.toLocaleTimeString()}
