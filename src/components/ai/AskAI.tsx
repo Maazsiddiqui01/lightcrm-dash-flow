@@ -25,6 +25,9 @@ export function AskAI() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Configurable endpoint - can be updated later for Supabase Edge Function
+  const AI_ENDPOINT = "/functions/v1/ai_tools";
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -36,39 +39,64 @@ export function AskAI() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input;
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response (in a real app, this would call an AI service)
-    setTimeout(() => {
+    try {
+      // Call the AI endpoint
+      const response = await fetch(AI_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: currentInput }),
+      });
+
+      let aiResponseText = "";
+      
+      if (response.ok) {
+        const data = await response.text();
+        
+        // Try to parse as JSON first, fall back to text
+        try {
+          const jsonData = JSON.parse(data);
+          aiResponseText = typeof jsonData === 'string' ? jsonData : JSON.stringify(jsonData, null, 2);
+        } catch {
+          aiResponseText = data;
+        }
+      } else {
+        aiResponseText = `Error: ${response.status} - ${response.statusText}. The AI endpoint is not yet configured.`;
+      }
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: getAIResponse(input),
+        content: aiResponseText,
         isUser: false,
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, aiResponse]);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: `Connection error: ${error instanceof Error ? error.message : 'Unknown error'}. The AI endpoint will be configured later with OpenAI integration.`,
+        isUser: false,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+      
+      toast({
+        title: "Connection Error",
+        description: "The AI endpoint is not yet configured. This will be set up with OpenAI integration.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
-  const getAIResponse = (question: string): string => {
-    const lowerQuestion = question.toLowerCase();
-    
-    if (lowerQuestion.includes("contact") || lowerQuestion.includes("client")) {
-      return "Based on your CRM data, I can see you have contacts across various organizations. Would you like me to analyze contact engagement patterns, identify top performers, or suggest follow-up priorities?";
-    }
-    
-    if (lowerQuestion.includes("opportunit") || lowerQuestion.includes("deal")) {
-      return "Looking at your opportunities pipeline, I can help you analyze deal progression, identify bottlenecks, or suggest strategies to move deals forward. What specific aspect would you like to explore?";
-    }
-    
-    if (lowerQuestion.includes("meeting") || lowerQuestion.includes("email")) {
-      return "I can analyze your interaction patterns to identify communication trends, suggest optimal follow-up timing, or help prioritize outreach efforts. What insights are you looking for?";
-    }
-    
-    return "I'm here to help you make sense of your CRM data. You can ask me about contact analysis, opportunity insights, interaction patterns, or any specific questions about your business relationships.";
-  };
 
   return (
     <div className="space-y-4">
@@ -146,12 +174,12 @@ export function AskAI() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {[
+              "When did we last speak with jane@acme.com?",
+              "Show opps sourced by Ziegler in 2025",
               "Show me my top contacts by engagement",
               "Which opportunities need immediate attention?",
               "What's my email response rate?",
               "Identify contacts I haven't touched recently",
-              "Analyze my pipeline by sector",
-              "What's the average deal size this quarter?",
             ].map((question, index) => (
               <Button
                 key={index}
