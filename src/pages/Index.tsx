@@ -96,11 +96,11 @@ const Index = () => {
         
         <SidebarInset className="flex-1">
           {/* Global header with trigger */}
-          <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
+          <header className="sticky top-0 z-10 flex h-12 sm:h-14 items-center gap-2 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-2 sm:px-4">
             <SidebarTrigger className="focus-ring" />
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <pageConfig.icon className="h-4 w-4" />
-              <span>Light CRM</span>
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground min-w-0">
+              <pageConfig.icon className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">Light CRM</span>
             </div>
           </header>
 
@@ -113,8 +113,8 @@ const Index = () => {
 
           {/* Main content */}
           <main className="flex-1">
-            <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6">
-              <div className="rounded-xl bg-card elevation-1 border border-border">
+            <div className="mx-auto max-w-7xl px-2 py-2 sm:px-3 sm:py-4 lg:px-6 lg:py-6">
+              <div className="rounded-lg sm:rounded-xl bg-card elevation-1 border border-border overflow-hidden">
                 {renderTabContent()}
               </div>
             </div>

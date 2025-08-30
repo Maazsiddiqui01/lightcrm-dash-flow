@@ -11,6 +11,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { 
   ChevronLeft, 
   ChevronRight, 
+  ChevronUp,
+  ChevronDown,
   Search, 
   Download, 
   Settings, 
@@ -407,21 +409,22 @@ export function AdvancedTable<T extends Record<string, any>>({
         </div>
       )}
 
-      {/* Table */}
-      <Card className="overflow-hidden">
-        {data.length === 0 ? (
-          <CardContent className="py-16 text-center">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">{emptyState?.title || "No data found"}</h3>
-              <p className="text-muted-foreground">{emptyState?.description || "There are no items to display."}</p>
-              {emptyState?.action}
-            </div>
-          </CardContent>
-        ) : (
-          <div 
-            ref={tableRef}
-            className="overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
-          >
+      {/* Desktop Table */}
+      <div className="hidden lg:block">
+        <Card className="overflow-hidden">
+          {data.length === 0 ? (
+            <CardContent className="py-16 text-center">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">{emptyState?.title || "No data found"}</h3>
+                <p className="text-muted-foreground">{emptyState?.description || "There are no items to display."}</p>
+                {emptyState?.action}
+              </div>
+            </CardContent>
+          ) : (
+            <div 
+              ref={tableRef}
+              className="overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+            >
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur">
                 <TableRow className="hover:bg-transparent">
@@ -567,8 +570,69 @@ export function AdvancedTable<T extends Record<string, any>>({
               </TableBody>
             </Table>
           </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Mobile Card Layout */}
+      <div className="lg:hidden">
+        {data.length === 0 ? (
+          <Card>
+            <CardContent className="py-16 text-center">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">{emptyState?.title || "No data found"}</h3>
+                <p className="text-muted-foreground">{emptyState?.description || "There are no items to display."}</p>
+                {emptyState?.action}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="table-mobile-cards">
+            {paginatedData.map((item, index) => (
+              <div
+                key={item.id || index}
+                className="mobile-card cursor-pointer hover:bg-accent/50 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+                onClick={() => onRowClick?.(item)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onRowClick?.(item);
+                  }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={`View details for ${visibleColumns[0]?.render ? visibleColumns[0].render(item[visibleColumns[0].key], item) : item[visibleColumns[0].key]}`}
+              >
+                <div className="mobile-card-header">
+                  <div>
+                    <div className="mobile-card-title">
+                      {visibleColumns[0]?.render ? visibleColumns[0].render(item[visibleColumns[0].key], item) : item[visibleColumns[0].key]}
+                    </div>
+                    {visibleColumns[1] && (
+                      <div className="mobile-card-subtitle">
+                        {visibleColumns[1]?.render ? visibleColumns[1].render(item[visibleColumns[1].key], item) : item[visibleColumns[1].key]}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date().toLocaleDateString()}
+                  </div>
+                </div>
+                <div className="mobile-card-content">
+                  {visibleColumns.slice(2, 6).map((column) => (
+                    <div key={column.key} className="mobile-field">
+                      <span className="mobile-field-label">{column.label}:</span>
+                      <span className="mobile-field-value">
+                        {column.render ? column.render(item[column.key], item) : item[column.key] || '-'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
-      </Card>
+      </div>
 
       {/* Pagination (Bottom) */}
       {data.length > pageSize && (

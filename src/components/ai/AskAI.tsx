@@ -360,7 +360,7 @@ export function AskAI() {
     if (message.type === 'user') {
       return (
         <div className="flex justify-end mb-4">
-          <div className="bg-primary text-primary-foreground rounded-lg px-4 py-2 max-w-[70ch]">
+          <div className="bg-primary text-primary-foreground rounded-lg px-3 sm:px-4 py-2 max-w-[85%] sm:max-w-[70ch]">
             <p className="text-sm break-words whitespace-pre-wrap">{message.content}</p>
             <span className="text-xs opacity-70">
               {message.timestamp.toLocaleTimeString()}
@@ -372,13 +372,13 @@ export function AskAI() {
 
     return (
       <div className="flex justify-start mb-4">
-        <div className="flex space-x-3 max-w-[85ch]">
+        <div className="flex space-x-2 sm:space-x-3 max-w-full sm:max-w-[85ch]">
           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
             <Bot className="h-4 w-4 text-primary" />
           </div>
-          <div className="bg-muted rounded-lg px-4 py-2 flex-1 min-w-0">
+          <div className="bg-muted rounded-lg px-3 sm:px-4 py-2 flex-1 min-w-0">
             {message.data ? renderAIResponse(message.data) : (
-              <div className="max-w-[70ch]">
+              <div className="max-w-full sm:max-w-[70ch]">
                 <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
               </div>
             )}
@@ -434,7 +434,7 @@ export function AskAI() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-3 sm:space-y-6">
       <div>
         <h3 className="text-section-title">AI Assistant</h3>
         <p className="text-meta mt-1">
@@ -442,7 +442,7 @@ export function AskAI() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-6 h-[calc(100vh-200px)]">
         {/* Chat Stream - Left Panel */}
         <div className="lg:col-span-3 flex flex-col">
           <Card className="flex-1 flex flex-col elevation-1">
@@ -455,7 +455,7 @@ export function AskAI() {
             
             <CardContent className="flex-1 p-0 relative">
               {/* Messages Area */}
-              <ScrollArea className="h-[calc(100%-120px)] p-4">
+              <ScrollArea className="h-[calc(100%-120px)] p-2 sm:p-4">
                 {messages.length === 0 ? (
                   <div className="text-center py-12">
                     <Bot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -469,17 +469,17 @@ export function AskAI() {
                       <p className="text-sm font-medium text-foreground">Try these suggestions:</p>
                       <div className="flex flex-wrap gap-2 justify-center">
                         {SUGGESTED_PROMPTS.slice(0, 3).map((suggestedPrompt, index) => (
-                          <Button
-                            key={index}
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleSuggestedPrompt(suggestedPrompt)}
-                            className="text-xs"
-                          >
-                            <Sparkles className="h-3 w-3 mr-1" />
-                            {suggestedPrompt}
-                          </Button>
-                        ))}
+                           <Button
+                             key={index}
+                             variant="ghost"
+                             size="sm"
+                             onClick={() => handleSuggestedPrompt(suggestedPrompt)}
+                             className="text-xs px-2 py-1 h-auto"
+                           >
+                             <Sparkles className="h-3 w-3 mr-1 flex-shrink-0" />
+                             <span className="truncate">{suggestedPrompt}</span>
+                           </Button>
+                         ))}
                       </div>
                     </div>
                   </div>
@@ -522,7 +522,7 @@ export function AskAI() {
               )}
 
               {/* Composer - Sticky Bottom */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
+              <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 bg-background border-t">
                 <div className="flex space-x-2">
                   <div className="flex-1 relative">
                     <Textarea
@@ -530,11 +530,11 @@ export function AskAI() {
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="Ask me anything about your CRM data... (Enter to send, Shift+Enter for new line)"
-                      className="min-h-[60px] pr-20 resize-none focus-ring"
+                      placeholder="Ask me anything about your CRM data..."
+                      className="min-h-[50px] sm:min-h-[60px] pr-16 sm:pr-20 resize-none focus-ring text-sm"
                       disabled={isLoading}
                     />
-                    <div className="absolute right-2 bottom-2 flex space-x-1">
+                    <div className="absolute right-1 sm:right-2 bottom-1 sm:bottom-2 flex space-x-1">
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                         <Paperclip className="h-4 w-4" />
                         <span className="sr-only">Attach file</span>

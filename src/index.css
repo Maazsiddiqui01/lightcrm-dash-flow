@@ -189,4 +189,58 @@ All colors MUST be HSL.
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
   }
+
+  /* Mobile responsive utilities */
+  .mobile-card {
+    @apply p-4 border border-border rounded-lg bg-card shadow-sm;
+  }
+
+  .mobile-card-header {
+    @apply flex items-center justify-between mb-3;
+  }
+
+  .mobile-card-title {
+    @apply font-medium text-foreground;
+  }
+
+  .mobile-card-subtitle {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .mobile-card-content {
+    @apply space-y-2;
+  }
+
+  .mobile-field {
+    @apply flex justify-between items-start text-sm;
+  }
+
+  .mobile-field-label {
+    @apply text-muted-foreground font-medium;
+  }
+
+  .mobile-field-value {
+    @apply text-foreground text-right;
+  }
+
+  /* Table responsive behavior */
+  .table-responsive {
+    @apply block lg:table;
+  }
+
+  .table-mobile-cards {
+    @apply space-y-3;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
