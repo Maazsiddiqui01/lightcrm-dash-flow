@@ -1,35 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Search, Target, Plus, Filter, ChevronLeft, ChevronRight } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { AdvancedTable, ColumnDef, TablePreset } from "@/components/shared/AdvancedTable";
 import { OpportunityDrawer } from "./OpportunityDrawer";
 import { AddOpportunityDialog } from "./AddOpportunityDialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Filter, Building2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Opportunity {
   id: string;
@@ -63,26 +44,32 @@ export function OpportunitiesTable() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
   const [selectedTiers, setSelectedTiers] = useState<string[]>([]);
-  const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 25;
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<string>("created_at");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const { toast } = useToast();
 
   useEffect(() => {
     fetchOpportunities();
-  }, []);
+  }, [sortKey, sortDirection]);
 
   const fetchOpportunities = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from("opportunities_app")
-        .select("*")
-        .order("date_of_origination", { ascending: false });
+        .select("*");
+
+      if (sortKey && sortDirection) {
+        query = query.order(sortKey, { 
+          ascending: sortDirection === 'asc',
+          nullsFirst: false 
+        });
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setOpportunities(data || []);
@@ -97,72 +84,79 @@ export function OpportunitiesTable() {
     }
   };
 
-  const uniqueStatuses = useMemo(() => {
-    const statuses = [...new Set(opportunities.map(o => o.status).filter(Boolean))];
-    return statuses.sort();
-  }, [opportunities]);
-
-  const uniqueSectors = useMemo(() => {
-    const sectors = [...new Set(opportunities.map(o => o.sector).filter(Boolean))];
-    return sectors.sort();
-  }, [opportunities]);
-
-  const uniqueTiers = useMemo(() => {
-    const tiers = [...new Set(opportunities.map(o => o.tier).filter(Boolean))];
-    return tiers.sort();
-  }, [opportunities]);
-
-  const uniqueFocusAreas = useMemo(() => {
-    const areas = [...new Set(opportunities.map(o => o.lg_focus_area).filter(Boolean))];
-    return areas.sort();
-  }, [opportunities]);
+  const refetch = () => {
+    fetchOpportunities();
+  };
 
   const filteredOpportunities = useMemo(() => {
     return opportunities.filter((opportunity) => {
-      // Search filter
       const searchMatch = searchTerm === "" || 
         opportunity.deal_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         opportunity.deal_source_company?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Status filter
       const statusMatch = selectedStatuses.length === 0 || 
         (opportunity.status && selectedStatuses.includes(opportunity.status));
 
-      // Sector filter
-      const sectorMatch = selectedSectors.length === 0 || 
-        (opportunity.sector && selectedSectors.includes(opportunity.sector));
-
-      // Tier filter
       const tierMatch = selectedTiers.length === 0 || 
         (opportunity.tier && selectedTiers.includes(opportunity.tier));
 
-      // Focus area filter
-      const focusAreaMatch = selectedFocusAreas.length === 0 || 
-        (opportunity.lg_focus_area && selectedFocusAreas.includes(opportunity.lg_focus_area));
-
-      return searchMatch && statusMatch && sectorMatch && tierMatch && focusAreaMatch;
+      return searchMatch && statusMatch && tierMatch;
     });
-  }, [opportunities, searchTerm, selectedStatuses, selectedSectors, selectedTiers, selectedFocusAreas]);
+  }, [opportunities, searchTerm, selectedStatuses, selectedTiers]);
 
-  const paginatedOpportunities = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    return filteredOpportunities.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredOpportunities, currentPage]);
+  const uniqueStatuses = useMemo(() => {
+    return Array.from(new Set(
+      opportunities
+        .map(opp => opp.status)
+        .filter(Boolean)
+    )).sort();
+  }, [opportunities]);
 
-  const totalPages = Math.ceil(filteredOpportunities.length / rowsPerPage);
+  const uniqueTiers = useMemo(() => {
+    return Array.from(new Set(
+      opportunities
+        .map(opp => opp.tier)
+        .filter(Boolean)
+    )).sort();
+  }, [opportunities]);
+
+  const toggleStatus = (status: string) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const toggleTier = (tier: string) => {
+    setSelectedTiers(prev => 
+      prev.includes(tier) 
+        ? prev.filter(t => t !== tier)
+        : [...prev, tier]
+    );
+  };
+
+  const handleRowClick = (opportunity: Opportunity) => {
+    setSelectedOpportunity(opportunity);
+    setIsDrawerOpen(true);
+  };
+
+  const handleSort = (key: string, direction: 'asc' | 'desc' | null) => {
+    setSortKey(key);
+    setSortDirection(direction);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case "active":
-      case "open":
-        return "bg-success-light text-success";
-      case "closed":
+      case "pipeline":
+        return "bg-blue-50 text-blue-700 border-blue-200";
       case "won":
-        return "bg-primary-light text-primary";
+        return "bg-green-50 text-green-700 border-green-200";
       case "lost":
-        return "bg-destructive/10 text-destructive";
+        return "bg-red-50 text-red-700 border-red-200";
       default:
-        return "bg-muted text-muted-foreground";
+        return "bg-gray-50 text-gray-700 border-gray-200";
     }
   };
 
@@ -170,346 +164,320 @@ export function OpportunitiesTable() {
     switch (tier?.toLowerCase()) {
       case "tier 1":
       case "1":
-        return "bg-primary-light text-primary";
+        return "bg-purple-50 text-purple-700 border-purple-200";
       case "tier 2":
       case "2":
-        return "bg-warning-light text-warning";
+        return "bg-orange-50 text-orange-700 border-orange-200";
       case "tier 3":
       case "3":
-        return "bg-muted text-muted-foreground";
+        return "bg-gray-50 text-gray-700 border-gray-200";
       default:
-        return "bg-muted text-muted-foreground";
+        return "bg-gray-50 text-gray-700 border-gray-200";
     }
   };
 
-  const toggleFilter = (items: string[], setItems: (items: string[]) => void, item: string) => {
-    setItems(
-      items.includes(item) 
-        ? items.filter(i => i !== item)
-        : [...items, item]
-    );
+  // Column definitions
+  const columns: ColumnDef<Opportunity>[] = [
+    {
+      key: "deal_name",
+      label: "Deal Name",
+      sticky: true,
+      width: 200,
+      minWidth: 150,
+      sortable: true,
+      render: (value, row) => (
+        <div className="flex items-center space-x-2">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Building2 className="h-4 w-4 text-primary" />
+          </div>
+          <span className="font-medium">{value || "Unnamed Deal"}</span>
+        </div>
+      )
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 120,
+      minWidth: 100,
+      sortable: true,
+      render: (value) => (
+        <Badge variant="secondary" className={getStatusColor(value)}>
+          {value || "—"}
+        </Badge>
+      )
+    },
+    {
+      key: "tier",
+      label: "Tier",
+      width: 100,
+      minWidth: 80,
+      sortable: true,
+      render: (value) => (
+        <Badge variant="secondary" className={getTierColor(value)}>
+          {value || "—"}
+        </Badge>
+      )
+    },
+    {
+      key: "sector",
+      label: "Sector",
+      width: 150,
+      minWidth: 120,
+      sortable: true,
+      render: (value) => value || "—"
+    },
+    {
+      key: "lg_focus_area",
+      label: "LG Focus Area",
+      width: 180,
+      minWidth: 150,
+      sortable: true,
+      render: (value) => value || "—"
+    },
+    {
+      key: "platform_add_on",
+      label: "Platform Add-On",
+      width: 150,
+      minWidth: 120,
+      sortable: true,
+      render: (value) => value || "—"
+    },
+    {
+      key: "date_of_origination",
+      label: "Date of Origination",
+      width: 160,
+      minWidth: 140,
+      sortable: true,
+      render: (value) => value || "—"
+    },
+    {
+      key: "deal_source_company",
+      label: "Source Company",
+      width: 180,
+      minWidth: 150,
+      sortable: true,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{value || "No source company"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "deal_source_individual_1",
+      label: "Source #1",
+      width: 160,
+      minWidth: 120,
+      sortable: true,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{value || "No primary source individual"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "deal_source_individual_2",
+      label: "Source #2",
+      width: 160,
+      minWidth: 120,
+      sortable: true,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{value || "No secondary source individual"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "ownership",
+      label: "Ownership",
+      width: 120,
+      minWidth: 100,
+      sortable: true,
+      render: (value) => value || "—"
+    },
+    {
+      key: "ownership_type",
+      label: "Ownership Type",
+      width: 140,
+      minWidth: 120,
+      sortable: true,
+      render: (value) => value || "—"
+    }
+  ];
+
+  // Table presets
+  const presets: TablePreset[] = [
+    {
+      name: "Compact",
+      columns: ["deal_name", "status", "tier", "sector", "date_of_origination"]
+    },
+    {
+      name: "Standard",
+      columns: ["deal_name", "status", "tier", "sector", "lg_focus_area", "deal_source_company", "ownership"]
+    },
+    {
+      name: "Wide",
+      columns: ["deal_name", "status", "tier", "sector", "lg_focus_area", "platform_add_on", "date_of_origination", "deal_source_company", "deal_source_individual_1", "deal_source_individual_2", "ownership", "ownership_type"]
+    }
+  ];
+
+  // Active filters for display
+  const activeFilters = useMemo(() => {
+    const filters: { label: string; onRemove: () => void }[] = [];
+    
+    selectedStatuses.forEach(status => {
+      filters.push({
+        label: `Status: ${status}`,
+        onRemove: () => toggleStatus(status)
+      });
+    });
+
+    selectedTiers.forEach(tier => {
+      filters.push({
+        label: `Tier: ${tier}`,
+        onRemove: () => toggleTier(tier)
+      });
+    });
+
+    return filters;
+  }, [selectedStatuses, selectedTiers]);
+
+  const clearAllFilters = () => {
+    setSelectedStatuses([]);
+    setSelectedTiers([]);
+    setSearchTerm("");
   };
 
-  const handleOpportunityAdded = () => {
-    fetchOpportunities();
-    setShowAddDialog(false);
-  };
-
-  const handleOpportunityUpdated = () => {
-    fetchOpportunities();
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+  // Filters component
+  const filtersComponent = (
+    <div className="flex items-center space-x-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="focus-ring">
+            <Filter className="h-4 w-4 mr-2" />
+            Status
+            {selectedStatuses.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {selectedStatuses.length}
+              </Badge>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64">
+          <div className="space-y-2">
+            <h4 className="font-medium">Filter by Status</h4>
+            <div className="max-h-40 overflow-y-auto space-y-2">
+              {uniqueStatuses.map((status) => (
+                <div key={status} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`status-${status}`}
+                    checked={selectedStatuses.includes(status)}
+                    onCheckedChange={() => toggleStatus(status)}
+                  />
+                  <label htmlFor={`status-${status}`} className="text-sm">{status}</label>
+                </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="focus-ring">
+            <Filter className="h-4 w-4 mr-2" />
+            Tier
+            {selectedTiers.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {selectedTiers.length}
+              </Badge>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64">
+          <div className="space-y-2">
+            <h4 className="font-medium">Filter by Tier</h4>
+            <div className="max-h-40 overflow-y-auto space-y-2">
+              {uniqueTiers.map((tier) => (
+                <div key={tier} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`tier-${tier}`}
+                    checked={selectedTiers.includes(tier)}
+                    onCheckedChange={() => toggleTier(tier)}
+                  />
+                  <label htmlFor={`tier-${tier}`} className="text-sm">{tier}</label>
+                </div>
+              ))}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+
+  const emptyState = {
+    title: "No opportunities found",
+    description: searchTerm || activeFilters.length > 0 
+      ? "Try adjusting your search or filters to find opportunities."
+      : "Start tracking your business development by adding your first opportunity.",
+    action: <AddOpportunityDialog open={false} onClose={() => {}} onOpportunityAdded={refetch} />
+  };
 
   return (
-    <div className="space-y-4">
-      <Card className="elevation-1">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Target className="h-5 w-5 text-primary" />
-              <span className="font-medium">Opportunities ({filteredOpportunities.length})</span>
-            </div>
-            <Button onClick={() => setShowAddDialog(true)} className="focus-ring">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Opportunity
-            </Button>
-          </div>
-          
-          {/* Filters */}
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by deal name or source company..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              {/* Status Filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Status
-                    {selectedStatuses.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">
-                        {selectedStatuses.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Filter by Status</h4>
-                    <div className="max-h-40 overflow-y-auto space-y-2">
-                      {uniqueStatuses.map((status) => (
-                        <div key={status} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`status-${status}`}
-                            checked={selectedStatuses.includes(status)}
-                            onCheckedChange={() => toggleFilter(selectedStatuses, setSelectedStatuses, status)}
-                          />
-                          <label htmlFor={`status-${status}`} className="text-sm">{status}</label>
-                        </div>
-                      ))}
-                    </div>
-                    {selectedStatuses.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={() => setSelectedStatuses([])}>
-                        Clear All
-                      </Button>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-section-title">All Opportunities</h3>
+          <p className="text-meta mt-1">
+            {filteredOpportunities?.length || 0} opportunit{filteredOpportunities?.length !== 1 ? 'ies' : 'y'} total
+          </p>
+        </div>
+      </div>
 
-              {/* Sector Filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    Sector
-                    {selectedSectors.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">
-                        {selectedSectors.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Filter by Sector</h4>
-                    <div className="max-h-40 overflow-y-auto space-y-2">
-                      {uniqueSectors.map((sector) => (
-                        <div key={sector} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`sector-${sector}`}
-                            checked={selectedSectors.includes(sector)}
-                            onCheckedChange={() => toggleFilter(selectedSectors, setSelectedSectors, sector)}
-                          />
-                          <label htmlFor={`sector-${sector}`} className="text-sm">{sector}</label>
-                        </div>
-                      ))}
-                    </div>
-                    {selectedSectors.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={() => setSelectedSectors([])}>
-                        Clear All
-                      </Button>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {/* Tier Filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    Tier
-                    {selectedTiers.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">
-                        {selectedTiers.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Filter by Tier</h4>
-                    <div className="max-h-40 overflow-y-auto space-y-2">
-                      {uniqueTiers.map((tier) => (
-                        <div key={tier} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`tier-${tier}`}
-                            checked={selectedTiers.includes(tier)}
-                            onCheckedChange={() => toggleFilter(selectedTiers, setSelectedTiers, tier)}
-                          />
-                          <label htmlFor={`tier-${tier}`} className="text-sm">{tier}</label>
-                        </div>
-                      ))}
-                    </div>
-                    {selectedTiers.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={() => setSelectedTiers([])}>
-                        Clear All
-                      </Button>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {/* Focus Area Filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    Focus Area
-                    {selectedFocusAreas.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">
-                        {selectedFocusAreas.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Filter by Focus Area</h4>
-                    <div className="max-h-40 overflow-y-auto space-y-2">
-                      {uniqueFocusAreas.map((area) => (
-                        <div key={area} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`focus-${area}`}
-                            checked={selectedFocusAreas.includes(area)}
-                            onCheckedChange={() => toggleFilter(selectedFocusAreas, setSelectedFocusAreas, area)}
-                          />
-                          <label htmlFor={`focus-${area}`} className="text-sm">{area}</label>
-                        </div>
-                      ))}
-                    </div>
-                    {selectedFocusAreas.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={() => setSelectedFocusAreas([])}>
-                        Clear All
-                      </Button>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-table-header">
-                <TableRow>
-                  <TableHead>Deal Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Tier</TableHead>
-                  <TableHead>Sector</TableHead>
-                  <TableHead>LG Focus Area</TableHead>
-                  <TableHead>Platform Add-On</TableHead>
-                  <TableHead>Date of Origination</TableHead>
-                  <TableHead>Deal Source Company</TableHead>
-                  <TableHead>Deal Source Individual #1</TableHead>
-                  <TableHead>Deal Source Individual #2</TableHead>
-                  <TableHead>Ownership</TableHead>
-                  <TableHead>Ownership Type</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedOpportunities.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={12} className="text-center py-8">
-                      <div className="flex flex-col items-center space-y-2">
-                        <Target className="h-8 w-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">
-                          {searchTerm || selectedStatuses.length > 0 || selectedSectors.length > 0 || selectedTiers.length > 0 || selectedFocusAreas.length > 0
-                            ? "No opportunities match your filters" 
-                            : "No opportunities yet"}
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedOpportunities.map((opportunity) => (
-                    <TableRow
-                      key={opportunity.id}
-                      className="hover:bg-table-row-hover transition-colors cursor-pointer"
-                      onClick={() => setSelectedOpportunity(opportunity)}
-                    >
-                      <TableCell className="font-medium">
-                        {opportunity.deal_name || "Unnamed Deal"}
-                      </TableCell>
-                      <TableCell>
-                        {opportunity.status ? (
-                          <Badge className={getStatusColor(opportunity.status)}>
-                            {opportunity.status}
-                          </Badge>
-                        ) : "—"}
-                      </TableCell>
-                      <TableCell>
-                        {opportunity.tier ? (
-                          <Badge className={getTierColor(opportunity.tier)}>
-                            {opportunity.tier}
-                          </Badge>
-                        ) : "—"}
-                      </TableCell>
-                      <TableCell>{opportunity.sector || "—"}</TableCell>
-                      <TableCell>{opportunity.lg_focus_area || "—"}</TableCell>
-                      <TableCell>{opportunity.platform_add_on || "—"}</TableCell>
-                      <TableCell>{opportunity.date_of_origination || "—"}</TableCell>
-                      <TableCell>{opportunity.deal_source_company || "—"}</TableCell>
-                      <TableCell>{opportunity.deal_source_individual_1 || "—"}</TableCell>
-                      <TableCell>{opportunity.deal_source_individual_2 || "—"}</TableCell>
-                      <TableCell>{opportunity.ownership || "—"}</TableCell>
-                      <TableCell>{opportunity.ownership_type || "—"}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, filteredOpportunities.length)} of {filteredOpportunities.length} opportunities
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <AdvancedTable
+        data={filteredOpportunities}
+        columns={columns}
+        loading={loading}
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        onRowClick={handleRowClick}
+        onSort={handleSort}
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        filters={filtersComponent}
+        activeFilters={activeFilters}
+        onClearAllFilters={clearAllFilters}
+        emptyState={emptyState}
+        tableId="opportunities"
+        presets={presets}
+        exportFilename="opportunities"
+      />
 
       <OpportunityDrawer
         opportunity={selectedOpportunity}
-        open={!!selectedOpportunity}
-        onClose={() => setSelectedOpportunity(null)}
-        onOpportunityUpdated={handleOpportunityUpdated}
-      />
-
-      <AddOpportunityDialog
-        open={showAddDialog}
-        onClose={() => setShowAddDialog(false)}
-        onOpportunityAdded={handleOpportunityAdded}
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        onOpportunityUpdated={refetch}
       />
     </div>
   );

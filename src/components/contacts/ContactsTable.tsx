@@ -1,39 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import type { Database } from "@/integrations/supabase/types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Search, User, Plus, Filter, ChevronLeft, ChevronRight } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { AdvancedTable, ColumnDef, TablePreset } from "@/components/shared/AdvancedTable";
 import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Filter, Plus, User } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ContactApp {
-  id: string | null;
+  id: string;
   full_name: string | null;
   email_address: string | null;
   organization: string | null;
@@ -50,24 +30,32 @@ export function ContactsTable() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>([]);
-  const [touchedInDays, setTouchedInDays] = useState<string>("all");
+  const [touchedInDays, setTouchedInDays] = useState("all");
   const [selectedContact, setSelectedContact] = useState<ContactApp | null>(null);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 25;
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<string>("most_recent_contact");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const { toast } = useToast();
 
   useEffect(() => {
     fetchContacts();
-  }, []);
+  }, [sortKey, sortDirection]);
 
   const fetchContacts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from("contacts_app")
-        .select("id, full_name, email_address, organization, title, lg_focus_areas_comprehensive_list, of_emails, of_meetings, total_of_contacts, most_recent_contact")
-        .order("most_recent_contact", { ascending: false, nullsFirst: false });
+        .select("*");
+
+      if (sortKey && sortDirection) {
+        query = query.order(sortKey, { 
+          ascending: sortDirection === 'asc',
+          nullsFirst: false 
+        });
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setContacts((data as any) || []);
@@ -82,13 +70,12 @@ export function ContactsTable() {
     }
   };
 
-  const uniqueOrganizations = useMemo(() => {
-    const orgs = [...new Set(contacts.map(c => c.organization).filter(Boolean))];
-    return orgs.sort();
-  }, [contacts]);
+  const refetch = () => {
+    fetchContacts();
+  };
 
   const isWithinDays = (dateString: string | null, days: number) => {
-    if (!dateString || dateString === "1970-01-01T00:00:00+00:00") return false;
+    if (!dateString) return false;
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = now.getTime() - date.getTime();
@@ -118,27 +105,13 @@ export function ContactsTable() {
     });
   }, [contacts, searchTerm, selectedOrganizations, touchedInDays]);
 
-  const paginatedContacts = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    return filteredContacts.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredContacts, currentPage]);
-
-  const totalPages = Math.ceil(filteredContacts.length / rowsPerPage);
-
-  const formatRelativeTime = (dateString: string | null) => {
-    if (!dateString || dateString === "1970-01-01T00:00:00+00:00") return "Never";
-    
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 30) return `${diffDays} days ago`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-    return `${Math.floor(diffDays / 365)} years ago`;
-  };
+  const uniqueOrganizations = useMemo(() => {
+    return Array.from(new Set(
+      contacts
+        .map(contact => contact.organization)
+        .filter(Boolean)
+    )).sort();
+  }, [contacts]);
 
   const toggleOrganization = (org: string) => {
     setSelectedOrganizations(prev => 
@@ -148,233 +121,285 @@ export function ContactsTable() {
     );
   };
 
-  const handleContactAdded = () => {
-    fetchContacts();
-    setShowAddDialog(false);
+  const handleRowClick = (contact: ContactApp) => {
+    setSelectedContact(contact);
+    setIsDrawerOpen(true);
   };
 
-  const handleContactUpdated = () => {
-    fetchContacts();
+  const handleSort = (key: string, direction: 'asc' | 'desc' | null) => {
+    setSortKey(key);
+    setSortDirection(direction);
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+  // Column definitions
+  const columns: ColumnDef<ContactApp>[] = [
+    {
+      key: "full_name",
+      label: "Full Name",
+      sticky: true,
+      width: 200,
+      minWidth: 150,
+      sortable: true,
+      render: (value, row) => (
+        <div className="flex items-center space-x-2">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <User className="h-4 w-4 text-primary" />
+          </div>
+          <span className="font-medium">{value || "Unnamed Contact"}</span>
+        </div>
+      )
+    },
+    {
+      key: "email_address",
+      label: "Email",
+      width: 250,
+      minWidth: 200,
+      sortable: true,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block text-muted-foreground">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{value || "No email address"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "organization",
+      label: "Organization",
+      width: 200,
+      minWidth: 150,
+      sortable: true,
+      render: (value) => value || "—"
+    },
+    {
+      key: "title",
+      label: "Title",
+      width: 180,
+      minWidth: 120,
+      sortable: true,
+      render: (value) => value || "—"
+    },
+    {
+      key: "lg_focus_areas_comprehensive_list",
+      label: "Focus Areas",
+      width: 250,
+      minWidth: 200,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">{value || "No focus areas listed"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "of_emails",
+      label: "Emails",
+      width: 100,
+      minWidth: 80,
+      sortable: true,
+      render: (value) => (
+        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+          {value || 0}
+        </Badge>
+      )
+    },
+    {
+      key: "of_meetings",
+      label: "Meetings",
+      width: 100,
+      minWidth: 80,
+      sortable: true,
+      render: (value) => (
+        <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+          {value || 0}
+        </Badge>
+      )
+    },
+    {
+      key: "total_of_contacts",
+      label: "Opportunities",
+      width: 120,
+      minWidth: 100,
+      sortable: true,
+      render: (value) => (
+        <Badge variant="secondary" className="bg-purple-50 text-purple-700 border-purple-200">
+          {value || 0}
+        </Badge>
+      )
+    },
+    {
+      key: "most_recent_contact",
+      label: "Last Touch",
+      width: 150,
+      minWidth: 120,
+      sortable: true,
+      render: (value) => {
+        if (!value) return "—";
+        const date = new Date(value);
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-muted-foreground">
+                  {date.toLocaleDateString()}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{date.toLocaleString()}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      }
+    }
+  ];
+
+  // Table presets
+  const presets: TablePreset[] = [
+    {
+      name: "Compact",
+      columns: ["full_name", "email_address", "organization", "of_emails", "of_meetings"]
+    },
+    {
+      name: "Standard", 
+      columns: ["full_name", "email_address", "organization", "title", "of_emails", "of_meetings", "most_recent_contact"]
+    },
+    {
+      name: "Wide",
+      columns: ["full_name", "email_address", "organization", "title", "lg_focus_areas_comprehensive_list", "of_emails", "of_meetings", "total_of_contacts", "most_recent_contact"]
+    }
+  ];
+
+  // Active filters for display
+  const activeFilters = useMemo(() => {
+    const filters: { label: string; onRemove: () => void }[] = [];
+    
+    selectedOrganizations.forEach(org => {
+      filters.push({
+        label: `Org: ${org}`,
+        onRemove: () => toggleOrganization(org)
+      });
+    });
+
+    if (touchedInDays !== "all") {
+      filters.push({
+        label: `Touched in ${touchedInDays} days`,
+        onRemove: () => setTouchedInDays("all")
+      });
+    }
+
+    return filters;
+  }, [selectedOrganizations, touchedInDays]);
+
+  const clearAllFilters = () => {
+    setSelectedOrganizations([]);
+    setTouchedInDays("all");
+    setSearchTerm("");
+  };
+
+  // Filters component
+  const filtersComponent = (
+    <div className="flex items-center space-x-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="focus-ring">
+            <Filter className="h-4 w-4 mr-2" />
+            Organizations
+            {selectedOrganizations.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {selectedOrganizations.length}
+              </Badge>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80">
+          <div className="space-y-2">
+            <h4 className="font-medium">Filter by Organization</h4>
+            <div className="max-h-40 overflow-y-auto space-y-2">
+              {uniqueOrganizations.map((org) => (
+                <div key={org} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={org}
+                    checked={selectedOrganizations.includes(org)}
+                    onCheckedChange={() => toggleOrganization(org)}
+                  />
+                  <label htmlFor={org} className="text-sm">{org}</label>
+                </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <Select value={touchedInDays} onValueChange={setTouchedInDays}>
+        <SelectTrigger className="w-48 focus-ring">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Contacts</SelectItem>
+          <SelectItem value="7">Touched in 7 days</SelectItem>
+          <SelectItem value="30">Touched in 30 days</SelectItem>
+          <SelectItem value="90">Touched in 90 days</SelectItem>
+          <SelectItem value="365">Touched in 1 year</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const emptyState = {
+    title: "No contacts found",
+    description: searchTerm || activeFilters.length > 0 
+      ? "Try adjusting your search or filters to find contacts."
+      : "Start building your professional network by adding your first contact.",
+    action: <AddContactDialog open={false} onClose={() => {}} onContactAdded={refetch} />
+  };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <User className="h-5 w-5" />
-              <span>Contacts ({filteredContacts.length})</span>
-            </CardTitle>
-            <Button onClick={() => setShowAddDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Contact
-            </Button>
-          </div>
-          
-          {/* Filters */}
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full md:w-auto">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Organizations
-                  {selectedOrganizations.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {selectedOrganizations.length}
-                    </Badge>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80">
-                <div className="space-y-2">
-                  <h4 className="font-medium">Filter by Organization</h4>
-                  <div className="max-h-40 overflow-y-auto space-y-2">
-                    {uniqueOrganizations.map((org) => (
-                      <div key={org} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={org}
-                          checked={selectedOrganizations.includes(org)}
-                          onCheckedChange={() => toggleOrganization(org)}
-                        />
-                        <label htmlFor={org} className="text-sm">{org}</label>
-                      </div>
-                    ))}
-                  </div>
-                  {selectedOrganizations.length > 0 && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setSelectedOrganizations([])}
-                    >
-                      Clear All
-                    </Button>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-section-title">All Contacts</h3>
+          <p className="text-meta mt-1">
+            {filteredContacts?.length || 0} contact{filteredContacts?.length !== 1 ? 's' : ''} total
+          </p>
+        </div>
+      </div>
 
-            <Select value={touchedInDays} onValueChange={setTouchedInDays}>
-              <SelectTrigger className="w-full md:w-40">
-                <SelectValue placeholder="Touched in..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="30">Last 30 days</SelectItem>
-                <SelectItem value="60">Last 60 days</SelectItem>
-                <SelectItem value="90">Last 90 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader className="bg-table-header">
-                <TableRow>
-                  <TableHead>Full Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Organization</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Focus Areas</TableHead>
-                  <TableHead>Emails</TableHead>
-                  <TableHead>Meetings</TableHead>
-                  <TableHead># of Contacts</TableHead>
-                  <TableHead>Last Touch</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedContacts.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      <div className="flex flex-col items-center space-y-2">
-                        <User className="h-8 w-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">
-                          {searchTerm || selectedOrganizations.length > 0 || touchedInDays !== "all" 
-                            ? "No contacts match your filters" 
-                            : "No contacts yet"}
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedContacts.map((contact) => (
-                    <TableRow
-                      key={contact.id}
-                      className="hover:bg-table-row-hover transition-colors cursor-pointer"
-                      onClick={() => setSelectedContact(contact)}
-                    >
-                      <TableCell className="font-medium">
-                        {contact.full_name || "Unknown"}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {contact.email_address || "—"}
-                      </TableCell>
-                      <TableCell>{contact.organization || "—"}</TableCell>
-                      <TableCell>{contact.title || "—"}</TableCell>
-                      <TableCell>
-                        <div className="max-w-xs truncate">
-                          {contact.lg_focus_areas_comprehensive_list || "—"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {contact.of_emails || 0}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {contact.of_meetings || 0}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {contact.total_of_contacts || 0}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatRelativeTime(contact.most_recent_contact)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, filteredContacts.length)} of {filteredContacts.length} contacts
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <AdvancedTable
+        data={filteredContacts}
+        columns={columns}
+        loading={loading}
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        onRowClick={handleRowClick}
+        onSort={handleSort}
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        filters={filtersComponent}
+        activeFilters={activeFilters}
+        onClearAllFilters={clearAllFilters}
+        emptyState={emptyState}
+        tableId="contacts"
+        presets={presets}
+        exportFilename="contacts"
+      />
 
       <ContactDrawer
         contact={selectedContact}
-        open={!!selectedContact}
-        onClose={() => setSelectedContact(null)}
-        onContactUpdated={handleContactUpdated}
-      />
-
-      <AddContactDialog
-        open={showAddDialog}
-        onClose={() => setShowAddDialog(false)}
-        onContactAdded={handleContactAdded}
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        onContactUpdated={refetch}
       />
     </div>
   );

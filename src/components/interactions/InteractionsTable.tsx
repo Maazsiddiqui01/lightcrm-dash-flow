@@ -1,63 +1,64 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdvancedTable, ColumnDef, TablePreset } from "@/components/shared/AdvancedTable";
+import { InteractionDrawer } from "./InteractionDrawer";
+import { AddInteractionDialog } from "./AddInteractionDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Search, MessageSquare, Mail, Calendar, Users, Plus, Filter, X } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { InteractionDrawer } from "./InteractionDrawer";
-import { AddInteractionDialog } from "./AddInteractionDialog";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { MessageSquare, Mail, Video } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Interaction {
   id: string;
+  occurred_at: string;
   subject: string;
   source: string;
   from_name: string;
   from_email: string;
-  to_names: string;
   to_emails: string;
-  cc_names: string;
   cc_emails: string;
   organization: string;
-  occurred_at: string;
   all_emails: string;
+  created_at: string;
+  updated_at: string;
+  to_names: string;
+  cc_names: string;
 }
 
 export function InteractionsTable() {
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sourceFilter, setSourceFilter] = useState<string>("");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
-  const [currentPage, setCurrentPage] = useState(1);
   const [selectedInteraction, setSelectedInteraction] = useState<Interaction | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const itemsPerPage = 25;
+  const [sortKey, setSortKey] = useState<string>("occurred_at");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const { toast } = useToast();
 
   useEffect(() => {
     fetchInteractions();
-  }, []);
+  }, [sortKey, sortDirection]);
 
   const fetchInteractions = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from("interactions_app")
-        .select("*")
-        .order("occurred_at", { ascending: false });
+        .select("*");
+
+      if (sortKey && sortDirection) {
+        query = query.order(sortKey, { 
+          ascending: sortDirection === 'asc',
+          nullsFirst: false 
+        });
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setInteractions(data || []);
@@ -72,52 +73,56 @@ export function InteractionsTable() {
     }
   };
 
-  const filteredInteractions = interactions.filter((interaction) => {
-    // Search filter (Subject and From Email)
-    const searchMatch = searchTerm === "" || 
-      interaction.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      interaction.from_email?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    // Source filter
-    const sourceMatch = sourceFilter === "all" || !sourceFilter || interaction.source === sourceFilter;
-
-    // Date range filter
-    const dateMatch = (!dateRange.from && !dateRange.to) || (() => {
-      const occurrenceDate = new Date(interaction.occurred_at);
-      const fromDate = dateRange.from ? new Date(dateRange.from) : null;
-      const toDate = dateRange.to ? new Date(dateRange.to) : null;
-      
-      return (!fromDate || occurrenceDate >= fromDate) && 
-             (!toDate || occurrenceDate <= toDate);
-    })();
-
-    return searchMatch && sourceMatch && dateMatch;
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(filteredInteractions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedInteractions = filteredInteractions.slice(startIndex, startIndex + itemsPerPage);
-
-  // Get unique sources for filter dropdown
-  const uniqueSources = Array.from(new Set(interactions.map(i => i.source).filter(Boolean)));
-
-  const getSourceColor = (source: string) => {
-    switch (source?.toLowerCase()) {
-      case "email":
-        return "bg-primary-light text-primary";
-      case "meeting":
-        return "bg-success-light text-success";
-      case "call":
-        return "bg-warning-light text-warning";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
+  const refetch = () => {
+    fetchInteractions();
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Unknown";
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const filteredInteractions = useMemo(() => {
+    return interactions.filter((interaction) => {
+      // Search filter
+      const searchMatch = searchTerm === "" || 
+        interaction.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        interaction.from_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        interaction.from_name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Source filter
+      const sourceMatch = sourceFilter === "all" || !sourceFilter || interaction.source === sourceFilter;
+
+      // Date range filter
+      const dateMatch = (!dateRange.from && !dateRange.to) || (() => {
+        const occurrenceDate = new Date(interaction.occurred_at);
+        const fromDate = dateRange.from ? new Date(dateRange.from) : null;
+        const toDate = dateRange.to ? new Date(dateRange.to) : null;
+        
+        return (!fromDate || occurrenceDate >= fromDate) && 
+               (!toDate || occurrenceDate <= toDate);
+      })();
+
+      return searchMatch && sourceMatch && dateMatch;
+    });
+  }, [interactions, searchTerm, sourceFilter, dateRange]);
+
+  const uniqueSources = useMemo(() => {
+    return Array.from(new Set(
+      interactions
+        .map(interaction => interaction.source)
+        .filter(Boolean)
+    )).sort();
+  }, [interactions]);
+
+  const handleRowClick = (interaction: Interaction) => {
+    setSelectedInteraction(interaction);
+    setIsDrawerOpen(true);
+  };
+
+  const handleSort = (key: string, direction: 'asc' | 'desc' | null) => {
+    setSortKey(key);
+    setSortDirection(direction);
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -126,243 +131,264 @@ export function InteractionsTable() {
     });
   };
 
-  const handleRowClick = (interaction: Interaction) => {
-    setSelectedInteraction(interaction);
-    setIsDrawerOpen(true);
+  const getSourceIcon = (source: string) => {
+    switch (source?.toLowerCase()) {
+      case "email":
+        return <Mail className="h-3 w-3" />;
+      case "meeting":
+        return <Video className="h-3 w-3" />;
+      default:
+        return <MessageSquare className="h-3 w-3" />;
+    }
   };
 
-  const clearFilters = () => {
-    setSearchTerm("");
+  const getSourceColor = (source: string) => {
+    switch (source?.toLowerCase()) {
+      case "email":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "meeting":
+        return "bg-green-50 text-green-700 border-green-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
+  // Column definitions
+  const columns: ColumnDef<Interaction>[] = [
+    {
+      key: "occurred_at",
+      label: "Occurred At",
+      width: 180,
+      minWidth: 160,
+      sortable: true,
+      render: (value) => (
+        <span className="text-sm text-muted-foreground">
+          {formatDateTime(value)}
+        </span>
+      )
+    },
+    {
+      key: "subject",
+      label: "Subject",
+      width: 300,
+      minWidth: 200,
+      sortable: true,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block font-medium">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">{value || "No subject"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "source",
+      label: "Source",
+      width: 100,
+      minWidth: 80,
+      sortable: true,
+      render: (value) => (
+        <Badge variant="secondary" className={`${getSourceColor(value)} flex items-center gap-1`}>
+          {getSourceIcon(value)}
+          {value || "—"}
+        </Badge>
+      )
+    },
+    {
+      key: "from_name",
+      label: "From Name",
+      width: 180,
+      minWidth: 150,
+      sortable: true,
+      render: (value, row) => (
+        <div className="space-y-1">
+          <div className="font-medium">{value || "—"}</div>
+          <div className="text-xs text-muted-foreground truncate">
+            {row.from_email || "—"}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: "to_emails",
+      label: "To Emails",
+      width: 200,
+      minWidth: 150,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block text-sm">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">{value || "No recipients"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "cc_emails",
+      label: "CC Emails",
+      width: 200,
+      minWidth: 150,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block text-sm text-muted-foreground">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">{value || "No CC recipients"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "organization",
+      label: "Organization",
+      width: 180,
+      minWidth: 150,
+      sortable: true,
+      render: (value) => value || "—"
+    }
+  ];
+
+  // Table presets
+  const presets: TablePreset[] = [
+    {
+      name: "Compact",
+      columns: ["occurred_at", "subject", "source", "from_name"]
+    },
+    {
+      name: "Standard",
+      columns: ["occurred_at", "subject", "source", "from_name", "to_emails", "organization"]
+    },
+    {
+      name: "Wide",
+      columns: ["occurred_at", "subject", "source", "from_name", "to_emails", "cc_emails", "organization"]
+    }
+  ];
+
+  // Active filters for display
+  const activeFilters = useMemo(() => {
+    const filters: { label: string; onRemove: () => void }[] = [];
+    
+    if (sourceFilter !== "all") {
+      filters.push({
+        label: `Source: ${sourceFilter}`,
+        onRemove: () => setSourceFilter("all")
+      });
+    }
+
+    if (dateRange.from) {
+      filters.push({
+        label: `From: ${dateRange.from}`,
+        onRemove: () => setDateRange(prev => ({ ...prev, from: "" }))
+      });
+    }
+
+    if (dateRange.to) {
+      filters.push({
+        label: `To: ${dateRange.to}`,
+        onRemove: () => setDateRange(prev => ({ ...prev, to: "" }))
+      });
+    }
+
+    return filters;
+  }, [sourceFilter, dateRange]);
+
+  const clearAllFilters = () => {
     setSourceFilter("all");
     setDateRange({ from: "", to: "" });
-    setCurrentPage(1);
+    setSearchTerm("");
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Filters component
+  const filtersComponent = (
+    <div className="flex items-center space-x-2">
+      <Select value={sourceFilter} onValueChange={setSourceFilter}>
+        <SelectTrigger className="w-32 focus-ring">
+          <SelectValue placeholder="All Sources" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Sources</SelectItem>
+          {uniqueSources.map((source) => (
+            <SelectItem key={source} value={source}>
+              {source}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Input
+        type="date"
+        placeholder="From date"
+        value={dateRange.from}
+        onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
+        className="w-36 focus-ring"
+      />
+      
+      <Input
+        type="date"
+        placeholder="To date"
+        value={dateRange.to}
+        onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
+        className="w-36 focus-ring"
+      />
+    </div>
+  );
+
+  const emptyState = {
+    title: "No interactions found",
+    description: searchTerm || activeFilters.length > 0 
+      ? "Try adjusting your search or filters to find interactions."
+      : "Start tracking your communications by adding your first interaction.",
+    action: <AddInteractionDialog onInteractionAdded={refetch} />
+  };
 
   return (
-    <>
-      <div className="space-y-4">
-        <Card className="elevation-1">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                <span className="font-medium">Interactions ({filteredInteractions.length})</span>
-              </div>
-              <AddInteractionDialog onInteractionAdded={fetchInteractions} />
-            </div>
-            
-            {/* Filters */}
-            <div className="flex flex-wrap gap-4">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search subject and from email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="All Sources" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sources</SelectItem>
-                  {uniqueSources.map((source) => (
-                    <SelectItem key={source} value={source}>
-                      {source}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Input
-                type="date"
-                placeholder="From date"
-                value={dateRange.from}
-                onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                className="w-[150px]"
-              />
-              
-              <Input
-                type="date"
-                placeholder="To date"
-                value={dateRange.to}
-                onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                className="w-[150px]"
-              />
-
-              {(searchTerm || sourceFilter || dateRange.from || dateRange.to) && (
-                <Button variant="outline" onClick={clearFilters}>
-                  <X className="h-4 w-4 mr-2" />
-                  Clear
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader className="bg-table-header">
-                <TableRow>
-                  <TableHead>Occurred At</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>From Name</TableHead>
-                  <TableHead>From Email</TableHead>
-                  <TableHead>To Emails</TableHead>
-                  <TableHead>CC Emails</TableHead>
-                  <TableHead>Organization</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedInteractions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <div className="flex flex-col items-center space-y-2">
-                        <MessageSquare className="h-8 w-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">
-                          {searchTerm || sourceFilter || dateRange.from || dateRange.to ? "No interactions found matching filters" : "No interactions yet"}
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedInteractions.map((interaction) => (
-                    <TableRow
-                      key={interaction.id}
-                      className="hover:bg-table-row-hover transition-colors cursor-pointer"
-                      onClick={() => handleRowClick(interaction)}
-                    >
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">
-                            {formatDate(interaction.occurred_at)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <div className="max-w-xs">
-                          <div className="font-medium truncate">
-                            {interaction.subject || "No Subject"}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getSourceColor(interaction.source)}>
-                          <div className="flex items-center space-x-1">
-                            {interaction.source?.toLowerCase() === "email" && <Mail className="h-3 w-3" />}
-                            {interaction.source?.toLowerCase() === "meeting" && <Users className="h-3 w-3" />}
-                            <span>{interaction.source || "Unknown"}</span>
-                          </div>
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs">
-                          <span className="text-sm truncate">
-                            {interaction.from_name || "Unknown"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs">
-                          <span className="text-sm text-muted-foreground truncate">
-                            {interaction.from_email || "—"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs">
-                          <span className="text-sm text-muted-foreground truncate">
-                            {interaction.to_emails || "—"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs">
-                          <span className="text-sm text-muted-foreground truncate">
-                            {interaction.cc_emails || "—"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">
-                          {interaction.organization || "—"}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredInteractions.length)} of {filteredInteractions.length} interactions
-              </div>
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(page)}
-                        isActive={currentPage === page}
-                        className="cursor-pointer"
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-section-title">All Interactions</h3>
+          <p className="text-meta mt-1">
+            {filteredInteractions?.length || 0} interaction{filteredInteractions?.length !== 1 ? 's' : ''} total
+          </p>
+        </div>
       </div>
+
+      <AdvancedTable
+        data={filteredInteractions}
+        columns={columns}
+        loading={loading}
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        onRowClick={handleRowClick}
+        onSort={handleSort}
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        filters={filtersComponent}
+        activeFilters={activeFilters}
+        onClearAllFilters={clearAllFilters}
+        emptyState={emptyState}
+        tableId="interactions"
+        presets={presets}
+        exportFilename="interactions"
+      />
 
       <InteractionDrawer
         interaction={selectedInteraction}
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        onUpdate={fetchInteractions}
+        onUpdate={refetch}
       />
-    </>
+    </div>
   );
 }
