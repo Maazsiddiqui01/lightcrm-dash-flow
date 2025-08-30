@@ -1,6 +1,3 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import {
   Sheet,
   SheetContent,
@@ -8,82 +5,32 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Save, X, User, Mail, Building, Target, MessageSquare, Calendar } from "lucide-react";
+import { User, Mail, Building, Target, Calendar } from "lucide-react";
 
-interface Contact {
-  id: string;
-  full_name: string;
-  title: string;
-  email: string;
-  organization: string;
-  opportunities_count: number;
-  meetings_count: number;
-  emails_count: number;
-  last_touch: string;
-  focus_areas: string;
-  notes: string;
-  created_at: string;
-  updated_at: string;
-  no_of_lg_focus_areas: number;
+interface ContactApp {
+  id: string | null;
+  full_name: string | null;
+  email_address: string | null;
+  organization: string | null;
+  title: string | null;
+  lg_focus_areas_comprehensive_list: string | null;
+  of_emails: number | null;
+  of_meetings: number | null;
+  total_of_contacts: number | null;
+  most_recent_contact: string | null;
 }
 
 interface ContactDrawerProps {
-  contact: Contact | null;
+  contact: ContactApp | null;
   open: boolean;
   onClose: () => void;
   onContactUpdated: () => void;
 }
 
 export function ContactDrawer({ contact, open, onClose, onContactUpdated }: ContactDrawerProps) {
-  const [notes, setNotes] = useState("");
-  const [isUpdating, setIsUpdating] = useState(false);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (contact) {
-      setNotes(contact.notes || "");
-    }
-  }, [contact]);
-
-  const handleSaveNotes = async () => {
-    if (!contact) return;
-
-    try {
-      setIsUpdating(true);
-      
-      // Update notes in contacts_raw table
-      const { error } = await supabase
-        .from("contacts_raw")
-        .update({ 
-          notes: notes,
-          updated_at: new Date().toISOString()
-        })
-        .eq("email_address", contact.email);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Notes updated successfully",
-      });
-
-      onContactUpdated();
-    } catch (error) {
-      console.error("Error updating notes:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update notes",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   const formatDate = (dateString: string) => {
     if (!dateString || dateString === "1970-01-01T00:00:00+00:00") return "Never";
@@ -138,7 +85,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <Label className="text-sm font-medium">Email</Label>
-                  <p className="text-sm text-muted-foreground">{contact.email || "—"}</p>
+                  <p className="text-sm text-muted-foreground">{contact.email_address || "—"}</p>
                 </div>
               </div>
 
@@ -154,7 +101,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 <Target className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <Label className="text-sm font-medium">Focus Areas</Label>
-                  <p className="text-sm text-muted-foreground">{contact.focus_areas || "—"}</p>
+                  <p className="text-sm text-muted-foreground">{contact.lg_focus_areas_comprehensive_list || "—"}</p>
                 </div>
               </div>
 
@@ -163,12 +110,12 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 <div>
                   <Label className="text-sm font-medium">Last Touch</Label>
                   <p className="text-sm text-muted-foreground">
-                    {formatRelativeTime(contact.last_touch)}
-                    {contact.last_touch && contact.last_touch !== "1970-01-01T00:00:00+00:00" && (
-                      <span className="block text-xs">
-                        {formatDate(contact.last_touch)}
-                      </span>
-                    )}
+                     {formatRelativeTime(contact.most_recent_contact || "")}
+                     {contact.most_recent_contact && contact.most_recent_contact !== "1970-01-01T00:00:00+00:00" && (
+                       <span className="block text-xs">
+                         {formatDate(contact.most_recent_contact)}
+                       </span>
+                     )}
                   </p>
                 </div>
               </div>
@@ -183,59 +130,28 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
             
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
-                <Badge variant="outline" className="mb-2">
-                  {contact.emails_count || 0}
-                </Badge>
-                <p className="text-sm text-muted-foreground">Emails</p>
-              </div>
-              
-              <div className="text-center">
-                <Badge variant="outline" className="mb-2">
-                  {contact.meetings_count || 0}
-                </Badge>
-                <p className="text-sm text-muted-foreground">Meetings</p>
-              </div>
-              
-              <div className="text-center">
-                <Badge variant="outline" className="mb-2">
-                  {contact.opportunities_count || 0}
-                </Badge>
-                <p className="text-sm text-muted-foreground">Opportunities</p>
+                 <Badge variant="outline" className="mb-2">
+                   {contact.of_emails || 0}
+                 </Badge>
+                 <p className="text-sm text-muted-foreground">Emails</p>
+               </div>
+               
+               <div className="text-center">
+                 <Badge variant="outline" className="mb-2">
+                   {contact.of_meetings || 0}
+                 </Badge>
+                 <p className="text-sm text-muted-foreground">Meetings</p>
+               </div>
+               
+               <div className="text-center">
+                 <Badge variant="outline" className="mb-2">
+                   {contact.total_of_contacts || 0}
+                 </Badge>
+                 <p className="text-sm text-muted-foreground"># of Contacts</p>
               </div>
             </div>
           </div>
 
-          <Separator />
-
-          {/* Notes Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Notes</h3>
-              <Button
-                size="sm"
-                onClick={handleSaveNotes}
-                disabled={isUpdating}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {isUpdating ? "Saving..." : "Save"}
-              </Button>
-            </div>
-            
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add notes about this contact..."
-              className="min-h-[120px] resize-none"
-            />
-          </div>
-
-          <Separator />
-
-          {/* Metadata */}
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>Created: {formatDate(contact.created_at)}</p>
-            <p>Updated: {formatDate(contact.updated_at)}</p>
-          </div>
         </div>
       </SheetContent>
     </Sheet>

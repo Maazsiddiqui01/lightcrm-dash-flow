@@ -32,7 +32,7 @@ import {
 import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
 
-interface Contact {
+interface ContactApp {
   id: string | null;
   full_name: string | null;
   email_address: string | null;
@@ -46,12 +46,12 @@ interface Contact {
 }
 
 export function ContactsTable() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contacts, setContacts] = useState<ContactApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>([]);
   const [touchedInDays, setTouchedInDays] = useState<string>("all");
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [selectedContact, setSelectedContact] = useState<ContactApp | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 25;
@@ -269,7 +269,7 @@ export function ContactsTable() {
                   <TableHead>Focus Areas</TableHead>
                   <TableHead>Emails</TableHead>
                   <TableHead>Meetings</TableHead>
-                  <TableHead>Opportunities</TableHead>
+                  <TableHead># of Contacts</TableHead>
                   <TableHead>Last Touch</TableHead>
                 </TableRow>
               </TableHeader>
@@ -364,13 +364,12 @@ export function ContactsTable() {
         </CardContent>
       </Card>
 
-      {/* ContactDrawer temporarily disabled - needs interface update */}
-      {/* <ContactDrawer
+      <ContactDrawer
         contact={selectedContact}
         open={!!selectedContact}
         onClose={() => setSelectedContact(null)}
         onContactUpdated={handleContactUpdated}
-      /> */}
+      />
 
       <AddContactDialog
         open={showAddDialog}
