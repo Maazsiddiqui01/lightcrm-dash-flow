@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Database } from "@/integrations/supabase/types";
 import {
   Table,
   TableBody,
@@ -32,20 +33,16 @@ import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
 
 interface Contact {
-  id: string;
-  full_name: string;
-  title: string;
-  email: string;
-  organization: string;
-  opportunities_count: number;
-  meetings_count: number;
-  emails_count: number;
-  last_touch: string;
-  focus_areas: string;
-  notes: string;
-  created_at: string;
-  updated_at: string;
-  no_of_lg_focus_areas: number;
+  id: string | null;
+  full_name: string | null;
+  email_address: string | null;
+  organization: string | null;
+  title: string | null;
+  lg_focus_areas_comprehensive_list: string | null;
+  of_emails: number | null;
+  of_meetings: number | null;
+  total_of_contacts: number | null;
+  most_recent_contact: string | null;
 }
 
 export function ContactsTable() {
@@ -69,11 +66,11 @@ export function ContactsTable() {
       setLoading(true);
       const { data, error } = await supabase
         .from("contacts_app")
-        .select("*")
-        .order("last_touch", { ascending: false });
+        .select("id, full_name, email_address, organization, title, lg_focus_areas_comprehensive_list, of_emails, of_meetings, total_of_contacts, most_recent_contact")
+        .order("most_recent_contact", { ascending: false, nullsFirst: false });
 
       if (error) throw error;
-      setContacts(data || []);
+      setContacts((data as any) || []);
     } catch (error) {
       toast({
         title: "Error",
@@ -90,7 +87,7 @@ export function ContactsTable() {
     return orgs.sort();
   }, [contacts]);
 
-  const isWithinDays = (dateString: string, days: number) => {
+  const isWithinDays = (dateString: string | null, days: number) => {
     if (!dateString || dateString === "1970-01-01T00:00:00+00:00") return false;
     const date = new Date(dateString);
     const now = new Date();
@@ -104,7 +101,7 @@ export function ContactsTable() {
       // Search filter
       const searchMatch = searchTerm === "" || 
         contact.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        contact.email_address?.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Organization filter
       const orgMatch = selectedOrganizations.length === 0 || 
@@ -114,7 +111,7 @@ export function ContactsTable() {
       let touchMatch = true;
       if (touchedInDays !== "all") {
         const days = parseInt(touchedInDays);
-        touchMatch = isWithinDays(contact.last_touch, days);
+        touchMatch = isWithinDays(contact.most_recent_contact, days);
       }
 
       return searchMatch && orgMatch && touchMatch;
@@ -128,7 +125,7 @@ export function ContactsTable() {
 
   const totalPages = Math.ceil(filteredContacts.length / rowsPerPage);
 
-  const formatRelativeTime = (dateString: string) => {
+  const formatRelativeTime = (dateString: string | null) => {
     if (!dateString || dateString === "1970-01-01T00:00:00+00:00") return "Never";
     
     const date = new Date(dateString);
@@ -301,32 +298,32 @@ export function ContactsTable() {
                         {contact.full_name || "Unknown"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {contact.email || "—"}
+                        {contact.email_address || "—"}
                       </TableCell>
                       <TableCell>{contact.organization || "—"}</TableCell>
                       <TableCell>{contact.title || "—"}</TableCell>
                       <TableCell>
                         <div className="max-w-xs truncate">
-                          {contact.focus_areas || "—"}
+                          {contact.lg_focus_areas_comprehensive_list || "—"}
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {contact.emails_count || 0}
+                          {contact.of_emails || 0}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {contact.meetings_count || 0}
+                          {contact.of_meetings || 0}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {contact.opportunities_count || 0}
+                          {contact.total_of_contacts || 0}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {formatRelativeTime(contact.last_touch)}
+                        {formatRelativeTime(contact.most_recent_contact)}
                       </TableCell>
                     </TableRow>
                   ))
@@ -367,12 +364,13 @@ export function ContactsTable() {
         </CardContent>
       </Card>
 
-      <ContactDrawer
+      {/* ContactDrawer temporarily disabled - needs interface update */}
+      {/* <ContactDrawer
         contact={selectedContact}
         open={!!selectedContact}
         onClose={() => setSelectedContact(null)}
         onContactUpdated={handleContactUpdated}
-      />
+      /> */}
 
       <AddContactDialog
         open={showAddDialog}
