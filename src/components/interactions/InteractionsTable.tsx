@@ -12,8 +12,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, MessageSquare, Mail, Calendar, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Search, MessageSquare, Mail, Calendar, Users, Plus, Filter, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InteractionDrawer } from "./InteractionDrawer";
+import { AddInteractionDialog } from "./AddInteractionDialog";
 
 interface Interaction {
   id: string;
@@ -34,6 +39,12 @@ export function InteractionsTable() {
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<string>("");
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedInteraction, setSelectedInteraction] = useState<Interaction | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const itemsPerPage = 25;
   const { toast } = useToast();
 
   useEffect(() => {
@@ -61,11 +72,35 @@ export function InteractionsTable() {
     }
   };
 
-  const filteredInteractions = interactions.filter((interaction) =>
-    Object.values(interaction).some((value) =>
-      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  const filteredInteractions = interactions.filter((interaction) => {
+    // Search filter (Subject and From Email)
+    const searchMatch = searchTerm === "" || 
+      interaction.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      interaction.from_email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Source filter
+    const sourceMatch = !sourceFilter || interaction.source === sourceFilter;
+
+    // Date range filter
+    const dateMatch = (!dateRange.from && !dateRange.to) || (() => {
+      const occurrenceDate = new Date(interaction.occurred_at);
+      const fromDate = dateRange.from ? new Date(dateRange.from) : null;
+      const toDate = dateRange.to ? new Date(dateRange.to) : null;
+      
+      return (!fromDate || occurrenceDate >= fromDate) && 
+             (!toDate || occurrenceDate <= toDate);
+    })();
+
+    return searchMatch && sourceMatch && dateMatch;
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredInteractions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedInteractions = filteredInteractions.slice(startIndex, startIndex + itemsPerPage);
+
+  // Get unique sources for filter dropdown
+  const uniqueSources = Array.from(new Set(interactions.map(i => i.source).filter(Boolean)));
 
   const getSourceColor = (source: string) => {
     switch (source?.toLowerCase()) {
@@ -91,6 +126,18 @@ export function InteractionsTable() {
     });
   };
 
+  const handleRowClick = (interaction: Interaction) => {
+    setSelectedInteraction(interaction);
+    setIsDrawerOpen(true);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSourceFilter("");
+    setDateRange({ from: "", to: "" });
+    setCurrentPage(1);
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -111,56 +158,112 @@ export function InteractionsTable() {
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <MessageSquare className="h-5 w-5" />
-            <span>Interactions ({filteredInteractions.length})</span>
-          </CardTitle>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search interactions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardHeader>
+    <>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center space-x-2">
+                <MessageSquare className="h-5 w-5" />
+                <span>Interactions ({filteredInteractions.length})</span>
+              </CardTitle>
+              <AddInteractionDialog onInteractionAdded={fetchInteractions} />
+            </div>
+            
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search subject and from email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="All Sources" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Sources</SelectItem>
+                  {uniqueSources.map((source) => (
+                    <SelectItem key={source} value={source}>
+                      {source}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Input
+                type="date"
+                placeholder="From date"
+                value={dateRange.from}
+                onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
+                className="w-[150px]"
+              />
+              
+              <Input
+                type="date"
+                placeholder="To date"
+                value={dateRange.to}
+                onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
+                className="w-[150px]"
+              />
+
+              {(searchTerm || sourceFilter || dateRange.from || dateRange.to) && (
+                <Button variant="outline" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-2" />
+                  Clear
+                </Button>
+              )}
+            </div>
+          </CardHeader>
         <CardContent>
           <div className="rounded-md border">
             <Table>
               <TableHeader className="bg-table-header">
                 <TableRow>
+                  <TableHead>Occurred At</TableHead>
                   <TableHead>Subject</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>From</TableHead>
-                  <TableHead>To</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>From Name</TableHead>
+                  <TableHead>From Email</TableHead>
+                  <TableHead>To Emails</TableHead>
+                  <TableHead>CC Emails</TableHead>
                   <TableHead>Organization</TableHead>
-                  <TableHead>Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInteractions.length === 0 ? (
+                {paginatedInteractions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       <div className="flex flex-col items-center space-y-2">
                         <MessageSquare className="h-8 w-8 text-muted-foreground" />
                         <p className="text-muted-foreground">
-                          {searchTerm ? "No interactions found" : "No interactions yet"}
+                          {searchTerm || sourceFilter || dateRange.from || dateRange.to ? "No interactions found matching filters" : "No interactions yet"}
                         </p>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredInteractions.map((interaction) => (
+                  paginatedInteractions.map((interaction) => (
                     <TableRow
                       key={interaction.id}
                       className="hover:bg-table-row-hover transition-colors cursor-pointer"
+                      onClick={() => handleRowClick(interaction)}
                     >
+                      <TableCell>
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">
+                            {formatDate(interaction.occurred_at)}
+                          </span>
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">
-                        <div className="max-w-sm">
+                        <div className="max-w-xs">
                           <div className="font-medium truncate">
                             {interaction.subject || "No Subject"}
                           </div>
@@ -177,22 +280,30 @@ export function InteractionsTable() {
                       </TableCell>
                       <TableCell>
                         <div className="max-w-xs">
-                          <div className="font-medium truncate">
+                          <span className="text-sm truncate">
                             {interaction.from_name || "Unknown"}
-                          </div>
-                          <div className="text-sm text-muted-foreground truncate">
-                            {interaction.from_email}
-                          </div>
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="max-w-xs">
-                          <div className="text-sm truncate">
-                            {interaction.to_names || "—"}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {interaction.to_emails}
-                          </div>
+                          <span className="text-sm text-muted-foreground truncate">
+                            {interaction.from_email || "—"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs">
+                          <span className="text-sm text-muted-foreground truncate">
+                            {interaction.to_emails || "—"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs">
+                          <span className="text-sm text-muted-foreground truncate">
+                            {interaction.cc_emails || "—"}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -200,22 +311,58 @@ export function InteractionsTable() {
                           {interaction.organization || "—"}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">
-                            {formatDate(interaction.occurred_at)}
-                          </span>
-                        </div>
-                      </TableCell>
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
           </div>
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredInteractions.length)} of {filteredInteractions.length} interactions
+              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+
+      <InteractionDrawer
+        interaction={selectedInteraction}
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        onUpdate={fetchInteractions}
+      />
+    </>
   );
 }
