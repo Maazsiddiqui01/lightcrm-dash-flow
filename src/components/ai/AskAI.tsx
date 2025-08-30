@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bot, Send, MessageCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Bot, Send, MessageCircle, Settings, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -10,6 +14,8 @@ interface Message {
   content: string;
   isUser: boolean;
   timestamp: Date;
+  format?: 'text' | 'json' | 'table' | 'csv' | 'rendered' | 'error';
+  data?: any;
 }
 
 export function AskAI() {
@@ -22,11 +28,10 @@ export function AskAI() {
     },
   ]);
   const [input, setInput] = useState("");
+  const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
+  const [selectedOutput, setSelectedOutput] = useState("json");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  // Configurable endpoint - can be updated later for Supabase Edge Function
-  const AI_ENDPOINT = "/functions/v1/ai_tools";
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -44,57 +49,151 @@ export function AskAI() {
     setIsLoading(true);
 
     try {
-      // Call the AI endpoint
-      const response = await fetch(AI_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: currentInput }),
-      });
+      const body = { 
+        message: currentInput, 
+        model: selectedModel, 
+        output: selectedOutput 
+      };
 
-      let aiResponseText = "";
-      
-      if (response.ok) {
-        const data = await response.text();
-        
-        // Try to parse as JSON first, fall back to text
-        try {
-          const jsonData = JSON.parse(data);
-          aiResponseText = typeof jsonData === 'string' ? jsonData : JSON.stringify(jsonData, null, 2);
-        } catch {
-          aiResponseText = data;
-        }
+      const { data, error } = await supabase.functions.invoke("ai_tools", { body });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Determine response format and content
+      let content = '';
+      let format: Message['format'] = 'text';
+
+      if (data.rendered) {
+        format = 'rendered';
+        content = data.rendered;
+      } else if (data.rows && Array.isArray(data.rows)) {
+        format = 'table';
+        content = `Table with ${data.rows.length} rows`;
+      } else if (data.csv) {
+        format = 'csv';
+        content = data.csv;
+      } else if (data.format === 'error') {
+        format = 'error';
+        content = data.error || 'An error occurred';
+      } else if (typeof data === 'object') {
+        format = 'json';
+        content = JSON.stringify(data, null, 2);
       } else {
-        aiResponseText = `Error: ${response.status} - ${response.statusText}. The AI endpoint is not yet configured.`;
+        content = String(data);
       }
 
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: aiResponseText,
+        content,
         isUser: false,
         timestamp: new Date(),
+        format,
+        data,
       };
 
       setMessages((prev) => [...prev, aiResponse]);
+
     } catch (error) {
+      console.error('Error calling AI:', error);
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `Connection error: ${error instanceof Error ? error.message : 'Unknown error'}. The AI endpoint will be configured later with OpenAI integration.`,
+        content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         isUser: false,
         timestamp: new Date(),
+        format: 'error',
       };
 
       setMessages((prev) => [...prev, errorMessage]);
       
       toast({
-        title: "Connection Error",
-        description: "The AI endpoint is not yet configured. This will be set up with OpenAI integration.",
+        title: "Error",
+        description: "Failed to get AI response. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const renderMessageContent = (message: Message) => {
+    const { format, data } = message;
+
+    // Handle rendered content
+    if (format === 'rendered' && data?.rendered) {
+      return (
+        <div className="prose prose-sm max-w-none">
+          <div dangerouslySetInnerHTML={{ __html: data.rendered }} />
+        </div>
+      );
+    }
+
+    // Handle table format
+    if (format === 'table' && data?.rows && Array.isArray(data.rows) && data.rows.length > 0) {
+      const headers = Object.keys(data.rows[0]);
+      return (
+        <div className="my-2">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {headers.map((header) => (
+                    <TableHead key={header} className="capitalize">
+                      {header.replace(/_/g, ' ')}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.rows.slice(0, 10).map((row: any, index: number) => (
+                  <TableRow key={index}>
+                    {headers.map((header) => (
+                      <TableCell key={header}>
+                        {row[header] || '—'}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {data.rows.length > 10 && (
+              <div className="p-2 text-center text-sm text-muted-foreground border-t">
+                Showing first 10 of {data.rows.length} rows
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Handle CSV format
+    if (format === 'csv' && data?.csv) {
+      return (
+        <div className="my-2">
+          <pre className="bg-background border rounded p-3 text-sm overflow-x-auto">
+            {data.csv}
+          </pre>
+        </div>
+      );
+    }
+
+    // Handle error format
+    if (format === 'error') {
+      return (
+        <div className="text-destructive text-sm">
+          {message.content}
+        </div>
+      );
+    }
+
+    // Default to text
+    return (
+      <div className="text-sm whitespace-pre-wrap">
+        {message.content}
+      </div>
+    );
   };
 
 
@@ -108,6 +207,43 @@ export function AskAI() {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col flex-1">
+          {/* Configuration Controls */}
+          <div className="flex flex-col md:flex-row gap-4 mb-4 p-3 bg-muted rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Settings className="h-4 w-4" />
+              <span className="text-sm font-medium">Settings:</span>
+            </div>
+            
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">Model</label>
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
+                    <SelectItem value="gpt-4.1-2025-04-14">GPT-4.1</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">Output Format</label>
+                <Select value={selectedOutput} onValueChange={setSelectedOutput}>
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="json">JSON</SelectItem>
+                    <SelectItem value="table">Table</SelectItem>
+                    <SelectItem value="csv">CSV</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
           <div className="flex-1 overflow-y-auto space-y-4 mb-4">
             {messages.map((message) => (
               <div
@@ -115,13 +251,24 @@ export function AskAI() {
                 className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  className={`max-w-xs lg:max-w-2xl px-4 py-2 rounded-lg ${
                     message.isUser
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  <p className="text-sm">{message.content}</p>
+                  {message.isUser ? (
+                    <p className="text-sm">{message.content}</p>
+                  ) : (
+                    <div>
+                      {message.format && message.format !== 'text' && (
+                        <Badge variant="outline" className="mb-2">
+                          {message.format}
+                        </Badge>
+                      )}
+                      {renderMessageContent(message)}
+                    </div>
+                  )}
                   <p className="text-xs opacity-70 mt-1">
                     {message.timestamp.toLocaleTimeString()}
                   </p>
@@ -132,7 +279,7 @@ export function AskAI() {
               <div className="flex justify-start">
                 <div className="bg-muted text-muted-foreground px-4 py-2 rounded-lg">
                   <div className="flex items-center space-x-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     <span className="text-sm">AI is thinking...</span>
                   </div>
                 </div>
