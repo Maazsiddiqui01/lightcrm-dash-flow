@@ -21,7 +21,7 @@ interface ContactApp {
   lg_focus_areas_comprehensive_list: string | null;
   of_emails: number | null;
   of_meetings: number | null;
-  total_of_contacts: number | null;
+  all_opps: number | null;
   most_recent_contact: string | null;
 }
 
@@ -227,7 +227,7 @@ export function ContactsTable() {
       )
     },
     {
-      key: "total_of_contacts",
+      key: "all_opps",
       label: "Opportunities",
       width: 120,
       minWidth: 100,
@@ -277,7 +277,7 @@ export function ContactsTable() {
     },
     {
       name: "Wide",
-      columns: ["full_name", "email_address", "organization", "title", "lg_focus_areas_comprehensive_list", "of_emails", "of_meetings", "total_of_contacts", "most_recent_contact"]
+      columns: ["full_name", "email_address", "organization", "title", "lg_focus_areas_comprehensive_list", "of_emails", "of_meetings", "all_opps", "most_recent_contact"]
     }
   ];
 

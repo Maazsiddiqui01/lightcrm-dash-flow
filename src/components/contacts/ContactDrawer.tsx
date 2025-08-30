@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Mail, Building, Target, Calendar, Loader2 } from "lucide-react";
+import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink } from "lucide-react";
 
 interface ContactRaw {
   id: string;
@@ -53,8 +53,18 @@ interface ContactApp {
   lg_focus_areas_comprehensive_list: string | null;
   of_emails: number | null;
   of_meetings: number | null;
-  total_of_contacts: number | null;
+  all_opps: number | null;
   most_recent_contact: string | null;
+}
+
+interface Interaction {
+  id: string;
+  occurred_at: string;
+  subject: string;
+  source: string;
+  from_email: string;
+  to_emails: string;
+  cc_emails: string;
 }
 
 interface ContactDrawerProps {
@@ -66,7 +76,9 @@ interface ContactDrawerProps {
 
 export function ContactDrawer({ contact, open, onClose, onContactUpdated }: ContactDrawerProps) {
   const [contactData, setContactData] = useState<ContactRaw | null>(null);
+  const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingInteractions, setLoadingInteractions] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -77,6 +89,13 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     }
   }, [contact?.id, open]);
 
+  // Load interactions when contact email changes
+  useEffect(() => {
+    if (contactData?.email_address && open) {
+      loadInteractions(contactData.email_address);
+    }
+  }, [contactData?.email_address, open]);
+
   const loadContactData = async (contactId: string) => {
     try {
       setLoading(true);
@@ -86,10 +105,23 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
         .eq("id", contactId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error({ where: 'ContactDrawer', contactId, error });
+        if (error.code === 'PGRST116') {
+          toast({
+            title: "Contact not found",
+            description: "This contact record could not be found.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
+      
       setContactData(data);
     } catch (error) {
-      console.error("Error loading contact:", error);
+      console.error({ where: 'ContactDrawer', contactId, error });
       toast({
         title: "Error",
         description: "Failed to load contact details",
@@ -97,6 +129,30 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadInteractions = async (email: string) => {
+    try {
+      setLoadingInteractions(true);
+      const { data, error } = await supabase
+        .from('interactions_app')
+        .select('id, occurred_at, subject, source, from_email, to_emails, cc_emails')
+        .or(`from_email.eq.${email.toLowerCase()},to_emails.ilike.%${email.toLowerCase()}%,cc_emails.ilike.%${email.toLowerCase()}%`)
+        .order('occurred_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      setInteractions(data || []);
+    } catch (error) {
+      console.error({ where: 'ContactDrawer', email, error });
+      toast({
+        title: "Error",
+        description: "Failed to load interaction history",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingInteractions(false);
     }
   };
 
@@ -118,7 +174,10 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
         .update(updateData)
         .eq("id", contactData.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error({ where: 'ContactDrawer', contactId: contactData.id, error });
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -128,7 +187,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
       onContactUpdated();
       onClose();
     } catch (error) {
-      console.error("Error updating contact:", error);
+      console.error({ where: 'ContactDrawer', contactId: contactData?.id, error });
       toast({
         title: "Error",
         description: "Failed to update contact",
@@ -155,7 +214,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:w-[600px] sm:max-w-[600px] overflow-y-auto">
+      <SheetContent className="w-full sm:w-[560px] sm:max-w-[560px] overflow-y-auto">
         <SheetHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -167,19 +226,6 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 <SheetDescription>{contact.full_name || "Unknown Contact"}</SheetDescription>
               </div>
             </div>
-            <Button onClick={handleSave} disabled={saving || loading}>
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save
-                </>
-              )}
-            </Button>
           </div>
         </SheetHeader>
 
@@ -381,12 +427,84 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 />
               </div>
             </div>
+
+            <Separator />
+
+            {/* Interaction Timeline */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Recent Interactions</h3>
+                {loadingInteractions && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+              </div>
+              
+              {interactions.length > 0 ? (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {interactions.map((interaction) => (
+                    <div key={interaction.id} className="p-3 border rounded-lg bg-muted/5">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <Badge variant={interaction.source.includes('email') ? 'default' : 'secondary'} className="text-xs">
+                            {interaction.source}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(interaction.occurred_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <p className="font-medium text-sm mb-1">{interaction.subject}</p>
+                      
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div>From: {interaction.from_email}</div>
+                        {interaction.to_emails && (
+                          <div>To: {interaction.to_emails}</div>
+                        )}
+                        {interaction.cc_emails && (
+                          <div>CC: {interaction.cc_emails}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">No recent interactions found</p>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-2 pt-4">
+              <Button onClick={handleSave} disabled={saving || loading} className="flex-1">
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save
+                  </>
+                )}
+              </Button>
+              <Button variant="ghost" onClick={onClose} disabled={saving}>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+            </div>
           </div>
-        ) : (
+        ) : !loading ? (
           <div className="flex items-center justify-center py-8">
             <p className="text-muted-foreground">Contact not found</p>
           </div>
-        )}
+        ) : null}
       </SheetContent>
     </Sheet>
   );
