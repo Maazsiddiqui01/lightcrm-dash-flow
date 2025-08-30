@@ -79,7 +79,7 @@ export function InteractionsTable() {
       interaction.from_email?.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Source filter
-    const sourceMatch = !sourceFilter || interaction.source === sourceFilter;
+    const sourceMatch = sourceFilter === "all" || !sourceFilter || interaction.source === sourceFilter;
 
     // Date range filter
     const dateMatch = (!dateRange.from && !dateRange.to) || (() => {
@@ -133,7 +133,7 @@ export function InteractionsTable() {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setSourceFilter("");
+    setSourceFilter("all");
     setDateRange({ from: "", to: "" });
     setCurrentPage(1);
   };
@@ -187,7 +187,7 @@ export function InteractionsTable() {
                   <SelectValue placeholder="All Sources" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sources</SelectItem>
+                  <SelectItem value="all">All Sources</SelectItem>
                   {uniqueSources.map((source) => (
                     <SelectItem key={source} value={source}>
                       {source}
