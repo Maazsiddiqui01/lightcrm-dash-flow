@@ -220,14 +220,14 @@ export function OpportunitiesTable() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
+      <Card className="elevation-1">
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <Target className="h-5 w-5" />
-              <span>Opportunities ({filteredOpportunities.length})</span>
-            </CardTitle>
-            <Button onClick={() => setShowAddDialog(true)}>
+            <div className="flex items-center space-x-2">
+              <Target className="h-5 w-5 text-primary" />
+              <span className="font-medium">Opportunities ({filteredOpportunities.length})</span>
+            </div>
+            <Button onClick={() => setShowAddDialog(true)} className="focus-ring">
               <Plus className="h-4 w-4 mr-2" />
               Add Opportunity
             </Button>

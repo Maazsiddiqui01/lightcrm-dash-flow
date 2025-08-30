@@ -198,9 +198,16 @@ export function AskAI() {
 
 
   return (
-    <div className="space-y-4">
-      <Card className="h-[600px] flex flex-col">
-        <CardHeader>
+    <div className="p-6 space-y-6">
+      <div>
+        <h3 className="text-section-title">AI Assistant</h3>
+        <p className="text-meta mt-1">
+          Get insights and analysis from your CRM data using artificial intelligence
+        </p>
+      </div>
+
+      <Card className="h-[600px] flex flex-col elevation-1">
+        <CardHeader className="pb-3">
           <CardTitle className="flex items-center space-x-2">
             <Bot className="h-5 w-5 text-primary" />
             <span>AI Assistant</span>
