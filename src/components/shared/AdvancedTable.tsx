@@ -128,8 +128,9 @@ export function AdvancedTable<T extends Record<string, any>>({
   }, [data.length]);
 
   // Pagination logic
-  const totalPages = Math.ceil(data.length / pageSize);
+  const totalPages = Math.ceil((data?.length || 0) / pageSize);
   const paginatedData = useMemo(() => {
+    if (!data || !Array.isArray(data)) return [];
     const start = (currentPage - 1) * pageSize;
     return data.slice(start, start + pageSize);
   }, [data, currentPage, pageSize]);
