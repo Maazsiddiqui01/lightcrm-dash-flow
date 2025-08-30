@@ -22,6 +22,34 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Virtual scrolling hook for large datasets
+const useVirtualized = (items: any[], itemHeight = 48, containerHeight = 600) => {
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
+
+  const visibleStart = Math.floor(scrollTop / itemHeight);
+  const visibleEnd = Math.min(
+    visibleStart + Math.ceil(containerHeight / itemHeight) + 1,
+    items.length
+  );
+
+  const virtualItems = items.slice(visibleStart, visibleEnd).map((item, index) => ({
+    ...item,
+    virtualIndex: visibleStart + index
+  }));
+
+  const totalHeight = items.length * itemHeight;
+  const offsetY = visibleStart * itemHeight;
+
+  return {
+    virtualItems,
+    totalHeight,
+    offsetY,
+    setScrollTop,
+    containerRef: setContainerRef
+  };
+};
+
 export interface ColumnDef<T = any> {
   key: string;
   label: string;
@@ -89,7 +117,27 @@ export function AdvancedTable<T extends Record<string, any>>({
   const [columns, setColumns] = useState(initialColumns);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [resizing, setResizing] = useState<{ key: string; startX: number; startWidth: number } | null>(null);
+  const [shouldUseVirtualization, setShouldUseVirtualization] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
+
+  // Check if we should use virtualization
+  useEffect(() => {
+    setShouldUseVirtualization(data.length > 500);
+  }, [data.length]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(data.length / pageSize);
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return data.slice(start, start + pageSize);
+  }, [data, currentPage, pageSize]);
+
+  // Virtualization setup
+  const { virtualItems, totalHeight, offsetY, setScrollTop } = useVirtualized(
+    paginatedData, 
+    48, 
+    600
+  );
 
   // Load persisted column state
   useEffect(() => {
@@ -151,13 +199,6 @@ export function AdvancedTable<T extends Record<string, any>>({
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [resizing, columns, columnWidths]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(data.length / pageSize);
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return data.slice(start, start + pageSize);
-  }, [data, currentPage, pageSize]);
 
   // Reset page when data changes
   useEffect(() => {
@@ -444,39 +485,85 @@ export function AdvancedTable<T extends Record<string, any>>({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedData.map((row, rowIndex) => (
-                  <TableRow
-                    key={row.id || rowIndex}
-                    className={cn(
-                      "h-12 hover:bg-muted/50 cursor-pointer transition-colors border-b",
-                      rowIndex % 2 === 1 && "bg-muted/20",
-                      onRowClick && "focus:bg-muted/70 focus:outline-none"
-                    )}
-                    onClick={() => onRowClick?.(row)}
-                    onKeyDown={(e) => handleKeyDown(e, row, rowIndex)}
-                    tabIndex={onRowClick ? 0 : -1}
-                    role={onRowClick ? "button" : undefined}
-                  >
-                    {visibleColumns.map((column) => (
-                      <TableCell
-                        key={column.key}
+                {shouldUseVirtualization ? (
+                  // Virtualized rendering for large datasets
+                  <>
+                    <TableRow style={{ height: offsetY }}>
+                      <TableCell colSpan={visibleColumns.length} className="p-0 border-0" />
+                    </TableRow>
+                    {virtualItems.map((row) => (
+                      <TableRow
+                        key={row.id || row.virtualIndex}
                         className={cn(
-                          "py-2 px-4",
-                          column.sticky && "sticky left-0 z-10 bg-background",
-                          column.className
+                          "h-12 hover:bg-muted/50 cursor-pointer transition-colors border-b",
+                          row.virtualIndex % 2 === 1 && "bg-muted/20",
+                          onRowClick && "focus:bg-muted/70 focus:outline-none"
                         )}
-                        style={{ 
-                          width: columnWidths[column.key] || column.width,
-                          minWidth: column.minWidth || 80
-                        }}
+                        onClick={() => onRowClick?.(row)}
+                        onKeyDown={(e) => handleKeyDown(e, row, row.virtualIndex)}
+                        tabIndex={onRowClick ? 0 : -1}
+                        role={onRowClick ? "button" : undefined}
                       >
-                        {column.render ? column.render(row[column.key], row) : (
-                          <span className="truncate block">{row[column.key]}</span>
-                        )}
-                      </TableCell>
+                        {visibleColumns.map((column) => (
+                          <TableCell
+                            key={column.key}
+                            className={cn(
+                              "py-2 px-4",
+                              column.sticky && "sticky left-0 z-10 bg-background",
+                              column.className
+                            )}
+                            style={{ 
+                              width: columnWidths[column.key] || column.width,
+                              minWidth: column.minWidth || 80
+                            }}
+                          >
+                            {column.render ? column.render(row[column.key], row) : (
+                              <span className="truncate block">{row[column.key]}</span>
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
                     ))}
-                  </TableRow>
-                ))}
+                    <TableRow style={{ height: totalHeight - offsetY - (virtualItems.length * 48) }}>
+                      <TableCell colSpan={visibleColumns.length} className="p-0 border-0" />
+                    </TableRow>
+                  </>
+                ) : (
+                  // Standard rendering for smaller datasets
+                  paginatedData.map((row, rowIndex) => (
+                    <TableRow
+                      key={row.id || rowIndex}
+                      className={cn(
+                        "h-12 hover:bg-muted/50 cursor-pointer transition-colors border-b",
+                        rowIndex % 2 === 1 && "bg-muted/20",
+                        onRowClick && "focus:bg-muted/70 focus:outline-none"
+                      )}
+                      onClick={() => onRowClick?.(row)}
+                      onKeyDown={(e) => handleKeyDown(e, row, rowIndex)}
+                      tabIndex={onRowClick ? 0 : -1}
+                      role={onRowClick ? "button" : undefined}
+                    >
+                      {visibleColumns.map((column) => (
+                        <TableCell
+                          key={column.key}
+                          className={cn(
+                            "py-2 px-4",
+                            column.sticky && "sticky left-0 z-10 bg-background",
+                            column.className
+                          )}
+                          style={{ 
+                            width: columnWidths[column.key] || column.width,
+                            minWidth: column.minWidth || 80
+                          }}
+                        >
+                          {column.render ? column.render(row[column.key], row) : (
+                            <span className="truncate block">{row[column.key]}</span>
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
