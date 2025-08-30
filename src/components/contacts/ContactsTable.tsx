@@ -3,14 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdvancedTable, ColumnDef, TablePreset } from "@/components/shared/AdvancedTable";
 import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
+import { FilterModal, ActiveFilters } from "@/components/shared/FilterModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Filter, Plus, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { useDistinctValues } from "@/hooks/useDistinctValues";
 
 interface ContactApp {
   id: string;
@@ -19,6 +19,7 @@ interface ContactApp {
   organization: string | null;
   title: string | null;
   lg_focus_areas_comprehensive_list: string | null;
+  areas_of_specialization: string | null;
   of_emails: number | null;
   of_meetings: number | null;
   all_opps: number | null;
@@ -29,17 +30,43 @@ export function ContactsTable() {
   const [contacts, setContacts] = useState<ContactApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>([]);
-  const [touchedInDays, setTouchedInDays] = useState("all");
   const [selectedContact, setSelectedContact] = useState<ContactApp | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string>("most_recent_contact");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const { toast } = useToast();
+  
+  // Advanced filters
+  const { filters, updateFilters, clearFilters, removeFilter } = useUrlFilters({
+    organizations: [],
+    focusAreas: [],
+    specializations: []
+  });
+  
+  // Fetch distinct values for filters
+  const { values: organizationOptions } = useDistinctValues({
+    table: 'contacts_app',
+    column: 'organization',
+    searchTerm: ''
+  });
+  
+  const { values: focusAreaOptions } = useDistinctValues({
+    table: 'contacts_app',
+    column: 'lg_focus_areas_comprehensive_list',
+    searchTerm: '',
+    isTextArray: true
+  });
+  
+  const { values: specializationOptions } = useDistinctValues({
+    table: 'contacts_app',
+    column: 'areas_of_specialization',
+    searchTerm: '',
+    isTextArray: true
+  });
 
   useEffect(() => {
     fetchContacts();
-  }, [sortKey, sortDirection]);
+  }, [sortKey, sortDirection, filters]);
 
   const fetchContacts = async () => {
     try {
@@ -47,6 +74,25 @@ export function ContactsTable() {
       let query = supabase
         .from("contacts_app")
         .select("*");
+
+      // Apply filters
+      const orgs = filters.organizations as string[] || [];
+      const focusAreas = filters.focusAreas as string[] || [];
+      const specializations = filters.specializations as string[] || [];
+      
+      if (orgs.length > 0) {
+        query = query.in('organization', orgs);
+      }
+      
+      if (focusAreas.length > 0) {
+        const focusQuery = focusAreas.map(fa => `lg_focus_areas_comprehensive_list.ilike.%${fa}%`).join(',');
+        query = query.or(focusQuery);
+      }
+      
+      if (specializations.length > 0) {
+        const specQuery = specializations.map(spec => `areas_of_specialization.ilike.%${spec}%`).join(',');
+        query = query.or(specQuery);
+      }
 
       if (sortKey && sortDirection) {
         query = query.order(sortKey, { 
@@ -74,15 +120,6 @@ export function ContactsTable() {
     fetchContacts();
   };
 
-  const isWithinDays = (dateString: string | null, days: number) => {
-    if (!dateString) return false;
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= days;
-  };
-
   const filteredContacts = useMemo(() => {
     return contacts.filter((contact) => {
       // Search filter
@@ -90,36 +127,55 @@ export function ContactsTable() {
         contact.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         contact.email_address?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Organization filter
-      const orgMatch = selectedOrganizations.length === 0 || 
-        (contact.organization && selectedOrganizations.includes(contact.organization));
-
-      // Touch filter
-      let touchMatch = true;
-      if (touchedInDays !== "all") {
-        const days = parseInt(touchedInDays);
-        touchMatch = isWithinDays(contact.most_recent_contact, days);
-      }
-
-      return searchMatch && orgMatch && touchMatch;
+      return searchMatch;
     });
-  }, [contacts, searchTerm, selectedOrganizations, touchedInDays]);
+  }, [contacts, searchTerm]);
 
-  const uniqueOrganizations = useMemo(() => {
-    return Array.from(new Set(
-      contacts
-        .map(contact => contact.organization)
-        .filter(Boolean)
-    )).sort();
-  }, [contacts]);
+  // Create filter field definitions
+  const filterFields = [
+    {
+      key: 'organizations',
+      label: 'Organizations',
+      type: 'multi-select' as const,
+      options: organizationOptions,
+      searchable: true,
+      placeholder: 'Select organizations...'
+    },
+    {
+      key: 'focusAreas', 
+      label: 'Focus Areas',
+      type: 'multi-select' as const,
+      options: focusAreaOptions,
+      searchable: true,
+      placeholder: 'Select focus areas...'
+    },
+    {
+      key: 'specializations',
+      label: 'Areas of Specialization', 
+      type: 'multi-select' as const,
+      options: specializationOptions,
+      searchable: true,
+      placeholder: 'Select specializations...'
+    }
+  ];
+  
+  // Create active filter chips
+  const activeFilterChips = useMemo(() => {
+    const chips: Array<{ key: string; label: string; value: string }> = [];
+    
+    const orgs = filters.organizations as string[] || [];
+    orgs.forEach(org => chips.push({ key: 'organizations', label: 'Organization', value: org }));
+    
+    const focusAreas = filters.focusAreas as string[] || [];
+    focusAreas.forEach(fa => chips.push({ key: 'focusAreas', label: 'Focus Area', value: fa }));
+    
+    const specializations = filters.specializations as string[] || [];
+    specializations.forEach(spec => chips.push({ key: 'specializations', label: 'Specialization', value: spec }));
+    
+    return chips;
+  }, [filters]);
 
-  const toggleOrganization = (org: string) => {
-    setSelectedOrganizations(prev => 
-      prev.includes(org) 
-        ? prev.filter(o => o !== org)
-        : [...prev, org]
-    );
-  };
+  const activeFilterCount = activeFilterChips.length;
 
   const handleRowClick = (contact: ContactApp) => {
     setSelectedContact(contact);
@@ -129,6 +185,14 @@ export function ContactsTable() {
   const handleSort = (key: string, direction: 'asc' | 'desc' | null) => {
     setSortKey(key);
     setSortDirection(direction);
+  };
+
+  const handleApplyFilters = () => {
+    // Filters are already applied through useEffect dependency on filters
+  };
+
+  const handleRemoveFilter = (key: string, value?: string) => {
+    removeFilter(key, value);
   };
 
   // Column definitions
@@ -281,85 +345,9 @@ export function ContactsTable() {
     }
   ];
 
-  // Active filters for display
-  const activeFilters = useMemo(() => {
-    const filters: { label: string; onRemove: () => void }[] = [];
-    
-    selectedOrganizations.forEach(org => {
-      filters.push({
-        label: `Org: ${org}`,
-        onRemove: () => toggleOrganization(org)
-      });
-    });
-
-    if (touchedInDays !== "all") {
-      filters.push({
-        label: `Touched in ${touchedInDays} days`,
-        onRemove: () => setTouchedInDays("all")
-      });
-    }
-
-    return filters;
-  }, [selectedOrganizations, touchedInDays]);
-
-  const clearAllFilters = () => {
-    setSelectedOrganizations([]);
-    setTouchedInDays("all");
-    setSearchTerm("");
-  };
-
-  // Filters component
-  const filtersComponent = (
-    <div className="flex items-center space-x-2">
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="focus-ring">
-            <Filter className="h-4 w-4 mr-2" />
-            Organizations
-            {selectedOrganizations.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {selectedOrganizations.length}
-              </Badge>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-80">
-          <div className="space-y-2">
-            <h4 className="font-medium">Filter by Organization</h4>
-            <div className="max-h-40 overflow-y-auto space-y-2">
-              {uniqueOrganizations.map((org) => (
-                <div key={org} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={org}
-                    checked={selectedOrganizations.includes(org)}
-                    onCheckedChange={() => toggleOrganization(org)}
-                  />
-                  <label htmlFor={org} className="text-sm">{org}</label>
-                </div>
-              ))}
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      <Select value={touchedInDays} onValueChange={setTouchedInDays}>
-        <SelectTrigger className="w-48 focus-ring">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Contacts</SelectItem>
-          <SelectItem value="7">Touched in 7 days</SelectItem>
-          <SelectItem value="30">Touched in 30 days</SelectItem>
-          <SelectItem value="90">Touched in 90 days</SelectItem>
-          <SelectItem value="365">Touched in 1 year</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
   const emptyState = {
     title: "No contacts found",
-    description: searchTerm || activeFilters.length > 0 
+    description: searchTerm || activeFilterCount > 0 
       ? "Try adjusting your search or filters to find contacts."
       : "Start building your professional network by adding your first contact.",
     action: <AddContactDialog open={false} onClose={() => {}} onContactAdded={refetch} />
@@ -374,7 +362,38 @@ export function ContactsTable() {
             {filteredContacts?.length || 0} contact{filteredContacts?.length !== 1 ? 's' : ''} total
           </p>
         </div>
+        <div className="flex items-center space-x-2">
+          <FilterModal
+            title="Contact Filters"
+            fields={filterFields}
+            values={filters}
+            onValuesChange={updateFilters}
+            onApply={handleApplyFilters}
+            onClearAll={clearFilters}
+            activeFilterCount={activeFilterCount}
+          >
+            <Button variant="outline" className="focus-ring">
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </Button>
+          </FilterModal>
+          <AddContactDialog open={false} onClose={() => {}} onContactAdded={refetch} />
+        </div>
       </div>
+
+      {/* Active Filters */}
+      {activeFilterChips.length > 0 && (
+        <ActiveFilters
+          filters={activeFilterChips}
+          onRemoveFilter={handleRemoveFilter}
+          onClearAll={clearFilters}
+        />
+      )}
 
       <AdvancedTable
         data={filteredContacts}
@@ -386,9 +405,6 @@ export function ContactsTable() {
         onSort={handleSort}
         sortKey={sortKey}
         sortDirection={sortDirection}
-        filters={filtersComponent}
-        activeFilters={activeFilters}
-        onClearAllFilters={clearAllFilters}
         emptyState={emptyState}
         tableId="contacts"
         presets={presets}
