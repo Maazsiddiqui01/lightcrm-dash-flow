@@ -24,10 +24,25 @@ interface AddContactDialogProps {
 export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDialogProps) {
   const [formData, setFormData] = useState({
     full_name: "",
-    email: "",
+    email_address: "",
     organization: "",
+    lg_focus_area_1: "",
     title: "",
+    areas_of_specialization: "",
     notes: "",
+    delta_type: "",
+    delta: "",
+    lg_sector: "",
+    category: "",
+    phone: "",
+    url_to_online_bio: "",
+    lg_focus_area_2: "",
+    lg_focus_area_3: "",
+    lg_focus_area_4: "",
+    lg_focus_area_5: "",
+    lg_focus_area_6: "",
+    lg_focus_area_7: "",
+    lg_focus_area_8: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -42,10 +57,21 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.full_name.trim() || !formData.email.trim()) {
+    if (!formData.full_name.trim() || !formData.email_address.trim() || !formData.organization.trim() || !formData.lg_focus_area_1.trim()) {
       toast({
         title: "Error",
-        description: "Full name and email are required",
+        description: "Full name, email, organization, and primary focus area are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email_address.trim())) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
         variant: "destructive",
       });
       return;
@@ -54,18 +80,40 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     try {
       setIsSubmitting(true);
 
+      // Helper functions
+      const opt = (v?: string) => (v && v.trim() !== "" ? v.trim() : null);
+      const numOrNull = (v?: string | number) =>
+        v === undefined || v === null || String(v).trim() === "" ? null : Number(v);
+
+      const payload = {
+        full_name: formData.full_name.trim(),
+        organization: formData.organization.trim(),
+        lg_focus_area_1: formData.lg_focus_area_1.trim(),
+        email_address: formData.email_address.trim().toLowerCase(),
+        title: opt(formData.title),
+        areas_of_specialization: opt(formData.areas_of_specialization),
+        notes: opt(formData.notes),
+        delta_type: opt(formData.delta_type),
+        delta: numOrNull(formData.delta),
+        lg_sector: opt(formData.lg_sector),
+        category: opt(formData.category),
+        phone: opt(formData.phone),
+        url_to_online_bio: opt(formData.url_to_online_bio),
+        lg_focus_area_2: opt(formData.lg_focus_area_2),
+        lg_focus_area_3: opt(formData.lg_focus_area_3),
+        lg_focus_area_4: opt(formData.lg_focus_area_4),
+        lg_focus_area_5: opt(formData.lg_focus_area_5),
+        lg_focus_area_6: opt(formData.lg_focus_area_6),
+        lg_focus_area_7: opt(formData.lg_focus_area_7),
+        lg_focus_area_8: opt(formData.lg_focus_area_8),
+      };
+
       // Insert into contacts_raw table
-      const { error } = await supabase
-        .from("contacts_raw")
-        .insert({
-          full_name: formData.full_name.trim(),
-          email_address: formData.email.trim(),
-          organization: formData.organization.trim() || null,
-          title: formData.title.trim() || null,
-          notes: formData.notes.trim() || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const { data, error } = await supabase
+        .from('contacts_raw')
+        .insert([payload])
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -77,10 +125,25 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
       // Reset form
       setFormData({
         full_name: "",
-        email: "",
+        email_address: "",
         organization: "",
+        lg_focus_area_1: "",
         title: "",
+        areas_of_specialization: "",
         notes: "",
+        delta_type: "",
+        delta: "",
+        lg_sector: "",
+        category: "",
+        phone: "",
+        url_to_online_bio: "",
+        lg_focus_area_2: "",
+        lg_focus_area_3: "",
+        lg_focus_area_4: "",
+        lg_focus_area_5: "",
+        lg_focus_area_6: "",
+        lg_focus_area_7: "",
+        lg_focus_area_8: "",
       });
 
       onContactAdded();
@@ -101,10 +164,25 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
   const handleClose = () => {
     setFormData({
       full_name: "",
-      email: "",
+      email_address: "",
       organization: "",
+      lg_focus_area_1: "",
       title: "",
+      areas_of_specialization: "",
       notes: "",
+      delta_type: "",
+      delta: "",
+      lg_sector: "",
+      category: "",
+      phone: "",
+      url_to_online_bio: "",
+      lg_focus_area_2: "",
+      lg_focus_area_3: "",
+      lg_focus_area_4: "",
+      lg_focus_area_5: "",
+      lg_focus_area_6: "",
+      lg_focus_area_7: "",
+      lg_focus_area_8: "",
     });
     onClose();
   };
@@ -125,6 +203,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Required Fields */}
           <div className="space-y-2">
             <Label htmlFor="full_name">Full Name *</Label>
             <Input
@@ -137,35 +216,139 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
+            <Label htmlFor="email_address">Email *</Label>
             <Input
-              id="email"
+              id="email_address"
               type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
+              value={formData.email_address}
+              onChange={(e) => handleInputChange("email_address", e.target.value)}
               placeholder="Enter email address"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="organization">Organization</Label>
+            <Label htmlFor="organization">Organization *</Label>
             <Input
               id="organization"
               value={formData.organization}
               onChange={(e) => handleInputChange("organization", e.target.value)}
               placeholder="Enter organization"
+              required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="lg_focus_area_1">Primary Focus Area *</Label>
             <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => handleInputChange("title", e.target.value)}
-              placeholder="Enter job title"
+              id="lg_focus_area_1"
+              value={formData.lg_focus_area_1}
+              onChange={(e) => handleInputChange("lg_focus_area_1", e.target.value)}
+              placeholder="Enter primary focus area"
+              required
             />
+          </div>
+
+          {/* Optional Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => handleInputChange("title", e.target.value)}
+                placeholder="Enter job title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lg_sector">LG Sector</Label>
+              <Input
+                id="lg_sector"
+                value={formData.lg_sector}
+                onChange={(e) => handleInputChange("lg_sector", e.target.value)}
+                placeholder="Enter sector"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Input
+                id="category"
+                value={formData.category}
+                onChange={(e) => handleInputChange("category", e.target.value)}
+                placeholder="Enter category"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                placeholder="Enter phone number"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="delta_type">Delta Type</Label>
+              <Input
+                id="delta_type"
+                value={formData.delta_type}
+                onChange={(e) => handleInputChange("delta_type", e.target.value)}
+                placeholder="Enter delta type"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="delta">Delta</Label>
+              <Input
+                id="delta"
+                type="number"
+                value={formData.delta}
+                onChange={(e) => handleInputChange("delta", e.target.value)}
+                placeholder="Enter delta value"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="url_to_online_bio">Online Bio URL</Label>
+            <Input
+              id="url_to_online_bio"
+              type="url"
+              value={formData.url_to_online_bio}
+              onChange={(e) => handleInputChange("url_to_online_bio", e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="areas_of_specialization">Areas of Specialization</Label>
+            <Input
+              id="areas_of_specialization"
+              value={formData.areas_of_specialization}
+              onChange={(e) => handleInputChange("areas_of_specialization", e.target.value)}
+              placeholder="Enter specializations (comma-separated)"
+            />
+          </div>
+
+          {/* Additional Focus Areas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[2, 3, 4, 5, 6, 7, 8].map((num) => (
+              <div key={num} className="space-y-2">
+                <Label htmlFor={`lg_focus_area_${num}`}>Focus Area #{num}</Label>
+                <Input
+                  id={`lg_focus_area_${num}`}
+                  value={formData[`lg_focus_area_${num}` as keyof typeof formData] as string}
+                  onChange={(e) => handleInputChange(`lg_focus_area_${num}`, e.target.value)}
+                  placeholder={`Enter focus area ${num}`}
+                />
+              </div>
+            ))}
           </div>
 
           <div className="space-y-2">

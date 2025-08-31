@@ -32,6 +32,7 @@ export function ContactsTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContact, setSelectedContact] = useState<ContactApp | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string>("most_recent_contact");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const { toast } = useToast();
@@ -350,7 +351,12 @@ export function ContactsTable() {
     description: searchTerm || activeFilterCount > 0 
       ? "Try adjusting your search or filters to find contacts."
       : "Start building your professional network by adding your first contact.",
-    action: <AddContactDialog open={false} onClose={() => {}} onContactAdded={refetch} />
+    action: (
+      <Button onClick={() => setIsAddDialogOpen(true)}>
+        <Plus className="h-4 w-4 mr-2" />
+        Add Contact
+      </Button>
+    )
   };
 
   return (
@@ -382,7 +388,10 @@ export function ContactsTable() {
               )}
             </Button>
           </FilterModal>
-          <AddContactDialog open={false} onClose={() => {}} onContactAdded={refetch} />
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Contact
+          </Button>
         </div>
       </div>
 
@@ -416,6 +425,15 @@ export function ContactsTable() {
         open={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         onContactUpdated={refetch}
+      />
+
+      <AddContactDialog 
+        open={isAddDialogOpen} 
+        onClose={() => setIsAddDialogOpen(false)} 
+        onContactAdded={() => {
+          setIsAddDialogOpen(false);
+          refetch();
+        }} 
       />
     </div>
   );

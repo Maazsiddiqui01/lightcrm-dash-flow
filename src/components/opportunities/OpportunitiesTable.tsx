@@ -45,6 +45,7 @@ export function OpportunitiesTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string>("created_at");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const { toast } = useToast();
@@ -547,7 +548,12 @@ export function OpportunitiesTable() {
     description: searchTerm || activeFilterCount > 0
       ? "Try adjusting your search or filters to find opportunities."
       : "Start tracking investment opportunities by adding your first deal.",
-    action: <AddOpportunityDialog open={false} onClose={() => {}} onOpportunityAdded={refetch} />
+    action: (
+      <Button onClick={() => setIsAddDialogOpen(true)}>
+        <Building2 className="h-4 w-4 mr-2" />
+        Add Opportunity
+      </Button>
+    )
   };
 
   return (
@@ -579,7 +585,10 @@ export function OpportunitiesTable() {
               )}
             </Button>
           </FilterModal>
-          <AddOpportunityDialog open={false} onClose={() => {}} onOpportunityAdded={refetch} />
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Building2 className="h-4 w-4 mr-2" />
+            Add Opportunity
+          </Button>
         </div>
       </div>
 
@@ -613,6 +622,15 @@ export function OpportunitiesTable() {
         open={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         onOpportunityUpdated={refetch}
+      />
+
+      <AddOpportunityDialog 
+        open={isAddDialogOpen} 
+        onClose={() => setIsAddDialogOpen(false)} 
+        onOpportunityAdded={() => {
+          setIsAddDialogOpen(false);
+          refetch();
+        }} 
       />
     </div>
   );
