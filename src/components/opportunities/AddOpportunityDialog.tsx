@@ -56,51 +56,66 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.deal_name.trim()) {
-      toast({
-        title: "Error",
-        description: "Deal name is required",
-        variant: "destructive",
-      });
-      return;
+    // Validation for required fields
+    const requiredFields = [
+      { field: 'lg_focus_area', name: 'LG Focus Area' },
+      { field: 'deal_name', name: 'Deal Name' },
+      { field: 'deal_source_company', name: 'Deal Source Company' },
+      { field: 'deal_source_individual_1', name: 'Deal Source Individual #1' },
+      { field: 'investment_professional_point_person_1', name: 'Investment Professional Point Person #1' }
+    ];
+
+    for (const { field, name } of requiredFields) {
+      if (!formData[field as keyof typeof formData].trim()) {
+        toast({
+          title: "Error",
+          description: `${name} is required`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     try {
       setIsSubmitting(true);
 
-      // Insert into opportunities_raw table
-      const { error } = await supabase
-        .from("opportunities_raw")
-        .insert({
-          deal_name: formData.deal_name.trim(),
-          status: formData.status.trim() || null,
-          tier: formData.tier.trim() || null,
-          sector: formData.sector.trim() || null,
-          lg_focus_area: formData.lg_focus_area.trim() || null,
-          platform_add_on: formData.platform_add_on.trim() || null,
-          date_of_origination: formData.date_of_origination.trim() || null,
-          deal_source_company: formData.deal_source_company.trim() || null,
-          deal_source_individual_1: formData.deal_source_individual_1.trim() || null,
-          deal_source_individual_2: formData.deal_source_individual_2.trim() || null,
-          ownership: formData.ownership.trim() || null,
-          ownership_type: formData.ownership_type.trim() || null,
-          summary_of_opportunity: formData.summary_of_opportunity.trim() || null,
-          ebitda: formData.ebitda.trim() || null,
-          ebitda_notes: formData.ebitda_notes.trim() || null,
-          investment_professional_point_person_1: formData.investment_professional_point_person_1.trim() || null,
-          investment_professional_point_person_2: formData.investment_professional_point_person_2.trim() || null,
-          most_recent_notes: formData.most_recent_notes.trim() || null,
-          url: formData.url.trim() || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          dealcloud: false,
-        });
+      const req = (v: string) => v.trim();
+      const opt = (v?: string) => (v && v.trim() !== "" ? v.trim() : null);
+
+      const payload = {
+        lg_focus_area: req(formData.lg_focus_area),
+        deal_name: req(formData.deal_name),
+        deal_source_company: req(formData.deal_source_company),
+        deal_source_individual_1: req(formData.deal_source_individual_1),
+        investment_professional_point_person_1: req(formData.investment_professional_point_person_1),
+        // Optionals
+        status: opt(formData.status),
+        tier: opt(formData.tier),
+        sector: opt(formData.sector),
+        platform_add_on: opt(formData.platform_add_on),
+        date_of_origination: opt(formData.date_of_origination),
+        deal_source_individual_2: opt(formData.deal_source_individual_2),
+        ownership: opt(formData.ownership),
+        ownership_type: opt(formData.ownership_type),
+        ebitda: opt(formData.ebitda),
+        ebitda_notes: opt(formData.ebitda_notes),
+        url: opt(formData.url),
+        summary_of_opportunity: opt(formData.summary_of_opportunity),
+        investment_professional_point_person_2: opt(formData.investment_professional_point_person_2),
+        most_recent_notes: opt(formData.most_recent_notes),
+      };
+
+      const { data, error } = await supabase
+        .from('opportunities_raw')
+        .insert([payload])
+        .select()
+        .single();
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Opportunity added successfully",
+        description: "Opportunity added",
       });
 
       // Reset form
@@ -131,7 +146,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       console.error("Error adding opportunity:", error);
       toast({
         title: "Error",
-        description: "Failed to add opportunity",
+        description: error.message || "Failed to add opportunity",
         variant: "destructive",
       });
     } finally {
@@ -180,101 +195,121 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Deal Name - Required */}
-          <div className="space-y-2">
-            <Label htmlFor="deal_name">Deal Name *</Label>
-            <Input
-              id="deal_name"
-              value={formData.deal_name}
-              onChange={(e) => handleInputChange("deal_name", e.target.value)}
-              placeholder="Enter deal name"
-              required
-            />
-          </div>
-
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Required Fields */}
+          <div className="space-y-4 border-b pb-4">
+            <h3 className="text-sm font-medium text-foreground">Required Fields</h3>
+            
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Input
-                id="status"
-                value={formData.status}
-                onChange={(e) => handleInputChange("status", e.target.value)}
-                placeholder="e.g., Active, Closed"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tier">Tier</Label>
-              <Input
-                id="tier"
-                value={formData.tier}
-                onChange={(e) => handleInputChange("tier", e.target.value)}
-                placeholder="e.g., Tier 1, Tier 2"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sector">Sector</Label>
-              <Input
-                id="sector"
-                value={formData.sector}
-                onChange={(e) => handleInputChange("sector", e.target.value)}
-                placeholder="e.g., Healthcare, Technology"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="lg_focus_area">LG Focus Area</Label>
+              <Label htmlFor="lg_focus_area">LG Focus Area *</Label>
               <Input
                 id="lg_focus_area"
                 value={formData.lg_focus_area}
                 onChange={(e) => handleInputChange("lg_focus_area", e.target.value)}
                 placeholder="Enter focus area"
+                required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="platform_add_on">Platform Add-On</Label>
+              <Label htmlFor="deal_name">Deal Name *</Label>
               <Input
-                id="platform_add_on"
-                value={formData.platform_add_on}
-                onChange={(e) => handleInputChange("platform_add_on", e.target.value)}
-                placeholder="Enter platform add-on"
+                id="deal_name"
+                value={formData.deal_name}
+                onChange={(e) => handleInputChange("deal_name", e.target.value)}
+                placeholder="Enter deal name"
+                required
               />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="date_of_origination">Date of Origination</Label>
-            <Input
-              id="date_of_origination"
-              value={formData.date_of_origination}
-              onChange={(e) => handleInputChange("date_of_origination", e.target.value)}
-              placeholder="e.g., Q1 2024, Jan 2024"
-            />
-          </div>
-
-          {/* Deal Source */}
-          <div className="space-y-2">
-            <Label htmlFor="deal_source_company">Deal Source Company</Label>
-            <Input
-              id="deal_source_company"
-              value={formData.deal_source_company}
-              onChange={(e) => handleInputChange("deal_source_company", e.target.value)}
-              placeholder="Enter source company"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="deal_source_individual_1">Deal Source Individual #1</Label>
+              <Label htmlFor="deal_source_company">Deal Source Company *</Label>
+              <Input
+                id="deal_source_company"
+                value={formData.deal_source_company}
+                onChange={(e) => handleInputChange("deal_source_company", e.target.value)}
+                placeholder="Enter source company"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="deal_source_individual_1">Deal Source Individual #1 *</Label>
               <Input
                 id="deal_source_individual_1"
                 value={formData.deal_source_individual_1}
                 onChange={(e) => handleInputChange("deal_source_individual_1", e.target.value)}
                 placeholder="Enter individual #1"
+                required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="investment_professional_point_person_1">Investment Professional Point Person #1 *</Label>
+              <Input
+                id="investment_professional_point_person_1"
+                value={formData.investment_professional_point_person_1}
+                onChange={(e) => handleInputChange("investment_professional_point_person_1", e.target.value)}
+                placeholder="Enter point person #1"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Optional Fields */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-foreground">Optional Fields</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Input
+                  id="status"
+                  value={formData.status}
+                  onChange={(e) => handleInputChange("status", e.target.value)}
+                  placeholder="e.g., Active, Closed"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tier">Tier</Label>
+                <Input
+                  id="tier"
+                  value={formData.tier}
+                  onChange={(e) => handleInputChange("tier", e.target.value)}
+                  placeholder="e.g., Tier 1, Tier 2"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sector">Sector</Label>
+                <Input
+                  id="sector"
+                  value={formData.sector}
+                  onChange={(e) => handleInputChange("sector", e.target.value)}
+                  placeholder="e.g., Healthcare, Technology"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="platform_add_on">Platform Add-On</Label>
+                <Input
+                  id="platform_add_on"
+                  value={formData.platform_add_on}
+                  onChange={(e) => handleInputChange("platform_add_on", e.target.value)}
+                  placeholder="Enter platform add-on"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="date_of_origination">Date of Origination</Label>
+                <Input
+                  id="date_of_origination"
+                  value={formData.date_of_origination}
+                  onChange={(e) => handleInputChange("date_of_origination", e.target.value)}
+                  placeholder="e.g., Q1 2024, Jan 2024"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="deal_source_individual_2">Deal Source Individual #2</Label>
               <Input
@@ -284,7 +319,16 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                 placeholder="Enter individual #2"
               />
             </div>
-          </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="investment_professional_point_person_2">Investment Professional Point Person #2</Label>
+              <Input
+                id="investment_professional_point_person_2"
+                value={formData.investment_professional_point_person_2}
+                onChange={(e) => handleInputChange("investment_professional_point_person_2", e.target.value)}
+                placeholder="Enter point person #2"
+              />
+            </div>
 
           {/* Ownership */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -320,25 +364,48 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
             />
           </div>
 
-          {/* Financial */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Financial & Additional Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ebitda">EBITDA</Label>
+                <Input
+                  id="ebitda"
+                  value={formData.ebitda}
+                  onChange={(e) => handleInputChange("ebitda", e.target.value)}
+                  placeholder="e.g., $5M, <20"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="url">URL</Label>
+                <Input
+                  id="url"
+                  type="url"
+                  value={formData.url}
+                  onChange={(e) => handleInputChange("url", e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="ebitda">EBITDA</Label>
-              <Input
-                id="ebitda"
-                value={formData.ebitda}
-                onChange={(e) => handleInputChange("ebitda", e.target.value)}
-                placeholder="e.g., $5M, <20"
+              <Label htmlFor="ebitda_notes">EBITDA Notes</Label>
+              <Textarea
+                id="ebitda_notes"
+                value={formData.ebitda_notes}
+                onChange={(e) => handleInputChange("ebitda_notes", e.target.value)}
+                placeholder="Additional EBITDA notes..."
+                className="min-h-[60px] resize-none"
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="url">URL</Label>
-              <Input
-                id="url"
-                type="url"
-                value={formData.url}
-                onChange={(e) => handleInputChange("url", e.target.value)}
-                placeholder="https://..."
+              <Label htmlFor="most_recent_notes">Most Recent Notes</Label>
+              <Textarea
+                id="most_recent_notes"
+                value={formData.most_recent_notes}
+                onChange={(e) => handleInputChange("most_recent_notes", e.target.value)}
+                placeholder="Latest notes or updates..."
+                className="min-h-[60px] resize-none"
               />
             </div>
           </div>
