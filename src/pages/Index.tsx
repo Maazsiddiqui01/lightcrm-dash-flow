@@ -135,9 +135,12 @@ const Index = () => {
           />
 
           {/* Main content */}
-          <main className="flex-1 bg-muted/30">
-            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-              <div className="rounded-2xl bg-card shadow-xl shadow-primary/5 border border-border/50 overflow-hidden backdrop-blur-sm">
+          <main className="flex-1 bg-gradient-subtle min-h-screen relative">
+            {/* Subtle background pattern */}
+            <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+            
+            <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+              <div className="rounded-3xl bg-card shadow-xl shadow-primary/8 border border-border/50 overflow-hidden backdrop-blur-sm bg-gradient-card">
                 {renderTabContent()}
               </div>
             </div>

@@ -434,15 +434,19 @@ export function AskAI() {
   };
 
   return (
-    <div className="p-3 sm:p-6 space-y-3 sm:space-y-6">
-      <div>
-        <h3 className="text-section-title">AI Assistant</h3>
-        <p className="text-meta mt-1">
-          Get insights and analysis from your CRM data using artificial intelligence
-        </p>
-      </div>
+    <div className="relative min-h-[600px]">
+      {/* Subtle background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/2 to-transparent opacity-60" />
+      
+      <div className="relative p-3 sm:p-6 space-y-3 sm:space-y-6">
+        <div>
+          <h3 className="text-section-title text-2xl">AI Assistant</h3>
+          <p className="text-meta">
+            Get insights and analysis from your CRM data using artificial intelligence
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-6 h-[calc(100vh-200px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-6 h-[calc(100vh-200px)]">
         {/* Chat Stream - Left Panel */}
         <div className="lg:col-span-3 flex flex-col">
           <Card className="flex-1 flex flex-col elevation-1">
@@ -614,6 +618,7 @@ export function AskAI() {
               </div>
             </CardContent>
           </Card>
+        </div>
         </div>
       </div>
     </div>

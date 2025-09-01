@@ -354,17 +354,23 @@ export function InteractionsTable() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-section-title">All Interactions</h3>
-          <p className="text-meta mt-1">
-            {filteredInteractions?.length || 0} interaction{filteredInteractions?.length !== 1 ? 's' : ''} total
-          </p>
+    <div className="relative min-h-[600px]">
+      {/* Subtle background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/2 to-transparent opacity-60" />
+      
+      <div className="relative p-8 space-y-8">
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <h3 className="text-section-title text-2xl">All Interactions</h3>
+            <p className="text-meta">
+              {filteredInteractions?.length || 0} interaction{filteredInteractions?.length !== 1 ? 's' : ''} total
+            </p>
+          </div>
         </div>
-      </div>
 
-      <AdvancedTable
+        {/* Table Container */}
+        <div className="bg-card rounded-2xl shadow-lg shadow-primary/5 border border-border/50 overflow-hidden">
+          <AdvancedTable
         data={filteredInteractions}
         columns={columns}
         loading={loading}
@@ -381,7 +387,9 @@ export function InteractionsTable() {
         tableId="interactions"
         presets={presets}
         exportFilename="interactions"
-      />
+          />
+        </div>
+      </div>
 
       <InteractionDrawer
         interaction={selectedInteraction}

@@ -360,14 +360,18 @@ export function ContactsTable() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-section-title">All Contacts</h3>
-          <p className="text-meta mt-1">
-            {filteredContacts?.length || 0} contact{filteredContacts?.length !== 1 ? 's' : ''} total
-          </p>
-        </div>
+    <div className="relative min-h-[600px]">
+      {/* Subtle background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/2 to-transparent opacity-60" />
+      
+      <div className="relative p-8 space-y-8">
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <h3 className="text-section-title text-2xl">All Contacts</h3>
+            <p className="text-meta">
+              {filteredContacts?.length || 0} contact{filteredContacts?.length !== 1 ? 's' : ''} total
+            </p>
+          </div>
         <div className="flex items-center space-x-2">
           <FilterModal
             title="Contact Filters"
@@ -392,19 +396,23 @@ export function ContactsTable() {
             <Plus className="h-4 w-4 mr-2" />
             Add Contact
           </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Active Filters */}
-      {activeFilterChips.length > 0 && (
-        <ActiveFilters
-          filters={activeFilterChips}
-          onRemoveFilter={handleRemoveFilter}
-          onClearAll={clearFilters}
-        />
-      )}
+        {/* Active Filters */}
+        {activeFilterChips.length > 0 && (
+          <div className="bg-muted/50 rounded-2xl p-4 backdrop-blur-sm border border-border/30">
+            <ActiveFilters
+              filters={activeFilterChips}
+              onRemoveFilter={handleRemoveFilter}
+              onClearAll={clearFilters}
+            />
+          </div>
+        )}
 
-      <AdvancedTable
+        {/* Table Container */}
+        <div className="bg-card rounded-2xl shadow-lg shadow-primary/5 border border-border/50 overflow-hidden">
+          <AdvancedTable
         data={filteredContacts}
         columns={columns}
         loading={loading}
@@ -418,7 +426,9 @@ export function ContactsTable() {
         tableId="contacts"
         presets={presets}
         exportFilename="contacts"
-      />
+          />
+        </div>
+      </div>
 
       <ContactDrawer
         contact={selectedContact}
