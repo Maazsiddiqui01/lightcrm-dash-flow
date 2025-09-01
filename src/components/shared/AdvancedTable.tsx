@@ -291,9 +291,9 @@ export function AdvancedTable<T extends Record<string, any>>({
   const visibleColumns = columns.filter(col => col.visible !== false);
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-6", className)}>
       {/* Search and Actions */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border/50 shadow-sm">
         <div className="flex items-center space-x-4 flex-1">
           {onSearchChange && (
             <div className="relative max-w-sm">
@@ -302,7 +302,7 @@ export function AdvancedTable<T extends Record<string, any>>({
                 placeholder="Search..."
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10 focus-ring"
+                className="pl-10 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200"
               />
             </div>
           )}
@@ -310,19 +310,26 @@ export function AdvancedTable<T extends Record<string, any>>({
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={exportToCSV} className="focus-ring">
+          <Button 
+            variant="outline" 
+            onClick={exportToCSV} 
+            className="border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
+          >
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="focus-ring">
+              <Button 
+                variant="outline" 
+                className="border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
+              >
                 <Settings className="h-4 w-4 mr-2" />
                 Columns
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 border-border/50 shadow-xl">
               {presets.length > 0 && (
                 <>
                   {presets.map(preset => (
@@ -346,10 +353,10 @@ export function AdvancedTable<T extends Record<string, any>>({
           </DropdownMenu>
           
           <Select value={pageSize.toString()} onValueChange={(v) => setPageSize(Number(v))}>
-            <SelectTrigger className="w-20 focus-ring">
+            <SelectTrigger className="w-20 border-border/50 focus:border-primary/50 focus:ring-primary/20">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="border-border/50 shadow-xl">
               <SelectItem value="25">25</SelectItem>
               <SelectItem value="50">50</SelectItem>
               <SelectItem value="100">100</SelectItem>
@@ -360,15 +367,15 @@ export function AdvancedTable<T extends Record<string, any>>({
 
       {/* Active Filters */}
       {activeFilters.length > 0 && (
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Filters:</span>
+        <div className="flex items-center gap-2 text-sm bg-primary-light/50 p-3 rounded-lg border border-primary/20">
+          <span className="text-muted-foreground font-medium">Active Filters:</span>
           {activeFilters.map((filter, index) => (
-            <Badge key={index} variant="secondary" className="gap-1">
+            <Badge key={index} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">
               {filter.label}
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-0 text-muted-foreground hover:text-foreground"
+                className="h-auto p-0 text-primary/70 hover:text-primary"
                 onClick={filter.onRemove}
               >
                 <X className="h-3 w-3" />
@@ -376,7 +383,7 @@ export function AdvancedTable<T extends Record<string, any>>({
             </Badge>
           ))}
           {onClearAllFilters && (
-            <Button variant="link" size="sm" onClick={onClearAllFilters}>
+            <Button variant="link" size="sm" onClick={onClearAllFilters} className="text-primary hover:text-primary-hover">
               Clear all
             </Button>
           )}
@@ -412,7 +419,7 @@ export function AdvancedTable<T extends Record<string, any>>({
 
       {/* Desktop Table */}
       <div className="hidden lg:block">
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden border-0 shadow-lg shadow-primary/5">
           {data.length === 0 ? (
             <CardContent className="py-16 text-center">
               <div className="space-y-4">
@@ -427,16 +434,16 @@ export function AdvancedTable<T extends Record<string, any>>({
               className="overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
             >
             <Table>
-              <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur">
-                <TableRow className="hover:bg-transparent">
+              <TableHeader className="sticky top-0 z-10 bg-table-header backdrop-blur border-b border-border/50">
+                <TableRow className="hover:bg-transparent border-b border-border/50">
                   {visibleColumns.map((column, index) => (
                     <TableHead
                       key={column.key}
                       className={cn(
-                        "h-12 relative",
-                        column.sticky && "sticky left-0 z-10 bg-background",
+                        "h-12 relative font-semibold text-foreground",
+                        column.sticky && "sticky left-0 z-10 bg-table-header",
                         column.headerClassName,
-                        column.sortable && "cursor-pointer select-none"
+                        column.sortable && "cursor-pointer select-none hover:bg-table-row-hover/50 transition-colors"
                       )}
                       style={{ 
                         width: columnWidths[column.key] || column.width,
@@ -450,14 +457,14 @@ export function AdvancedTable<T extends Record<string, any>>({
                       }
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{column.label}</span>
+                        <span className="font-semibold text-sm">{column.label}</span>
                         {column.sortable && (
                           <div className="ml-2">
                             {sortKey === column.key ? (
                               sortDirection === 'asc' ? (
-                                <ArrowUp className="h-3 w-3" />
+                                <ArrowUp className="h-3 w-3 text-primary" />
                               ) : (
-                                <ArrowDown className="h-3 w-3" />
+                                <ArrowDown className="h-3 w-3 text-primary" />
                               )
                             ) : (
                               <ArrowUpDown className="h-3 w-3 opacity-50" />
@@ -496,37 +503,37 @@ export function AdvancedTable<T extends Record<string, any>>({
                       <TableCell colSpan={visibleColumns.length} className="p-0 border-0" />
                     </TableRow>
                     {virtualItems.map((row) => (
-                      <TableRow
-                        key={row.id || row.virtualIndex}
-                        className={cn(
-                          "h-12 hover:bg-muted/50 cursor-pointer transition-colors border-b",
-                          row.virtualIndex % 2 === 1 && "bg-muted/20",
-                          onRowClick && "focus:bg-muted/70 focus:outline-none"
-                        )}
-                        onClick={() => onRowClick?.(row)}
-                        onKeyDown={(e) => handleKeyDown(e, row, row.virtualIndex)}
-                        tabIndex={onRowClick ? 0 : -1}
-                        role={onRowClick ? "button" : undefined}
-                      >
-                        {visibleColumns.map((column) => (
-                          <TableCell
-                            key={column.key}
-                            className={cn(
-                              "py-2 px-4",
-                              column.sticky && "sticky left-0 z-10 bg-background",
-                              column.className
-                            )}
-                            style={{ 
-                              width: columnWidths[column.key] || column.width,
-                              minWidth: column.minWidth || 80
-                            }}
-                          >
-                            {column.render ? column.render(row[column.key], row) : (
-                              <span className="truncate block">{row[column.key]}</span>
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
+                     <TableRow
+                       key={row.id || row.virtualIndex}
+                       className={cn(
+                         "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
+                         row.virtualIndex % 2 === 1 && "bg-table-row-even",
+                         onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
+                       )}
+                       onClick={() => onRowClick?.(row)}
+                       onKeyDown={(e) => handleKeyDown(e, row, row.virtualIndex)}
+                       tabIndex={onRowClick ? 0 : -1}
+                       role={onRowClick ? "button" : undefined}
+                     >
+                       {visibleColumns.map((column) => (
+                         <TableCell
+                           key={column.key}
+                           className={cn(
+                             "py-3 px-4 text-sm",
+                             column.sticky && "sticky left-0 z-10 bg-inherit",
+                             column.className
+                           )}
+                           style={{ 
+                             width: columnWidths[column.key] || column.width,
+                             minWidth: column.minWidth || 80
+                           }}
+                         >
+                           {column.render ? column.render(row[column.key], row) : (
+                             <span className="truncate block text-foreground">{row[column.key]}</span>
+                           )}
+                         </TableCell>
+                       ))}
+                     </TableRow>
                     ))}
                     <TableRow style={{ height: totalHeight - offsetY - (virtualItems.length * 48) }}>
                       <TableCell colSpan={visibleColumns.length} className="p-0 border-0" />
@@ -534,39 +541,39 @@ export function AdvancedTable<T extends Record<string, any>>({
                   </>
                 ) : (
                   // Standard rendering for smaller datasets
-                  paginatedData.map((row, rowIndex) => (
-                    <TableRow
-                      key={row.id || rowIndex}
-                      className={cn(
-                        "h-12 hover:bg-muted/50 cursor-pointer transition-colors border-b",
-                        rowIndex % 2 === 1 && "bg-muted/20",
-                        onRowClick && "focus:bg-muted/70 focus:outline-none"
-                      )}
-                      onClick={() => onRowClick?.(row)}
-                      onKeyDown={(e) => handleKeyDown(e, row, rowIndex)}
-                      tabIndex={onRowClick ? 0 : -1}
-                      role={onRowClick ? "button" : undefined}
-                    >
-                      {visibleColumns.map((column) => (
-                        <TableCell
-                          key={column.key}
-                          className={cn(
-                            "py-2 px-4",
-                            column.sticky && "sticky left-0 z-10 bg-background",
-                            column.className
-                          )}
-                          style={{ 
-                            width: columnWidths[column.key] || column.width,
-                            minWidth: column.minWidth || 80
-                          }}
-                        >
-                          {column.render ? column.render(row[column.key], row) : (
-                            <span className="truncate block">{row[column.key]}</span>
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
+                   paginatedData.map((row, rowIndex) => (
+                     <TableRow
+                       key={row.id || rowIndex}
+                       className={cn(
+                         "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
+                         rowIndex % 2 === 1 && "bg-table-row-even",
+                         onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
+                       )}
+                       onClick={() => onRowClick?.(row)}
+                       onKeyDown={(e) => handleKeyDown(e, row, rowIndex)}
+                       tabIndex={onRowClick ? 0 : -1}
+                       role={onRowClick ? "button" : undefined}
+                     >
+                       {visibleColumns.map((column) => (
+                         <TableCell
+                           key={column.key}
+                           className={cn(
+                             "py-3 px-4 text-sm",
+                             column.sticky && "sticky left-0 z-10 bg-inherit",
+                             column.className
+                           )}
+                           style={{ 
+                             width: columnWidths[column.key] || column.width,
+                             minWidth: column.minWidth || 80
+                           }}
+                         >
+                           {column.render ? column.render(row[column.key], row) : (
+                             <span className="truncate block text-foreground">{row[column.key]}</span>
+                           )}
+                         </TableCell>
+                       ))}
+                     </TableRow>
+                   ))
                 )}
               </TableBody>
             </Table>
@@ -592,7 +599,7 @@ export function AdvancedTable<T extends Record<string, any>>({
             {paginatedData.map((item, index) => (
               <div
                 key={item.id || index}
-                className="mobile-card cursor-pointer hover:bg-accent/50 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+                className="mobile-card cursor-pointer hover:bg-primary/5 hover:border-primary/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
                 onClick={() => onRowClick?.(item)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {

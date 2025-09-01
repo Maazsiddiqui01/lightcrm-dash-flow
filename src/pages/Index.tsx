@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/Sidebar";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Hero } from "@/components/layout/Hero";
 import { ContactsTable } from "@/components/contacts/ContactsTable";
 import { OpportunitiesTable } from "@/components/opportunities/OpportunitiesTable";
 import { InteractionsTable } from "@/components/interactions/InteractionsTable";
@@ -10,7 +11,25 @@ import { Button } from "@/components/ui/button";
 import { Plus, Users, Target, MessageSquare, Bot } from "lucide-react";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("contacts");
+  const [activeTab, setActiveTab] = useState("hero");
+  const [showCRM, setShowCRM] = useState(false);
+
+  const handleGetStarted = () => {
+    setShowCRM(true);
+    setActiveTab("contacts");
+  };
+
+  const handleAskAI = () => {
+    setShowCRM(true);
+    setActiveTab("ask-ai");
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab !== "hero") {
+      setShowCRM(true);
+    }
+  };
 
   const getPageConfig = (tab: string) => {
     switch (tab) {
@@ -20,7 +39,7 @@ const Index = () => {
           description: "Manage your professional contacts and relationships",
           icon: Users,
           actions: (
-            <Button className="focus-ring">
+            <Button className="shadow-primary hover:shadow-xl transition-all duration-300 hover:scale-105">
               <Plus className="h-4 w-4 mr-2" />
               Add Contact
             </Button>
@@ -32,7 +51,7 @@ const Index = () => {
           description: "Track sales opportunities and business development",
           icon: Target,
           actions: (
-            <Button className="focus-ring">
+            <Button className="shadow-primary hover:shadow-xl transition-all duration-300 hover:scale-105">
               <Plus className="h-4 w-4 mr-2" />
               Add Opportunity
             </Button>
@@ -44,7 +63,7 @@ const Index = () => {
           description: "View communication history and touchpoints",
           icon: MessageSquare,
           actions: (
-            <Button className="focus-ring">
+            <Button className="shadow-primary hover:shadow-xl transition-all duration-300 hover:scale-105">
               <Plus className="h-4 w-4 mr-2" />
               Add Interaction
             </Button>
@@ -59,15 +78,10 @@ const Index = () => {
         };
       default:
         return {
-          title: "Contacts",
-          description: "Manage your professional contacts and relationships",
+          title: "Welcome",
+          description: "Your AI-Powered Custom CRM",
           icon: Users,
-          actions: (
-            <Button className="focus-ring">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Contact
-            </Button>
-          )
+          actions: null
         };
     }
   };
@@ -83,24 +97,33 @@ const Index = () => {
       case "ask-ai":
         return <AskAI />;
       default:
-        return <ContactsTable />;
+        return null;
     }
   };
 
   const pageConfig = getPageConfig(activeTab);
 
+  // Show hero section if not in CRM mode
+  if (!showCRM) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Hero onGetStarted={handleGetStarted} onAskAI={handleAskAI} />
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider defaultOpen>
       <div className="flex min-h-screen w-full bg-background">
-        <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <AppSidebar activeTab={activeTab} onTabChange={handleTabChange} />
         
         <SidebarInset className="flex-1">
           {/* Global header with trigger */}
-          <header className="sticky top-0 z-10 flex h-12 sm:h-14 items-center gap-2 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-2 sm:px-4">
-            <SidebarTrigger className="focus-ring" />
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground min-w-0">
-              <pageConfig.icon className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">Light CRM</span>
+          <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 shadow-sm">
+            <SidebarTrigger className="hover:bg-accent hover:text-accent-foreground transition-colors duration-200" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+              <pageConfig.icon className="h-4 w-4 flex-shrink-0 text-primary" />
+              <span className="truncate font-medium">Light CRM</span>
             </div>
           </header>
 
@@ -112,9 +135,9 @@ const Index = () => {
           />
 
           {/* Main content */}
-          <main className="flex-1">
-            <div className="mx-auto max-w-7xl px-2 py-2 sm:px-3 sm:py-4 lg:px-6 lg:py-6">
-              <div className="rounded-lg sm:rounded-xl bg-card elevation-1 border border-border overflow-hidden">
+          <main className="flex-1 bg-muted/30">
+            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+              <div className="rounded-2xl bg-card shadow-xl shadow-primary/5 border border-border/50 overflow-hidden backdrop-blur-sm">
                 {renderTabContent()}
               </div>
             </div>

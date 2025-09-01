@@ -8,80 +8,88 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Modern CRM Design System */
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    /* Modern Make.com-inspired Design System - Light & Clean */
+    --background: 0 0% 100%;
+    --foreground: 220 13% 18%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 13% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 13% 18%;
 
-    /* Primary - Professional Blue */
-    --primary: 221 83% 53%;
+    /* Primary - Modern Blue/Purple */
+    --primary: 262 83% 58%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 221 83% 48%;
-    --primary-light: 221 83% 95%;
+    --primary-hover: 262 83% 52%;
+    --primary-light: 262 83% 97%;
 
-    /* Secondary - Neutral */
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --secondary-hover: 210 40% 92%;
+    /* Secondary - Light Gray */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 13% 18%;
+    --secondary-hover: 220 14% 92%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 13% 18%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Success - Green */
-    --success: 142 76% 36%;
+    /* Success - Fresh Green */
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-    --success-light: 142 76% 95%;
+    --success-light: 142 71% 97%;
 
-    /* Warning - Amber */
-    --warning: 38 92% 50%;
+    /* Warning - Vibrant Orange */
+    --warning: 25 95% 53%;
     --warning-foreground: 0 0% 100%;
-    --warning-light: 38 92% 95%;
+    --warning-light: 25 95% 97%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 262 83% 58%;
+
+    /* Table specific colors */
+    --table-header: 220 14% 98%;
+    --table-row-hover: 220 14% 98%;
+    --table-row-even: 220 14% 99%;
 
     /* Surface colors */
-    --surface-light: 210 20% 98%;
+    --surface-light: 0 0% 100%;
     --surface-dark: 224 71% 4%;
 
-    /* Sidebar */
+    /* Sidebar - Clean white with subtle accents */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 221 83% 53%;
+    --sidebar-foreground: 220 13% 18%;
+    --sidebar-primary: 262 83% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 220 13% 18%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 262 83% 58%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(215 85% 58%), hsl(215 85% 52%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 8% 98%));
-    --gradient-hero: linear-gradient(135deg, hsl(215 85% 58%), hsl(215 85% 48%));
+    /* Modern gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(255 90% 60%));
+    --gradient-hero: linear-gradient(135deg, hsl(262 83% 58%), hsl(255 90% 60%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 14% 99%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 14% 98%));
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px hsl(210 8% 88%);
-    --shadow-md: 0 4px 12px hsl(210 8% 84%);
-    --shadow-lg: 0 10px 30px hsl(210 8% 80%);
-    --shadow-primary: 0 4px 20px hsl(215 85% 58% / 0.25);
+    /* Elegant shadows */
+    --shadow-sm: 0 1px 3px 0 hsl(220 13% 91% / 0.3);
+    --shadow-md: 0 4px 6px -1px hsl(220 13% 91% / 0.3), 0 2px 4px -1px hsl(220 13% 91% / 0.2);
+    --shadow-lg: 0 10px 15px -3px hsl(220 13% 91% / 0.3), 0 4px 6px -2px hsl(220 13% 91% / 0.2);
+    --shadow-xl: 0 20px 25px -5px hsl(220 13% 91% / 0.3), 0 10px 10px -5px hsl(220 13% 91% / 0.2);
+    --shadow-primary: 0 8px 25px hsl(262 83% 58% / 0.15);
 
-    /* Animations */
+    /* Smooth animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: all 0.15s ease;
+    --transition-fast: all 0.15s ease-out;
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -159,8 +167,9 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-sans;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", ui-sans-serif, system-ui, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
   }
 
   /* Typography scale */
@@ -172,22 +181,44 @@ All colors MUST be HSL.
     @apply text-lg font-semibold text-foreground;
   }
 
-  /* Elevation and shadows */
+  /* Modern shadows */
   .elevation-1 {
-    @apply shadow-sm;
+    box-shadow: var(--shadow-sm);
   }
 
   .elevation-2 {
-    @apply shadow-md;
+    box-shadow: var(--shadow-md);
   }
 
   .elevation-3 {
-    @apply shadow-lg;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .elevation-4 {
+    box-shadow: var(--shadow-xl);
   }
 
   /* Focus ring utility */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  /* Modern interactive elements */
+  .hover-lift {
+    transition: var(--transition-smooth);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Grid pattern for hero background */
+  .bg-grid-pattern {
+    background-image: 
+      linear-gradient(hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
 
   /* Mobile responsive utilities */
