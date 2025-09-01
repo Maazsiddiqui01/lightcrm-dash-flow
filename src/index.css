@@ -71,11 +71,11 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 88%;
     --sidebar-ring: 217 91% 50%;
 
-    /* Modern gradients - Light and subtle */
+    /* Clean white gradients */
     --gradient-primary: linear-gradient(135deg, hsl(217 91% 50%), hsl(217 91% 55%));
     --gradient-hero: linear-gradient(135deg, hsl(217 91% 50%), hsl(217 91% 55%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 99%));
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    --gradient-card: hsl(0 0% 100%);
+    --gradient-subtle: hsl(0 0% 100%);
 
     /* Elegant shadows - Softer and more subtle */
     --shadow-sm: 0 1px 3px 0 hsl(220 13% 0% / 0.08);
@@ -164,13 +164,11 @@ All colors MUST be HSL.
   }
 
   .text-meta {
-    @apply text-xs;
-    color: hsl(215 16% 47%); /* Darker gray for better contrast */
+    @apply text-xs text-muted-foreground;
   }
 
   .text-section-title {
-    @apply text-lg font-semibold;
-    color: hsl(0 0% 4%); /* Very dark black for section titles */
+    @apply text-lg font-semibold text-foreground;
   }
 
   /* Modern shadows */

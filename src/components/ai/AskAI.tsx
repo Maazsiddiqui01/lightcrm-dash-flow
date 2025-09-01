@@ -434,11 +434,8 @@ export function AskAI() {
   };
 
   return (
-    <div className="relative min-h-[600px]">
-      {/* Subtle background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/2 to-transparent opacity-60" />
-      
-      <div className="relative p-3 sm:p-6 space-y-3 sm:space-y-6">
+    <div className="min-h-[600px] bg-background">
+      <div className="p-3 sm:p-6 space-y-3 sm:space-y-6">
         <div>
           <h3 className="text-section-title text-2xl">AI Assistant</h3>
           <p className="text-meta">
