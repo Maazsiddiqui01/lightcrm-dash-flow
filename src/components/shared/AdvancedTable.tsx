@@ -503,18 +503,18 @@ export function AdvancedTable<T extends Record<string, any>>({
                       <TableCell colSpan={visibleColumns.length} className="p-0 border-0" />
                     </TableRow>
                     {virtualItems.map((row) => (
-                     <TableRow
-                       key={row.id || row.virtualIndex}
-                       className={cn(
-                         "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
-                         row.virtualIndex % 2 === 1 && "bg-table-row-even",
-                         onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
-                       )}
-                       onClick={() => onRowClick?.(row)}
-                       onKeyDown={(e) => handleKeyDown(e, row, row.virtualIndex)}
-                       tabIndex={onRowClick ? 0 : -1}
-                       role={onRowClick ? "button" : undefined}
-                     >
+                      <TableRow
+                        key={row.id || row.virtualIndex}
+                        className={cn(
+                          "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
+                          row.virtualIndex % 2 === 0 ? "bg-card" : "bg-table-row-even",
+                          onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        )}
+                        onClick={() => onRowClick?.(row)}
+                        onKeyDown={(e) => handleKeyDown(e, row, row.virtualIndex)}
+                        tabIndex={onRowClick ? 0 : -1}
+                        role={onRowClick ? "button" : undefined}
+                      >
                        {visibleColumns.map((column) => (
                          <TableCell
                            key={column.key}
@@ -539,21 +539,21 @@ export function AdvancedTable<T extends Record<string, any>>({
                       <TableCell colSpan={visibleColumns.length} className="p-0 border-0" />
                     </TableRow>
                   </>
-                ) : (
-                  // Standard rendering for smaller datasets
-                   paginatedData.map((row, rowIndex) => (
-                     <TableRow
-                       key={row.id || rowIndex}
-                       className={cn(
-                         "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
-                         rowIndex % 2 === 1 && "bg-table-row-even",
-                         onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
-                       )}
-                       onClick={() => onRowClick?.(row)}
-                       onKeyDown={(e) => handleKeyDown(e, row, rowIndex)}
-                       tabIndex={onRowClick ? 0 : -1}
-                       role={onRowClick ? "button" : undefined}
-                     >
+                 ) : (
+                   // Standard rendering for smaller datasets
+                    paginatedData.map((row, rowIndex) => (
+                      <TableRow
+                        key={row.id || rowIndex}
+                        className={cn(
+                          "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
+                          rowIndex % 2 === 0 ? "bg-card" : "bg-table-row-even",
+                          onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        )}
+                        onClick={() => onRowClick?.(row)}
+                        onKeyDown={(e) => handleKeyDown(e, row, rowIndex)}
+                        tabIndex={onRowClick ? 0 : -1}
+                        role={onRowClick ? "button" : undefined}
+                      >
                        {visibleColumns.map((column) => (
                          <TableCell
                            key={column.key}

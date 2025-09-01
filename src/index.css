@@ -9,73 +9,73 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Modern CRM Design System - Light & Professional */
-    --background: 210 20% 98%;  /* Soft neutral #F8F9FA */
-    --foreground: 0 0% 18%;     /* Dark gray #2E2E2E */
+    --background: 0 0% 100%;    /* Pure white background */
+    --foreground: 0 0% 9%;      /* Very dark gray #171717 for maximum contrast */
 
     --card: 0 0% 100%;          /* Pure white cards */
-    --card-foreground: 0 0% 18%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 18%;
+    --popover-foreground: 0 0% 9%;
 
-    /* Primary - Professional Blue */
-    --primary: 217 91% 60%;     /* #2563EB */
+    /* Primary - Professional Blue with better contrast */
+    --primary: 217 91% 50%;     /* Slightly darker blue #1D4ED8 */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 91% 55%;
-    --primary-light: 217 91% 95%;
+    --primary-hover: 217 91% 45%;
+    --primary-light: 217 91% 97%;
 
-    /* Secondary - Professional Gray */
-    --secondary: 220 9% 46%;    /* #6B7280 */
-    --secondary-foreground: 0 0% 100%;
-    --secondary-hover: 220 9% 40%;
+    /* Secondary - Professional Gray with better contrast */
+    --secondary: 220 14% 96%;   /* Very light gray background #F8FAFC */
+    --secondary-foreground: 0 0% 9%;
+    --secondary-hover: 220 14% 92%;
 
-    --muted: 213 27% 96%;       /* Light gray #F2F4F7 */
-    --muted-foreground: 220 9% 46%;
+    --muted: 210 40% 98%;       /* Very light gray #FEFEFE */
+    --muted-foreground: 215 16% 47%; /* Darker gray for better contrast */
 
-    --accent: 217 91% 95%;      /* Light blue accent */
-    --accent-foreground: 0 0% 18%;
+    --accent: 217 91% 97%;      /* Very light blue accent */
+    --accent-foreground: 0 0% 9%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 84% 50%;   /* Slightly darker red */
     --destructive-foreground: 0 0% 100%;
 
-    /* Success - Professional Green */
-    --success: 142 71% 45%;
+    /* Success - Professional Green with better contrast */
+    --success: 142 71% 40%;     /* Darker green */
     --success-foreground: 0 0% 100%;
-    --success-light: 142 71% 95%;
+    --success-light: 142 71% 97%;
 
-    /* Warning - Professional Orange */
-    --warning: 25 95% 53%;
+    /* Warning - Professional Orange with better contrast */
+    --warning: 25 95% 48%;      /* Darker orange */
     --warning-foreground: 0 0% 100%;
-    --warning-light: 25 95% 95%;
+    --warning-light: 25 95% 97%;
 
-    --border: 220 13% 91%;      /* Subtle borders */
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    --border: 220 13% 88%;      /* More visible borders */
+    --input: 220 13% 94%;       /* Light input backgrounds */
+    --ring: 217 91% 50%;
 
-    /* Table specific colors - Clean & Modern */
+    /* Table specific colors - High contrast */
     --table-header: 0 0% 100%;          /* White header */
-    --table-row-hover: 217 91% 95%;     /* Light blue hover #E8F0FE */
-    --table-row-even: 213 27% 96%;      /* Light gray alternating #F2F4F7 */
+    --table-row-hover: 217 91% 96%;     /* Light blue hover */
+    --table-row-even: 210 40% 98%;      /* Very light alternating rows */
 
     /* Surface colors */
     --surface-light: 0 0% 100%;
     --surface-dark: 224 71% 4%;
 
-    /* Sidebar - Clean white with modern accents */
+    /* Sidebar - Clean white with high contrast */
     --sidebar-background: 0 0% 100%;        /* Pure white */
-    --sidebar-foreground: 0 0% 18%;         /* Dark gray text */
-    --sidebar-primary: 217 91% 60%;         /* Professional blue */
+    --sidebar-foreground: 0 0% 9%;          /* Very dark text */
+    --sidebar-primary: 217 91% 50%;         /* Professional blue */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 91% 95%;          /* Light blue accent */
-    --sidebar-accent-foreground: 0 0% 18%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 217 91% 96%;          /* Very light blue accent */
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 220 13% 88%;
+    --sidebar-ring: 217 91% 50%;
 
-    /* Modern gradients - Updated for new theme */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 65%));
-    --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 65%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(213 27% 98%));
-    --gradient-subtle: linear-gradient(180deg, hsl(210 20% 98%), hsl(213 27% 96%));
+    /* Modern gradients - Light and subtle */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 50%), hsl(217 91% 55%));
+    --gradient-hero: linear-gradient(135deg, hsl(217 91% 50%), hsl(217 91% 55%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 99%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
 
     /* Elegant shadows - Softer and more subtle */
     --shadow-sm: 0 1px 3px 0 hsl(220 13% 0% / 0.08);
@@ -157,19 +157,20 @@ All colors MUST be HSL.
     letter-spacing: -0.01em;
   }
 
-  /* Typography scale - Professional & Readable */
+  /* Typography scale - High contrast & Readable */
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
-    color: hsl(0 0% 7%); /* Bold black #111111 for headings */
+    color: hsl(0 0% 4%); /* Very dark black #0A0A0A for headings */
   }
 
   .text-meta {
-    @apply text-xs text-muted-foreground;
+    @apply text-xs;
+    color: hsl(215 16% 47%); /* Darker gray for better contrast */
   }
 
   .text-section-title {
     @apply text-lg font-semibold;
-    color: hsl(0 0% 7%); /* Bold black for section titles */
+    color: hsl(0 0% 4%); /* Very dark black for section titles */
   }
 
   /* Modern shadows */
