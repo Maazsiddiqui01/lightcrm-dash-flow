@@ -557,12 +557,12 @@ export function OpportunitiesTable() {
   };
 
   return (
-    <div className="min-h-[600px] bg-background">
-      <div className="p-8 space-y-8">
+    <div className="bg-background">
+      <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <div className="space-y-2">
-            <h3 className="text-section-title text-2xl">All Opportunities</h3>
-            <p className="text-meta">
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold text-foreground">All Opportunities</h3>
+            <p className="text-sm text-muted-foreground">
               {filteredOpportunities?.length || 0} opportunit{filteredOpportunities?.length !== 1 ? 'ies' : 'y'} total
             </p>
           </div>

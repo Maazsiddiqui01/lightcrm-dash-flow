@@ -360,12 +360,12 @@ export function ContactsTable() {
   };
 
   return (
-    <div className="min-h-[600px] bg-background">
-      <div className="p-8 space-y-8">
+    <div className="bg-background">
+      <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <div className="space-y-2">
-            <h3 className="text-section-title text-2xl">All Contacts</h3>
-            <p className="text-meta">
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold text-foreground">All Contacts</h3>
+            <p className="text-sm text-muted-foreground">
               {filteredContacts?.length || 0} contact{filteredContacts?.length !== 1 ? 's' : ''} total
             </p>
           </div>

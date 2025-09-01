@@ -434,11 +434,11 @@ export function AskAI() {
   };
 
   return (
-    <div className="min-h-[600px] bg-background">
-      <div className="p-3 sm:p-6 space-y-3 sm:space-y-6">
+    <div className="bg-background">
+      <div className="p-6 space-y-6">
         <div>
-          <h3 className="text-section-title text-2xl">AI Assistant</h3>
-          <p className="text-meta">
+          <h3 className="text-lg font-semibold text-foreground">AI Assistant</h3>
+          <p className="text-sm text-muted-foreground">
             Get insights and analysis from your CRM data using artificial intelligence
           </p>
         </div>
