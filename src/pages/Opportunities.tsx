@@ -51,7 +51,7 @@ export function Opportunities() {
           </div>
 
           {/* Opportunities Table */}
-          <div className="rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
+          <div className="mx-6 rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
             <OpportunitiesTable />
           </div>
         </div>

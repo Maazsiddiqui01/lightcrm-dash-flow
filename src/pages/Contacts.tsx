@@ -52,7 +52,7 @@ export function Contacts() {
           </div>
 
           {/* Contacts Table */}
-          <div className="rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
+          <div className="mx-6 rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
             <ContactsTable />
           </div>
         </div>
