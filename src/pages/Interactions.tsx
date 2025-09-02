@@ -41,10 +41,8 @@ export function Interactions() {
           </div>
 
           {/* Interactions Table */}
-          <div className="mx-6">
-            <div className="rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
-              <InteractionsTable />
-            </div>
+          <div className="rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
+            <InteractionsTable />
           </div>
         </div>
       </main>

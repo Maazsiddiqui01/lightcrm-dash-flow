@@ -51,10 +51,8 @@ export function Opportunities() {
           </div>
 
           {/* Opportunities Table */}
-          <div className="mx-6">
-            <div className="rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
-              <OpportunitiesTable />
-            </div>
+          <div className="rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
+            <OpportunitiesTable />
           </div>
         </div>
       </main>
