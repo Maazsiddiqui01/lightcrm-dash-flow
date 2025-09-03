@@ -9,6 +9,7 @@ import { Opportunities } from "@/pages/Opportunities";
 import { Interactions } from "@/pages/Interactions";
 import { AskAI } from "@/pages/AskAI";
 import { MakeYourOwnView } from "@/pages/MakeYourOwnView";
+import { TomNewView } from "@/pages/TomNewView";
 import { Auth } from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
@@ -58,6 +59,7 @@ function App() {
                         <Route path="/contacts" element={<Contacts />} />
                         <Route path="/opportunities" element={<Opportunities />} />
                         <Route path="/interactions" element={<Interactions />} />
+                        <Route path="/tom-new-view" element={<TomNewView />} />
                         <Route path="/make-your-own-view" element={<MakeYourOwnView />} />
                         <Route path="/ask-ai" element={<AskAI />} />
                         <Route path="*" element={<NotFound />} />
