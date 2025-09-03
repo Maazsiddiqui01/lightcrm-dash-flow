@@ -10,13 +10,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Home, Users, Target, MessageSquare, Bot } from "lucide-react";
+import { Home, Users, Target, MessageSquare, Table, Bot } from "lucide-react";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Contacts", url: "/contacts", icon: Users },
   { title: "Opportunities", url: "/opportunities", icon: Target },
   { title: "Interactions", url: "/interactions", icon: MessageSquare },
+  { title: "Make Your Own View", url: "/make-your-own-view", icon: Table },
   { title: "Ask AI", url: "/ask-ai", icon: Bot },
 ];
 
