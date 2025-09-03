@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { KpiCards } from '@/components/kpi/KpiCards';
 import { FiltersDrawer } from '@/components/kpi/FiltersDrawer';
 import { MeetingsChart } from '@/components/kpi/MeetingsChart';
-import { LeadsTable } from '@/components/kpi/LeadsTable';
+import { KpiLgLeadsView } from '@/components/kpi/KpiLgLeadsView';
 import { useKpiData } from '@/hooks/useKpiData';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertCircle } from 'lucide-react';
@@ -86,10 +86,11 @@ export function KPIs() {
           loading={data.loading}
         />
 
-        {/* LG Leads Table */}
-        <LeadsTable
-          data={data.lgLeads}
-          loading={data.loading}
+        {/* LG Leads Performance */}
+        <KpiLgLeadsView
+          startDate={new Date(filters.start)}
+          endDate={new Date(filters.end)}
+          selectedLeads={filters.lg_leads}
         />
       </main>
     </div>
