@@ -174,16 +174,20 @@ export type Database = {
           cc_names: string | null
           created_at: string | null
           emails_arr: string[] | null
+          end_time: string | null
           from_email: string | null
           from_name: string | null
           id: string
+          occurred_at: string | null
           organization: string | null
+          quarter_text: string | null
           source: string | null
           subject: string | null
           time: string | null
           to_emails: string | null
           to_names: string | null
           updated_at: string | null
+          year_text: string | null
         }
         Insert: {
           all_emails?: string | null
@@ -191,16 +195,20 @@ export type Database = {
           cc_names?: string | null
           created_at?: string | null
           emails_arr?: string[] | null
+          end_time?: string | null
           from_email?: string | null
           from_name?: string | null
           id?: string
+          occurred_at?: string | null
           organization?: string | null
+          quarter_text?: string | null
           source?: string | null
           subject?: string | null
           time?: string | null
           to_emails?: string | null
           to_names?: string | null
           updated_at?: string | null
+          year_text?: string | null
         }
         Update: {
           all_emails?: string | null
@@ -208,16 +216,59 @@ export type Database = {
           cc_names?: string | null
           created_at?: string | null
           emails_arr?: string[] | null
+          end_time?: string | null
           from_email?: string | null
           from_name?: string | null
           id?: string
+          occurred_at?: string | null
           organization?: string | null
+          quarter_text?: string | null
           source?: string | null
           subject?: string | null
           time?: string | null
           to_emails?: string | null
           to_names?: string | null
           updated_at?: string | null
+          year_text?: string | null
+        }
+        Relationships: []
+      }
+      kpi_filter_values: {
+        Row: {
+          created_at: string | null
+          focus_areas: string[] | null
+          id: string
+          lg_leads: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          focus_areas?: string[] | null
+          id?: string
+          lg_leads?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          focus_areas?: string[] | null
+          id?: string
+          lg_leads?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      lg_leads_directory: {
+        Row: {
+          email: string
+          lead_name: string
+        }
+        Insert: {
+          email: string
+          lead_name: string
+        }
+        Update: {
+          email?: string
+          lead_name?: string
         }
         Relationships: []
       }
@@ -441,6 +492,51 @@ export type Database = {
         }
         Relationships: []
       }
+      interactions_clean: {
+        Row: {
+          all_emails: string | null
+          cc_emails: string | null
+          emails_arr: string[] | null
+          from_email: string | null
+          from_name: string | null
+          id: string | null
+          occurred_at: string | null
+          quarter_text: string | null
+          source: string | null
+          subject: string | null
+          to_emails: string | null
+          year_text: string | null
+        }
+        Insert: {
+          all_emails?: string | null
+          cc_emails?: string | null
+          emails_arr?: string[] | null
+          from_email?: string | null
+          from_name?: string | null
+          id?: string | null
+          occurred_at?: string | null
+          quarter_text?: string | null
+          source?: string | null
+          subject?: string | null
+          to_emails?: string | null
+          year_text?: string | null
+        }
+        Update: {
+          all_emails?: string | null
+          cc_emails?: string | null
+          emails_arr?: string[] | null
+          from_email?: string | null
+          from_name?: string | null
+          id?: string | null
+          occurred_at?: string | null
+          quarter_text?: string | null
+          source?: string | null
+          subject?: string | null
+          to_emails?: string | null
+          year_text?: string | null
+        }
+        Relationships: []
+      }
       interactions_flat: {
         Row: {
           cc_emails: string | null
@@ -580,11 +676,72 @@ export type Database = {
         }
         Relationships: []
       }
+      tom_new_view: {
+        Row: {
+          areas_of_specialization: string | null
+          contact_id: string | null
+          deal_name: string | null
+          deal_source_company: string | null
+          deal_source_individual: string | null
+          delta: number | null
+          delta_days: number | null
+          delta_type: string | null
+          has_opps: string | null
+          lg_focus_area: string | null
+          lg_lead: string | null
+          lg_sector: string | null
+          most_recent_contact: string | null
+          next_scheduled_outreach_date: string | null
+          no_of_emails: number | null
+          no_of_meetings: number | null
+        }
+        Relationships: []
+      }
+      tom_new_view_mat: {
+        Row: {
+          areas_of_specialization: string | null
+          contact_id: string | null
+          deal_name: string | null
+          deal_source_company: string | null
+          deal_source_individual: string | null
+          delta: number | null
+          delta_days: number | null
+          delta_type: string | null
+          has_opps: string | null
+          lg_focus_area: string | null
+          lg_lead: string | null
+          lg_sector: string | null
+          most_recent_contact: string | null
+          next_scheduled_outreach_date: string | null
+          no_of_emails: number | null
+          no_of_meetings: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       adjust_weekend: {
         Args: { ts: string }
         Returns: string
+      }
+      api_tom_new_view: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          areas_of_specialization: string
+          deal_name: string
+          deal_source_company: string
+          deal_source_individual: string
+          delta: number
+          delta_type: string
+          has_opps: string
+          lg_focus_area: string
+          lg_lead: string
+          lg_sector: string
+          most_recent_contact: string
+          next_scheduled_outreach_date: string
+          no_of_emails: number
+          no_of_meetings: number
+        }[]
       }
       gtrgm_compress: {
         Args: { "": unknown }
@@ -637,6 +794,41 @@ export type Database = {
           source: string
           subject: string
           to_emails: string
+        }[]
+      }
+      kpi_lg_hours_and_opps: {
+        Args: { p_default_meeting_min?: number; p_end: string; p_start: string }
+        Returns: {
+          avg_hours_per_week: number
+          lg_lead: string
+          opportunities: string
+        }[]
+      }
+      kpi_meetings_monthly: {
+        Args: {
+          p_end: string
+          p_focus_area?: string
+          p_lg_lead_name?: string
+          p_start: string
+        }
+        Returns: {
+          count: number
+          month: string
+        }[]
+      }
+      kpi_summary: {
+        Args: {
+          p_ebitda_min?: number
+          p_end: string
+          p_family_owned_only?: boolean
+          p_focus_area?: string
+          p_lg_lead_name?: string
+          p_start: string
+        }
+        Returns: {
+          meetings_count: number
+          notable_opportunities: number
+          total_contacts: number
         }[]
       }
       last_interaction_for_email: {
@@ -693,6 +885,18 @@ export type Database = {
       show_trgm: {
         Args: { "": string }
         Returns: string[]
+      }
+      util_quarter_text: {
+        Args: { t: string }
+        Returns: string
+      }
+      util_safe_timestamptz: {
+        Args: { t: string }
+        Returns: string
+      }
+      util_year_text: {
+        Args: { t: string }
+        Returns: string
       }
     }
     Enums: {

@@ -71,44 +71,13 @@ export function useKpiData() {
 
   const fetchFilterValues = useCallback(async () => {
     try {
-      // Get unique focus areas from contacts
-      const { data: focusAreasData } = await supabase
-        .from('contacts_app')
-        .select('lg_focus_area_1, lg_focus_area_2, lg_focus_area_3, lg_focus_area_4, lg_focus_area_5, lg_focus_area_6, lg_focus_area_7, lg_focus_area_8')
-        .not('lg_focus_area_1', 'is', null);
+      const { data, error } = await supabase
+        .from('kpi_filter_values')
+        .select('*')
+        .single();
 
-      // Get unique LG leads
-      const { data: leadsData } = await supabase
-        .from('contacts_app')
-        .select('lg_sector')
-        .not('lg_sector', 'is', null);
-
-      const focusAreas = new Set<string>();
-      const lgLeads = new Set<string>();
-
-      focusAreasData?.forEach(contact => {
-        [
-          contact.lg_focus_area_1,
-          contact.lg_focus_area_2,
-          contact.lg_focus_area_3,
-          contact.lg_focus_area_4,
-          contact.lg_focus_area_5,
-          contact.lg_focus_area_6,
-          contact.lg_focus_area_7,
-          contact.lg_focus_area_8,
-        ].forEach(area => {
-          if (area) focusAreas.add(area);
-        });
-      });
-
-      leadsData?.forEach(contact => {
-        if (contact.lg_sector) lgLeads.add(contact.lg_sector);
-      });
-
-      return {
-        focus_areas: Array.from(focusAreas).sort(),
-        lg_leads: Array.from(lgLeads).sort(),
-      };
+      if (error) throw error;
+      return data;
     } catch (error) {
       console.error('Error fetching filter values:', error);
       return { focus_areas: [], lg_leads: [] };
@@ -117,71 +86,41 @@ export function useKpiData() {
 
   const fetchSummary = useCallback(async (params: KpiFilters) => {
     try {
-      // Query contacts
-      let contactsQuery = supabase.from('contacts_app').select('id', { count: 'exact' });
-      
-      // Query interactions for meetings
-      let meetingsQuery = supabase
-        .from('interactions_app')
-        .select('id', { count: 'exact' })
-        .gte('occurred_at', params.start + 'T00:00:00')
-        .lte('occurred_at', params.end + 'T23:59:59');
+      // If multiple leads selected, aggregate; if none selected, pass null
+      const lgLeadParam = params.lg_leads.length === 1 ? params.lg_leads[0] : null;
+      const focusAreaParam = params.focus_areas.length === 1 ? params.focus_areas[0] : null;
 
-      // Query opportunities
-      let oppsQuery = supabase.from('opportunities_app').select('id', { count: 'exact' });
-      
-      // Apply filters if specified
-      if (params.focus_areas.length > 0) {
-        contactsQuery = contactsQuery.in('lg_focus_area_1', params.focus_areas);
-      }
-      
-      if (params.lg_leads.length > 0) {
-        contactsQuery = contactsQuery.in('lg_sector', params.lg_leads);
-      }
+      const { data, error } = await supabase.rpc('kpi_summary', {
+        p_start: params.start,
+        p_end: params.end,
+        p_focus_area: focusAreaParam,
+        p_lg_lead_name: lgLeadParam,
+        p_ebitda_min: params.ebitda_min,
+        p_family_owned_only: params.family_owned_only,
+      });
 
-      const [contactsResult, meetingsResult, oppsResult] = await Promise.all([
-        contactsQuery,
-        meetingsQuery,
-        oppsQuery,
-      ]);
-
-      return {
-        total_contacts: contactsResult.count || 0,
-        meetings_count: meetingsResult.count || 0,
-        notable_opportunities: oppsResult.count || 0,
-      };
+      if (error) throw error;
+      return data?.[0] || { total_contacts: 0, meetings_count: 0, notable_opportunities: 0 };
     } catch (error) {
       console.error('Error fetching summary:', error);
-      return {
-        total_contacts: 0,
-        meetings_count: 0,
-        notable_opportunities: 0,
-      };
+      return { total_contacts: 0, meetings_count: 0, notable_opportunities: 0 };
     }
   }, []);
 
   const fetchMonthlyMeetings = useCallback(async (params: KpiFilters) => {
     try {
-      const { data: meetings, error } = await supabase
-        .from('interactions_app')
-        .select('occurred_at')
-        .gte('occurred_at', params.start + 'T00:00:00')
-        .lte('occurred_at', params.end + 'T23:59:59');
+      const lgLeadParam = params.lg_leads.length === 1 ? params.lg_leads[0] : null;
+      const focusAreaParam = params.focus_areas.length === 1 ? params.focus_areas[0] : null;
 
-      if (error) throw error;
-
-      // Group by month client-side
-      const monthCounts: { [key: string]: number } = {};
-      meetings?.forEach((meeting) => {
-        if (meeting.occurred_at) {
-          const month = new Date(meeting.occurred_at).toISOString().slice(0, 7);
-          monthCounts[month] = (monthCounts[month] || 0) + 1;
-        }
+      const { data, error } = await supabase.rpc('kpi_meetings_monthly', {
+        p_start: params.start,
+        p_end: params.end,
+        p_focus_area: focusAreaParam,
+        p_lg_lead_name: lgLeadParam,
       });
 
-      return Object.entries(monthCounts)
-        .map(([month, count]) => ({ month, count }))
-        .sort((a, b) => a.month.localeCompare(b.month));
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       console.error('Error fetching monthly meetings:', error);
       return [];
@@ -190,33 +129,14 @@ export function useKpiData() {
 
   const fetchLgLeads = useCallback(async (params: KpiFilters) => {
     try {
-      // Get LG leads with their contact counts and meeting data
-      const { data: contacts, error } = await supabase
-        .from('contacts_app')
-        .select('lg_sector, of_meetings')
-        .not('lg_sector', 'is', null);
-
-      if (error) throw error;
-
-      // Group by LG sector and calculate stats
-      const leadStats: { [key: string]: { meetings: number; contacts: number; opportunities: string[] } } = {};
-      
-      contacts?.forEach(contact => {
-        if (contact.lg_sector) {
-          if (!leadStats[contact.lg_sector]) {
-            leadStats[contact.lg_sector] = { meetings: 0, contacts: 0, opportunities: [] };
-          }
-          leadStats[contact.lg_sector].meetings += contact.of_meetings || 0;
-          leadStats[contact.lg_sector].contacts += 1;
-        }
+      const { data, error } = await supabase.rpc('kpi_lg_hours_and_opps', {
+        p_start: params.start,
+        p_end: params.end,
+        p_default_meeting_min: 60,
       });
 
-      // Convert to array format with calculated hours
-      return Object.entries(leadStats).map(([lg_lead, stats]) => ({
-        lg_lead,
-        avg_hours_per_week: stats.meetings > 0 ? (stats.meetings * 60) / 52 / 60 : 0, // Assuming 1 hour per meeting
-        opportunities: `${stats.contacts} contacts, ${stats.meetings} meetings`,
-      }));
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       console.error('Error fetching LG leads:', error);
       return [];
