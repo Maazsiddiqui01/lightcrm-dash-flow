@@ -25,12 +25,15 @@ const formatHours = (hours: number) => {
 };
 
 const formatOpportunities = (opportunities: string) => {
-  if (!opportunities || opportunities.trim() === '') return '—';
+  // Handle non-string values safely
+  if (!opportunities || typeof opportunities !== 'string') return '—';
+  const trimmed = opportunities.trim();
+  if (trimmed === '') return '—';
   // Limit display length and add ellipsis if needed
-  if (opportunities.length > 100) {
-    return opportunities.substring(0, 100) + '...';
+  if (trimmed.length > 100) {
+    return trimmed.substring(0, 100) + '...';
   }
-  return opportunities;
+  return trimmed;
 };
 
 export function LeadsTable({ data, loading }: LeadsTableProps) {
