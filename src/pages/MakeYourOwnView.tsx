@@ -29,7 +29,7 @@ export function MakeYourOwnView() {
     const timeoutId = setTimeout(() => ctrl.abort(), 30000);
     
     try {
-      const response = await fetch('https://inverisllc.app.n8n.cloud/webhook-test/SQL-Agent', {
+      const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/SQL-Agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question, limit }),
