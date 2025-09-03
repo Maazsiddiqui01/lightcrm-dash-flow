@@ -11,6 +11,30 @@ interface VirtualizedTableProps {
 export function VirtualizedTable({ columns, rows, className = "" }: VirtualizedTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // Format cell value with special handling for dates
+  const formatCellValue = (value: any): string => {
+    if (value == null) return '—';
+    
+    const stringValue = String(value);
+    
+    // Check if it's an ISO date string (YYYY-MM-DDTHH:mm:ss.sssZ format)
+    const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+    if (isoDateRegex.test(stringValue)) {
+      try {
+        const date = new Date(stringValue);
+        if (!isNaN(date.getTime())) {
+          // Format as yyyy-mm-dd
+          return date.toISOString().split('T')[0];
+        }
+      } catch (error) {
+        // Fall through to default formatting
+      }
+    }
+    
+    // Use existing formatNumber for other values
+    return formatNumber(value);
+  };
+
   // Calculate dynamic column widths that fill the container
   const columnWidths = useMemo(() => {
     const containerWidth = 800; // Default container width, will be responsive
@@ -144,7 +168,7 @@ export function VirtualizedTable({ columns, rows, className = "" }: VirtualizedT
                         }
                       }}
                     >
-                      {formatNumber(cellValue)}
+                      {formatCellValue(cellValue)}
                     </div>
                   </div>
                 );
