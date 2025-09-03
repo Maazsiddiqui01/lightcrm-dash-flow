@@ -11,6 +11,34 @@ interface VirtualizedTableProps {
 export function VirtualizedTable({ columns, rows, className = "" }: VirtualizedTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // Calculate dynamic column widths that fill the container
+  const columnWidths = useMemo(() => {
+    const containerWidth = 800; // Default container width, will be responsive
+    const minColumnWidth = 120;
+    const maxColumnWidth = 300;
+
+    if (columns.length <= 5) {
+      // For 5 or fewer columns, distribute width evenly to fill container
+      const evenWidth = Math.max(containerWidth / columns.length, minColumnWidth);
+      return columns.map(() => Math.min(evenWidth, maxColumnWidth));
+    } else {
+      // For more than 5 columns, use content-based sizing
+      return columns.map((column) => {
+        const headerLength = column.length;
+        const maxContentLength = rows.reduce((max, row) => {
+          const cellValue = String(row[column] ?? '');
+          return Math.max(max, cellValue.length);
+        }, 0);
+        
+        const charWidth = 8;
+        const padding = 32;
+        const calculatedWidth = Math.max(headerLength, maxContentLength) * charWidth + padding;
+        
+        return Math.min(Math.max(calculatedWidth, minColumnWidth), maxColumnWidth);
+      });
+    }
+  }, [columns, rows]);
+
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
@@ -22,7 +50,7 @@ export function VirtualizedTable({ columns, rows, className = "" }: VirtualizedT
     horizontal: true,
     count: columns.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 150,
+    estimateSize: (index) => columnWidths[index] || 150,
     overscan: 2,
   });
 
