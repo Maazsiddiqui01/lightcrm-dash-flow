@@ -11,6 +11,7 @@ import { AskAI } from "@/pages/AskAI";
 import { MakeYourOwnView } from "@/pages/MakeYourOwnView";
 import { TomNewView } from "@/pages/TomNewView";
 import { KPIs } from "@/pages/KPIs";
+import { DataTableTest } from "@/pages/DataTableTest";
 import { Auth } from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
@@ -63,6 +64,7 @@ function App() {
                         <Route path="/kpis" element={<KPIs />} />
                         <Route path="/tom-new-view" element={<TomNewView />} />
                         <Route path="/make-your-own-view" element={<MakeYourOwnView />} />
+                        <Route path="/datatable-test" element={<DataTableTest />} />
                         <Route path="/ask-ai" element={<AskAI />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
