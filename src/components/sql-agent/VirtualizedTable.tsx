@@ -11,6 +11,26 @@ interface VirtualizedTableProps {
 export function VirtualizedTable({ columns, rows, className = "" }: VirtualizedTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // Calculate dynamic column widths based on content
+  const columnWidths = useMemo(() => {
+    return columns.map((column, index) => {
+      // Get max content length for this column
+      const headerLength = column.length;
+      const maxContentLength = rows.reduce((max, row) => {
+        const cellValue = String(row[column] ?? '');
+        return Math.max(max, cellValue.length);
+      }, 0);
+      
+      // Use the longer of header or content, with reasonable bounds
+      const charWidth = 8; // approximate character width in pixels
+      const padding = 32; // account for cell padding
+      const calculatedWidth = Math.max(headerLength, maxContentLength) * charWidth + padding;
+      
+      // Apply min/max constraints
+      return Math.min(Math.max(calculatedWidth, 120), 400);
+    });
+  }, [columns, rows]);
+
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
@@ -22,7 +42,7 @@ export function VirtualizedTable({ columns, rows, className = "" }: VirtualizedT
     horizontal: true,
     count: columns.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 150,
+    estimateSize: (index) => columnWidths[index] || 150,
     overscan: 2,
   });
 
