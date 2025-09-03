@@ -37,12 +37,16 @@ export function TomNewView() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch Tom New View (via RPC)
+  // Fetch Tom New View (direct table query)
   const { data: rawData, isLoading, error, refetch } = useQuery({
     queryKey: ['tom_new_view'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('api_tom_new_view' as any);
+      const { data, error } = await supabase
+        .from('tom_new_view' as any)
+        .select('*')
+        .order('most_recent_contact', { ascending: false, nullsFirst: false });
       if (error) throw error;
+      console.log('tom row', data?.[0]); // Sanity check
       return data as TomNewViewRow[];
     },
   });
