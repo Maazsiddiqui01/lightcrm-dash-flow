@@ -18,7 +18,7 @@ export function LoadingStatus({ className = "" }: LoadingStatusProps) {
   useEffect(() => {
     const interval = setInterval(() => {
       setMessageIndex((prev) => (prev + 1) % loadingMessages.length);
-    }, 2000);
+    }, 1500);
 
     return () => clearInterval(interval);
   }, []);

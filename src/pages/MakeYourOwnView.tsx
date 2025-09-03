@@ -2,11 +2,12 @@ import { useState } from "react";
 import { SqlAgentPrompt } from "@/components/sql-agent/SqlAgentPrompt";
 import { SqlAgentResultsTable } from "@/components/sql-agent/SqlAgentResultsTable";
 import { LoadingStatus } from "@/components/sql-agent/LoadingStatus";
-import { parseAgentResponse } from "@/utils/csvExport";
+import { normalizeAgentResponse } from "@/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
 
 interface QueryState {
-  data: Record<string, any>[];
+  columns: string[];
+  rows: any[];
   isLoading: boolean;
   error?: string;
   hasQueried: boolean;
@@ -14,7 +15,8 @@ interface QueryState {
 
 export function MakeYourOwnView() {
   const [queryState, setQueryState] = useState<QueryState>({
-    data: [],
+    columns: [],
+    rows: [],
     isLoading: false,
     error: undefined,
     hasQueried: false,
@@ -22,41 +24,45 @@ export function MakeYourOwnView() {
   const [lastQuestion, setLastQuestion] = useState("");
   const { toast } = useToast();
 
-  const handleQuery = async (question: string, limit: number) => {
-    setQueryState(prev => ({ ...prev, isLoading: true, error: undefined, hasQueried: true }));
-    setLastQuestion(question);
-
+  const runSqlAgent = async (question: string, limit: number = 500) => {
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 30000);
+    
     try {
       const response = await fetch('https://inverisllc.app.n8n.cloud/webhook-test/SQL-Agent', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question,
-          limit,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, limit }),
+        signal: ctrl.signal,
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const rawData = await response.json();
-      const { data, error: parseError } = parseAgentResponse(rawData);
+      const data = await response.json().catch(() => ({}));
+      return normalizeAgentResponse(data);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
 
-      if (parseError) {
-        throw new Error(parseError);
-      }
+  const handleQuery = async (question: string, limit: number) => {
+    setQueryState(prev => ({ ...prev, isLoading: true, error: undefined, hasQueried: true }));
+    setLastQuestion(question);
+
+    try {
+      const { columns, rows } = await runSqlAgent(question, limit);
 
       setQueryState({
-        data,
+        columns,
+        rows,
         isLoading: false,
         error: undefined,
         hasQueried: true,
       });
 
-      if (data.length === 0) {
+      if (rows.length === 0) {
         toast({
           title: "Query completed",
           description: "No results found for your query",
@@ -64,7 +70,7 @@ export function MakeYourOwnView() {
       } else {
         toast({
           title: "Query successful!",
-          description: `Found ${data.length.toLocaleString()} results`,
+          description: `Found ${rows.length.toLocaleString()} results`,
         });
       }
     } catch (error) {
@@ -72,7 +78,8 @@ export function MakeYourOwnView() {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
       setQueryState({
-        data: [],
+        columns: [],
+        rows: [],
         isLoading: false,
         error: errorMessage,
         hasQueried: true,
@@ -124,7 +131,8 @@ export function MakeYourOwnView() {
               </div>
             ) : (
               <SqlAgentResultsTable
-                data={queryState.data}
+                columns={queryState.columns}
+                rows={queryState.rows}
                 error={queryState.error}
                 onRetry={handleRetry}
               />

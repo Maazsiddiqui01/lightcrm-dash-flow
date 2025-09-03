@@ -1,25 +1,31 @@
-import { useMemo } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Copy, Download, AlertCircle } from "lucide-react";
-import { jsonToCsv, downloadFile } from "@/utils/csvExport";
+import { Copy, Download, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { jsonToCsv, downloadFile, formatNumber } from "@/utils/csvExport";
 import { useToast } from "@/hooks/use-toast";
+import { VirtualizedTable } from "./VirtualizedTable";
 
 interface SqlAgentResultsTableProps {
-  data: Record<string, any>[];
+  columns: string[];
+  rows: any[];
   isLoading?: boolean;
   error?: string;
   onRetry?: () => void;
 }
 
-export function SqlAgentResultsTable({ data, isLoading, error, onRetry }: SqlAgentResultsTableProps) {
+export function SqlAgentResultsTable({ columns, rows, isLoading, error, onRetry }: SqlAgentResultsTableProps) {
   const { toast } = useToast();
+  const [showRawJson, setShowRawJson] = useState(false);
 
-  const columns = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    return Object.keys(data[0]);
-  }, [data]);
+  const data = useMemo(() => {
+    return rows.map(row => {
+      const obj: Record<string, any> = {};
+      columns.forEach(col => {
+        obj[col] = row[col];
+      });
+      return obj;
+    });
+  }, [columns, rows]);
 
   const handleCopyJson = async () => {
     try {
@@ -82,7 +88,7 @@ export function SqlAgentResultsTable({ data, isLoading, error, onRetry }: SqlAge
   }
 
   // Empty state
-  if (!data || data.length === 0) {
+  if (!rows || rows.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
         <div className="text-center">
@@ -113,7 +119,7 @@ export function SqlAgentResultsTable({ data, isLoading, error, onRetry }: SqlAge
             Query Results
           </h3>
           <p className="text-sm text-gray-600">
-            {data.length.toLocaleString()} row{data.length !== 1 ? 's' : ''} × {columns.length} column{columns.length !== 1 ? 's' : ''}
+            {rows.length.toLocaleString()} row{rows.length !== 1 ? 's' : ''} × {columns.length} column{columns.length !== 1 ? 's' : ''}
           </p>
         </div>
         <div className="flex space-x-2">
@@ -135,48 +141,32 @@ export function SqlAgentResultsTable({ data, isLoading, error, onRetry }: SqlAge
             <Download className="h-4 w-4" />
             <span>Download CSV</span>
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowRawJson(!showRawJson)}
+            className="flex items-center space-x-2"
+          >
+            {showRawJson ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            <span>{showRawJson ? 'Hide' : 'Show'} Raw JSON</span>
+          </Button>
         </div>
       </div>
 
-      {/* Table */}
-      <ScrollArea className="h-[600px]">
-        <div className="min-w-full">
-          <Table>
-            <TableHeader className="sticky top-0 bg-white border-b border-gray-200 z-10">
-              <TableRow>
-                {columns.map((column) => (
-                  <TableHead 
-                    key={column} 
-                    className="font-semibold text-gray-900 bg-gray-50 border-r border-gray-200 last:border-r-0 px-4 py-3 text-left"
-                  >
-                    {column}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((row, index) => (
-                <TableRow 
-                  key={index}
-                  className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
-                >
-                  {columns.map((column) => (
-                    <TableCell 
-                      key={`${index}-${column}`}
-                      className="px-4 py-3 border-r border-gray-200 last:border-r-0 text-sm"
-                    >
-                      <div className="max-w-xs truncate" title={String(row[column] ?? '')}>
-                        {row[column] != null ? String(row[column]) : '—'}
-                      </div>
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {/* Table or Raw JSON View */}
+      {showRawJson ? (
+        <div className="p-4 bg-gray-900 text-green-400 rounded-lg max-h-[600px] overflow-auto">
+          <pre className="text-xs font-mono whitespace-pre-wrap">
+            {JSON.stringify(data, null, 2)}
+          </pre>
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      ) : (
+        <VirtualizedTable
+          columns={columns}
+          rows={rows}
+          className="rounded-lg"
+        />
+      )}
     </div>
   );
 }

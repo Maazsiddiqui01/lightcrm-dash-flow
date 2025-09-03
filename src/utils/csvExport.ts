@@ -33,23 +33,49 @@ export function downloadFile(content: string, filename: string, contentType: str
   URL.revokeObjectURL(url);
 }
 
+export function normalizeAgentResponse(data: any): { columns: string[]; rows: any[] } {
+  if (!data) return { columns: [], rows: [] };
+  
+  // Handle array of objects (most common case)
+  if (Array.isArray(data)) {
+    const cols = data.length ? Object.keys(data[0]) : [];
+    return { columns: cols, rows: data };
+  }
+  
+  // Handle {ok: true, columns: [...], rows: [...]} format
+  if (data.ok && Array.isArray(data.rows) && Array.isArray(data.columns)) {
+    return { columns: data.columns, rows: data.rows };
+  }
+  
+  // Handle {columns: [...], rows: [...]} format
+  if (Array.isArray(data.rows) && Array.isArray(data.columns)) {
+    return { columns: data.columns, rows: data.rows };
+  }
+  
+  // Fallback: try to interpret unknown object shapes
+  const rows = Array.isArray(data?.data) ? data.data : (Array.isArray(data?.items) ? data.items : []);
+  const cols = rows.length ? Object.keys(rows[0]) : (Array.isArray(data?.columns) ? data.columns : []);
+  return { columns: cols, rows };
+}
+
 export function parseAgentResponse(response: any): { data: Record<string, any>[], error?: string } {
   try {
-    // Handle different response formats from n8n
-    if (response?.data) {
-      return { data: Array.isArray(response.data) ? response.data : [response.data] };
-    }
-    
-    if (Array.isArray(response)) {
-      return { data: response };
-    }
-    
-    if (response && typeof response === 'object') {
-      return { data: [response] };
-    }
-    
-    return { data: [], error: 'Invalid response format' };
+    const normalized = normalizeAgentResponse(response);
+    return { data: normalized.rows };
   } catch (error) {
     return { data: [], error: 'Failed to parse response' };
   }
+}
+
+export function formatNumber(value: any): string {
+  if (value == null) return '—';
+  
+  // Check if it's a number or numeric string
+  const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+  
+  if (!isNaN(numValue) && isFinite(numValue)) {
+    return numValue.toLocaleString();
+  }
+  
+  return String(value);
 }
