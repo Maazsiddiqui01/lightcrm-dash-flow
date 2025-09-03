@@ -37,63 +37,98 @@ export function TomNewView() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch data with filters
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['tom_new_view', filters, searchTerm],
+  // Fetch Tom New View (via RPC)
+  const { data: rawData, isLoading, error, refetch } = useQuery({
+    queryKey: ['tom_new_view'],
     queryFn: async () => {
-      let query = supabase.from('tom_new_view' as any).select('*');
-      
-      // Apply search filter
-      if (searchTerm) {
-        query = query.or(`deal_source_company.ilike.%${searchTerm}%,deal_source_individual.ilike.%${searchTerm}%,deal_name.ilike.%${searchTerm}%`);
-      }
-      
-      // Apply filters
-      const dealSources = filters.deal_source_company as string[];
-      if (dealSources?.length) {
-        query = query.in('deal_source_company', dealSources);
-      }
-
-      const focusAreas = filters.lg_focus_area as string[];
-      if (focusAreas?.length) {
-        const orConditions = focusAreas.map(fa => `lg_focus_area.ilike.%${fa}%`).join(',');
-        query = query.or(orConditions);
-      }
-
-      const leads = filters.lg_lead as string[];
-      if (leads?.length) {
-        const orConditions = leads.map(lead => `lg_lead.ilike.%${lead}%`).join(',');
-        query = query.or(orConditions);
-      }
-
-      const deltaMin = filters.delta_min;
-      const deltaMax = filters.delta_max;
-      if (typeof deltaMin === 'number' && deltaMin !== null) {
-        query = query.gte('delta_days', deltaMin);
-      }
-      if (typeof deltaMax === 'number' && deltaMax !== null) {
-        query = query.lte('delta_days', deltaMax);
-      }
-
-      const deltaTypes = filters.delta_type as string[];
-      if (deltaTypes?.length) {
-        query = query.in('delta_type', deltaTypes);
-      }
-
-      const dateStart = filters.outreach_start as string;
-      const dateEnd = filters.outreach_end as string;
-      if (dateStart) {
-        query = query.gte('next_scheduled_outreach_date', dateStart);
-      }
-      if (dateEnd) {
-        query = query.lte('next_scheduled_outreach_date', dateEnd);
-      }
-
-      const { data, error } = await query.order('most_recent_contact', { ascending: false });
+      const { data, error } = await supabase.rpc('api_tom_new_view' as any);
       if (error) throw error;
       return data as TomNewViewRow[];
     },
   });
+
+  // Apply client-side filtering
+  const data = useMemo(() => {
+    if (!rawData) return [];
+    
+    let filtered = rawData;
+
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(row => 
+        row.deal_source_company?.toLowerCase().includes(searchLower) ||
+        row.deal_source_individual?.toLowerCase().includes(searchLower) ||
+        row.deal_name?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply filters
+    const dealSources = filters.deal_source_company as string[];
+    if (dealSources?.length) {
+      filtered = filtered.filter(row => 
+        dealSources.includes(row.deal_source_company || '')
+      );
+    }
+
+    const focusAreas = filters.lg_focus_area as string[];
+    if (focusAreas?.length) {
+      filtered = filtered.filter(row => 
+        focusAreas.some(fa => 
+          row.lg_focus_area?.toLowerCase().includes(fa.toLowerCase())
+        )
+      );
+    }
+
+    const leads = filters.lg_lead as string[];
+    if (leads?.length) {
+      filtered = filtered.filter(row => 
+        leads.some(lead => 
+          row.lg_lead?.toLowerCase().includes(lead.toLowerCase())
+        )
+      );
+    }
+
+    const deltaMin = filters.delta_min;
+    const deltaMax = filters.delta_max;
+    if (typeof deltaMin === 'number' && deltaMin !== null) {
+      filtered = filtered.filter(row => 
+        (row.delta_days || 0) >= deltaMin
+      );
+    }
+    if (typeof deltaMax === 'number' && deltaMax !== null) {
+      filtered = filtered.filter(row => 
+        (row.delta_days || 0) <= deltaMax
+      );
+    }
+
+    const deltaTypes = filters.delta_type as string[];
+    if (deltaTypes?.length) {
+      filtered = filtered.filter(row => 
+        deltaTypes.includes(row.delta_type || '')
+      );
+    }
+
+    const dateStart = filters.outreach_start as string;
+    const dateEnd = filters.outreach_end as string;
+    if (dateStart) {
+      filtered = filtered.filter(row => 
+        row.next_scheduled_outreach_date && row.next_scheduled_outreach_date >= dateStart
+      );
+    }
+    if (dateEnd) {
+      filtered = filtered.filter(row => 
+        row.next_scheduled_outreach_date && row.next_scheduled_outreach_date <= dateEnd
+      );
+    }
+
+    // Sort by most recent contact
+    return filtered.sort((a, b) => {
+      const dateA = a.most_recent_contact ? new Date(a.most_recent_contact).getTime() : 0;
+      const dateB = b.most_recent_contact ? new Date(b.most_recent_contact).getTime() : 0;
+      return dateB - dateA;
+    });
+  }, [rawData, filters, searchTerm]);
 
   // Format functions
   const formatDate = (dateStr?: string) => {
