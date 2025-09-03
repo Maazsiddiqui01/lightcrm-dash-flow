@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -134,6 +134,11 @@ export function TomNewView() {
     });
   }, [rawData, filters, searchTerm]);
 
+  // Debug logging to verify keys match
+  useEffect(() => { 
+    if (rawData?.length) console.table(rawData.slice(0,3)); 
+  }, [rawData]);
+
   // Format functions  
   const dash = (v: unknown) => (v ?? '') === '' || v === null ? '—' : String(v);
   const fmtNum = (n: unknown) => 
@@ -141,119 +146,119 @@ export function TomNewView() {
   const fmtDate = (iso: string | null) => 
     !iso ? '—' : new Date(iso).toLocaleDateString();
 
-  // Column definitions
+  // Column definitions - using AdvancedTable format
   const columns = useMemo(() => [
     {
       key: 'deal_source_company',
       label: 'Deal Source Company',
       width: 180,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : dash(row.deal_source_company),
+      render: (value: any) => dash(value),
     },
     {
       key: 'deal_source_individual',
       label: 'Deal Source Individual',
       width: 180,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : dash(row.deal_source_individual),
+      render: (value: any) => dash(value),
     },
     {
       key: 'lg_sector',
       label: 'LG Sector',
       width: 150,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : dash(row.lg_sector),
+      render: (value: any) => dash(value),
     },
     {
       key: 'lg_focus_area',
       label: 'LG Focus Area',
       width: 180,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : dash(row.lg_focus_area),
+      render: (value: any) => dash(value),
     },
     {
       key: 'areas_of_specialization',
       label: 'Areas of Specialization',
       width: 200,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : dash(row.areas_of_specialization),
+      render: (value: any) => dash(value),
     },
     {
       key: 'lg_lead',
       label: 'LG Lead',
       width: 150,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : dash(row.lg_lead),
+      render: (value: any) => dash(value),
     },
     {
       key: 'most_recent_contact',
       label: 'Most Recent Contact',
       width: 160,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : fmtDate(row.most_recent_contact),
+      render: (value: any) => fmtDate(value),
     },
     {
       key: 'delta',
       label: 'Delta',
       width: 100,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : fmtNum(row.delta),
+      render: (value: any) => fmtNum(value),
     },
     {
       key: 'delta_days',
       label: 'Delta Days',
       width: 120,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : fmtNum(row.delta_days),
+      render: (value: any) => fmtNum(value),
     },
     {
       key: 'delta_type',
       label: 'Delta Type',
       width: 120,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : dash(row.delta_type),
+      render: (value: any) => dash(value),
     },
     {
       key: 'no_of_emails',
       label: 'No of Emails',
       width: 120,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : fmtNum(row.no_of_emails),
+      render: (value: any) => fmtNum(value),
     },
     {
       key: 'no_of_meetings',
       label: 'No of Meetings',
       width: 130,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : fmtNum(row.no_of_meetings),
+      render: (value: any) => fmtNum(value),
     },
     {
       key: 'next_scheduled_outreach_date',
       label: 'Next Scheduled Outreach Date',
       width: 200,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : fmtDate(row.next_scheduled_outreach_date),
+      render: (value: any) => fmtDate(value),
     },
     {
       key: 'deal_name',
       label: 'Deal Name',
       width: 180,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : dash(row.deal_name),
+      render: (value: any) => dash(value),
     },
     {
       key: 'has_opps',
       label: 'Has Opps',
       width: 100,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : dash(row.has_opps),
+      render: (value: any) => dash(value),
     },
     {
       key: 'contact_id',
       label: 'Contact ID',
       width: 160,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : dash(row.contact_id),
+      render: (value: any) => dash(value),
     },
   ], []);
 
