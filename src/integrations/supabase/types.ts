@@ -173,6 +173,7 @@ export type Database = {
           cc_emails: string | null
           cc_names: string | null
           created_at: string | null
+          emails_arr: string[] | null
           from_email: string | null
           from_name: string | null
           id: string
@@ -189,6 +190,7 @@ export type Database = {
           cc_emails?: string | null
           cc_names?: string | null
           created_at?: string | null
+          emails_arr?: string[] | null
           from_email?: string | null
           from_name?: string | null
           id?: string
@@ -205,6 +207,7 @@ export type Database = {
           cc_emails?: string | null
           cc_names?: string | null
           created_at?: string | null
+          emails_arr?: string[] | null
           from_email?: string | null
           from_name?: string | null
           id?: string
@@ -215,6 +218,24 @@ export type Database = {
           to_emails?: string | null
           to_names?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      n8n_chat_histories: {
+        Row: {
+          id: number
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          id?: number
+          message: Json
+          session_id: string
+        }
+        Update: {
+          id?: number
+          message?: Json
+          session_id?: string
         }
         Relationships: []
       }
@@ -306,52 +327,66 @@ export type Database = {
     Views: {
       contacts_app: {
         Row: {
+          areas_of_specialization: string | null
+          category: string | null
+          contact_type: string | null
           created_at: string | null
-          email: string | null
-          emails_count: number | null
-          focus_areas: string | null
+          days_since_last_email: number | null
+          days_since_last_meeting: number | null
+          delta: number | null
+          delta_type: string | null
+          email_address: string | null
+          email_subject: string | null
+          first_name: string | null
           full_name: string | null
           id: string | null
-          last_touch: string | null
-          meetings_count: number | null
-          no_of_lg_focus_areas: number | null
+          last_name: string | null
+          latest_contact_email: string | null
+          latest_contact_meeting: string | null
+          lg_focus_area_1: string | null
+          lg_focus_area_2: string | null
+          lg_focus_area_3: string | null
+          lg_focus_area_4: string | null
+          lg_focus_area_5: string | null
+          lg_focus_area_6: string | null
+          lg_focus_area_7: string | null
+          lg_focus_area_8: string | null
+          lg_focus_areas_comprehensive_list: string | null
+          lg_sector: string | null
+          meeting_title: string | null
+          most_recent_contact: string | null
           notes: string | null
-          opportunities_count: number | null
+          of_emails: number | null
+          of_meetings: number | null
           organization: string | null
+          phone: string | null
           title: string | null
+          total_of_contacts: number | null
           updated_at: string | null
+          url_to_online_bio: string | null
         }
-        Insert: {
-          created_at?: string | null
-          email?: string | null
-          emails_count?: number | null
-          focus_areas?: string | null
-          full_name?: string | null
-          id?: string | null
-          last_touch?: never
-          meetings_count?: number | null
-          no_of_lg_focus_areas?: number | null
-          notes?: string | null
-          opportunities_count?: number | null
-          organization?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string | null
-          emails_count?: number | null
-          focus_areas?: string | null
-          full_name?: string | null
-          id?: string | null
-          last_touch?: never
-          meetings_count?: number | null
-          no_of_lg_focus_areas?: number | null
-          notes?: string | null
-          opportunities_count?: number | null
-          organization?: string | null
-          title?: string | null
-          updated_at?: string | null
+        Relationships: []
+      }
+      contacts_computed: {
+        Row: {
+          contact_id: string | null
+          contact_type: string | null
+          days_since_last_email: number | null
+          days_since_last_meeting: number | null
+          email_cc: string | null
+          email_from: string | null
+          email_subject: string | null
+          email_to: string | null
+          latest_contact_email: string | null
+          latest_contact_meeting: string | null
+          meeting_cc: string | null
+          meeting_from: string | null
+          meeting_title: string | null
+          meeting_to: string | null
+          most_recent_contact: string | null
+          of_emails: number | null
+          of_meetings: number | null
+          total_of_contacts: number | null
         }
         Relationships: []
       }
@@ -402,6 +437,64 @@ export type Database = {
           subject?: string | null
           to_emails?: string | null
           to_names?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      interactions_flat: {
+        Row: {
+          cc_emails: string | null
+          email: string | null
+          from_email: string | null
+          id: string | null
+          occurred_at: string | null
+          source: string | null
+          subject: string | null
+          to_emails: string | null
+        }
+        Relationships: []
+      }
+      interactions_parsed: {
+        Row: {
+          cc_emails: string | null
+          created_at: string | null
+          emails_arr: string[] | null
+          from_email: string | null
+          from_name: string | null
+          id: string | null
+          occurred_at: string | null
+          organization: string | null
+          source: string | null
+          subject: string | null
+          to_emails: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cc_emails?: string | null
+          created_at?: string | null
+          emails_arr?: string[] | null
+          from_email?: never
+          from_name?: string | null
+          id?: string | null
+          occurred_at?: string | null
+          organization?: string | null
+          source?: string | null
+          subject?: string | null
+          to_emails?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cc_emails?: string | null
+          created_at?: string | null
+          emails_arr?: string[] | null
+          from_email?: never
+          from_name?: string | null
+          id?: string | null
+          occurred_at?: string | null
+          organization?: string | null
+          source?: string | null
+          subject?: string | null
+          to_emails?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -489,6 +582,10 @@ export type Database = {
       }
     }
     Functions: {
+      adjust_weekend: {
+        Args: { ts: string }
+        Returns: string
+      }
       gtrgm_compress: {
         Args: { "": unknown }
         Returns: unknown
@@ -508,6 +605,82 @@ export type Database = {
       gtrgm_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      interactions_for_email_recent: {
+        Args: { p_email: string; p_limit?: number }
+        Returns: {
+          cc_emails: string
+          from_email: string
+          id: string
+          occurred_at: string
+          source: string
+          subject: string
+          to_emails: string
+        }[]
+      }
+      interactions_query: {
+        Args: {
+          p_channel?: string
+          p_email?: string
+          p_end?: string
+          p_keyword?: string
+          p_limit?: number
+          p_offset?: number
+          p_start?: string
+        }
+        Returns: {
+          cc_emails: string
+          from_email: string
+          id: string
+          occurred_at: string
+          organization: string
+          source: string
+          subject: string
+          to_emails: string
+        }[]
+      }
+      last_interaction_for_email: {
+        Args: { p_email: string }
+        Returns: {
+          cc_emails: string
+          from_email: string
+          id: string
+          occurred_at: string
+          source: string
+          subject: string
+          to_emails: string
+        }[]
+      }
+      normalize_name: {
+        Args: { t: string }
+        Returns: string
+      }
+      opportunities_aggregate: {
+        Args: { p_end?: string; p_group_by: string; p_start?: string }
+        Returns: {
+          bucket: string
+          count: number
+        }[]
+      }
+      opportunities_query: {
+        Args: {
+          p_deal_source_name?: string
+          p_limit?: number
+          p_name_contains?: string
+          p_offset?: number
+          p_sector_in?: string[]
+          p_status_in?: string[]
+          p_tier_in?: string[]
+        }
+        Returns: {
+          date_of_origination: string
+          deal_name: string
+          id: string
+          lg_focus_area: string
+          sector: string
+          status: string
+          tier: string
+        }[]
       }
       set_limit: {
         Args: { "": number }

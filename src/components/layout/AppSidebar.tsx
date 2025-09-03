@@ -10,10 +10,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Home, Users, Target, MessageSquare, Table, Bot } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Home, Users, Target, MessageSquare, Table, Bot, LogOut } from "lucide-react";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: Home },
+  { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Contacts", url: "/contacts", icon: Users },
   { title: "Opportunities", url: "/opportunities", icon: Target },
   { title: "Interactions", url: "/interactions", icon: MessageSquare },
@@ -24,6 +26,7 @@ const menuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { signOut, user } = useAuth();
 
   const isActive = (path: string) => currentPath === path;
   
@@ -62,17 +65,29 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Company/Brand Section */}
-        <div className="mt-auto p-4 border-t border-sidebar-border">
+        {/* User Section */}
+        <div className="mt-auto p-4 border-t border-sidebar-border space-y-3">
           <div className="flex items-center space-x-3">
             <div className="h-8 w-8 rounded-full bg-sidebar-primary flex items-center justify-center">
-              <span className="text-sidebar-primary-foreground text-sm font-bold">C</span>
+              <span className="text-sidebar-primary-foreground text-sm font-bold">
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </span>
             </div>
-            <div>
-              <p className="text-sm font-medium text-sidebar-foreground">CRM System</p>
-              <p className="text-xs text-sidebar-foreground/70">Professional Edition</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email}</p>
+              <p className="text-xs text-sidebar-foreground/70">Authenticated User</p>
             </div>
           </div>
+          
+          <Button 
+            onClick={() => signOut()} 
+            variant="outline" 
+            size="sm" 
+            className="w-full justify-start"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
         </div>
       </SidebarContent>
     </Sidebar>
