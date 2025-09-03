@@ -228,61 +228,64 @@ export function useResilientRequest(baseUrl: string, options: RequestOptions = {
       data: undefined,
     });
 
-    // Show long-running toast after 20 seconds
-    const longRunningToast = setTimeout(() => {
-      if (state.requestId === requestId) {
-        toast({
-          title: "Still working...",
-          description: "This can take up to 1-2 minutes. Please wait.",
-          duration: 5000,
-        });
-      }
-    }, 20000);
-
+    // Immediately make the POST request
     try {
-      const data = await executeRequest(payload, requestId);
+      console.log('Making direct POST request to:', baseUrl);
       
-      clearTimeout(longRunningToast);
-      
-      if (state.requestId === requestId) {
-        setState({
-          isLoading: false,
-          isProcessing: false,
-          startTime: undefined,
-          requestId: undefined,
-          error: undefined,
-          data,
-        });
-        
-        return data;
+      const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      console.log('Direct POST response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      setState({
+        isLoading: false,
+        isProcessing: false,
+        startTime: undefined,
+        requestId: undefined,
+        error: undefined,
+        data,
+      });
+      
+      return Array.isArray(data) ? data : (data.data || [data]);
+      
     } catch (error) {
-      clearTimeout(longRunningToast);
+      console.error('POST request failed:', error);
       
-      if (state.requestId === requestId && error instanceof Error && error.name !== 'AbortError') {
-        const duration = Date.now() - startTime;
-        const errorMessage = error.message;
-        
-        setState({
-          isLoading: false,
-          isProcessing: false,
-          startTime: undefined,
-          requestId: undefined,
-          error: errorMessage,
-          data: undefined,
-        });
-        
-        return {
-          error: {
-            message: errorMessage,
-            duration: Math.round(duration / 1000),
-            url: baseUrl,
-            method: 'POST',
-          }
-        };
-      }
+      setState({
+        isLoading: false,
+        isProcessing: false,
+        startTime: undefined,
+        requestId: undefined,
+        error: error instanceof Error ? error.message : 'Request failed',
+        data: undefined,
+      });
+      
+      return {
+        error: {
+          message: error instanceof Error ? error.message : 'Request failed',
+          duration: Math.round((Date.now() - startTime) / 1000),
+          url: baseUrl,
+          method: 'POST',
+        }
+      };
     }
-  }, [baseUrl, opts, toast, state.requestId]);
+  }, [baseUrl]);
 
   const getElapsedTime = useCallback(() => {
     if (!state.startTime) return 0;
