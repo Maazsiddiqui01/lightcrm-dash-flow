@@ -16,8 +16,10 @@ export function MakeYourOwnView() {
   const requestManager = useResilientRequest('https://inverisllc.app.n8n.cloud/webhook/SQL-Agent');
 
   const handleQuery = async (question: string, limit: number) => {
+    console.log('MakeYourOwnView handleQuery called', { question, limit });
     setLastQuery({ question, limit });
     
+    console.log('Calling requestManager.submit with:', { question, limit });
     const result = await requestManager.submit({ question, limit });
     
     if (result && !result.error) {

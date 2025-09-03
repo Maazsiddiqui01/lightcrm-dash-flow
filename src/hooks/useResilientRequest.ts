@@ -135,6 +135,8 @@ export function useResilientRequest(baseUrl: string, options: RequestOptions = {
           abortControllerRef.current?.abort();
         }, opts.timeout);
 
+        console.log('Making POST request to:', baseUrl, 'with payload:', { ...payload, requestId });
+        
         const response = await fetch(baseUrl, {
           method: 'POST',
           headers: { 
@@ -143,6 +145,8 @@ export function useResilientRequest(baseUrl: string, options: RequestOptions = {
           body: JSON.stringify({ ...payload, requestId }),
           signal: abortControllerRef.current.signal,
         });
+        
+        console.log('Response received:', { status: response.status, ok: response.ok });
 
         clearTimeout(timeoutId);
 
@@ -212,6 +216,8 @@ export function useResilientRequest(baseUrl: string, options: RequestOptions = {
   const submit = useCallback(async (payload: any) => {
     const requestId = generateRequestId();
     const startTime = Date.now();
+    
+    console.log('useResilientRequest submit called', { baseUrl, payload, requestId });
     
     setState({
       isLoading: true,

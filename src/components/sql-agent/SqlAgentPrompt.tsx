@@ -22,7 +22,9 @@ export function SqlAgentPrompt({ onSubmit, isLoading, initialValue = "" }: SqlAg
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('SqlAgentPrompt handleSubmit called', { question: question.trim(), limit, isLoading });
     if (!question.trim() || isLoading) return;
+    console.log('Calling onSubmit with:', { question: question.trim(), limit });
     onSubmit(question.trim(), limit);
   };
 
