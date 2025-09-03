@@ -1,68 +1,29 @@
 import { useState } from "react";
 import { SqlAgentPrompt } from "@/components/sql-agent/SqlAgentPrompt";
-import { SqlAgentResultsTable } from "@/components/sql-agent/SqlAgentResultsTable";
-import { LoadingStatus } from "@/components/sql-agent/LoadingStatus";
-import { normalizeAgentResponse } from "@/utils/csvExport";
+import { DynamicTable } from "@/components/sql-agent/DynamicTable";
+import { ProcessingStatus } from "@/components/sql-agent/ProcessingStatus";
+import { useResilientRequest } from "@/hooks/useResilientRequest";
 import { useToast } from "@/hooks/use-toast";
-
-interface QueryState {
-  columns: string[];
-  rows: any[];
-  isLoading: boolean;
-  error?: string;
-  hasQueried: boolean;
-}
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Copy, RefreshCw } from "lucide-react";
 
 export function MakeYourOwnView() {
-  const [queryState, setQueryState] = useState<QueryState>({
-    columns: [],
-    rows: [],
-    isLoading: false,
-    error: undefined,
-    hasQueried: false,
-  });
-  const [lastQuestion, setLastQuestion] = useState("");
+  const [lastQuery, setLastQuery] = useState<{ question: string; limit: number } | null>(null);
+  const [queryResults, setQueryResults] = useState<any[]>([]);
   const { toast } = useToast();
-
-  const runSqlAgent = async (question: string, limit: number = 500) => {
-    const ctrl = new AbortController();
-    const timeoutId = setTimeout(() => ctrl.abort(), 30000);
-    
-    try {
-      const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/SQL-Agent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, limit }),
-        signal: ctrl.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json().catch(() => ({}));
-      return normalizeAgentResponse(data);
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  };
+  
+  const requestManager = useResilientRequest('https://inverisllc.app.n8n.cloud/webhook/SQL-Agent');
 
   const handleQuery = async (question: string, limit: number) => {
-    setQueryState(prev => ({ ...prev, isLoading: true, error: undefined, hasQueried: true }));
-    setLastQuestion(question);
-
-    try {
-      const { columns, rows } = await runSqlAgent(question, limit);
-
-      setQueryState({
-        columns,
-        rows,
-        isLoading: false,
-        error: undefined,
-        hasQueried: true,
-      });
-
-      if (rows.length === 0) {
+    setLastQuery({ question, limit });
+    
+    const result = await requestManager.submit({ question, limit });
+    
+    if (result && !result.error) {
+      setQueryResults(Array.isArray(result) ? result : []);
+      
+      if (!result || (Array.isArray(result) && result.length === 0)) {
         toast({
           title: "Query completed",
           description: "No results found for your query",
@@ -70,33 +31,25 @@ export function MakeYourOwnView() {
       } else {
         toast({
           title: "Query successful!",
-          description: `Found ${rows.length.toLocaleString()} results`,
+          description: `Found ${result.length.toLocaleString()} results`,
         });
       }
-    } catch (error) {
-      console.error('Query error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      
-      setQueryState({
-        columns: [],
-        rows: [],
-        isLoading: false,
-        error: errorMessage,
-        hasQueried: true,
-      });
-
-      toast({
-        title: "Query failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
     }
   };
 
   const handleRetry = () => {
-    if (lastQuestion) {
-      handleQuery(lastQuestion, 500);
+    if (lastQuery) {
+      handleQuery(lastQuery.question, lastQuery.limit);
     }
+  };
+
+  const copyErrorDetails = (errorDetails: any) => {
+    const details = JSON.stringify(errorDetails, null, 2);
+    navigator.clipboard.writeText(details);
+    toast({
+      title: "Error details copied",
+      description: "Diagnostics copied to clipboard",
+    });
   };
 
   return (
@@ -117,25 +70,58 @@ export function MakeYourOwnView() {
         <div className="mb-8">
           <SqlAgentPrompt
             onSubmit={handleQuery}
-            isLoading={queryState.isLoading}
-            initialValue={lastQuestion}
+            isLoading={requestManager.isLoading || requestManager.isProcessing}
+            initialValue={lastQuery?.question || ""}
           />
         </div>
 
         {/* Results Section */}
-        {queryState.hasQueried && (
+        {(requestManager.isLoading || requestManager.isProcessing || requestManager.error || queryResults.length > 0) && (
           <div className="space-y-6">
-            {queryState.isLoading ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                <LoadingStatus />
+            {(requestManager.isLoading || requestManager.isProcessing) ? (
+              <ProcessingStatus
+                isLoading={requestManager.isLoading}
+                isProcessing={requestManager.isProcessing}
+                getElapsedTime={requestManager.getElapsedTime}
+                onCancel={requestManager.cancel}
+              />
+            ) : requestManager.error ? (
+              <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
+                <Alert variant="destructive">
+                  <AlertDescription className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-red-900 mb-2">Query Failed</h3>
+                      <p className="text-red-800">{requestManager.error}</p>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRetry}
+                        className="flex items-center space-x-2"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        <span>Try Again</span>
+                      </Button>
+                      
+                      {requestManager.data?.error && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyErrorDetails(requestManager.data.error)}
+                          className="flex items-center space-x-2 text-gray-600"
+                        >
+                          <Copy className="h-4 w-4" />
+                          <span>Copy Diagnostics</span>
+                        </Button>
+                      )}
+                    </div>
+                  </AlertDescription>
+                </Alert>
               </div>
             ) : (
-              <SqlAgentResultsTable
-                columns={queryState.columns}
-                rows={queryState.rows}
-                error={queryState.error}
-                onRetry={handleRetry}
-              />
+              <DynamicTable data={queryResults} />
             )}
           </div>
         )}
