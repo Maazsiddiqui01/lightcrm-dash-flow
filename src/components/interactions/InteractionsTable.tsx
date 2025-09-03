@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { DataTable } from "@/components/shared/DataTable";
+import { AdvancedTable, ColumnDef, TablePreset } from "@/components/shared/AdvancedTable";
 import { InteractionDrawer } from "./InteractionDrawer";
 import { AddInteractionDialog } from "./AddInteractionDialog";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { MessageSquare, Mail, Video, Download, Search, X } from "lucide-react";
+import { MessageSquare, Mail, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Interaction {
@@ -115,10 +115,15 @@ export function InteractionsTable() {
     setIsDrawerOpen(true);
   };
 
+  const handleSort = (key: string, direction: 'asc' | 'desc' | null) => {
+    setSortKey(key);
+    setSortDirection(direction);
+  };
+
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
-      month: "short", 
+      month: "short",
       day: "numeric",
       year: "numeric",
       hour: "2-digit",
@@ -126,46 +131,150 @@ export function InteractionsTable() {
     });
   };
 
-  const exportToCSV = () => {
-    const csvData = filteredInteractions.map(interaction => ({
-      'Occurred At': formatDateTime(interaction.occurred_at),
-      Subject: interaction.subject || '',
-      Source: interaction.source || '',
-      'From Name': interaction.from_name || '',
-      'From Email': interaction.from_email || '',
-      'To Emails': interaction.to_emails || '',
-      'CC Emails': interaction.cc_emails || '',
-      Organization: interaction.organization || ''
-    }));
-
-    const csvContent = [
-      Object.keys(csvData[0] || {}).join(','),
-      ...csvData.map(row => Object.values(row).map(val => 
-        typeof val === 'string' && val.includes(',') ? `"${val}"` : val
-      ).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'interactions.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+  const getSourceIcon = (source: string) => {
+    switch (source?.toLowerCase()) {
+      case "email":
+        return <Mail className="h-3 w-3" />;
+      case "meeting":
+        return <Video className="h-3 w-3" />;
+      default:
+        return <MessageSquare className="h-3 w-3" />;
+    }
   };
 
-  // Transform data for DataTable - keep original data structure
-  const tableData = filteredInteractions.map(interaction => ({
-    ...interaction,
-    // Add formatted display fields
-    occurred_at_display: formatDateTime(interaction.occurred_at),
-    subject_display: interaction.subject || "—",
-    source_display: interaction.source || "—", 
-    from_name_display: interaction.from_name || "—",
-    to_emails_display: interaction.to_emails || "—",
-    cc_emails_display: interaction.cc_emails || "—",
-    organization_display: interaction.organization || "—"
-  }));
+  const getSourceColor = (source: string) => {
+    switch (source?.toLowerCase()) {
+      case "email":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "meeting":
+        return "bg-green-50 text-green-700 border-green-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
+  // Column definitions
+  const columns: ColumnDef<Interaction>[] = [
+    {
+      key: "occurred_at",
+      label: "Occurred At",
+      width: 180,
+      minWidth: 160,
+      sortable: true,
+      render: (value) => (
+        <span className="text-sm text-muted-foreground">
+          {formatDateTime(value)}
+        </span>
+      )
+    },
+    {
+      key: "subject",
+      label: "Subject",
+      width: 300,
+      minWidth: 200,
+      sortable: true,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block font-medium">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">{value || "No subject"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "source",
+      label: "Source",
+      width: 100,
+      minWidth: 80,
+      sortable: true,
+      render: (value) => (
+        <Badge variant="secondary" className={`${getSourceColor(value)} flex items-center gap-1`}>
+          {getSourceIcon(value)}
+          {value || "—"}
+        </Badge>
+      )
+    },
+    {
+      key: "from_name",
+      label: "From Name",
+      width: 180,
+      minWidth: 150,
+      sortable: true,
+      render: (value, row) => (
+        <div className="space-y-1">
+          <div className="font-medium">{value || "—"}</div>
+          <div className="text-xs text-muted-foreground truncate">
+            {row.from_email || "—"}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: "to_emails",
+      label: "To Emails",
+      width: 200,
+      minWidth: 150,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block text-sm">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">{value || "No recipients"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "cc_emails",
+      label: "CC Emails",
+      width: 200,
+      minWidth: 150,
+      render: (value) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block text-sm text-muted-foreground">{value || "—"}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">{value || "No CC recipients"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: "organization",
+      label: "Organization",
+      width: 180,
+      minWidth: 150,
+      sortable: true,
+      render: (value) => value || "—"
+    }
+  ];
+
+  // Table presets
+  const presets: TablePreset[] = [
+    {
+      name: "Compact",
+      columns: ["occurred_at", "subject", "source", "from_name"]
+    },
+    {
+      name: "Standard",
+      columns: ["occurred_at", "subject", "source", "from_name", "to_emails", "organization"]
+    },
+    {
+      name: "Wide",
+      columns: ["occurred_at", "subject", "source", "from_name", "to_emails", "cc_emails", "organization"]
+    }
+  ];
 
   // Active filters for display
   const activeFilters = useMemo(() => {
@@ -201,6 +310,49 @@ export function InteractionsTable() {
     setSearchTerm("");
   };
 
+  // Filters component
+  const filtersComponent = (
+    <div className="flex items-center space-x-2">
+      <Select value={sourceFilter} onValueChange={setSourceFilter}>
+        <SelectTrigger className="w-32 focus-ring">
+          <SelectValue placeholder="All Sources" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Sources</SelectItem>
+          {uniqueSources.map((source) => (
+            <SelectItem key={source} value={source}>
+              {source}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Input
+        type="date"
+        placeholder="From date"
+        value={dateRange.from}
+        onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
+        className="w-36 focus-ring"
+      />
+      
+      <Input
+        type="date"
+        placeholder="To date"
+        value={dateRange.to}
+        onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
+        className="w-36 focus-ring"
+      />
+    </div>
+  );
+
+  const emptyState = {
+    title: "No interactions found",
+    description: searchTerm || activeFilters.length > 0 
+      ? "Try adjusting your search or filters to find interactions."
+      : "Start tracking your communications by adding your first interaction.",
+    action: <AddInteractionDialog onInteractionAdded={refetch} />
+  };
+
   return (
     <div className="bg-background">
       <div className="p-6 space-y-6">
@@ -213,106 +365,25 @@ export function InteractionsTable() {
           </div>
         </div>
 
-        {/* Search, Filters and Export */}
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search interactions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            <Button variant="outline" onClick={exportToCSV} className="ml-4">
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-          </div>
-
-          {/* Filters */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                <SelectTrigger className="w-32 focus-ring">
-                  <SelectValue placeholder="All Sources" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sources</SelectItem>
-                  {uniqueSources.map((source) => (
-                    <SelectItem key={source} value={source}>
-                      {source}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Input
-                type="date"
-                placeholder="From date"
-                value={dateRange.from}
-                onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                className="w-36 focus-ring"
-              />
-              
-              <Input
-                type="date"
-                placeholder="To date"
-                value={dateRange.to}
-                onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                className="w-36 focus-ring"
-              />
-            </div>
-
-            {/* Active filters */}
-            {activeFilters.length > 0 && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">Filters:</span>
-                {activeFilters.map((filter, index) => (
-                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                    {filter.label}
-                    <button onClick={filter.onRemove}>
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-                <Button variant="ghost" size="sm" onClick={clearAllFilters}>
-                  Clear all
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* DataTable */}
+        {/* Table Container */}
         <div className="bg-card rounded-lg shadow-md border border-border overflow-hidden">
-          <DataTable
-            rows={loading ? undefined : tableData}
-            preferredOrder={[
-              "occurred_at", "subject", "source", "from_name", 
-              "to_emails", "cc_emails", "organization"
-            ]}
-            initialWidths={{
-              occurred_at: 180,
-              subject: 300,
-              source: 100,
-              from_name: 180,
-              to_emails: 200,
-              cc_emails: 200,
-              organization: 180
-            }}
-            persistKey="interactions"
-            onRowClick={(row) => handleRowClick(row as unknown as Interaction)}
+          <AdvancedTable
+        data={filteredInteractions}
+        columns={columns}
+        loading={loading}
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        onRowClick={handleRowClick}
+        onSort={handleSort}
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        filters={filtersComponent}
+        activeFilters={activeFilters}
+        onClearAllFilters={clearAllFilters}
+        emptyState={emptyState}
+        tableId="interactions"
+        presets={presets}
+        exportFilename="interactions"
           />
         </div>
       </div>
