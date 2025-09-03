@@ -14,22 +14,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface TomNewViewRow {
-  contact_id?: string;
-  deal_source_company?: string;
-  deal_source_individual?: string;
-  lg_sector?: string;
-  lg_focus_area?: string;
-  areas_of_specialization?: string;
-  lg_lead?: string;
-  most_recent_contact?: string;
-  delta?: number;
-  delta_days?: number;
-  delta_type?: string;
-  no_of_emails?: number;
-  no_of_meetings?: number;
-  next_scheduled_outreach_date?: string;
-  deal_name?: string;
-  has_opps?: string;
+  contact_id: string | null;
+  deal_source_company: string | null;
+  deal_source_individual: string | null;
+  lg_sector: string | null;
+  lg_focus_area: string | null;
+  areas_of_specialization: string | null;
+  lg_lead: string | null;
+  most_recent_contact: string | null;
+  delta: number | null;
+  delta_days: number | null;
+  delta_type: string | null;
+  no_of_emails: number | null;
+  no_of_meetings: number | null;
+  next_scheduled_outreach_date: string | null;
+  deal_name: string | null;
+  has_opps: string | null;
 }
 
 export function TomNewView() {
@@ -47,7 +47,7 @@ export function TomNewView() {
         .order('most_recent_contact', { ascending: false, nullsFirst: false });
       if (error) throw error;
       console.log('tom row', data?.[0]); // Sanity check
-      return data as TomNewViewRow[];
+      return data as any;
     },
   });
 
@@ -134,25 +134,12 @@ export function TomNewView() {
     });
   }, [rawData, filters, searchTerm]);
 
-  // Format functions
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '—';
-    try {
-      return format(new Date(dateStr), 'MMM d, yyyy');
-    } catch {
-      return dateStr;
-    }
-  };
-
-  const formatNumber = (num?: number) => {
-    if (num === undefined || num === null) return '—';
-    return num.toLocaleString();
-  };
-
-  const formatCell = (value: any) => {
-    if (value === null || value === undefined || value === '') return '—';
-    return String(value);
-  };
+  // Format functions  
+  const dash = (v: unknown) => (v ?? '') === '' || v === null ? '—' : String(v);
+  const fmtNum = (n: unknown) => 
+    n === null || n === undefined ? '—' : new Intl.NumberFormat().format(Number(n));
+  const fmtDate = (iso: string | null) => 
+    !iso ? '—' : new Date(iso).toLocaleDateString();
 
   // Column definitions
   const columns = useMemo(() => [
@@ -161,98 +148,112 @@ export function TomNewView() {
       label: 'Deal Source Company',
       width: 180,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatCell(row.deal_source_company),
+      render: (row: TomNewViewRow) => !row ? '—' : dash(row.deal_source_company),
     },
     {
       key: 'deal_source_individual',
       label: 'Deal Source Individual',
       width: 180,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatCell(row.deal_source_individual),
+      render: (row: TomNewViewRow) => !row ? '—' : dash(row.deal_source_individual),
     },
     {
       key: 'lg_sector',
       label: 'LG Sector',
       width: 150,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatCell(row.lg_sector),
+      render: (row: TomNewViewRow) => !row ? '—' : dash(row.lg_sector),
     },
     {
       key: 'lg_focus_area',
       label: 'LG Focus Area',
       width: 180,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatCell(row.lg_focus_area),
+      render: (row: TomNewViewRow) => !row ? '—' : dash(row.lg_focus_area),
     },
     {
       key: 'areas_of_specialization',
       label: 'Areas of Specialization',
       width: 200,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatCell(row.areas_of_specialization),
+      render: (row: TomNewViewRow) => !row ? '—' : dash(row.areas_of_specialization),
     },
     {
       key: 'lg_lead',
       label: 'LG Lead',
       width: 150,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatCell(row.lg_lead),
+      render: (row: TomNewViewRow) => !row ? '—' : dash(row.lg_lead),
     },
     {
       key: 'most_recent_contact',
       label: 'Most Recent Contact',
       width: 160,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatDate(row.most_recent_contact),
+      render: (row: TomNewViewRow) => !row ? '—' : fmtDate(row.most_recent_contact),
     },
     {
       key: 'delta',
       label: 'Delta',
       width: 100,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatNumber(row.delta),
+      render: (row: TomNewViewRow) => !row ? '—' : fmtNum(row.delta),
+    },
+    {
+      key: 'delta_days',
+      label: 'Delta Days',
+      width: 120,
+      sortable: true,
+      render: (row: TomNewViewRow) => !row ? '—' : fmtNum(row.delta_days),
     },
     {
       key: 'delta_type',
       label: 'Delta Type',
       width: 120,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatCell(row.delta_type),
+      render: (row: TomNewViewRow) => !row ? '—' : dash(row.delta_type),
     },
     {
       key: 'no_of_emails',
       label: 'No of Emails',
       width: 120,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatNumber(row.no_of_emails),
+      render: (row: TomNewViewRow) => !row ? '—' : fmtNum(row.no_of_emails),
     },
     {
       key: 'no_of_meetings',
       label: 'No of Meetings',
       width: 130,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatNumber(row.no_of_meetings),
+      render: (row: TomNewViewRow) => !row ? '—' : fmtNum(row.no_of_meetings),
     },
     {
       key: 'next_scheduled_outreach_date',
       label: 'Next Scheduled Outreach Date',
       width: 200,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatDate(row.next_scheduled_outreach_date),
+      render: (row: TomNewViewRow) => !row ? '—' : fmtDate(row.next_scheduled_outreach_date),
     },
     {
       key: 'deal_name',
       label: 'Deal Name',
       width: 180,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : formatCell(row.deal_name),
+      render: (row: TomNewViewRow) => !row ? '—' : dash(row.deal_name),
     },
     {
       key: 'has_opps',
       label: 'Has Opps',
       width: 100,
       sortable: true,
-      render: (row: TomNewViewRow) => !row ? '—' : row.has_opps === 'Yes' ? 'Yes' : row.has_opps === 'No' ? 'No' : '—',
+      render: (row: TomNewViewRow) => !row ? '—' : dash(row.has_opps),
+    },
+    {
+      key: 'contact_id',
+      label: 'Contact ID',
+      width: 160,
+      sortable: true,
+      render: (row: TomNewViewRow) => !row ? '—' : dash(row.contact_id),
     },
   ], []);
 
@@ -268,20 +269,22 @@ export function TomNewView() {
     }
 
     const csvData = data.map(row => ({
-      'Deal Source Company': formatCell(row.deal_source_company),
-      'Deal Source Individual': formatCell(row.deal_source_individual),
-      'LG Sector': formatCell(row.lg_sector),
-      'LG Focus Area': formatCell(row.lg_focus_area),
-      'Areas of Specialization': formatCell(row.areas_of_specialization),
-      'LG Lead': formatCell(row.lg_lead),
-      'Most Recent Contact': formatDate(row.most_recent_contact),
-      'Delta': formatNumber(row.delta),
-      'Delta Type': formatCell(row.delta_type),
-      'No of Emails': formatNumber(row.no_of_emails),
-      'No of Meetings': formatNumber(row.no_of_meetings),
-      'Next Scheduled Outreach Date': formatDate(row.next_scheduled_outreach_date),
-      'Deal Name': formatCell(row.deal_name),
-      'Has Opps': row.has_opps === 'Yes' ? 'Yes' : row.has_opps === 'No' ? 'No' : '—',
+      'Deal Source Company': dash(row.deal_source_company),
+      'Deal Source Individual': dash(row.deal_source_individual),
+      'LG Sector': dash(row.lg_sector),
+      'LG Focus Area': dash(row.lg_focus_area),
+      'Areas of Specialization': dash(row.areas_of_specialization),
+      'LG Lead': dash(row.lg_lead),
+      'Most Recent Contact': fmtDate(row.most_recent_contact),
+      'Delta': fmtNum(row.delta),
+      'Delta Days': fmtNum(row.delta_days),
+      'Delta Type': dash(row.delta_type),
+      'No of Emails': fmtNum(row.no_of_emails),
+      'No of Meetings': fmtNum(row.no_of_meetings),
+      'Next Scheduled Outreach Date': fmtDate(row.next_scheduled_outreach_date),
+      'Deal Name': dash(row.deal_name),
+      'Has Opps': dash(row.has_opps),
+      'Contact ID': dash(row.contact_id),
     }));
 
     const csv = jsonToCsv(csvData);
