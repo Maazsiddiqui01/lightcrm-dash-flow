@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { AdvancedTable, ColumnDef, TablePreset } from "@/components/shared/AdvancedTable";
+import { DataTable } from "@/components/shared/DataTable";
 import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
 import { FilterModal, ActiveFilters } from "@/components/shared/FilterModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Filter, Plus, User } from "lucide-react";
+import { Filter, Plus, User, Download, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { useDistinctValues } from "@/hooks/useDistinctValues";
@@ -183,11 +183,6 @@ export function ContactsTable() {
     setIsDrawerOpen(true);
   };
 
-  const handleSort = (key: string, direction: 'asc' | 'desc' | null) => {
-    setSortKey(key);
-    setSortDirection(direction);
-  };
-
   const handleApplyFilters = () => {
     // Filters are already applied through useEffect dependency on filters
   };
@@ -196,168 +191,52 @@ export function ContactsTable() {
     removeFilter(key, value);
   };
 
-  // Column definitions
-  const columns: ColumnDef<ContactApp>[] = [
-    {
-      key: "full_name",
-      label: "Full Name",
-      sticky: true,
-      width: 200,
-      minWidth: 150,
-      sortable: true,
-      render: (value, row) => (
-        <div className="flex items-center space-x-2">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <User className="h-4 w-4 text-primary" />
-          </div>
-          <span className="font-medium">{value || "Unnamed Contact"}</span>
-        </div>
-      )
-    },
-    {
-      key: "email_address",
-      label: "Email",
-      width: 250,
-      minWidth: 200,
-      sortable: true,
-      render: (value) => (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="truncate block text-muted-foreground">{value || "—"}</span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{value || "No email address"}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )
-    },
-    {
-      key: "organization",
-      label: "Organization",
-      width: 200,
-      minWidth: 150,
-      sortable: true,
-      render: (value) => value || "—"
-    },
-    {
-      key: "title",
-      label: "Title",
-      width: 180,
-      minWidth: 120,
-      sortable: true,
-      render: (value) => value || "—"
-    },
-    {
-      key: "lg_focus_areas_comprehensive_list",
-      label: "Focus Areas",
-      width: 250,
-      minWidth: 200,
-      render: (value) => (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="truncate block">{value || "—"}</span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="max-w-xs">{value || "No focus areas listed"}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )
-    },
-    {
-      key: "of_emails",
-      label: "Emails",
-      width: 100,
-      minWidth: 80,
-      sortable: true,
-      render: (value) => (
-        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-          {value || 0}
-        </Badge>
-      )
-    },
-    {
-      key: "of_meetings",
-      label: "Meetings",
-      width: 100,
-      minWidth: 80,
-      sortable: true,
-      render: (value) => (
-        <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
-          {value || 0}
-        </Badge>
-      )
-    },
-    {
-      key: "all_opps",
-      label: "Opportunities",
-      width: 120,
-      minWidth: 100,
-      sortable: true,
-      render: (value) => (
-        <Badge variant="secondary" className="bg-purple-50 text-purple-700 border-purple-200">
-          {value || 0}
-        </Badge>
-      )
-    },
-    {
-      key: "most_recent_contact",
-      label: "Last Touch",
-      width: 150,
-      minWidth: 120,
-      sortable: true,
-      render: (value) => {
-        if (!value) return "—";
-        const date = new Date(value);
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-muted-foreground">
-                  {date.toLocaleDateString()}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{date.toLocaleString()}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      }
-    }
-  ];
+  const exportToCSV = () => {
+    const csvData = filteredContacts.map(contact => ({
+      Name: contact.full_name || '',
+      Email: contact.email_address || '',
+      Organization: contact.organization || '',
+      Title: contact.title || '',
+      'Focus Areas': contact.lg_focus_areas_comprehensive_list || '',
+      'Areas of Specialization': contact.areas_of_specialization || '',
+      Emails: contact.of_emails || 0,
+      Meetings: contact.of_meetings || 0,
+      Opportunities: contact.all_opps || 0,
+      'Last Touch': contact.most_recent_contact || ''
+    }));
 
-  // Table presets
-  const presets: TablePreset[] = [
-    {
-      name: "Compact",
-      columns: ["full_name", "email_address", "organization", "of_emails", "of_meetings"]
-    },
-    {
-      name: "Standard", 
-      columns: ["full_name", "email_address", "organization", "title", "of_emails", "of_meetings", "most_recent_contact"]
-    },
-    {
-      name: "Wide",
-      columns: ["full_name", "email_address", "organization", "title", "lg_focus_areas_comprehensive_list", "of_emails", "of_meetings", "all_opps", "most_recent_contact"]
-    }
-  ];
+    const csvContent = [
+      Object.keys(csvData[0] || {}).join(','),
+      ...csvData.map(row => Object.values(row).map(val => 
+        typeof val === 'string' && val.includes(',') ? `"${val}"` : val
+      ).join(','))
+    ].join('\n');
 
-  const emptyState = {
-    title: "No contacts found",
-    description: searchTerm || activeFilterCount > 0 
-      ? "Try adjusting your search or filters to find contacts."
-      : "Start building your professional network by adding your first contact.",
-    action: (
-      <Button onClick={() => setIsAddDialogOpen(true)}>
-        <Plus className="h-4 w-4 mr-2" />
-        Add Contact
-      </Button>
-    )
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'contacts.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   };
+
+  // Transform data for DataTable - preserve original structure
+  const tableData = filteredContacts.map(contact => ({
+    ...contact,
+    // Add formatted display versions while keeping originals
+    full_name_display: contact.full_name || "Unnamed Contact",
+    email_display: contact.email_address || "—",
+    organization_display: contact.organization || "—", 
+    title_display: contact.title || "—",
+    focus_areas_display: contact.lg_focus_areas_comprehensive_list || "—",
+    emails_display: contact.of_emails || 0,
+    meetings_display: contact.of_meetings || 0,
+    opportunities_display: contact.all_opps || 0,
+    last_touch_display: contact.most_recent_contact 
+      ? new Date(contact.most_recent_contact).toLocaleDateString()
+      : "—"
+  }));
 
   return (
     <div className="bg-background">
@@ -407,22 +286,54 @@ export function ContactsTable() {
           </div>
         )}
 
-        {/* Table Container */}
+        {/* Search and Export */}
+        <div className="flex items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search contacts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Button variant="outline" onClick={exportToCSV} className="ml-4">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
+
+        {/* DataTable */}
         <div className="bg-card rounded-lg shadow-md border border-border overflow-hidden">
-          <AdvancedTable
-        data={filteredContacts}
-        columns={columns}
-        loading={loading}
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
-        onRowClick={handleRowClick}
-        onSort={handleSort}
-        sortKey={sortKey}
-        sortDirection={sortDirection}
-        emptyState={emptyState}
-        tableId="contacts"
-        presets={presets}
-        exportFilename="contacts"
+          <DataTable
+            rows={loading ? undefined : tableData}
+            preferredOrder={[
+              "full_name", "email_address", "organization", "title", 
+              "lg_focus_areas_comprehensive_list", "of_emails", "of_meetings", 
+              "all_opps", "most_recent_contact"
+            ]}
+            initialWidths={{
+              full_name: 200,
+              email_address: 250,
+              organization: 200,
+              title: 180,
+              lg_focus_areas_comprehensive_list: 250,
+              of_emails: 100,
+              of_meetings: 100,
+              all_opps: 120,
+              most_recent_contact: 150
+            }}
+            persistKey="contacts"
+            onRowClick={(row) => handleRowClick(row as any)}
           />
         </div>
       </div>

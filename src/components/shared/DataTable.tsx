@@ -20,6 +20,8 @@ export type DataTableProps = {
   initialWidths?: Record<string, number>;
   /** optional: an id to persist UI prefs */
   persistKey?: string;
+  /** optional: row click handler */
+  onRowClick?: (row: Record<string, unknown>) => void;
   className?: string;
 };
 
@@ -37,6 +39,7 @@ const DataTable = ({
   preferredOrder = [],
   initialWidths = {},
   persistKey,
+  onRowClick,
   className,
 }: DataTableProps) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -400,7 +403,14 @@ const DataTable = ({
               </TableRow>
             ) : (
               rows.map((row, index) => (
-                <TableRow key={index} className="hover:bg-table-row-hover/50">
+                <TableRow 
+                  key={index} 
+                  className={cn(
+                    "hover:bg-table-row-hover/50",
+                    onRowClick && "cursor-pointer"
+                  )}
+                  onClick={() => onRowClick?.(row)}
+                >
                   {visibleColumns.map((columnKey) => (
                     <TableCell
                       key={columnKey}
