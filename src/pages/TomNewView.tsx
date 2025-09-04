@@ -428,7 +428,7 @@ export function TomNewView() {
   const toggleMulti = useCallback((key: string, value: string) => {
     const current = (filters[key] as string[]) || [];
     const next = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
-    updateFilters({ [key]: next as any });
+    updateFilters({ ...filters, [key]: next as any });
   }, [filters, updateFilters]);
 
   // Multi-select component
@@ -633,7 +633,7 @@ export function TomNewView() {
                 <Label>Has Opps</Label>
                 <RadioGroup
                   value={(filters.has_opps as string) || 'all'}
-                  onValueChange={(value) => updateFilters({ has_opps: value as any })}
+                  onValueChange={(value) => updateFilters({ ...filters, has_opps: value as any })}
                   className="flex gap-4"
                 >
                   <div className="flex items-center space-x-2">
@@ -662,7 +662,7 @@ export function TomNewView() {
                   id="delta-min"
                   type="number"
                   value={(filters.delta_min as any) || ''}
-                  onChange={(e) => updateFilters({ delta_min: e.target.value ? parseInt(e.target.value) as any : null })}
+                  onChange={(e) => updateFilters({ ...filters, delta_min: e.target.value ? parseInt(e.target.value) as any : null })}
                   placeholder="Minimum delta days"
                 />
               </div>
@@ -673,7 +673,7 @@ export function TomNewView() {
                   id="delta-max"
                   type="number"
                   value={(filters.delta_max as any) || ''}
-                  onChange={(e) => updateFilters({ delta_max: e.target.value ? parseInt(e.target.value) as any : null })}
+                  onChange={(e) => updateFilters({ ...filters, delta_max: e.target.value ? parseInt(e.target.value) as any : null })}
                   placeholder="Maximum delta days"
                 />
               </div>
@@ -684,7 +684,7 @@ export function TomNewView() {
                   id="outreach-start"
                   type="date"
                   value={filters.outreach_start as string || ''}
-                  onChange={(e) => updateFilters({ outreach_start: e.target.value })}
+                  onChange={(e) => updateFilters({ ...filters, outreach_start: e.target.value })}
                 />
               </div>
               
@@ -694,7 +694,7 @@ export function TomNewView() {
                   id="outreach-end"
                   type="date"
                   value={filters.outreach_end as string || ''}
-                  onChange={(e) => updateFilters({ outreach_end: e.target.value })}
+                  onChange={(e) => updateFilters({ ...filters, outreach_end: e.target.value })}
                 />
               </div>
             </div>
