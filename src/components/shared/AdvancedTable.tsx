@@ -393,17 +393,17 @@ export function AdvancedTable<T extends Record<string, any>>({
             </CardContent>
           ) : (
             <div className="table-wrapper">
-              {/* TOP SCROLLBAR (mirror) */}
+              {/* STICKY TOP SCROLLBAR for easy horizontal navigation */}
               <div
                 ref={topScrollRef}
-                className="overflow-x-auto h-3 bg-muted/30 border-b border-border/50 scrollbar-thin scrollbar-thumb-border/60 scrollbar-track-transparent"
+                className="sticky top-0 z-10 overflow-x-auto h-5 bg-card border-y border-border shadow-sm scrollbar-thin scrollbar-thumb-primary/40 scrollbar-track-muted/20 hover:scrollbar-thumb-primary/60 transition-colors"
                 onScroll={(e) => {
                   if (tableRef.current) {
                     tableRef.current.scrollLeft = e.currentTarget.scrollLeft;
                   }
                 }}
               >
-                <div style={{ width: tableRef.current?.scrollWidth ?? '200%', height: '12px' }} />
+                <div style={{ width: tableRef.current?.scrollWidth ?? '200%', height: '20px' }} />
               </div>
 
               <div 
