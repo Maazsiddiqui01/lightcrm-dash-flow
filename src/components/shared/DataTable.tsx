@@ -39,12 +39,49 @@ const DataTable = ({
   persistKey,
   className,
 }: DataTableProps) => {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const topScrollRef = React.useRef<HTMLDivElement>(null);
-  const bottomScrollRef = React.useRef<HTMLDivElement>(null);
-  const tableRef = React.useRef<HTMLDivElement>(null);
+  const bodyRef = React.useRef<HTMLDivElement>(null);
+  const topRef = React.useRef<HTMLDivElement>(null);
+  const bottomRef = React.useRef<HTMLDivElement>(null);
+  const [scrollWidth, setScrollWidth] = React.useState(0);
+  const [clientWidth, setClientWidth] = React.useState(0);
   const [resizingColumn, setResizingColumn] = React.useState<string | null>(null);
   const [hasScrolled, setHasScrolled] = React.useState(false);
+
+  // Measure table dimensions for scroll synchronization
+  React.useLayoutEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const measure = () => {
+      setScrollWidth(el.scrollWidth);
+      setClientWidth(el.clientWidth);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Sync scroll positions between top, body, and bottom scrollbars
+  const sync = (from: 'top' | 'body' | 'bottom') => {
+    return () => {
+      const body = bodyRef.current;
+      const top = topRef.current;
+      const bottom = bottomRef.current;
+      if (!body || !top || !bottom) return;
+
+      if (from === 'top') {
+        body.scrollLeft = top.scrollLeft;
+        bottom.scrollLeft = top.scrollLeft;
+      } else if (from === 'bottom') {
+        body.scrollLeft = bottom.scrollLeft;
+        top.scrollLeft = bottom.scrollLeft;
+      } else {
+        top.scrollLeft = body.scrollLeft;
+        bottom.scrollLeft = body.scrollLeft;
+        setHasScrolled(body.scrollLeft > 0);
+      }
+    };
+  };
 
   // Infer columns from data
   const columns = React.useMemo(() => {
@@ -133,50 +170,6 @@ const DataTable = ({
     }
   }, [columnConfigs, persistKey]);
 
-  // Synchronized horizontal scrolling
-  React.useEffect(() => {
-    const topScroll = topScrollRef.current;
-    const bottomScroll = bottomScrollRef.current;
-    const tableContainer = tableRef.current;
-
-    if (!topScroll || !bottomScroll || !tableContainer) return;
-
-    const syncScroll = (source: HTMLElement, target: HTMLElement) => {
-      target.scrollLeft = source.scrollLeft;
-    };
-
-    const handleTopScroll = () => {
-      if (bottomScrollRef.current && tableRef.current) {
-        syncScroll(topScrollRef.current!, bottomScrollRef.current);
-        syncScroll(topScrollRef.current!, tableRef.current);
-      }
-    };
-
-    const handleBottomScroll = () => {
-      if (topScrollRef.current && tableRef.current) {
-        syncScroll(bottomScrollRef.current!, topScrollRef.current);
-        syncScroll(bottomScrollRef.current!, tableRef.current);
-      }
-    };
-
-    const handleTableScroll = () => {
-      if (topScrollRef.current && bottomScrollRef.current) {
-        syncScroll(tableRef.current!, topScrollRef.current);
-        syncScroll(tableRef.current!, bottomScrollRef.current);
-        setHasScrolled(tableRef.current!.scrollLeft > 0);
-      }
-    };
-
-    topScroll.addEventListener('scroll', handleTopScroll);
-    bottomScroll.addEventListener('scroll', handleBottomScroll);
-    tableContainer.addEventListener('scroll', handleTableScroll);
-
-    return () => {
-      topScroll.removeEventListener('scroll', handleTopScroll);
-      bottomScroll.removeEventListener('scroll', handleBottomScroll);
-      tableContainer.removeEventListener('scroll', handleTableScroll);
-    };
-  }, []);
 
   const formatCellValue = (value: unknown): string => {
     if (value === null || value === undefined) return "—";
@@ -331,18 +324,25 @@ const DataTable = ({
       {/* Accessibility announcements */}
       <div aria-live="polite" className="sr-only"></div>
       
-      {/* Top horizontal scrollbar */}
-      <div className="w-full overflow-x-auto border-b" ref={topScrollRef}>
-        <div style={{ width: totalWidth, height: '1px' }}></div>
+      {/* TOP horizontal scrollbar (always visible above the table body) */}
+      <div
+        ref={topRef}
+        onScroll={sync('top')}
+        className="overflow-x-auto h-3 mb-2 rounded bg-transparent"
+        aria-hidden
+      >
+        {/* spacer to match table width */}
+        <div style={{ width: Math.max(scrollWidth, clientWidth) }} />
       </div>
 
-      {/* Main table container */}
-      <div 
-        ref={tableRef}
-        className="w-full overflow-x-auto max-h-[70vh] overflow-y-auto border rounded-md"
+      {/* TABLE BODY with vertical + horizontal scroll */}
+      <div
+        ref={bodyRef}
+        onScroll={sync('body')}
+        className="relative max-h-[70vh] overflow-auto border rounded-lg"
       >
-        <Table className="relative">
-          <TableHeader className={cn("sticky top-0 z-10 bg-table-header", hasScrolled && "shadow-sm")}>
+        <Table className="relative w-full table-fixed">
+          <TableHeader className={cn("sticky top-0 z-10 bg-background", hasScrolled && "shadow-sm")}>
             <TableRow>
               {visibleColumns.map((columnKey) => (
                 <TableHead
@@ -419,11 +419,18 @@ const DataTable = ({
             )}
           </TableBody>
         </Table>
-      </div>
 
-      {/* Bottom horizontal scrollbar */}
-      <div className="w-full overflow-x-auto border-t" ref={bottomScrollRef}>
-        <div style={{ width: totalWidth, height: '1px' }}></div>
+        {/* STICKY BOTTOM horizontal scrollbar */}
+        <div className="sticky bottom-0 left-0 right-0 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50">
+          <div
+            ref={bottomRef}
+            onScroll={sync('bottom')}
+            className="overflow-x-auto h-3"
+            aria-hidden
+          >
+            <div style={{ width: Math.max(scrollWidth, clientWidth) }} />
+          </div>
+        </div>
       </div>
 
       {/* Footer with pagination info */}
