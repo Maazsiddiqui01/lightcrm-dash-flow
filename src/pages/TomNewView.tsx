@@ -18,6 +18,22 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 
+// Token utilities for comma-separated fields
+const tokenize = (s?: string) =>
+  (s ?? '')
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
+
+const norm = (s: string) => s.toLowerCase();
+
+const matchesAnyToken = (rowVal: string | null, selected: string[]) => {
+  if (!selected?.length) return true;
+  const rowTokens = tokenize(rowVal).map(norm);
+  const selectedNorm = selected.map(norm);
+  return selectedNorm.some(tok => rowTokens.includes(tok));
+};
+
 interface TomNewViewRow {
   contact_id: string | null;
   deal_source_company: string | null;
@@ -65,9 +81,15 @@ export function TomNewView() {
     const ds = new Set<string>(), fa = new Set<string>(), ld = new Set<string>(), dt = new Set<string>();
     (rawData ?? []).forEach(r => {
       if (r?.deal_source_company) ds.add(r.deal_source_company.trim());
-      if (r?.lg_focus_area) fa.add(r.lg_focus_area.trim());
-      if (r?.lg_lead) ld.add(r.lg_lead.trim());
       if (r?.delta_type) dt.add(r.delta_type.trim());
+      
+      // Tokenize comma-separated fields for lg_focus_area and lg_lead
+      if (r?.lg_focus_area) {
+        tokenize(r.lg_focus_area).forEach(token => fa.add(token));
+      }
+      if (r?.lg_lead) {
+        tokenize(r.lg_lead).forEach(token => ld.add(token));
+      }
     });
     const sort = (arr: string[]) => arr.filter(Boolean).sort((a,b)=>a.localeCompare(b));
     return {
@@ -100,22 +122,20 @@ export function TomNewView() {
       filtered = filtered.filter(r => selDS.includes(r.deal_source_company || ''));
     }
 
-    // LG Focus Area (substring match, case-insensitive; multiple allowed)
+    // LG Focus Area (match any token)
     const selFA = (filters.lg_focus_area as string[]) || [];
     if (selFA.length) {
-      filtered = filtered.filter(r => {
-        const v = (r.lg_focus_area || '').toLowerCase();
-        return selFA.some(x => v.includes(x.toLowerCase()));
-      });
+      filtered = filtered.filter(r =>
+        matchesAnyToken(r.lg_focus_area, selFA)
+      );
     }
 
-    // LG Lead (substring match, case-insensitive; multiple allowed)
+    // LG Lead (match any token)
     const selLead = (filters.lg_lead as string[]) || [];
     if (selLead.length) {
-      filtered = filtered.filter(r => {
-        const v = (r.lg_lead || '').toLowerCase();
-        return selLead.some(x => v.includes(x.toLowerCase()));
-      });
+      filtered = filtered.filter(r =>
+        matchesAnyToken(r.lg_lead, selLead)
+      );
     }
 
     // Delta Type (exact match list)
