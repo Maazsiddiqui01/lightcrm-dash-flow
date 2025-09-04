@@ -121,6 +121,8 @@ export function AdvancedTable<T extends Record<string, any>>({
   const [resizing, setResizing] = useState<{ key: string; startX: number; startWidth: number } | null>(null);
   const [shouldUseVirtualization, setShouldUseVirtualization] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const bottomScrollRef = useRef<HTMLDivElement>(null);
 
   // Check if we should use virtualization
   useEffect(() => {
@@ -135,9 +137,14 @@ export function AdvancedTable<T extends Record<string, any>>({
     return data.slice(start, start + pageSize);
   }, [data, currentPage, pageSize]);
 
+  // For display-only table, use all data instead of paginated
+  const displayData = useMemo(() => {
+    return data || [];
+  }, [data]);
+
   // Virtualization setup
   const { virtualItems, totalHeight, offsetY, setScrollTop } = useVirtualized(
-    paginatedData, 
+    displayData, 
     48, 
     600
   );
@@ -231,7 +238,7 @@ export function AdvancedTable<T extends Record<string, any>>({
   const exportToCSV = () => {
     const visibleColumns = columns.filter(col => col.visible !== false);
     const headers = visibleColumns.map(col => col.label);
-    const rows = paginatedData.map(row => 
+    const rows = displayData.map(row => 
       visibleColumns.map(col => {
         const value = row[col.key];
         return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
@@ -429,155 +436,191 @@ export function AdvancedTable<T extends Record<string, any>>({
               </div>
             </CardContent>
           ) : (
-            <div 
-              ref={tableRef}
-              className="overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
-            >
-            <Table>
-              <TableHeader className="sticky top-0 z-10 bg-table-header backdrop-blur border-b border-border/50">
-                <TableRow className="hover:bg-transparent border-b border-border/50">
-                  {visibleColumns.map((column, index) => (
-                    <TableHead
-                      key={column.key}
-                      className={cn(
-                        "h-12 relative font-semibold text-foreground",
-                        column.sticky && "sticky left-0 z-10 bg-table-header",
-                        column.headerClassName,
-                        column.sortable && "cursor-pointer select-none hover:bg-table-row-hover/50 transition-colors"
-                      )}
-                      style={{ 
-                        width: columnWidths[column.key] || column.width,
-                        minWidth: column.minWidth || 80
-                      }}
-                      onClick={column.sortable ? () => handleSort(column.key) : undefined}
-                      aria-sort={
-                        sortKey === column.key 
-                          ? sortDirection === 'asc' ? 'ascending' : 'descending'
-                          : 'none'
-                      }
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm">{column.label}</span>
-                        {column.sortable && (
-                          <div className="ml-2">
-                            {sortKey === column.key ? (
-                              sortDirection === 'asc' ? (
-                                <ArrowUp className="h-3 w-3 text-primary" />
-                              ) : (
-                                <ArrowDown className="h-3 w-3 text-primary" />
-                              )
-                            ) : (
-                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+            <div className="table-wrapper">
+              {/* TOP SCROLLBAR (mirror) */}
+              <div
+                ref={topScrollRef}
+                className="overflow-x-auto h-4 border-b"
+                onScroll={(e) => {
+                  if (tableRef.current) {
+                    tableRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                  }
+                }}
+              >
+                <div style={{ width: tableRef.current?.scrollWidth ?? '200%', height: '1px' }} />
+              </div>
+
+              <div 
+                ref={tableRef}
+                className="overflow-x-auto max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+                onScroll={(e) => {
+                  if (topScrollRef.current) {
+                    topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                  }
+                  if (bottomScrollRef.current) {
+                    bottomScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                  }
+                }}
+              >
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-table-header backdrop-blur border-b border-border/50">
+                    <TableRow className="hover:bg-transparent border-b border-border/50">
+                      {visibleColumns.map((column, index) => (
+                        <TableHead
+                          key={column.key}
+                          className={cn(
+                            "h-12 relative font-semibold text-foreground",
+                            column.sticky && "sticky left-0 z-10 bg-table-header",
+                            column.headerClassName,
+                            column.sortable && "cursor-pointer select-none hover:bg-table-row-hover/50 transition-colors"
+                          )}
+                          style={{ 
+                            width: columnWidths[column.key] || column.width,
+                            minWidth: column.minWidth || 80
+                          }}
+                          onClick={column.sortable ? () => handleSort(column.key) : undefined}
+                          aria-sort={
+                            sortKey === column.key 
+                              ? sortDirection === 'asc' ? 'ascending' : 'descending'
+                              : 'none'
+                          }
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-sm">{column.label}</span>
+                            {column.sortable && (
+                              <div className="ml-2">
+                                {sortKey === column.key ? (
+                                  sortDirection === 'asc' ? (
+                                    <ArrowUp className="h-3 w-3 text-primary" />
+                                  ) : (
+                                    <ArrowDown className="h-3 w-3 text-primary" />
+                                  )
+                                ) : (
+                                  <ArrowUpDown className="h-3 w-3 opacity-50" />
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                      
-                      {/* Resize handle */}
-                      {column.resizable !== false && index < visibleColumns.length - 1 && (
-                        <div
-                          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/20 group"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setResizing({
-                              key: column.key,
-                              startX: e.clientX,
-                              startWidth: columnWidths[column.key] || column.width || 150
-                            });
-                          }}
-                        >
-                          <div className="absolute right-0 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100">
-                            <GripVertical className="h-3 w-3 text-muted-foreground" />
-                          </div>
-                        </div>
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {shouldUseVirtualization ? (
-                  // Virtualized rendering for large datasets
-                  <>
-                    <TableRow style={{ height: offsetY }}>
-                      <TableCell colSpan={visibleColumns.length} className="p-0 border-0" />
+                          
+                          {/* Resize handle */}
+                          {column.resizable !== false && index < visibleColumns.length - 1 && (
+                            <div
+                              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/20 group"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setResizing({
+                                  key: column.key,
+                                  startX: e.clientX,
+                                  startWidth: columnWidths[column.key] || column.width || 150
+                                });
+                              }}
+                            >
+                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100">
+                                <GripVertical className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                            </div>
+                          )}
+                        </TableHead>
+                      ))}
                     </TableRow>
-                    {virtualItems.map((row) => (
-                      <TableRow
-                        key={row.id || row.virtualIndex}
-                        className={cn(
-                          "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
-                          row.virtualIndex % 2 === 0 ? "bg-card" : "bg-table-row-even",
-                          onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
-                        )}
-                        onClick={() => onRowClick?.(row)}
-                        onKeyDown={(e) => handleKeyDown(e, row, row.virtualIndex)}
-                        tabIndex={onRowClick ? 0 : -1}
-                        role={onRowClick ? "button" : undefined}
-                      >
-                       {visibleColumns.map((column) => (
-                         <TableCell
-                           key={column.key}
-                           className={cn(
-                             "py-3 px-4 text-sm",
-                             column.sticky && "sticky left-0 z-10 bg-inherit",
-                             column.className
-                           )}
-                           style={{ 
-                             width: columnWidths[column.key] || column.width,
-                             minWidth: column.minWidth || 80
-                           }}
-                         >
-                           {column.render ? column.render(row[column.key], row) : (
-                             <span className="truncate block text-foreground">{row[column.key]}</span>
-                           )}
-                         </TableCell>
-                       ))}
-                     </TableRow>
-                    ))}
-                    <TableRow style={{ height: totalHeight - offsetY - (virtualItems.length * 48) }}>
-                      <TableCell colSpan={visibleColumns.length} className="p-0 border-0" />
-                    </TableRow>
-                  </>
-                 ) : (
-                   // Standard rendering for smaller datasets
-                    paginatedData.map((row, rowIndex) => (
-                      <TableRow
-                        key={row.id || rowIndex}
-                        className={cn(
-                          "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
-                          rowIndex % 2 === 0 ? "bg-card" : "bg-table-row-even",
-                          onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
-                        )}
-                        onClick={() => onRowClick?.(row)}
-                        onKeyDown={(e) => handleKeyDown(e, row, rowIndex)}
-                        tabIndex={onRowClick ? 0 : -1}
-                        role={onRowClick ? "button" : undefined}
-                      >
-                       {visibleColumns.map((column) => (
-                         <TableCell
-                           key={column.key}
-                           className={cn(
-                             "py-3 px-4 text-sm",
-                             column.sticky && "sticky left-0 z-10 bg-inherit",
-                             column.className
-                           )}
-                           style={{ 
-                             width: columnWidths[column.key] || column.width,
-                             minWidth: column.minWidth || 80
-                           }}
-                         >
-                           {column.render ? column.render(row[column.key], row) : (
-                             <span className="truncate block text-foreground">{row[column.key]}</span>
-                           )}
-                         </TableCell>
-                       ))}
-                     </TableRow>
-                   ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  </TableHeader>
+                  <TableBody>
+                    {shouldUseVirtualization ? (
+                      // Virtualized rendering for large datasets
+                      <>
+                        <TableRow style={{ height: offsetY }}>
+                          <TableCell colSpan={visibleColumns.length} className="p-0 border-0" />
+                        </TableRow>
+                        {virtualItems.map((row) => (
+                          <TableRow
+                            key={row.id || row.virtualIndex}
+                            className={cn(
+                              "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
+                              row.virtualIndex % 2 === 0 ? "bg-card" : "bg-table-row-even",
+                              onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            )}
+                            onClick={() => onRowClick?.(row)}
+                            onKeyDown={(e) => handleKeyDown(e, row, row.virtualIndex)}
+                            tabIndex={onRowClick ? 0 : -1}
+                            role={onRowClick ? "button" : undefined}
+                          >
+                           {visibleColumns.map((column) => (
+                             <TableCell
+                               key={column.key}
+                               className={cn(
+                                 "py-3 px-4 text-sm",
+                                 column.sticky && "sticky left-0 z-10 bg-inherit",
+                                 column.className
+                               )}
+                               style={{ 
+                                 width: columnWidths[column.key] || column.width,
+                                 minWidth: column.minWidth || 80
+                               }}
+                             >
+                               {column.render ? column.render(row[column.key], row) : (
+                                 <span className="truncate block text-foreground">{row[column.key]}</span>
+                               )}
+                             </TableCell>
+                           ))}
+                         </TableRow>
+                        ))}
+                        <TableRow style={{ height: totalHeight - offsetY - (virtualItems.length * 48) }}>
+                          <TableCell colSpan={visibleColumns.length} className="p-0 border-0" />
+                        </TableRow>
+                      </>
+                     ) : (
+                       // Standard rendering for smaller datasets
+                         displayData.map((row, rowIndex) => (
+                          <TableRow
+                            key={row.id || rowIndex}
+                            className={cn(
+                              "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
+                              rowIndex % 2 === 0 ? "bg-card" : "bg-table-row-even",
+                              onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            )}
+                            onClick={() => onRowClick?.(row)}
+                            onKeyDown={(e) => handleKeyDown(e, row, rowIndex)}
+                            tabIndex={onRowClick ? 0 : -1}
+                            role={onRowClick ? "button" : undefined}
+                          >
+                           {visibleColumns.map((column) => (
+                             <TableCell
+                               key={column.key}
+                               className={cn(
+                                 "py-3 px-4 text-sm",
+                                 column.sticky && "sticky left-0 z-10 bg-inherit",
+                                 column.className
+                               )}
+                               style={{ 
+                                 width: columnWidths[column.key] || column.width,
+                                 minWidth: column.minWidth || 80
+                               }}
+                             >
+                               {column.render ? column.render(row[column.key], row) : (
+                                 <span className="truncate block text-foreground">{row[column.key]}</span>
+                               )}
+                             </TableCell>
+                           ))}
+                         </TableRow>
+                       ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              {/* BOTTOM SCROLLBAR (mirror) */}
+              <div
+                ref={bottomScrollRef}
+                className="overflow-x-auto h-4 border-t"
+                onScroll={(e) => {
+                  if (tableRef.current) {
+                    tableRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                  }
+                }}
+              >
+                <div style={{ width: tableRef.current?.scrollWidth ?? '200%', height: '1px' }} />
+              </div>
+            </div>
           )}
         </Card>
       </div>
@@ -596,7 +639,7 @@ export function AdvancedTable<T extends Record<string, any>>({
           </Card>
         ) : (
           <div className="table-mobile-cards">
-            {paginatedData.map((item, index) => (
+            {displayData.map((item, index) => (
               <div
                 key={item.id || index}
                 className="mobile-card cursor-pointer hover:bg-primary/5 hover:border-primary/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
