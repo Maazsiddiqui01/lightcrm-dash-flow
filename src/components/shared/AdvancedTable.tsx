@@ -396,14 +396,14 @@ export function AdvancedTable<T extends Record<string, any>>({
               {/* TOP SCROLLBAR (mirror) */}
               <div
                 ref={topScrollRef}
-                className="overflow-x-auto h-4 border-b"
+                className="overflow-x-auto h-3 bg-muted/30 border-b border-border/50 scrollbar-thin scrollbar-thumb-border/60 scrollbar-track-transparent"
                 onScroll={(e) => {
                   if (tableRef.current) {
                     tableRef.current.scrollLeft = e.currentTarget.scrollLeft;
                   }
                 }}
               >
-                <div style={{ width: tableRef.current?.scrollWidth ?? '200%', height: '1px' }} />
+                <div style={{ width: tableRef.current?.scrollWidth ?? '200%', height: '12px' }} />
               </div>
 
               <div 
