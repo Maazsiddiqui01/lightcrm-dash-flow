@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,9 +92,46 @@ export function AdvancedTable<T extends Record<string, any>>({
   const [columns, setColumns] = useState(initialColumns);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [resizing, setResizing] = useState<{ key: string; startX: number; startWidth: number } | null>(null);
-  const tableRef = useRef<HTMLDivElement>(null);
-  const topScrollRef = useRef<HTMLDivElement>(null);
-  const bottomScrollRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const [scrollWidth, setScrollWidth] = useState(0);
+  const [clientWidth, setClientWidth] = useState(0);
+
+  // Measure table dimensions for scroll synchronization
+  useLayoutEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const measure = () => {
+      setScrollWidth(el.scrollWidth);
+      setClientWidth(el.clientWidth);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Sync scroll positions between top, body, and bottom scrollbars
+  const sync = (from: 'top' | 'body' | 'bottom') => {
+    return () => {
+      const body = bodyRef.current;
+      const top = topRef.current;
+      const bottom = bottomRef.current;
+      if (!body || !top || !bottom) return;
+
+      if (from === 'top') {
+        body.scrollLeft = top.scrollLeft;
+        bottom.scrollLeft = top.scrollLeft;
+      } else if (from === 'bottom') {
+        body.scrollLeft = bottom.scrollLeft;
+        top.scrollLeft = bottom.scrollLeft;
+      } else {
+        top.scrollLeft = body.scrollLeft;
+        bottom.scrollLeft = body.scrollLeft;
+      }
+    };
+  };
 
   // Pagination logic
   const totalPages = Math.ceil((data?.length || 0) / pageSize);
@@ -392,41 +429,33 @@ export function AdvancedTable<T extends Record<string, any>>({
               </div>
             </CardContent>
           ) : (
-            <div className="table-wrapper relative">
-              {/* FLOATING TOP SCROLLBAR - always accessible */}
+            <div>
+              {/* TOP horizontal scrollbar (always visible above the table body) */}
               <div
-                ref={topScrollRef}
-                className="fixed top-20 left-0 right-0 z-50 overflow-x-auto h-4 bg-card/95 backdrop-blur-sm border-y border-border shadow-lg scrollbar-thin scrollbar-thumb-primary/50 scrollbar-track-muted/30 hover:scrollbar-thumb-primary/70 transition-colors mx-4"
-                onScroll={(e) => {
-                  if (tableRef.current) {
-                    tableRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                  }
-                }}
+                ref={topRef}
+                onScroll={sync('top')}
+                className="overflow-x-auto h-3 mb-2 rounded bg-transparent"
+                aria-hidden
               >
-                <div style={{ width: tableRef.current?.scrollWidth ?? '200%', height: '16px' }} />
+                {/* spacer to match table width */}
+                <div style={{ width: Math.max(scrollWidth, clientWidth) }} />
               </div>
 
-              <div 
-                ref={tableRef}
-                className="overflow-x-auto max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
-                onScroll={(e) => {
-                  if (topScrollRef.current) {
-                    topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                  }
-                  if (bottomScrollRef.current) {
-                    bottomScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                  }
-                }}
+              {/* TABLE BODY with vertical + horizontal scroll */}
+              <div
+                ref={bodyRef}
+                onScroll={sync('body')}
+                className="relative max-h-[70vh] overflow-auto border rounded-lg"
               >
-                <Table>
-                  <TableHeader className="sticky top-0 z-10 bg-table-header backdrop-blur border-b border-border/50">
-                    <TableRow className="hover:bg-transparent border-b border-border/50">
+                <table className="w-full table-fixed">
+                  <thead className="sticky top-0 z-10 bg-background">
+                    <tr className="hover:bg-transparent border-b border-border/50">
                       {visibleColumns.map((column, index) => (
-                        <TableHead
+                        <th
                           key={column.key}
                           className={cn(
-                            "h-12 relative font-semibold text-foreground",
-                            column.sticky && "sticky left-0 z-10 bg-table-header",
+                            "h-12 relative font-semibold text-foreground text-left px-4",
+                            column.sticky && "sticky left-0 z-10 bg-background",
                             column.headerClassName,
                             column.sortable && "cursor-pointer select-none hover:bg-table-row-hover/50 transition-colors"
                           )}
@@ -476,13 +505,13 @@ export function AdvancedTable<T extends Record<string, any>>({
                               </div>
                             </div>
                           )}
-                        </TableHead>
+                        </th>
                       ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {paginatedData.map((row, rowIndex) => (
-                      <TableRow
+                      <tr
                         key={row.id || rowIndex}
                         className={cn(
                           "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
@@ -495,7 +524,7 @@ export function AdvancedTable<T extends Record<string, any>>({
                         role={onRowClick ? "button" : undefined}
                       >
                         {visibleColumns.map((column) => (
-                          <TableCell
+                          <td
                             key={column.key}
                             className={cn(
                               "py-3 px-4 text-sm",
@@ -510,25 +539,24 @@ export function AdvancedTable<T extends Record<string, any>>({
                             {column.render ? column.render(row[column.key], row) : (
                               <span className="truncate block text-foreground">{row[column.key]}</span>
                             )}
-                          </TableCell>
+                          </td>
                         ))}
-                      </TableRow>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
-              </div>
-              
-              {/* BOTTOM SCROLLBAR (mirror) */}
-              <div
-                ref={bottomScrollRef}
-                className="overflow-x-auto h-4 border-t"
-                onScroll={(e) => {
-                  if (tableRef.current) {
-                    tableRef.current.scrollLeft = e.currentTarget.scrollLeft;
-                  }
-                }}
-              >
-                <div style={{ width: tableRef.current?.scrollWidth ?? '200%', height: '1px' }} />
+                  </tbody>
+                </table>
+
+                {/* STICKY BOTTOM horizontal scrollbar */}
+                <div className="sticky bottom-0 left-0 right-0 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50">
+                  <div
+                    ref={bottomRef}
+                    onScroll={sync('bottom')}
+                    className="overflow-x-auto h-3"
+                    aria-hidden
+                  >
+                    <div style={{ width: Math.max(scrollWidth, clientWidth) }} />
+                  </div>
+                </div>
               </div>
             </div>
           )}
