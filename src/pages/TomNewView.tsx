@@ -30,12 +30,14 @@ interface TomNewViewRow {
   next_scheduled_outreach_date: string | null;
   deal_name: string | null;
   has_opps: string | null;
+  notes?: string;
 }
 
 export function TomNewView() {
   const { filters, updateFilters, clearFilters } = useUrlFilters();
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
   // Fetch Tom New View (direct table query)
   const { data: rawData, isLoading, error, refetch } = useQuery({
@@ -145,6 +147,51 @@ export function TomNewView() {
     n === null || n === undefined ? '—' : new Intl.NumberFormat().format(Number(n));
   const fmtDate = (iso: string | null) => 
     !iso ? '—' : new Date(iso).toLocaleDateString();
+
+  // Handle email draft generation
+  const handleDraft = useCallback(async (row: TomNewViewRow) => {
+    try {
+      setLoadingId(row.contact_id || null);
+
+      // Try to include notes (strategy A → B)
+      let notes = (row as any).notes ?? '';
+      if (!notes && row.contact_id) {
+        const { data: c, error } = await supabase
+          .from('contacts_app')
+          .select('notes')
+          .eq('id', row.contact_id)
+          .maybeSingle();
+        if (!error && c?.notes) notes = c.notes;
+      }
+
+      const payload = {
+        ...row,
+        notes,
+        requested_by: (await supabase.auth.getUser())?.data?.user?.email || '',
+        requested_at: new Date().toISOString(),
+        ui_context: { source: 'tom_new_view', model_hint: 'draft-outreach', ui_version: 'v1' }
+      };
+
+      await fetch('https://inverisllc.app.n8n.cloud/webhook-test/Email-Draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      toast({ 
+        title: 'Draft requested', 
+        description: '✨ AI is working on your request. Your draft will arrive in your inbox shortly.' 
+      });
+    } catch (e) {
+      toast({ 
+        title: 'Failed to request draft', 
+        description: 'Please try again in a moment.', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  }, []);
 
   // Column definitions - using AdvancedTable format
   const columns = useMemo(() => [
@@ -260,7 +307,31 @@ export function TomNewView() {
       sortable: true,
       render: (value: any) => dash(value),
     },
-  ], []);
+    {
+      key: 'actions',
+      label: 'Actions',
+      width: 180,
+      render: (value: any, row: TomNewViewRow) => (
+        <Button
+          size="sm"
+          className={`bg-blue-600 hover:bg-blue-700 text-white relative overflow-hidden ${
+            loadingId === row.contact_id ? 'ai-sparkle' : ''
+          }`}
+          disabled={loadingId === row.contact_id}
+          onClick={() => handleDraft(row)}
+        >
+          {loadingId === row.contact_id ? (
+            <span className="flex items-center gap-2">
+              <span className="h-3 w-3 animate-pulse bg-white/80 rounded-full" />
+              Working…
+            </span>
+          ) : (
+            'Generate email draft'
+          )}
+        </Button>
+      ),
+    },
+  ], [loadingId, handleDraft]);
 
   // Export functions
   const handleDownloadCSV = useCallback(() => {
@@ -327,7 +398,21 @@ export function TomNewView() {
   }, [data]);
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <>
+      <style>{`
+        .ai-sparkle:after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+          transform: translateX(-100%);
+          animation: slide 1.2s infinite;
+        }
+        @keyframes slide { 
+          100% { transform: translateX(100%); } 
+        }
+      `}</style>
+      <div className="min-h-screen bg-muted/30">
       <div className="bg-background border-b border-border">
         <div className="mx-auto max-w-7xl px-6">
           <PageHeader 
@@ -457,6 +542,7 @@ export function TomNewView() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+      </div>
+    </>
   );
 }
