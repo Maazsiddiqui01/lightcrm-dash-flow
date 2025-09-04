@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { AdvancedTable } from '@/components/shared/AdvancedTable';
 import { Button } from '@/components/ui/button';
-import { Filter, Download, Copy } from 'lucide-react';
+import { Filter, Download, Copy, Check, ChevronsUpDown, X } from 'lucide-react';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { jsonToCsv, downloadFile } from '@/utils/csvExport';
 import { toast } from '@/hooks/use-toast';
@@ -12,6 +12,11 @@ import { format } from 'date-fns';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { cn } from '@/lib/utils';
 
 interface TomNewViewRow {
   contact_id: string | null;
@@ -53,6 +58,26 @@ export function TomNewView() {
     },
   });
 
+  // Generate filter options from rawData
+  const {
+    dsOptions, faOptions, leadOptions, dtOptions
+  } = useMemo(() => {
+    const ds = new Set<string>(), fa = new Set<string>(), ld = new Set<string>(), dt = new Set<string>();
+    (rawData ?? []).forEach(r => {
+      if (r?.deal_source_company) ds.add(r.deal_source_company.trim());
+      if (r?.lg_focus_area) fa.add(r.lg_focus_area.trim());
+      if (r?.lg_lead) ld.add(r.lg_lead.trim());
+      if (r?.delta_type) dt.add(r.delta_type.trim());
+    });
+    const sort = (arr: string[]) => arr.filter(Boolean).sort((a,b)=>a.localeCompare(b));
+    return {
+      dsOptions: sort([...ds]),
+      faOptions: sort([...fa]),
+      leadOptions: sort([...ld]),
+      dtOptions: sort([...dt]),
+    };
+  }, [rawData]);
+
   // Apply client-side filtering
   const data = useMemo(() => {
     if (!rawData) return [];
@@ -69,31 +94,40 @@ export function TomNewView() {
       );
     }
 
-    // Apply filters
-    const dealSources = filters.deal_source_company as string[];
-    if (dealSources?.length) {
-      filtered = filtered.filter(row => 
-        dealSources.includes(row.deal_source_company || '')
-      );
+    // Deal Source Company (exact match against selected list)
+    const selDS = (filters.deal_source_company as string[]) || [];
+    if (selDS.length) {
+      filtered = filtered.filter(r => selDS.includes(r.deal_source_company || ''));
     }
 
-    const focusAreas = filters.lg_focus_area as string[];
-    if (focusAreas?.length) {
-      filtered = filtered.filter(row => 
-        focusAreas.some(fa => 
-          row.lg_focus_area?.toLowerCase().includes(fa.toLowerCase())
-        )
-      );
+    // LG Focus Area (substring match, case-insensitive; multiple allowed)
+    const selFA = (filters.lg_focus_area as string[]) || [];
+    if (selFA.length) {
+      filtered = filtered.filter(r => {
+        const v = (r.lg_focus_area || '').toLowerCase();
+        return selFA.some(x => v.includes(x.toLowerCase()));
+      });
     }
 
-    const leads = filters.lg_lead as string[];
-    if (leads?.length) {
-      filtered = filtered.filter(row => 
-        leads.some(lead => 
-          row.lg_lead?.toLowerCase().includes(lead.toLowerCase())
-        )
-      );
+    // LG Lead (substring match, case-insensitive; multiple allowed)
+    const selLead = (filters.lg_lead as string[]) || [];
+    if (selLead.length) {
+      filtered = filtered.filter(r => {
+        const v = (r.lg_lead || '').toLowerCase();
+        return selLead.some(x => v.includes(x.toLowerCase()));
+      });
     }
+
+    // Delta Type (exact match list)
+    const selDT = (filters.delta_type as string[]) || [];
+    if (selDT.length) {
+      filtered = filtered.filter(r => selDT.includes(r.delta_type || ''));
+    }
+
+    // Has Opps (single select)
+    const hasOpps = (filters.has_opps as 'all' | 'Yes' | 'No') || 'all';
+    if (hasOpps === 'Yes') filtered = filtered.filter(r => (r.has_opps || '') === 'Yes');
+    if (hasOpps === 'No')  filtered = filtered.filter(r => (r.has_opps || '') === 'No');
 
     const deltaMin = filters.delta_min;
     const deltaMax = filters.delta_max;
@@ -105,13 +139,6 @@ export function TomNewView() {
     if (typeof deltaMax === 'number' && deltaMax !== null) {
       filtered = filtered.filter(row => 
         (row.delta_days || 0) <= deltaMax
-      );
-    }
-
-    const deltaTypes = filters.delta_type as string[];
-    if (deltaTypes?.length) {
-      filtered = filtered.filter(row => 
-        deltaTypes.includes(row.delta_type || '')
       );
     }
 
@@ -397,6 +424,86 @@ export function TomNewView() {
     }
   }, [data]);
 
+  // Helper function for multi-select toggle
+  const toggleMulti = useCallback((key: string, value: string) => {
+    const current = (filters[key] as string[]) || [];
+    const next = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
+    updateFilters({ [key]: next as any });
+  }, [filters, updateFilters]);
+
+  // Multi-select component
+  const MultiSelect = ({ 
+    label, 
+    filterKey, 
+    options, 
+    placeholder 
+  }: { 
+    label: string; 
+    filterKey: string; 
+    options: string[]; 
+    placeholder: string; 
+  }) => {
+    const [open, setOpen] = useState(false);
+    const selected = (filters[filterKey] as string[]) || [];
+    
+    return (
+      <div className="grid gap-2">
+        <Label>{label} {selected.length > 0 && `(${selected.length})`}</Label>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="justify-between"
+            >
+              {selected.length > 0 ? `${selected.length} selected` : placeholder}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder={`Search ${label.toLowerCase()}...`} />
+              <CommandList>
+                <CommandEmpty>No results found.</CommandEmpty>
+                <CommandGroup>
+                  {options.map((option) => (
+                    <CommandItem
+                      key={option}
+                      onSelect={() => toggleMulti(filterKey, option)}
+                      className="cursor-pointer"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selected.includes(option) ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        {selected.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {selected.map((item) => (
+              <Badge key={item} variant="secondary" className="text-xs">
+                {item}
+                <X
+                  className="ml-1 h-3 w-3 cursor-pointer"
+                  onClick={() => toggleMulti(filterKey, item)}
+                />
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       <style>{`
@@ -488,50 +595,111 @@ export function TomNewView() {
           <SheetHeader>
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
-          <div className="grid gap-6 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="delta-min">Delta Min (Days)</Label>
-              <Input
-                id="delta-min"
-                type="number"
-                value={(filters.delta_min as any) || ''}
-                onChange={(e) => updateFilters({ delta_min: e.target.value ? parseInt(e.target.value) as any : null })}
-                placeholder="Minimum delta days"
+          <div className="grid gap-6 py-4 max-h-[80vh] overflow-y-auto">
+            {/* Multi-select Filters */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-muted-foreground">Multi-Select Filters</h3>
+              
+              <MultiSelect
+                label="Deal Source Company"
+                filterKey="deal_source_company"
+                options={dsOptions}
+                placeholder="Select companies..."
               />
+              
+              <MultiSelect
+                label="LG Focus Area"
+                filterKey="lg_focus_area"
+                options={faOptions}
+                placeholder="Select focus areas..."
+              />
+              
+              <MultiSelect
+                label="LG Lead"
+                filterKey="lg_lead"
+                options={leadOptions}
+                placeholder="Select leads..."
+              />
+              
+              <MultiSelect
+                label="Delta Type"
+                filterKey="delta_type"
+                options={dtOptions}
+                placeholder="Select delta types..."
+              />
+              
+              {/* Has Opps Radio Group */}
+              <div className="grid gap-2">
+                <Label>Has Opps</Label>
+                <RadioGroup
+                  value={(filters.has_opps as string) || 'all'}
+                  onValueChange={(value) => updateFilters({ has_opps: value as any })}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="all" id="has-opps-all" />
+                    <Label htmlFor="has-opps-all">All</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Yes" id="has-opps-yes" />
+                    <Label htmlFor="has-opps-yes">Yes</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="No" id="has-opps-no" />
+                    <Label htmlFor="has-opps-no">No</Label>
+                  </div>
+                </RadioGroup>
+              </div>
             </div>
             
-            <div className="grid gap-2">
-              <Label htmlFor="delta-max">Delta Max (Days)</Label>
-              <Input
-                id="delta-max"
-                type="number"
-                value={(filters.delta_max as any) || ''}
-                onChange={(e) => updateFilters({ delta_max: e.target.value ? parseInt(e.target.value) as any : null })}
-                placeholder="Maximum delta days"
-              />
+            {/* Range Filters */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-muted-foreground">Range Filters</h3>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="delta-min">Delta Min (Days)</Label>
+                <Input
+                  id="delta-min"
+                  type="number"
+                  value={(filters.delta_min as any) || ''}
+                  onChange={(e) => updateFilters({ delta_min: e.target.value ? parseInt(e.target.value) as any : null })}
+                  placeholder="Minimum delta days"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="delta-max">Delta Max (Days)</Label>
+                <Input
+                  id="delta-max"
+                  type="number"
+                  value={(filters.delta_max as any) || ''}
+                  onChange={(e) => updateFilters({ delta_max: e.target.value ? parseInt(e.target.value) as any : null })}
+                  placeholder="Maximum delta days"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="outreach-start">Outreach Date Start</Label>
+                <Input
+                  id="outreach-start"
+                  type="date"
+                  value={filters.outreach_start as string || ''}
+                  onChange={(e) => updateFilters({ outreach_start: e.target.value })}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="outreach-end">Outreach Date End</Label>
+                <Input
+                  id="outreach-end"
+                  type="date"
+                  value={filters.outreach_end as string || ''}
+                  onChange={(e) => updateFilters({ outreach_end: e.target.value })}
+                />
+              </div>
             </div>
             
-            <div className="grid gap-2">
-              <Label htmlFor="outreach-start">Outreach Date Start</Label>
-              <Input
-                id="outreach-start"
-                type="date"
-                value={filters.outreach_start as string || ''}
-                onChange={(e) => updateFilters({ outreach_start: e.target.value })}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="outreach-end">Outreach Date End</Label>
-              <Input
-                id="outreach-end"
-                type="date"
-                value={filters.outreach_end as string || ''}
-                onChange={(e) => updateFilters({ outreach_end: e.target.value })}
-              />
-            </div>
-            
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-4 border-t">
               <Button onClick={clearFilters} variant="outline" className="flex-1">
                 Clear All
               </Button>
