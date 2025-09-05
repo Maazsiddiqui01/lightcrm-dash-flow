@@ -12,12 +12,12 @@ export function Opportunities() {
   const stats = useOpportunityStats();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <PageHeader 
         title="Opportunities"
         description="Track sales opportunities and business development"
         actions={
-          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary-hover">
+          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
             Add Opportunity
           </Button>
@@ -25,9 +25,9 @@ export function Opportunities() {
       />
       
       <main className="flex-1">
-        <div className="max-w-[1400px] xl:max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-6">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatsCard
               title="Total Opportunities"
               value={stats.loading ? "..." : stats.totalOpportunities}
@@ -51,7 +51,7 @@ export function Opportunities() {
           </div>
 
           {/* Opportunities Table */}
-          <div className="rounded-lg bg-card shadow-sm border border-border overflow-hidden">
+          <div className="mx-6 rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
             <OpportunitiesTable />
           </div>
         </div>

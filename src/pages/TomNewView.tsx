@@ -539,27 +539,27 @@ export function TomNewView() {
           100% { transform: translateX(100%); } 
         }
       `}</style>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-muted/30">
       <div className="bg-background border-b border-border">
-        <div className="max-w-[1400px] xl:max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="mx-auto max-w-7xl px-6">
           <PageHeader 
             title="Tom New View"
-            description="Advanced deal flow analytics and pipeline insights"
+            description="Combined view of contacts and opportunities for comprehensive relationship tracking"
           />
         </div>
       </div>
       
       <main className="flex-1">
-        <div className="max-w-[1400px] xl:max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-6">
+        <div className="mx-auto max-w-7xl px-6 py-6">
           {/* Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4 lg:mb-6">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground">
                 {isLoading ? 'Loading...' : `${data?.length || 0} records`}
               </span>
             </div>
             
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-3">
               <Button
                 variant="outline"
                 size="sm"
