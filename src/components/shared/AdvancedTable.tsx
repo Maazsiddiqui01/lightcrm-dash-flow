@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect, useCallback } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  GripVertical
+  GripVertical,
+  MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -97,6 +98,63 @@ export function AdvancedTable<T extends Record<string, any>>({
   const bottomRef = useRef<HTMLDivElement>(null);
   const [scrollWidth, setScrollWidth] = useState(0);
   const [clientWidth, setClientWidth] = useState(0);
+  const [userResized, setUserResized] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check for mobile
+  useLayoutEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Auto-fit column widths
+  const autoFitColumns = useCallback(() => {
+    if (userResized || !bodyRef.current || !data.length) return;
+
+    const tempElement = document.createElement('div');
+    tempElement.style.position = 'absolute';
+    tempElement.style.visibility = 'hidden';
+    tempElement.style.whiteSpace = 'nowrap';
+    tempElement.style.fontSize = 'clamp(13px,0.95vw,15px)';
+    document.body.appendChild(tempElement);
+
+    const newWidths: Record<string, number> = {};
+    const sampleSize = Math.min(50, data.length);
+    const visibleCols = columns.filter(col => col.visible !== false);
+
+    visibleCols.forEach(column => {
+      let maxWidth = 80; // min width
+
+      // Measure header
+      tempElement.textContent = column.label;
+      maxWidth = Math.max(maxWidth, tempElement.scrollWidth + 40);
+
+      // Measure sample data
+      for (let i = 0; i < sampleSize; i++) {
+        const row = data[i];
+        const value = row[column.key];
+        const displayValue = typeof value === 'string' ? value : String(value || '');
+        tempElement.textContent = displayValue;
+        maxWidth = Math.max(maxWidth, tempElement.scrollWidth + 32);
+      }
+
+      // Apply constraints based on column type
+      if (column.key.includes('name') || column.key.includes('title')) {
+        maxWidth = Math.max(220, Math.min(maxWidth, 350));
+      } else if (column.key.includes('email') || column.key.includes('organization')) {
+        maxWidth = Math.max(200, Math.min(maxWidth, 300));
+      } else if (typeof data[0]?.[column.key] === 'number') {
+        maxWidth = Math.max(88, Math.min(maxWidth, 120));
+      }
+
+      newWidths[column.key] = maxWidth;
+    });
+
+    document.body.removeChild(tempElement);
+    setColumnWidths(newWidths);
+  }, [data, userResized, columns]);
 
   // Measure table dimensions for scroll synchronization
   useLayoutEffect(() => {
@@ -111,6 +169,31 @@ export function AdvancedTable<T extends Record<string, any>>({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Auto-fit on data change
+  useEffect(() => {
+    if (!userResized) {
+      const timer = setTimeout(autoFitColumns, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [data, autoFitColumns, userResized]);
+
+  // Debounced resize handler
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (!userResized) autoFitColumns();
+      }, 150);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
+  }, [autoFitColumns, userResized]);
 
   // Sync scroll positions between top, body, and bottom scrollbars
   const sync = (from: 'top' | 'body' | 'bottom') => {
@@ -187,6 +270,7 @@ export function AdvancedTable<T extends Record<string, any>>({
 
     const handleMouseUp = () => {
       if (resizing) {
+        setUserResized(true);
         saveTableState(columns, { ...columnWidths, [resizing.key]: columnWidths[resizing.key] });
         setResizing(null);
       }
@@ -293,40 +377,43 @@ export function AdvancedTable<T extends Record<string, any>>({
   return (
     <div className={cn("space-y-6", className)}>
       {/* Search and Actions */}
-      <div className="flex items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border/50 shadow-sm">
-        <div className="flex items-center space-x-4 flex-1">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-card p-3 sm:p-4 rounded-xl border border-border/50 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 flex-1 min-w-0">
           {onSearchChange && (
-            <div className="relative max-w-sm">
+            <div className="relative w-full sm:w-auto sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search..."
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200"
+                className="pl-10 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200 text-[clamp(13px,0.95vw,15px)]"
               />
             </div>
           )}
           {filters}
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button 
             variant="outline" 
             onClick={exportToCSV} 
-            className="border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
+            size="sm"
+            className="border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 text-[clamp(11px,0.8vw,13px)]"
           >
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            <Download className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Export </span>CSV
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
-                variant="outline" 
-                className="border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
+                variant="outline"
+                size="sm"
+                className="border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 text-[clamp(11px,0.8vw,13px)]"
               >
-                <Settings className="h-4 w-4 mr-2" />
-                Columns
+                <Settings className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Columns</span>
+                <span className="sm:hidden">Cols</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 border-border/50 shadow-xl">
@@ -353,7 +440,7 @@ export function AdvancedTable<T extends Record<string, any>>({
           </DropdownMenu>
           
           <Select value={pageSize.toString()} onValueChange={(v) => setPageSize(Number(v))}>
-            <SelectTrigger className="w-20 border-border/50 focus:border-primary/50 focus:ring-primary/20">
+            <SelectTrigger className="w-16 sm:w-20 border-border/50 focus:border-primary/50 focus:ring-primary/20 text-[clamp(11px,0.8vw,13px)]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="border-border/50 shadow-xl">
@@ -454,7 +541,7 @@ export function AdvancedTable<T extends Record<string, any>>({
                         <th
                           key={column.key}
                           className={cn(
-                            "h-12 relative font-semibold text-foreground text-left px-4",
+                            "h-10 sm:h-12 relative font-semibold text-foreground text-left px-2 sm:px-4 text-[clamp(11px,0.8vw,13px)]",
                             column.sticky && "sticky left-0 z-10 bg-background",
                             column.headerClassName,
                             column.sortable && "cursor-pointer select-none hover:bg-table-row-hover/50 transition-colors"
@@ -471,7 +558,7 @@ export function AdvancedTable<T extends Record<string, any>>({
                           }
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-semibold text-sm">{column.label}</span>
+                            <span className="font-semibold text-[clamp(11px,0.8vw,13px)]">{column.label}</span>
                             {column.sortable && (
                               <div className="ml-2">
                                 {sortKey === column.key ? (
@@ -514,7 +601,7 @@ export function AdvancedTable<T extends Record<string, any>>({
                       <tr
                         key={row.id || rowIndex}
                         className={cn(
-                          "h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
+                          "h-10 sm:h-12 hover:bg-table-row-hover cursor-pointer transition-all duration-200 border-b border-border/30",
                           rowIndex % 2 === 0 ? "bg-card" : "bg-table-row-even",
                           onRowClick && "focus:bg-table-row-hover focus:outline-none focus:ring-1 focus:ring-primary/50"
                         )}
@@ -527,7 +614,7 @@ export function AdvancedTable<T extends Record<string, any>>({
                           <td
                             key={column.key}
                             className={cn(
-                              "py-3 px-4 text-sm",
+                              "py-2 sm:py-3 px-2 sm:px-4 text-[clamp(13px,0.95vw,15px)] whitespace-normal break-words",
                               column.sticky && "sticky left-0 z-10 bg-inherit",
                               column.className
                             )}
