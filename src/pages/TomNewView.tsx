@@ -572,10 +572,120 @@ export function TomNewView() {
                     <span className="hidden sm:inline">Filters</span>
                   </Button>
                 </SheetTrigger>
+                <SheetContent className="w-[400px] sm:w-[540px]">
+                  <SheetHeader>
+                    <SheetTitle>Filter Options</SheetTitle>
+                  </SheetHeader>
+                  
+                  <div className="grid gap-4 py-4">
+                    <MultiSelect
+                      label="Deal Source Company"
+                      filterKey="deal_source_company"
+                      options={dsOptions}
+                      placeholder="Select companies..."
+                    />
+                    
+                    <MultiSelect
+                      label="LG Focus Area"
+                      filterKey="lg_focus_area"
+                      options={faOptions}
+                      placeholder="Select focus areas..."
+                    />
+                    
+                    <MultiSelect
+                      label="LG Lead"
+                      filterKey="lg_lead"
+                      options={leadOptions}
+                      placeholder="Select leads..."
+                    />
+                    
+                    <MultiSelect
+                      label="Delta Type"
+                      filterKey="delta_type"
+                      options={dtOptions}
+                      placeholder="Select delta types..."
+                    />
+                    
+                    {/* Has Opps Radio Group */}
+                    <div className="grid gap-2">
+                      <Label>Has Opps</Label>
+                      <RadioGroup
+                        value={(filters.has_opps as string) || 'all'}
+                        onValueChange={(value) => updateFilters({ ...filters, has_opps: value as any })}
+                        className="flex gap-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="all" id="has-opps-all" />
+                          <Label htmlFor="has-opps-all">All</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="Yes" id="has-opps-yes" />
+                          <Label htmlFor="has-opps-yes">Yes</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="No" id="has-opps-no" />
+                          <Label htmlFor="has-opps-no">No</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="delta-min">Delta Days (Min)</Label>
+                      <Input
+                        id="delta-min"
+                        type="number"
+                        placeholder="e.g., 0"
+                        value={String(filters.delta_min || '')}
+                        onChange={(e) => updateFilters({ ...filters, delta_min: e.target.value ? Number(e.target.value) : undefined as any })}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="delta-max">Delta Days (Max)</Label>
+                      <Input
+                        id="delta-max"
+                        type="number"
+                        placeholder="e.g., 365"
+                        value={String(filters.delta_max || '')}
+                        onChange={(e) => updateFilters({ ...filters, delta_max: e.target.value ? Number(e.target.value) : undefined as any })}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="outreach-start">Outreach Date Start</Label>
+                      <Input
+                        id="outreach-start"
+                        type="date"
+                        value={filters.outreach_start as string || ''}
+                        onChange={(e) => updateFilters({ ...filters, outreach_start: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="outreach-end">Outreach Date End</Label>
+                      <Input
+                        id="outreach-end"
+                        type="date"
+                        value={filters.outreach_end as string || ''}
+                        onChange={(e) => updateFilters({ ...filters, outreach_end: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button onClick={clearFilters} variant="outline" className="flex-1">
+                      Clear All
+                    </Button>
+                    <Button onClick={() => setShowFilters(false)} className="flex-1">
+                      Apply
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
-          </div>
+          }
         />
-        
+      
       <main className="flex-1">
         <div className="container-fluid py-4 lg:py-6">
           <div className="mb-4 lg:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
