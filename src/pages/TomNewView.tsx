@@ -539,56 +539,49 @@ export function TomNewView() {
           100% { transform: translateX(100%); } 
         }
       `}</style>
-      <div className="min-h-screen bg-muted/30">
-      <div className="bg-background border-b border-border">
-        <div className="mx-auto max-w-7xl px-6">
-          <PageHeader 
-            title="Tom New View"
-            description="Combined view of contacts and opportunities for comprehensive relationship tracking"
-          />
-        </div>
-      </div>
-      
-      <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-6 py-6">
-          {/* Action Bar */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
-                {isLoading ? 'Loading...' : `${data?.length || 0} records`}
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-3">
+      <div className="min-h-screen bg-background">
+        <PageHeader 
+          title="Tom New View"
+          description="Advanced view for Tom's workflow"
+          actions={
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleDownloadCSV}
-                disabled={isLoading || !data?.length}
+                disabled={!data?.length}
+                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 touch-target text-fluid-sm"
               >
-                <Download className="mr-2 h-4 w-4" />
-                Download CSV
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Download CSV</span>
               </Button>
-              
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleCopyJSON}
-                disabled={isLoading || !data?.length}
+                disabled={!data?.length}
+                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 touch-target text-fluid-sm"
               >
-                <Copy className="mr-2 h-4 w-4" />
-                Copy JSON
+                <Copy className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Copy JSON</span>
               </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(true)}
-              >
-                <Filter className="mr-2 h-4 w-4" />
-                Filters
-              </Button>
+              <Sheet open={showFilters} onOpenChange={setShowFilters}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200 touch-target text-fluid-sm">
+                    <Filter className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Filters</span>
+                  </Button>
+                </SheetTrigger>
             </div>
+          </div>
+        />
+        
+      <main className="flex-1">
+        <div className="container-fluid py-4 lg:py-6">
+          <div className="mb-4 lg:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="text-section-title text-foreground">
+              Data Overview ({data.length} records)
+            </h2>
           </div>
 
           {/* Table */}

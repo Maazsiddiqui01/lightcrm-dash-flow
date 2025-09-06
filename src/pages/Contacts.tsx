@@ -12,22 +12,22 @@ export function Contacts() {
   const stats = useContactStats();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <PageHeader 
         title="Contacts"
         description="Manage your professional contacts and relationships"
         actions={
-          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Contact
+          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Add Contact</span>
           </Button>
         }
       />
       
       <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="container-fluid py-4 lg:py-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
             <StatsCard
               title="Total Contacts"
               value={stats.loading ? "..." : stats.totalContacts}
@@ -52,7 +52,7 @@ export function Contacts() {
           </div>
 
           {/* Contacts Table */}
-          <div className="mx-6 rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
+          <div className="rounded-lg bg-card shadow-sm border border-border overflow-hidden">
             <ContactsTable />
           </div>
         </div>

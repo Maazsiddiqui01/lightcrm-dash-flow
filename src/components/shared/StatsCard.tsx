@@ -17,28 +17,28 @@ export function StatsCard({ title, value, subtitle, icon: Icon, trend }: StatsCa
   const formattedValue = typeof value === 'number' ? formatNumber(value) : value;
   
   return (
-    <Card className="p-6 bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+    <Card className="p-3 lg:p-6 bg-card border border-border shadow-sm hover:shadow-md transition-all duration-200 hover-lift">
       <div className="flex items-center justify-between h-full">
-        <div className="flex-1 flex flex-col justify-center">
-          <p className="text-sm font-medium text-gray-600 mb-2">{title}</p>
-          <p className="text-3xl font-semibold text-gray-900 mb-1">{formattedValue}</p>
+        <div className="flex-1 flex flex-col justify-center min-w-0">
+          <p className="text-fluid-sm font-medium text-muted-foreground mb-1 lg:mb-2 truncate">{title}</p>
+          <p className="text-fluid-xl lg:text-fluid-3xl font-semibold text-foreground mb-1 break-words">{formattedValue}</p>
           {subtitle && (
-            <p className="text-sm text-gray-500">{subtitle}</p>
+            <p className="text-fluid-sm text-muted-foreground truncate">{subtitle}</p>
           )}
           {trend && (
-            <div className="flex items-center mt-2">
-              <span className={`text-sm font-medium ${
+            <div className="flex items-center mt-1 lg:mt-2">
+              <span className={`text-fluid-sm font-medium ${
                 trend.isPositive ? 'text-green-600' : 'text-red-600'
               }`}>
                 {trend.isPositive ? '+' : ''}{trend.value}
               </span>
-              <span className="text-sm text-gray-500 ml-1">from last month</span>
+              <span className="text-fluid-sm text-muted-foreground ml-1 truncate">from last month</span>
             </div>
           )}
         </div>
-        <div className="ml-6 flex items-center justify-center">
-          <div className="p-3 bg-blue-50 rounded-lg">
-            <Icon className="h-6 w-6 text-blue-600" />
+        <div className="ml-3 lg:ml-6 flex items-center justify-center flex-shrink-0">
+          <div className="p-2 lg:p-3 bg-primary/10 rounded-lg">
+            <Icon className="h-5 w-5 lg:h-6 lg:w-6 text-primary" />
           </div>
         </div>
       </div>

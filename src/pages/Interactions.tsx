@@ -8,16 +8,16 @@ export function Interactions() {
   const stats = useInteractionStats();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <PageHeader 
         title="Interactions"
         description="View communication history and touchpoints"
       />
       
       <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="container-fluid py-4 lg:py-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
             <StatsCard
               title="Total Interactions"
               value={stats.loading ? "..." : stats.totalInteractions}
@@ -41,7 +41,7 @@ export function Interactions() {
           </div>
 
           {/* Interactions Table */}
-          <div className="mx-6 rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
+          <div className="rounded-lg bg-card shadow-sm border border-border overflow-hidden">
             <InteractionsTable />
           </div>
         </div>

@@ -291,42 +291,44 @@ export function AdvancedTable<T extends Record<string, any>>({
   const visibleColumns = columns.filter(col => col.visible !== false);
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("space-y-4 lg:space-y-6", className)}>
       {/* Search and Actions */}
-      <div className="flex items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border/50 shadow-sm">
-        <div className="flex items-center space-x-4 flex-1">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-card p-3 lg:p-4 rounded-xl border border-border/50 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 lg:gap-4 flex-1">
           {onSearchChange && (
-            <div className="relative max-w-sm">
+            <div className="relative w-full sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search..."
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200"
+                className="pl-10 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200 text-fluid-base"
               />
             </div>
           )}
-          {filters}
+          <div className="w-full sm:w-auto">{filters}</div>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2 lg:space-x-2">
           <Button 
             variant="outline" 
             onClick={exportToCSV} 
-            className="border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
+            size="sm"
+            className="border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 text-fluid-sm"
           >
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Export CSV</span>
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline" 
-                className="border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
+                size="sm"
+                className="border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 text-fluid-sm"
               >
-                <Settings className="h-4 w-4 mr-2" />
-                Columns
+                <Settings className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Columns</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 border-border/50 shadow-xl">
@@ -353,7 +355,7 @@ export function AdvancedTable<T extends Record<string, any>>({
           </DropdownMenu>
           
           <Select value={pageSize.toString()} onValueChange={(v) => setPageSize(Number(v))}>
-            <SelectTrigger className="w-20 border-border/50 focus:border-primary/50 focus:ring-primary/20">
+            <SelectTrigger className="w-16 sm:w-20 border-border/50 focus:border-primary/50 focus:ring-primary/20 text-fluid-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="border-border/50 shadow-xl">
@@ -367,15 +369,15 @@ export function AdvancedTable<T extends Record<string, any>>({
 
       {/* Active Filters */}
       {activeFilters.length > 0 && (
-        <div className="flex items-center gap-2 text-sm bg-primary-light/50 p-3 rounded-lg border border-primary/20">
-          <span className="text-muted-foreground font-medium">Active Filters:</span>
+        <div className="flex flex-wrap items-center gap-2 text-fluid-sm bg-primary-light/50 p-3 rounded-lg border border-primary/20">
+          <span className="text-muted-foreground font-medium text-nowrap">Active Filters:</span>
           {activeFilters.map((filter, index) => (
-            <Badge key={index} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">
+            <Badge key={index} variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 text-badge-size">
               {filter.label}
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-0 text-primary/70 hover:text-primary"
+                className="h-auto p-0 text-primary/70 hover:text-primary touch-target"
                 onClick={filter.onRemove}
               >
                 <X className="h-3 w-3" />
@@ -383,7 +385,7 @@ export function AdvancedTable<T extends Record<string, any>>({
             </Badge>
           ))}
           {onClearAllFilters && (
-            <Button variant="link" size="sm" onClick={onClearAllFilters} className="text-primary hover:text-primary-hover">
+            <Button variant="link" size="sm" onClick={onClearAllFilters} className="text-primary hover:text-primary-hover text-fluid-sm">
               Clear all
             </Button>
           )}
@@ -392,34 +394,36 @@ export function AdvancedTable<T extends Record<string, any>>({
 
       {/* Pagination (Top) */}
       {data.length > pageSize && (
-        <div className="flex items-center justify-end space-x-2">
-          <span className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-4">
+          <span className="text-fluid-sm text-muted-foreground text-center sm:text-left">
             {((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, data.length)} of {data.length}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="focus-ring"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={currentPage === totalPages}
-            className="focus-ring"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center justify-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="focus-ring-custom touch-target"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="focus-ring-custom touch-target"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Desktop Table */}
       <div className="hidden lg:block">
-        <Card className="overflow-hidden border-0 shadow-lg shadow-primary/5">
+        <Card className="overflow-hidden border-0 shadow-lg shadow-primary/5 table-responsive">
           {data.length === 0 ? (
             <CardContent className="py-16 text-center">
               <div className="space-y-4">
@@ -448,13 +452,13 @@ export function AdvancedTable<T extends Record<string, any>>({
                 className="relative max-h-[70vh] overflow-auto border rounded-lg"
               >
                 <table className="w-full table-fixed">
-                  <thead className="sticky top-0 z-10 bg-background">
+                  <thead className="table-header-sticky">
                     <tr className="hover:bg-transparent border-b border-border/50">
                       {visibleColumns.map((column, index) => (
                         <th
                           key={column.key}
                           className={cn(
-                            "h-12 relative font-semibold text-foreground text-left px-4",
+                            "table-cell-compact relative font-semibold text-foreground text-left",
                             column.sticky && "sticky left-0 z-10 bg-background",
                             column.headerClassName,
                             column.sortable && "cursor-pointer select-none hover:bg-table-row-hover/50 transition-colors"
@@ -471,7 +475,7 @@ export function AdvancedTable<T extends Record<string, any>>({
                           }
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-semibold text-sm">{column.label}</span>
+                            <span className="font-semibold text-fluid-sm">{column.label}</span>
                             {column.sortable && (
                               <div className="ml-2">
                                 {sortKey === column.key ? (
