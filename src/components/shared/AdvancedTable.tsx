@@ -66,6 +66,7 @@ interface AdvancedTableProps<T = any> {
   presets?: TablePreset[];
   exportFilename?: string;
   className?: string;
+  initialPageSize?: number;
 }
 
 export function AdvancedTable<T extends Record<string, any>>({
@@ -85,9 +86,10 @@ export function AdvancedTable<T extends Record<string, any>>({
   tableId,
   presets = [],
   exportFilename = "export",
-  className
+  className,
+  initialPageSize = 25
 }: AdvancedTableProps<T>) {
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(1);
   const [columns, setColumns] = useState(initialColumns);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
@@ -97,6 +99,11 @@ export function AdvancedTable<T extends Record<string, any>>({
   const bottomRef = useRef<HTMLDivElement>(null);
   const [scrollWidth, setScrollWidth] = useState(0);
   const [clientWidth, setClientWidth] = useState(0);
+
+  // Update pageSize when initialPageSize changes
+  useEffect(() => {
+    setPageSize(initialPageSize);
+  }, [initialPageSize]);
 
   // Measure table dimensions for scroll synchronization
   useLayoutEffect(() => {

@@ -368,22 +368,23 @@ export function InteractionsTable() {
         {/* Table Container */}
         <div className="bg-card rounded-lg shadow-md border border-border overflow-hidden">
           <AdvancedTable
-        data={filteredInteractions}
-        columns={columns}
-        loading={loading}
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
-        onRowClick={handleRowClick}
-        onSort={handleSort}
-        sortKey={sortKey}
-        sortDirection={sortDirection}
-        filters={filtersComponent}
-        activeFilters={activeFilters}
-        onClearAllFilters={clearAllFilters}
-        emptyState={emptyState}
-        tableId="interactions"
-        presets={presets}
-        exportFilename="interactions"
+            data={filteredInteractions}
+            columns={columns}
+            loading={loading}
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            onRowClick={handleRowClick}
+            onSort={handleSort}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            filters={filtersComponent}
+            activeFilters={activeFilters}
+            onClearAllFilters={clearAllFilters}
+            emptyState={emptyState}
+            tableId="interactions"
+            presets={presets}
+            exportFilename="interactions"
+            initialPageSize={filteredInteractions.length || 10000}
           />
         </div>
       </div>
