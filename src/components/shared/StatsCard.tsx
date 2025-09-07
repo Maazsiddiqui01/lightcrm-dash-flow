@@ -17,7 +17,7 @@ export function StatsCard({ title, value, subtitle, icon: Icon, trend }: StatsCa
   const formattedValue = typeof value === 'number' ? formatNumber(value) : value;
   
   return (
-    <Card className="p-3 lg:p-6 bg-card border border-border shadow-sm hover:shadow-md transition-all duration-200 hover-lift">
+    <Card className="p-3 lg:p-6 bg-card border border-border shadow-sm hover:shadow-md transition-all duration-200 hover-lift card-hover focus-ring" tabIndex={0}>
       <div className="flex items-center justify-between h-full">
         <div className="flex-1 flex flex-col justify-center min-w-0">
           <p className="text-fluid-sm font-medium text-muted-foreground mb-1 lg:mb-2 truncate">{title}</p>
