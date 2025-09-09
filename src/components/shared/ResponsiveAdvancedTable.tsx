@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -23,6 +24,7 @@ import { getResponsiveColumns } from "@/utils/columnManagement";
 import { useTableLayout } from "@/hooks/useTableLayout";
 import { VirtualizedTable } from "./VirtualizedTable";
 import { TablePagination } from "./TablePagination";
+import { useSelectedRows } from "@/hooks/useSelectedRows";
 
 export interface ColumnDef<T = any> {
   key: string;
@@ -75,6 +77,10 @@ interface ResponsiveAdvancedTableProps<T = any> {
   enableVirtualization?: boolean;
   rowHeight?: number;
   hideExportButton?: boolean;
+  enableRowSelection?: boolean;
+  onSelectedRowsChange?: (selectedRows: T[]) => void;
+  selectedRowExportFn?: (selectedRows: T[]) => void;
+  idKey?: string;
 }
 
 export function ResponsiveAdvancedTable<T extends Record<string, any>>({
@@ -101,12 +107,30 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   enablePagination = true,
   enableVirtualization = false,
   rowHeight = 52,
-  hideExportButton = false
+  hideExportButton = false,
+  enableRowSelection = false,
+  onSelectedRowsChange,
+  selectedRowExportFn,
+  idKey = 'id'
 }: ResponsiveAdvancedTableProps<T>) {
   const [columns, setColumns] = useState(initialColumns);
   const [containerWidth, setContainerWidth] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
+  
+  // Row selection
+  const rowSelection = useSelectedRows({ 
+    tableId, 
+    data, 
+    idKey 
+  });
+  
+  // Notify parent when selection changes
+  useEffect(() => {
+    if (onSelectedRowsChange && enableRowSelection) {
+      onSelectedRowsChange(rowSelection.getSelectedRows());
+    }
+  }, [rowSelection.selectedCount, onSelectedRowsChange, enableRowSelection]);
   
   // Use the table layout hook for dynamic height calculation
   const { availableHeight, containerRef: layoutContainerRef, maxTableHeight } = useTableLayout({
@@ -163,10 +187,33 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     setCurrentPage(1);
   }, [data.length]);
 
+  // Add checkbox column if row selection is enabled
+  const columnsWithSelection = useMemo(() => {
+    if (!enableRowSelection) return columns;
+    
+    const checkboxColumn: ColumnDef<T> = {
+      key: 'select',
+      label: '',
+      width: 50,
+      minWidth: 50,
+      maxWidth: 50,
+      sticky: true,
+      enableHiding: false,
+      render: (value, row) => (
+        <Checkbox
+          checked={rowSelection.isRowSelected(row[idKey])}
+          onCheckedChange={() => rowSelection.toggleRow(row[idKey])}
+        />
+      )
+    };
+    
+    return [checkboxColumn, ...columns];
+  }, [enableRowSelection, columns, rowSelection, idKey]);
+
   // Visible columns only
   const visibleColumns = useMemo(() => 
-    columns.filter(col => col.visible !== false), 
-    [columns]
+    columnsWithSelection.filter(col => col.visible !== false), 
+    [columnsWithSelection]
   );
 
   // Handle column visibility toggle
@@ -192,12 +239,15 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   const exportToCSV = () => {
     if (!data.length) return;
 
+    // Filter out checkbox column from export
+    const exportColumns = visibleColumns.filter(col => col.key !== 'select');
+
     const csvContent = [
       // Header row
-      visibleColumns.map(col => `"${col.label}"`).join(','),
+      exportColumns.map(col => `"${col.label}"`).join(','),
       // Data rows
       ...data.map(row =>
-        visibleColumns.map(col => {
+        exportColumns.map(col => {
           const value = row[col.key];
           const stringValue = value?.toString() || '';
           return `"${stringValue.replace(/"/g, '""')}"`;
@@ -214,6 +264,38 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Export selected rows functionality
+  const exportSelectedToCSV = () => {
+    const selectedRows = rowSelection.getSelectedRows();
+    if (selectedRowExportFn && selectedRows.length > 0) {
+      selectedRowExportFn(selectedRows);
+    } else if (selectedRows.length > 0) {
+      // Default export behavior for selected rows
+      const exportColumns = visibleColumns.filter(col => col.key !== 'select');
+      
+      const csvContent = [
+        exportColumns.map(col => `"${col.label}"`).join(','),
+        ...selectedRows.map(row =>
+          exportColumns.map(col => {
+            const value = row[col.key];
+            const stringValue = value?.toString() || '';
+            return `"${stringValue.replace(/"/g, '""')}"`;
+          }).join(',')
+        )
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${exportFilename}-selected.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   // Render cell content with truncation and tooltip
@@ -299,6 +381,14 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
+            {/* Export Selected (only show when rows are selected) */}
+            {enableRowSelection && rowSelection.selectedCount > 0 && (
+              <Button variant="outline" size="sm" onClick={exportSelectedToCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export Selected ({rowSelection.selectedCount})
+              </Button>
+            )}
+
             {/* Column visibility */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -414,36 +504,44 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2">
-          {/* Column visibility */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Columns
+            {/* Export Selected (only show when rows are selected) */}
+            {enableRowSelection && rowSelection.selectedCount > 0 && (
+              <Button variant="outline" size="sm" onClick={exportSelectedToCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export Selected ({rowSelection.selectedCount})
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {columns.map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.key}
-                  className="capitalize"
-                  checked={column.visible !== false}
-                  onCheckedChange={(checked) => toggleColumnVisibility(column.key, checked)}
-                  disabled={column.key === visibleColumns[0]?.key && stickyFirstColumn}
-                >
-                  {column.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            )}
 
-          {/* Export */}
-          {!hideExportButton && (
-            <Button variant="outline" size="sm" onClick={exportToCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-          )}
+            {/* Column visibility */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {columns.map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.key}
+                    className="capitalize"
+                    checked={column.visible !== false}
+                    onCheckedChange={(checked) => toggleColumnVisibility(column.key, checked)}
+                    disabled={column.key === visibleColumns[0]?.key && stickyFirstColumn}
+                  >
+                    {column.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Export */}
+            {!hideExportButton && (
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            )}
         </div>
       </div>
 
@@ -497,24 +595,34 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                     }}
                     onClick={() => column.sortable && handleSort(column.key)}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="truncate">{column.label}</span>
-                      {column.sortable && (
-                        <div className="flex flex-col">
-                          {sortKey === column.key ? (
-                            sortDirection === 'asc' ? (
-                              <ArrowUp className="h-3 w-3" />
-                            ) : sortDirection === 'desc' ? (
-                              <ArrowDown className="h-3 w-3" />
+                    {column.key === 'select' ? (
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={rowSelection.isAllPageSelected(displayData)}
+                          onCheckedChange={() => rowSelection.toggleSelectAll(displayData)}
+                          className={rowSelection.isSomePageSelected(displayData) && !rowSelection.isAllPageSelected(displayData) ? "data-[state=checked]:bg-primary/50" : ""}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{column.label}</span>
+                        {column.sortable && (
+                          <div className="flex flex-col">
+                            {sortKey === column.key ? (
+                              sortDirection === 'asc' ? (
+                                <ArrowUp className="h-3 w-3" />
+                              ) : sortDirection === 'desc' ? (
+                                <ArrowDown className="h-3 w-3" />
+                              ) : (
+                                <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                              )
                             ) : (
                               <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-                          )}
-                        </div>
-                      )}
-                    </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -547,7 +655,14 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                         isEven ? "bg-background" : "bg-table-row-even",
                         onRowClick && "cursor-pointer hover:bg-table-row-hover"
                       )}
-                      onClick={() => onRowClick?.(row)}
+                      onClick={(e) => {
+                        // Don't trigger row click if clicking on checkbox
+                        if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
+                          e.stopPropagation();
+                          return;
+                        }
+                        onRowClick?.(row);
+                      }}
                     >
                       {visibleColumns.map((column, cellIndex) => (
                         <TableCell

@@ -350,12 +350,14 @@ export function ContactsTable() {
     }
   ];
 
-  // Export functionality
-  const exportSummaryCsv = () => {
-    if (!filteredContacts.length) {
+  // Export functionality  
+  const exportSummaryCsv = (selectedRows?: ContactApp[]) => {
+    const dataToExport = selectedRows && selectedRows.length > 0 ? selectedRows : filteredContacts;
+    
+    if (!dataToExport.length) {
       toast({
         title: "No data to export",
-        description: "No contacts match your current filters.",
+        description: selectedRows ? "No rows selected" : "No contacts match your current filters.",
         variant: "destructive"
       });
       return;
@@ -365,7 +367,7 @@ export function ContactsTable() {
     const filename = `contacts-summary-${currentDate}.csv`;
     
     // Get visible column data
-    const exportData = filteredContacts.map(contact => {
+    const exportData = dataToExport.map(contact => {
       const row: Record<string, any> = {};
       columns.forEach(col => {
         const value = contact[col.key as keyof ContactApp];
@@ -379,15 +381,19 @@ export function ContactsTable() {
     
     toast({
       title: "Export completed",
-      description: `Exported ${filteredContacts.length} contacts`
+      description: selectedRows 
+        ? `Exported ${selectedRows.length} selected contacts`
+        : `Exported ${filteredContacts.length} contacts`
     });
   };
 
-  const exportDetailedCsv = async () => {
-    if (!filteredContacts.length) {
+  const exportDetailedCsv = async (selectedRows?: ContactApp[]) => {
+    const dataToExport = selectedRows && selectedRows.length > 0 ? selectedRows : filteredContacts;
+    
+    if (!dataToExport.length) {
       toast({
         title: "No data to export",
-        description: "No contacts match your current filters.",
+        description: selectedRows ? "No rows selected" : "No contacts match your current filters.",
         variant: "destructive"
       });
       return;
@@ -400,12 +406,14 @@ export function ContactsTable() {
     });
 
     try {
-      const filteredIds = filteredContacts.map(c => c.id);
-      await exportContactsDetailedCSV(filteredIds);
+      const exportIds = dataToExport.map(c => c.id);
+      await exportContactsDetailedCSV(exportIds);
       
       toast({
         title: "Export completed",
-        description: `Exported ${filteredContacts.length} contacts with detailed information`
+        description: selectedRows 
+          ? `Exported ${selectedRows.length} selected contacts with detailed information`
+          : `Exported ${filteredContacts.length} contacts with detailed information`
       });
     } catch (error: any) {
       console.error('Export error:', error);
@@ -416,6 +424,18 @@ export function ContactsTable() {
       });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleSelectedRowsExport = (selectedRows: ContactApp[]) => {
+    if (selectedRows.length === 0) {
+      toast({
+        title: "No rows selected",
+        description: "Exporting all filtered contacts instead.",
+      });
+      exportSummaryCsv();
+    } else {
+      exportSummaryCsv(selectedRows);
     }
   };
 
@@ -466,7 +486,7 @@ export function ContactsTable() {
           <div className="flex">
             <Button 
               variant="outline" 
-              onClick={exportSummaryCsv}
+              onClick={() => exportSummaryCsv()}
               disabled={isExporting}
               className="rounded-r-none border-r-0"
             >
@@ -500,14 +520,14 @@ export function ContactsTable() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={exportSummaryCsv}
+                  onClick={() => exportSummaryCsv()}
                   disabled={isExporting}
                 >
                   <FileText className="h-4 w-4 mr-2" />
                   Summary CSV
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={exportDetailedCsv}
+                  onClick={() => exportDetailedCsv()}
                   disabled={isExporting}
                 >
                   <List className="h-4 w-4 mr-2" />
@@ -552,6 +572,9 @@ export function ContactsTable() {
         presets={presets}
         exportFilename="contacts"
         hideExportButton={true}
+        enableRowSelection={true}
+        selectedRowExportFn={handleSelectedRowsExport}
+        idKey="id"
           />
       </div>
       </div>

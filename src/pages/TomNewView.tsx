@@ -705,6 +705,8 @@ export function TomNewView() {
             enablePagination={true}
             enableVirtualization={data.length > 500}
             initialPageSize={25}
+            enableRowSelection={true}
+            idKey="contact_id"
           />
         </div>
 

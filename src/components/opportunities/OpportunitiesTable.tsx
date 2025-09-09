@@ -624,6 +624,8 @@ export function OpportunitiesTable() {
           stickyFirstColumn={true}
           initialPageSize={50}
           className="h-full"
+          enableRowSelection={true}
+          idKey="id"
         />
       </div>
       <OpportunityDrawer
