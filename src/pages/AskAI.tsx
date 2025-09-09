@@ -4,19 +4,19 @@ import { Bot } from "lucide-react";
 
 export function AskAI() {
   return (
-    <div className="min-h-screen bg-background">
-      <PageHeader 
-        title="Ask AI"
-        description="Get insights and analysis powered by artificial intelligence"
-      />
-      
-      <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="rounded-lg bg-card shadow-md border border-border overflow-hidden">
-            <AskAIComponent />
-          </div>
+    <section className="h-full flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="p-4 space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold">Ask AI</h1>
+          <p className="text-muted-foreground">Get insights and analysis powered by artificial intelligence</p>
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* AI Component */}
+      <div className="mt-4 mx-4 flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+        <AskAIComponent />
+      </div>
+    </section>
   );
 }

@@ -55,79 +55,78 @@ export function MakeYourOwnView() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Make Your Own View
-          </h1>
-          <p className="text-gray-600 max-w-2xl">
-            Ask questions in natural language and get custom data views from your CRM. 
-            Be specific about what columns, filters, and limits you want to see.
+    <section className="h-full flex flex-col overflow-hidden">
+      {/* Page Header */}
+      <div className="p-4 space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold">Make Your Own View</h1>
+          <p className="text-muted-foreground">
+            Ask questions in natural language and get custom data views from your CRM
           </p>
         </div>
 
         {/* Prompt Panel */}
-        <div className="mb-8">
-          <SqlAgentPrompt
-            onSubmit={handleQuery}
-            isLoading={requestManager.isLoading || requestManager.isProcessing}
-            initialValue={lastQuery?.question || ""}
-          />
-        </div>
+        <SqlAgentPrompt
+          onSubmit={handleQuery}
+          isLoading={requestManager.isLoading || requestManager.isProcessing}
+          initialValue={lastQuery?.question || ""}
+        />
+      </div>
 
-        {/* Results Section */}
-        {(requestManager.isLoading || requestManager.isProcessing || requestManager.error || queryResults.length > 0) && (
-          <div className="space-y-6">
-            {(requestManager.isLoading || requestManager.isProcessing) ? (
+      {/* Results Section */}
+      {(requestManager.isLoading || requestManager.isProcessing || requestManager.error || queryResults.length > 0) && (
+        <div className="mt-4 mx-4 flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+          {(requestManager.isLoading || requestManager.isProcessing) ? (
+            <div className="p-6">
               <ProcessingStatus
                 isLoading={requestManager.isLoading}
                 isProcessing={requestManager.isProcessing}
                 getElapsedTime={requestManager.getElapsedTime}
                 onCancel={requestManager.cancel}
               />
-            ) : requestManager.error ? (
-              <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
-                <Alert variant="destructive">
-                  <AlertDescription className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold text-red-900 mb-2">Query Failed</h3>
-                      <p className="text-red-800">{requestManager.error}</p>
-                    </div>
+            </div>
+          ) : requestManager.error ? (
+            <div className="p-6">
+              <Alert variant="destructive">
+                <AlertDescription className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-red-900 mb-2">Query Failed</h3>
+                    <p className="text-red-800">{requestManager.error}</p>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRetry}
+                      className="flex items-center space-x-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      <span>Try Again</span>
+                    </Button>
                     
-                    <div className="flex items-center space-x-3">
+                    {requestManager.data?.error && (
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        onClick={handleRetry}
-                        className="flex items-center space-x-2"
+                        onClick={() => copyErrorDetails(requestManager.data.error)}
+                        className="flex items-center space-x-2 text-gray-600"
                       >
-                        <RefreshCw className="h-4 w-4" />
-                        <span>Try Again</span>
+                        <Copy className="h-4 w-4" />
+                        <span>Copy Diagnostics</span>
                       </Button>
-                      
-                      {requestManager.data?.error && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyErrorDetails(requestManager.data.error)}
-                          className="flex items-center space-x-2 text-gray-600"
-                        >
-                          <Copy className="h-4 w-4" />
-                          <span>Copy Diagnostics</span>
-                        </Button>
-                      )}
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              </div>
-            ) : (
+                    )}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : (
+            <div className="flex-1 min-h-0 overflow-hidden">
               <DynamicTable data={queryResults} />
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }

@@ -557,39 +557,36 @@ export function OpportunitiesTable() {
   };
 
   return (
-    <div className="bg-background">
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
+    <>
+      {/* Filters */}
+      <div className="p-4 space-y-4 border-b">
+        <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h3 className="text-lg font-semibold text-foreground">All Opportunities</h3>
+            <h3 className="text-lg font-semibold">All Opportunities</h3>
             <p className="text-sm text-muted-foreground">
               {filteredOpportunities?.length || 0} opportunit{filteredOpportunities?.length !== 1 ? 'ies' : 'y'} total
             </p>
           </div>
-        <div className="flex items-center space-x-2">
-          <FilterModal
-            title="Opportunity Filters"
-            fields={filterFields}
-            values={filters}
-            onValuesChange={updateFilters}
-            onApply={handleApplyFilters}
-            onClearAll={clearFilters}
-            activeFilterCount={activeFilterCount}
-          >
-            <Button variant="outline" className="focus-ring">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-              {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {activeFilterCount}
-                </Badge>
-              )}
-            </Button>
-          </FilterModal>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <Building2 className="h-4 w-4 mr-2" />
-            Add Opportunity
-          </Button>
+          <div className="flex items-center space-x-2">
+            <FilterModal
+              title="Opportunity Filters"
+              fields={filterFields}
+              values={filters}
+              onValuesChange={updateFilters}
+              onApply={handleApplyFilters}
+              onClearAll={clearFilters}
+              activeFilterCount={activeFilterCount}
+            >
+              <Button variant="outline" className="focus-ring">
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            </FilterModal>
           </div>
         </div>
 
@@ -603,27 +600,32 @@ export function OpportunitiesTable() {
             />
           </div>
         )}
-
-        {/* Table Container */}
-        <div className="bg-card rounded-lg shadow-md border border-border overflow-hidden">
-          <AdvancedTable
-        data={filteredOpportunities}
-        columns={columns}
-        loading={loading}
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
-        onRowClick={handleRowClick}
-        onSort={handleSort}
-        sortKey={sortKey}
-        sortDirection={sortDirection}
-        emptyState={emptyState}
-        tableId="opportunities"
-        presets={presets}
-        exportFilename="opportunities"
-          />
-        </div>
       </div>
 
+      {/* Table Container */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <AdvancedTable
+          data={filteredOpportunities}
+          columns={columns}
+          loading={loading}
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          onRowClick={handleRowClick}
+          onSort={handleSort}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          emptyState={{
+            title: "No opportunities found", 
+            description: "Try adjusting your search or filters"
+          }}
+          tableId="opportunities"
+          exportFilename="opportunities"
+          tableType="opportunities"
+          stickyFirstColumn={true}
+          initialPageSize={filteredOpportunities.length}
+          className="h-full"
+        />
+      </div>
       <OpportunityDrawer
         opportunity={selectedOpportunity}
         open={isDrawerOpen}
@@ -639,6 +641,6 @@ export function OpportunitiesTable() {
           refetch();
         }} 
       />
-    </div>
+    </>
   );
 }
