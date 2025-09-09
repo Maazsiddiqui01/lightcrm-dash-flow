@@ -74,6 +74,7 @@ interface ResponsiveAdvancedTableProps<T = any> {
   enablePagination?: boolean;
   enableVirtualization?: boolean;
   rowHeight?: number;
+  hideExportButton?: boolean;
 }
 
 export function ResponsiveAdvancedTable<T extends Record<string, any>>({
@@ -99,7 +100,8 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   stickyFirstColumn = true,
   enablePagination = true,
   enableVirtualization = false,
-  rowHeight = 52
+  rowHeight = 52,
+  hideExportButton = false
 }: ResponsiveAdvancedTableProps<T>) {
   const [columns, setColumns] = useState(initialColumns);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -321,10 +323,12 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
             </DropdownMenu>
 
             {/* Export */}
-            <Button variant="outline" size="sm" onClick={exportToCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
+            {!hideExportButton && (
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            )}
           </div>
         </div>
 
@@ -434,10 +438,12 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
           </DropdownMenu>
 
           {/* Export */}
-          <Button variant="outline" size="sm" onClick={exportToCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          {!hideExportButton && (
+            <Button variant="outline" size="sm" onClick={exportToCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          )}
         </div>
       </div>
 

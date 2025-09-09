@@ -7,10 +7,12 @@ import { FilterModal, ActiveFilters } from "@/components/shared/FilterModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Filter, Plus, User } from "lucide-react";
+import { Filter, Plus, User, Download, FileText, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { useDistinctValues } from "@/hooks/useDistinctValues";
+import { jsonToCsv, downloadFile } from "@/utils/csvExport";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 interface ContactApp {
   id: string;
@@ -36,6 +38,7 @@ export function ContactsTable() {
   const [sortKey, setSortKey] = useState<string>("most_recent_contact");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
   
   // Advanced filters
   const { filters, updateFilters, clearFilters, removeFilter } = useUrlFilters({
@@ -346,6 +349,175 @@ export function ContactsTable() {
     }
   ];
 
+  // Export functionality
+  const exportSummaryCsv = () => {
+    if (!filteredContacts.length) {
+      toast({
+        title: "No data to export",
+        description: "No contacts match your current filters.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const currentDate = new Date().toISOString().split('T')[0];
+    const filename = `contacts-summary-${currentDate}.csv`;
+    
+    // Get visible column data
+    const exportData = filteredContacts.map(contact => {
+      const row: Record<string, any> = {};
+      columns.forEach(col => {
+        const value = contact[col.key as keyof ContactApp];
+        row[col.label] = value ?? '';
+      });
+      return row;
+    });
+
+    const csvContent = jsonToCsv(exportData);
+    downloadFile(csvContent, filename, 'text/csv');
+    
+    toast({
+      title: "Export completed",
+      description: `Exported ${filteredContacts.length} contacts`
+    });
+  };
+
+  const exportDetailedCsv = async () => {
+    if (!filteredContacts.length) {
+      toast({
+        title: "No data to export",
+        description: "No contacts match your current filters.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsExporting(true);
+    toast({
+      title: "Preparing Detailed CSV...",
+      description: "This may take a moment"
+    });
+
+    try {
+      const contactIds = filteredContacts.map(c => c.id);
+      
+      // Fetch comprehensive contact data
+      const { data: detailedContacts, error: contactsError } = await supabase
+        .from('contacts_app')
+        .select(`
+          id, full_name, email_address, organization, title,
+          areas_of_specialization, lg_focus_areas_comprehensive_list,
+          lg_focus_area_1, lg_focus_area_2, lg_focus_area_3, lg_focus_area_4,
+          lg_focus_area_5, lg_focus_area_6, lg_focus_area_7, lg_focus_area_8,
+          lg_sector, delta_type, delta, of_emails, of_meetings, 
+          most_recent_contact, notes
+        `)
+        .in('id', contactIds);
+
+      if (contactsError) throw contactsError;
+
+      // Fetch recent interactions for each contact
+      const { data: interactions, error: interactionsError } = await supabase
+        .from('interactions_flat')
+        .select('email, occurred_at, subject')
+        .in('email', detailedContacts?.map(c => c.email_address?.toLowerCase()).filter(Boolean) || []);
+
+      if (interactionsError) throw interactionsError;
+
+      // Fetch opportunities for each contact
+      const { data: opportunities, error: oppsError } = await supabase
+        .from('opportunities_raw')
+        .select('deal_name, deal_source_individual_1, deal_source_individual_2')
+        .limit(1000);
+
+      if (oppsError) throw oppsError;
+
+      // Process and join data
+      const exportData = detailedContacts?.map(contact => {
+        // Find most recent interaction
+        const contactInteractions = interactions?.filter(i => 
+          i.email?.toLowerCase() === contact.email_address?.toLowerCase()
+        ) || [];
+        const mostRecentInteraction = contactInteractions.sort((a, b) => 
+          new Date(b.occurred_at || 0).getTime() - new Date(a.occurred_at || 0).getTime()
+        )[0];
+
+        // Find opportunities where this contact is a deal source
+        const normalizeContactName = (contact.full_name || '')
+          .toLowerCase()
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        const contactOpps = opportunities?.filter(opp => {
+          const name1 = (opp.deal_source_individual_1 || '')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+          const name2 = (opp.deal_source_individual_2 || '')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+          return name1 === normalizeContactName || name2 === normalizeContactName;
+        }) || [];
+
+        // Dedupe opportunities by deal_name
+        const uniqueOpps = Array.from(
+          new Map(contactOpps.map(opp => [opp.deal_name?.toLowerCase(), opp.deal_name]))
+          .values()
+        ).filter(Boolean);
+
+        return {
+          'Full Name': contact.full_name || '',
+          'Email': contact.email_address || '',
+          'Organization': contact.organization || '',
+          'Title': contact.title || '',
+          'Areas of Specialization': contact.areas_of_specialization || '',
+          'LG Focus Areas (Comprehensive)': contact.lg_focus_areas_comprehensive_list || '',
+          'LG Focus Area 1': contact.lg_focus_area_1 || '',
+          'LG Focus Area 2': contact.lg_focus_area_2 || '',
+          'LG Focus Area 3': contact.lg_focus_area_3 || '',
+          'LG Focus Area 4': contact.lg_focus_area_4 || '',
+          'LG Focus Area 5': contact.lg_focus_area_5 || '',
+          'LG Focus Area 6': contact.lg_focus_area_6 || '',
+          'LG Focus Area 7': contact.lg_focus_area_7 || '',
+          'LG Focus Area 8': contact.lg_focus_area_8 || '',
+          'LG Sector': contact.lg_sector || '',
+          'Delta Type': contact.delta_type || '',
+          'Delta': contact.delta || '',
+          'Emails': contact.of_emails || '',
+          'Meetings': contact.of_meetings || '',
+          'Most Recent Contact': contact.most_recent_contact ? 
+            new Date(contact.most_recent_contact).toISOString().split('T')[0] : '',
+          'Next Scheduled Outreach Date': '',
+          'Recent Interaction At': mostRecentInteraction?.occurred_at ? 
+            new Date(mostRecentInteraction.occurred_at).toISOString() : '',
+          'Recent Interaction Subject': mostRecentInteraction?.subject || '',
+          'Opportunities (as Deal Source)': uniqueOpps.join(', '),
+          'Notes': contact.notes || ''
+        };
+      }) || [];
+
+      const currentDate = new Date().toISOString().split('T')[0];
+      const filename = `contacts-detailed-${currentDate}.csv`;
+      const csvContent = jsonToCsv(exportData);
+      downloadFile(csvContent, filename, 'text/csv');
+
+      toast({
+        title: "Export completed",
+        description: `Exported ${exportData.length} contacts with detailed information`
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export detailed CSV. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const emptyState = {
     title: "No contacts found",
     description: searchTerm || activeFilterCount > 0 
@@ -389,6 +561,61 @@ export function ContactsTable() {
               )}
             </Button>
           </FilterModal>
+          {/* Split Export Button */}
+          <div className="flex">
+            <Button 
+              variant="outline" 
+              onClick={exportSummaryCsv}
+              disabled={isExporting}
+              className="rounded-r-none border-r-0"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  disabled={isExporting}
+                  className="rounded-l-none border-l border-border/50 px-2"
+                >
+                  <svg
+                    width="4"
+                    height="4"
+                    viewBox="0 0 15 15"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                  >
+                    <path
+                      d="m4.93179 5.43179c-.20264-.20264-.20264-.53117 0-.73381.20267-.20267.53116-.20267.73383 0l2.33388 2.33398 2.3338-2.33398c.2027-.20267.5312-.20267.7338 0 .2027.20264.2027.53117 0 .73381l-2.6657 2.6657c-.2026.2027-.5311.2027-.7338 0z"
+                      fill="currentColor"
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={exportSummaryCsv}
+                  disabled={isExporting}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Summary CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={exportDetailedCsv}
+                  disabled={isExporting}
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Detailed CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
           <Button onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Contact
@@ -423,6 +650,7 @@ export function ContactsTable() {
         tableId="contacts"
         presets={presets}
         exportFilename="contacts"
+        hideExportButton={true}
           />
       </div>
       </div>
