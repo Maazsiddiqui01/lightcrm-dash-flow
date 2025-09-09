@@ -15,7 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink } from "lucide-react";
+import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase } from "lucide-react";
+import { useContactOpps } from "@/hooks/useContactOpps";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ContactRaw {
   id: string;
@@ -81,6 +83,9 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   const [loadingInteractions, setLoadingInteractions] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  // Hook to fetch opportunities for this contact
+  const { data: contactOpps = [], isLoading: isLoadingOpps, error: oppsError } = useContactOpps(contactData?.full_name);
 
   // Load full contact data from contacts_raw when contact changes
   useEffect(() => {
@@ -380,6 +385,40 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                   </div>
                 ))}
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Opportunities Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Opportunities (as Deal Source)</h3>
+              
+              {isLoadingOpps ? (
+                <Skeleton className="h-6 w-full" />
+              ) : oppsError ? (
+                <p className="text-sm text-destructive">Failed to load opportunities</p>
+              ) : contactOpps.length > 0 ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-foreground">
+                      {contactOpps.map((opp, index) => (
+                        <span key={opp.name}>
+                          {opp.name}
+                          {opp.ownershipType && (
+                            <span className="text-muted-foreground"> ({opp.ownershipType})</span>
+                          )}
+                          {index < contactOpps.length - 1 && ', '}
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="ml-3 text-xs">
+                    {contactOpps.length}
+                  </Badge>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">—</p>
+              )}
             </div>
 
             <Separator />
