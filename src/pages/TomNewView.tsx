@@ -399,9 +399,9 @@ export function TomNewView() {
       'Areas of Specialization': dash(row.areas_of_specialization),
       'LG Lead': dash(row.lg_lead),
       'Most Recent Contact': fmtDate(row.most_recent_contact),
-      'Delta': fmtNum(row.delta),
+      'Outreach Cadence (Days)': fmtNum(row.delta),
       'Delta Days': fmtNum(row.delta_days),
-      'Delta Type': dash(row.delta_type),
+      'Outreach Cadence': dash(row.delta_type),
       'No of Emails': fmtNum(row.no_of_emails),
       'No of Meetings': fmtNum(row.no_of_meetings),
       'Next Scheduled Outreach Date': fmtDate(row.next_scheduled_outreach_date),
@@ -602,10 +602,10 @@ export function TomNewView() {
                     />
                     
                     <MultiSelect
-                      label="Delta Type"
+                      label="Outreach Cadence"
                       filterKey="delta_type"
                       options={dtOptions}
-                      placeholder="Select delta types..."
+                      placeholder="Select outreach types..."
                     />
                     
                     {/* Has Opps Radio Group */}
@@ -743,12 +743,12 @@ export function TomNewView() {
                 placeholder="Select leads..."
               />
               
-              <MultiSelect
-                label="Delta Type"
-                filterKey="delta_type"
-                options={dtOptions}
-                placeholder="Select delta types..."
-              />
+                <MultiSelect
+                  label="Outreach Cadence"
+                  filterKey="delta_type"
+                  options={dtOptions}
+                  placeholder="Select outreach types..."
+                />
               
               {/* Has Opps Radio Group */}
               <div className="grid gap-2">

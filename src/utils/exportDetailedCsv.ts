@@ -148,7 +148,7 @@ export async function exportContactsDetailedCSV(filteredContactIds: string[]) {
     'Areas of Specialization', 'LG Focus Areas (Comprehensive)',
     'LG Focus Area 1', 'LG Focus Area 2', 'LG Focus Area 3', 'LG Focus Area 4',
     'LG Focus Area 5', 'LG Focus Area 6', 'LG Focus Area 7', 'LG Focus Area 8',
-    'LG Sector', 'Delta Type', 'Delta',
+    'LG Sector', 'Outreach Cadence', 'Outreach Cadence (Days)',
     'Emails', 'Meetings', 'Most Recent Contact', 'Next Scheduled Outreach Date',
     'Recent Interaction At', 'Recent Interaction Subject',
     'Opportunities (as Deal Source)', 'Notes'
@@ -173,8 +173,8 @@ export async function exportContactsDetailedCSV(filteredContactIds: string[]) {
       'LG Focus Area 7': c.lg_focus_area_7 ?? '',
       'LG Focus Area 8': c.lg_focus_area_8 ?? '',
       'LG Sector': c.lg_sector ?? '',
-      'Delta Type': c.delta_type ?? '',
-      'Delta': c.delta ?? '',
+      'Outreach Cadence': c.delta_type ?? '',
+      'Outreach Cadence (Days)': c.delta ?? '',
       'Emails': c.of_emails ?? '',                    // often only in contacts_app; blank if not present
       'Meetings': c.of_meetings ?? '',
       'Most Recent Contact': c.most_recent_contact ?? '',

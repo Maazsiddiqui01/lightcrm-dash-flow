@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useDistinctFocusAreas } from "@/hooks/useDistinctFocusAreas";  
+import { useDistinctSectors } from "@/hooks/useDistinctSectors";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, User } from "lucide-react";
 
 interface AddContactDialogProps {
@@ -46,6 +49,10 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  
+  // Fetch dropdown data
+  const { data: focusAreas, isLoading: loadingFocusAreas } = useDistinctFocusAreas();
+  const { data: sectors, isLoading: loadingSectors } = useDistinctSectors();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -240,13 +247,26 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
 
           <div className="space-y-2">
             <Label htmlFor="lg_focus_area_1">Primary Focus Area *</Label>
-            <Input
-              id="lg_focus_area_1"
+            <Select
               value={formData.lg_focus_area_1}
-              onChange={(e) => handleInputChange("lg_focus_area_1", e.target.value)}
-              placeholder="Enter primary focus area"
+              onValueChange={(value) => handleInputChange("lg_focus_area_1", value)}
               required
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select primary focus area" />
+              </SelectTrigger>
+              <SelectContent>
+                {loadingFocusAreas ? (
+                  <SelectItem value="" disabled>Loading...</SelectItem>
+                ) : (
+                  focusAreas?.map((area) => (
+                    <SelectItem key={area} value={area}>
+                      {area}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Optional Fields */}
@@ -262,12 +282,25 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
             </div>
             <div className="space-y-2">
               <Label htmlFor="lg_sector">LG Sector</Label>
-              <Input
-                id="lg_sector"
+              <Select
                 value={formData.lg_sector}
-                onChange={(e) => handleInputChange("lg_sector", e.target.value)}
-                placeholder="Enter sector"
-              />
+                onValueChange={(value) => handleInputChange("lg_sector", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sector" />
+                </SelectTrigger>
+                <SelectContent>
+                  {loadingSectors ? (
+                    <SelectItem value="" disabled>Loading...</SelectItem>
+                  ) : (
+                    sectors?.map((sector) => (
+                      <SelectItem key={sector} value={sector}>
+                        {sector}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -295,22 +328,28 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="delta_type">Delta Type</Label>
-              <Input
-                id="delta_type"
+              <Label htmlFor="delta_type">Outreach Cadence</Label>
+              <Select
                 value={formData.delta_type}
-                onChange={(e) => handleInputChange("delta_type", e.target.value)}
-                placeholder="Enter delta type"
-              />
+                onValueChange={(value) => handleInputChange("delta_type", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select outreach type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Meeting">Meeting</SelectItem>
+                  <SelectItem value="Email">Email</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="delta">Delta</Label>
+              <Label htmlFor="delta">Outreach Cadence (Days)</Label>
               <Input
                 id="delta"
                 type="number"
                 value={formData.delta}
                 onChange={(e) => handleInputChange("delta", e.target.value)}
-                placeholder="Enter delta value"
+                placeholder="Enter number of days"
               />
             </div>
           </div>

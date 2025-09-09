@@ -260,14 +260,17 @@ export type Database = {
       lg_leads_directory: {
         Row: {
           email: string
+          last_name: string | null
           lead_name: string
         }
         Insert: {
           email: string
+          last_name?: string | null
           lead_name: string
         }
         Update: {
           email?: string
+          last_name?: string | null
           lead_name?: string
         }
         Relationships: []
@@ -374,8 +377,110 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities_raw_backup_2025_09_04: {
+        Row: {
+          created_at: string | null
+          date_of_origination: string | null
+          deal_name: string | null
+          deal_source_company: string | null
+          deal_source_individual_1: string | null
+          deal_source_individual_2: string | null
+          dealcloud: boolean | null
+          ebitda: string | null
+          ebitda_in_ms: number | null
+          ebitda_notes: string | null
+          id: string | null
+          investment_professional_point_person_1: string | null
+          investment_professional_point_person_2: string | null
+          lg_focus_area: string | null
+          most_recent_notes: string | null
+          next_steps: string | null
+          ownership: string | null
+          ownership_type: string | null
+          platform_add_on: string | null
+          sector: string | null
+          status: string | null
+          summary_of_opportunity: string | null
+          tier: string | null
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_of_origination?: string | null
+          deal_name?: string | null
+          deal_source_company?: string | null
+          deal_source_individual_1?: string | null
+          deal_source_individual_2?: string | null
+          dealcloud?: boolean | null
+          ebitda?: string | null
+          ebitda_in_ms?: number | null
+          ebitda_notes?: string | null
+          id?: string | null
+          investment_professional_point_person_1?: string | null
+          investment_professional_point_person_2?: string | null
+          lg_focus_area?: string | null
+          most_recent_notes?: string | null
+          next_steps?: string | null
+          ownership?: string | null
+          ownership_type?: string | null
+          platform_add_on?: string | null
+          sector?: string | null
+          status?: string | null
+          summary_of_opportunity?: string | null
+          tier?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_of_origination?: string | null
+          deal_name?: string | null
+          deal_source_company?: string | null
+          deal_source_individual_1?: string | null
+          deal_source_individual_2?: string | null
+          dealcloud?: boolean | null
+          ebitda?: string | null
+          ebitda_in_ms?: number | null
+          ebitda_notes?: string | null
+          id?: string | null
+          investment_professional_point_person_1?: string | null
+          investment_professional_point_person_2?: string | null
+          lg_focus_area?: string | null
+          most_recent_notes?: string | null
+          next_steps?: string | null
+          ownership?: string | null
+          ownership_type?: string | null
+          platform_add_on?: string | null
+          sector?: string | null
+          status?: string | null
+          summary_of_opportunity?: string | null
+          tier?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
+      contacts_ai: {
+        Row: {
+          areas_of_specialization: string | null
+          contact_id: string | null
+          email: string | null
+          emails_count: number | null
+          focus_area: string | null
+          focus_area_list: string | null
+          full_name: string | null
+          meetings_count: number | null
+          most_recent_contact: string | null
+          notes: string | null
+          organization: string | null
+          sector: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
       contacts_app: {
         Row: {
           areas_of_specialization: string | null
@@ -438,6 +543,16 @@ export type Database = {
           of_emails: number | null
           of_meetings: number | null
           total_of_contacts: number | null
+        }
+        Relationships: []
+      }
+      interactions_ai: {
+        Row: {
+          email: string | null
+          id: string | null
+          occurred_at: string | null
+          source: string | null
+          subject: string | null
         }
         Relationships: []
       }
@@ -595,6 +710,74 @@ export type Database = {
         }
         Relationships: []
       }
+      kpi_lg_leads: {
+        Row: {
+          email: string | null
+          last_name: string | null
+          name: string | null
+        }
+        Relationships: []
+      }
+      opportunities_ai: {
+        Row: {
+          date_of_origination_text: string | null
+          deal_name: string | null
+          deal_source_company: string | null
+          deal_source_individual_1: string | null
+          deal_source_individual_2: string | null
+          ebitda_in_ms: number | null
+          ebitda_notes: string | null
+          ebitda_text: string | null
+          focus_area: string | null
+          lg_lead_1: string | null
+          lg_lead_2: string | null
+          opportunity_id: string | null
+          ownership: string | null
+          ownership_type: string | null
+          platform_add_on: string | null
+          sector: string | null
+          status: string | null
+        }
+        Insert: {
+          date_of_origination_text?: string | null
+          deal_name?: string | null
+          deal_source_company?: string | null
+          deal_source_individual_1?: string | null
+          deal_source_individual_2?: string | null
+          ebitda_in_ms?: number | null
+          ebitda_notes?: string | null
+          ebitda_text?: string | null
+          focus_area?: string | null
+          lg_lead_1?: never
+          lg_lead_2?: never
+          opportunity_id?: string | null
+          ownership?: string | null
+          ownership_type?: string | null
+          platform_add_on?: string | null
+          sector?: string | null
+          status?: string | null
+        }
+        Update: {
+          date_of_origination_text?: string | null
+          deal_name?: string | null
+          deal_source_company?: string | null
+          deal_source_individual_1?: string | null
+          deal_source_individual_2?: string | null
+          ebitda_in_ms?: number | null
+          ebitda_notes?: string | null
+          ebitda_text?: string | null
+          focus_area?: string | null
+          lg_lead_1?: never
+          lg_lead_2?: never
+          opportunity_id?: string | null
+          ownership?: string | null
+          ownership_type?: string | null
+          platform_add_on?: string | null
+          sector?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       opportunities_app: {
         Row: {
           created_at: string | null
@@ -697,24 +880,15 @@ export type Database = {
         }
         Relationships: []
       }
-      tom_new_view_mat: {
+      ui_distinct_focus_areas: {
         Row: {
-          areas_of_specialization: string | null
-          contact_id: string | null
-          deal_name: string | null
-          deal_source_company: string | null
-          deal_source_individual: string | null
-          delta: number | null
-          delta_days: number | null
-          delta_type: string | null
-          has_opps: string | null
-          lg_focus_area: string | null
-          lg_lead: string | null
+          focus_area: string | null
+        }
+        Relationships: []
+      }
+      ui_distinct_lg_sectors: {
+        Row: {
           lg_sector: string | null
-          most_recent_contact: string | null
-          next_scheduled_outreach_date: string | null
-          no_of_emails: number | null
-          no_of_meetings: number | null
         }
         Relationships: []
       }
@@ -801,7 +975,8 @@ export type Database = {
         Returns: {
           avg_hours_per_week: number
           lg_lead: string
-          opportunities: string
+          opportunities: number
+          top_opportunities: string
         }[]
       }
       kpi_meetings_monthly: {
@@ -842,6 +1017,10 @@ export type Database = {
           subject: string
           to_emails: string
         }[]
+      }
+      map_lg_lead_name: {
+        Args: { input: string }
+        Returns: string
       }
       normalize_name: {
         Args: { t: string }

@@ -423,13 +423,13 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
 
             <Separator />
 
-            {/* Delta Information */}
+            {/* Outreach Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Delta Information</h3>
+              <h3 className="text-lg font-semibold">Outreach Information</h3>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="delta_type">Delta Type</Label>
+                  <Label htmlFor="delta_type">Outreach Cadence</Label>
                   <Input
                     id="delta_type"
                     value={contactData.delta_type || ""}
@@ -438,7 +438,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 </div>
 
                 <div>
-                  <Label htmlFor="delta">Delta</Label>
+                  <Label htmlFor="delta">Outreach Cadence (Days)</Label>
                   <Input
                     id="delta"
                     type="number"
