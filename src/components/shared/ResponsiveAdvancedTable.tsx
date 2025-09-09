@@ -95,8 +95,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   tableType = 'contacts',
   stickyFirstColumn = true
 }: ResponsiveAdvancedTableProps<T>) {
-  const [pageSize, setPageSize] = useState(initialPageSize);
-  const [currentPage, setCurrentPage] = useState(1);
   const [columns, setColumns] = useState(initialColumns);
   const [containerWidth, setContainerWidth] = useState(0);
   const topScrollRef = useRef<HTMLDivElement>(null);
@@ -138,10 +136,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     };
   }, []);
 
-  // Update pageSize when initialPageSize changes
-  useEffect(() => {
-    setPageSize(initialPageSize);
-  }, [initialPageSize]);
+  // No longer need pageSize state since we're showing all data
 
   // Measure container width for responsive columns
   useLayoutEffect(() => {
@@ -167,13 +162,11 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     }
   }, [containerWidth, initialColumns, tableType]);
 
-  // Pagination logic
-  const totalPages = Math.ceil((data?.length || 0) / pageSize);
-  const paginatedData = useMemo(() => {
+  // Show all data without pagination
+  const displayData = useMemo(() => {
     if (!data || !Array.isArray(data)) return [];
-    const start = (currentPage - 1) * pageSize;
-    return data.slice(start, start + pageSize);
-  }, [data, currentPage, pageSize]);
+    return data;
+  }, [data]);
 
   // Visible columns only
   const visibleColumns = useMemo(() => 
@@ -369,16 +362,16 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
       {/* Table Container */}
       <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex-1 min-h-0">
-        <div ref={mainScrollRef} className="overflow-auto max-h-[calc(100vh-24rem)]" id="table-scroll" style={{ minWidth: '100%' }}>
+        <div ref={mainScrollRef} className="overflow-auto h-[calc(100vh-20rem)]" id="table-scroll" style={{ minWidth: '100%' }}>
           <Table className="table-fixed min-w-[1200px]">
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow className="border-b">
                 {visibleColumns.map((column, index) => (
                   <TableHead
                     key={column.key}
                     className={cn(
-                      "h-12 px-4 text-left align-middle font-medium text-muted-foreground select-none",
-                      index === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-card after:absolute after:inset-y-0 after:-right-px after:w-px after:bg-border",
+                      "h-12 px-4 text-left align-middle font-medium text-muted-foreground select-none bg-card",
+                      index === 0 && stickyFirstColumn && "sticky left-0 z-20 bg-card after:absolute after:inset-y-0 after:-right-px after:w-px after:bg-border",
                       column.sortable && "cursor-pointer hover:text-foreground",
                       column.headerClassName
                     )}
@@ -412,7 +405,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedData.length === 0 ? (
+              {displayData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={visibleColumns.length} className="h-32">
                     <div className="flex flex-col items-center justify-center text-center space-y-2">
@@ -429,7 +422,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedData.map((row, rowIndex) => (
+                displayData.map((row, rowIndex) => (
                   <TableRow
                     key={rowIndex}
                     className={cn(
@@ -462,70 +455,12 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
           </Table>
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Rows per page:</span>
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => {
-                  setPageSize(Number(value));
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="w-16 h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-              </span>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  First
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  Last
-                </Button>
-              </div>
-            </div>
+        {/* Footer with total count */}
+        <div className="flex items-center justify-between px-4 py-3 border-t bg-card">
+          <div className="text-sm text-muted-foreground">
+            Showing all {displayData.length} records
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
