@@ -400,31 +400,19 @@ export function ContactsTable() {
 
     try {
       const contactIds = filteredContacts.map(c => c.id);
-      console.log('Exporting contact IDs:', contactIds);
       
-      // Fetch comprehensive contact data
+      // Fetch comprehensive contact data - use * to get all columns
       const { data: detailedContacts, error: contactsError } = await supabase
         .from('contacts_app')
-        .select(`
-          id, full_name, email_address, organization, title,
-          areas_of_specialization, lg_focus_areas_comprehensive_list,
-          lg_focus_area_1, lg_focus_area_2, lg_focus_area_3, lg_focus_area_4,
-          lg_focus_area_5, lg_focus_area_6, lg_focus_area_7, lg_focus_area_8,
-          lg_sector, delta_type, delta, of_emails, of_meetings, 
-          most_recent_contact, notes
-        `)
+        .select('*')
         .in('id', contactIds);
 
       if (contactsError) {
-        console.error('Contacts query error:', contactsError);
         throw contactsError;
       }
-      
-      console.log('Fetched contacts:', detailedContacts?.length);
 
       // Fetch recent interactions for each contact
       const emailList = detailedContacts?.map(c => c.email_address?.toLowerCase()).filter(Boolean) || [];
-      console.log('Email list for interactions:', emailList.length);
       let interactions: any[] = [];
       
       if (emailList.length > 0) {
@@ -434,11 +422,9 @@ export function ContactsTable() {
           .in('email', emailList);
         
         if (interactionsError) {
-          console.error('Interactions query error:', interactionsError);
           throw interactionsError;
         }
         interactions = interactionData || [];
-        console.log('Fetched interactions:', interactions.length);
       }
 
       // Fetch opportunities for each contact
@@ -448,11 +434,8 @@ export function ContactsTable() {
         .limit(1000);
 
       if (oppsError) {
-        console.error('Opportunities query error:', oppsError);
         throw oppsError;
       }
-      
-      console.log('Fetched opportunities:', opportunities?.length);
 
       // Process and join data
       const exportData = detailedContacts?.map(contact => {
