@@ -7,7 +7,7 @@ interface TableLayoutOptions {
 }
 
 export function useTableLayout(options: TableLayoutOptions = {}) {
-  const { headerHeight = 64, footerHeight = 60, padding = 24 } = options;
+  const { headerHeight = 64, footerHeight = 120, padding = 24 } = options;
   const [availableHeight, setAvailableHeight] = useState(0);
   const [containerRef, setContainerRef] = useState<HTMLElement | null>(null);
 
@@ -19,7 +19,7 @@ export function useTableLayout(options: TableLayoutOptions = {}) {
     const topOffset = rect.top;
     const calculatedHeight = viewportHeight - topOffset - footerHeight - padding;
     
-    setAvailableHeight(Math.max(300, calculatedHeight)); // Minimum 300px
+    setAvailableHeight(Math.max(400, calculatedHeight)); // Minimum 400px
   }, [containerRef, footerHeight, padding]);
 
   useEffect(() => {

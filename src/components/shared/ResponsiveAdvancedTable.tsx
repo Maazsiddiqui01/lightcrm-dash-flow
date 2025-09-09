@@ -94,7 +94,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   presets = [],
   exportFilename = "export",
   className,
-  initialPageSize = 50,
+  initialPageSize = 25,
   tableType = 'contacts',
   stickyFirstColumn = true,
   enablePagination = true,
@@ -108,9 +108,9 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   
   // Use the table layout hook for dynamic height calculation
   const { availableHeight, containerRef: layoutContainerRef, maxTableHeight } = useTableLayout({
-    headerHeight: 120, // Toolbar + header
-    footerHeight: enablePagination ? 60 : 0,
-    padding: 16
+    headerHeight: 160, // Toolbar + header + extra space
+    footerHeight: enablePagination ? 80 : 20,
+    padding: 20
   });
   
   const containerRef = useRef<HTMLDivElement>(null);
@@ -358,7 +358,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
           <VirtualizedTable
             data={displayData}
             columns={visibleColumns}
-            containerHeight={maxTableHeight}
+            containerHeight={Math.min(450, maxTableHeight)}
             rowHeight={rowHeight}
             onRowClick={onRowClick}
             loading={loading}
@@ -468,10 +468,10 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
       {/* Table Container */}
       <div 
-        className="rounded-xl border bg-card shadow-sm overflow-hidden flex-1 min-h-0"
-        style={{ height: maxTableHeight }}
+        className="rounded-xl border bg-card shadow-sm overflow-hidden flex-1"
+        style={{ height: Math.min(450, maxTableHeight) }}
       >
-        <div className="overflow-auto h-full">
+        <div className="overflow-auto h-full scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           <Table className="table-responsive">
             <TableHeader className="table-header-sticky">
               <TableRow className="border-b">
