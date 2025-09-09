@@ -9,42 +9,41 @@ export function Interactions() {
   const stats = useInteractionStats();
 
   return (
-    <div className="min-h-screen bg-background">
-      <PageHeader 
-        title="Interactions"
-        description="View communication history and touchpoints"
-      />
-      
-      <ResponsivePageShell headerHeight={120}>
-        <div className="container-fluid p-4 lg:p-6 space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-            <StatsCard
-              title="Total Interactions"
-              value={stats.loading ? "..." : stats.totalInteractions}
-              icon={MessageSquare}
-            />
-            <StatsCard
-              title="Emails"
-              value={stats.loading ? "..." : stats.totalEmails}
-              icon={Mail}
-            />
-            <StatsCard
-              title="Meetings"
-              value={stats.loading ? "..." : stats.totalMeetings}
-              icon={Calendar}
-            />
-            <StatsCard
-              title="Last Interaction"
-              value={stats.loading ? "..." : stats.lastInteractionDate}
-              icon={Clock}
-            />
-          </div>
-
-          {/* Interactions Table */}
-          <InteractionsTable />
+    <section className="h-full flex flex-col overflow-hidden">
+      {/* Header Cards */}
+      <div className="p-4 space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold">Interactions</h1>
+          <p className="text-muted-foreground">View communication history and touchpoints</p>
         </div>
-      </ResponsivePageShell>
-    </div>
+        
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+          <StatsCard
+            title="Total Interactions"
+            value={stats.loading ? "..." : stats.totalInteractions}
+            icon={MessageSquare}
+          />
+          <StatsCard
+            title="Emails"
+            value={stats.loading ? "..." : stats.totalEmails}
+            icon={Mail}
+          />
+          <StatsCard
+            title="Meetings"
+            value={stats.loading ? "..." : stats.totalMeetings}
+            icon={Calendar}
+          />
+          <StatsCard
+            title="Last Interaction"
+            value={stats.loading ? "..." : stats.lastInteractionDate}
+            icon={Clock}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 mx-4 flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+        <InteractionsTable />
+      </div>
+    </section>
   );
 }

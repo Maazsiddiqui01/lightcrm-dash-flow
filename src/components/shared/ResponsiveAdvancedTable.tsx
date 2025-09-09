@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getResponsiveColumns } from "@/utils/columnManagement";
+import { useScrollSync } from "@/hooks/useScrollSync";
 
 export interface ColumnDef<T = any> {
   key: string;
@@ -98,7 +99,44 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   const [currentPage, setCurrentPage] = useState(1);
   const [columns, setColumns] = useState(initialColumns);
   const [containerWidth, setContainerWidth] = useState(0);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync horizontal scrollbars
+  useScrollSync(topScrollRef.current, mainScrollRef.current);
+
+  // Update top scrollbar width to match main content
+  useLayoutEffect(() => {
+    const topScroll = topScrollRef.current;
+    const mainScroll = mainScrollRef.current;
+    
+    if (!topScroll || !mainScroll) return;
+
+    const updateTopScrollWidth = () => {
+      const scrollWidth = mainScroll.scrollWidth;
+      const clientWidth = mainScroll.clientWidth;
+      
+      if (scrollWidth > clientWidth) {
+        topScroll.style.display = 'block';
+        topScroll.firstElementChild && 
+          ((topScroll.firstElementChild as HTMLElement).style.width = `${scrollWidth}px`);
+      } else {
+        topScroll.style.display = 'none';
+      }
+    };
+
+    // Use ResizeObserver to track content changes
+    const resizeObserver = new ResizeObserver(updateTopScrollWidth);
+    resizeObserver.observe(mainScroll);
+
+    // Initial sync
+    updateTopScrollWidth();
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // Update pageSize when initialPageSize changes
   useEffect(() => {
@@ -318,9 +356,20 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         </div>
       )}
 
+      {/* Sticky top scrollbar */}
+      <div 
+        ref={topScrollRef}
+        className="h-3 overflow-x-auto overflow-y-hidden sticky top-0 bg-card z-20 border-b border-border"
+        style={{ display: 'none' }}
+        aria-label="Horizontal scroll for table"
+        data-scroll-sync="top"
+      >
+        <div className="h-px" />
+      </div>
+
       {/* Table Container */}
-      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <div className="overflow-auto" style={{ minWidth: '100%' }}>
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex-1 min-h-0">
+        <div ref={mainScrollRef} className="overflow-auto h-full" id="table-scroll" style={{ minWidth: '100%' }}>
           <Table className="table-fixed min-w-[1200px]">
             <TableHeader>
               <TableRow className="border-b">

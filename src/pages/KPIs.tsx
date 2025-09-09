@@ -52,14 +52,14 @@ export function KPIs() {
   );
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="h-full flex flex-col overflow-hidden">
       <PageHeader
         title="KPIs"
         description="Internal CRM analytics for the investment team"
         actions={actions}
       />
 
-      <main className="flex-1 p-6 space-y-6 bg-background">
+      <main className="flex-1 p-6 space-y-6 bg-background overflow-auto">
         {/* Error State */}
         {data.error && (
           <Alert variant="destructive">

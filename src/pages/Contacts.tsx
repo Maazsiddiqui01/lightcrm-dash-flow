@@ -13,49 +13,48 @@ export function Contacts() {
   const stats = useContactStats();
 
   return (
-    <div className="min-h-screen bg-background">
-      <PageHeader 
-        title="Contacts"
-        description="Manage your professional contacts and relationships"
-        actions={
+    <section className="h-full flex flex-col overflow-hidden">
+      {/* Header Cards */}
+      <div className="p-4 space-y-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold">Contacts</h1>
+            <p className="text-muted-foreground">Manage your professional contacts and relationships</p>
+          </div>
           <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
             <Plus className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Add Contact</span>
           </Button>
-        }
-      />
-      
-      <ResponsivePageShell headerHeight={120}>
-        <div className="container-fluid p-4 lg:p-6 space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-            <StatsCard
-              title="Total Contacts"
-              value={stats.loading ? "..." : stats.totalContacts}
-              icon={Users}
-            />
-            <StatsCard
-              title="Active Contacts"
-              value={stats.loading ? "..." : stats.activeContacts}
-              subtitle="Last 90 days"
-              icon={TrendingUp}
-            />
-            <StatsCard
-              title="Emails Sent"
-              value={stats.loading ? "..." : stats.totalEmails}
-              icon={Mail}
-            />
-            <StatsCard
-              title="Meetings Logged"
-              value={stats.loading ? "..." : stats.totalMeetings}
-              icon={Calendar}
-            />
-          </div>
-
-          {/* Contacts Table */}
-          <ContactsTable />
         </div>
-      </ResponsivePageShell>
+        
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+          <StatsCard
+            title="Total Contacts"
+            value={stats.loading ? "..." : stats.totalContacts}
+            icon={Users}
+          />
+          <StatsCard
+            title="Active Contacts"
+            value={stats.loading ? "..." : stats.activeContacts}
+            subtitle="Last 90 days"
+            icon={TrendingUp}
+          />
+          <StatsCard
+            title="Emails Sent"
+            value={stats.loading ? "..." : stats.totalEmails}
+            icon={Mail}
+          />
+          <StatsCard
+            title="Meetings Logged"
+            value={stats.loading ? "..." : stats.totalMeetings}
+            icon={Calendar}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 mx-4 flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+        <ContactsTable />
+      </div>
 
       <AddContactDialog 
         open={isAddDialogOpen} 
@@ -64,6 +63,6 @@ export function Contacts() {
           setIsAddDialogOpen(false);
         }} 
       />
-    </div>
+    </section>
   );
 }

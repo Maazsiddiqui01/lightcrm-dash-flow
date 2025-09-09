@@ -77,7 +77,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-full overflow-auto bg-background">
       {/* Hero Section */}
       <Hero onGetStarted={handleGetStarted} onAskAI={handleAskAI} />
       

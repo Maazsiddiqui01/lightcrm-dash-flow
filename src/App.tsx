@@ -1,8 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Dashboard } from "@/pages/Dashboard";
 import { Contacts } from "@/pages/Contacts";
 import { Opportunities } from "@/pages/Opportunities";
@@ -37,49 +36,28 @@ function App() {
               </ProtectedRoute>
             } />
             
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            
-            {/* All other routes - wrapped with sidebar */}
+            {/* All other routes - wrapped with AppLayout */}
             <Route path="/*" element={
               <ProtectedRoute>
-                <SidebarProvider defaultOpen>
-                  <div className="flex min-h-screen w-full bg-background">
-                    <AppSidebar />
-                    
-                    <SidebarInset className="flex-1">
-                      <a href="#main-content" className="skip-link">Skip to main content</a>
-                      <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 shadow-sm">
-                        <SidebarTrigger 
-                          className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors duration-200 focus-ring" 
-                          aria-label="Toggle sidebar navigation"
-                        />
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
-                          <span className="truncate font-medium">AI CRM</span>
-                        </div>
-                      </header>
-
-                      <main id="main-content" className="flex-1">
-                        <PageTransition>
-                          <Routes>
-                            <Route path="/contacts" element={<Contacts />} />
-                            <Route path="/opportunities" element={<Opportunities />} />
-                            <Route path="/interactions" element={<Interactions />} />
-                            <Route path="/kpis" element={<KPIs />} />
-                            <Route path="/tom-new-view" element={<TomNewView />} />
-                            <Route path="/make-your-own-view" element={<MakeYourOwnView />} />
-                            <Route path="/datatable-test" element={<DataTableTest />} />
-                            <Route path="/ask-ai" element={<AskAI />} />
-                            <Route path="*" element={<NotFound />} />
-                          </Routes>
-                        </PageTransition>
-                      </main>
-                    </SidebarInset>
-                  </div>
-                </SidebarProvider>
+                <AppLayout>
+                  <a href="#main-content" className="skip-link">Skip to main content</a>
+                  <main id="main-content" className="h-full">
+                    <PageTransition>
+                      <Routes>
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/contacts" element={<Contacts />} />
+                        <Route path="/opportunities" element={<Opportunities />} />
+                        <Route path="/interactions" element={<Interactions />} />
+                        <Route path="/kpis" element={<KPIs />} />
+                        <Route path="/tom-new-view" element={<TomNewView />} />
+                        <Route path="/make-your-own-view" element={<MakeYourOwnView />} />
+                        <Route path="/datatable-test" element={<DataTableTest />} />
+                        <Route path="/ask-ai" element={<AskAI />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </PageTransition>
+                  </main>
+                </AppLayout>
               </ProtectedRoute>
             } />
           </Routes>

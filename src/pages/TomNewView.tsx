@@ -539,11 +539,13 @@ export function TomNewView() {
           100% { transform: translateX(100%); } 
         }
       `}</style>
-      <div className="min-h-screen bg-background">
-        <PageHeader 
-          title="Tom New View"
-          description="Advanced view for Tom's workflow"
-          actions={
+      <section className="h-full flex flex-col overflow-hidden">
+        <div className="p-4 space-y-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold">Tom New View</h1>
+              <p className="text-muted-foreground">Advanced view for Tom's workflow</p>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
@@ -683,31 +685,25 @@ export function TomNewView() {
                 </SheetContent>
               </Sheet>
             </div>
-          }
-        />
-      
-      <main className="flex-1">
-        <div className="container-fluid py-4 lg:py-6">
-          <div className="mb-4 lg:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h2 className="text-section-title text-foreground">
-              Data Overview ({data.length} records)
-            </h2>
           </div>
-
-          {/* Table */}
-          <div className="rounded-xl bg-card shadow-sm border border-border overflow-hidden">
-            <AdvancedTable
-              data={data || []}
-              columns={columns}
-              loading={isLoading}
-              searchValue={searchTerm}
-              onSearchChange={setSearchTerm}
-              tableId="tom-new-view-table"
-              exportFilename={`tom-new-view-${format(new Date(), 'yyyy-MM-dd')}`}
-            />
+          <div className="text-sm text-muted-foreground">
+            Data Overview ({data.length} records)
           </div>
         </div>
-      </main>
+
+        <div className="mt-4 mx-4 flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+          <AdvancedTable
+            data={data || []}
+            columns={columns}
+            loading={isLoading}
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            tableId="tom-new-view-table"
+            exportFilename={`tom-new-view-${format(new Date(), 'yyyy-MM-dd')}`}
+            tableType="tom"
+            stickyFirstColumn={true}
+          />
+        </div>
 
       {/* Filters Sheet */}
       <Sheet open={showFilters} onOpenChange={setShowFilters}>
@@ -833,7 +829,7 @@ export function TomNewView() {
           </div>
         </SheetContent>
       </Sheet>
-      </div>
+      </section>
     </>
   );
 }

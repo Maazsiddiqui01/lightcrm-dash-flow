@@ -13,48 +13,47 @@ export function Opportunities() {
   const stats = useOpportunityStats();
 
   return (
-    <div className="min-h-screen bg-background">
-      <PageHeader 
-        title="Opportunities"
-        description="Track sales opportunities and business development"
-        actions={
+    <section className="h-full flex flex-col overflow-hidden">
+      {/* Header Cards */}
+      <div className="p-4 space-y-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold">Opportunities</h1>
+            <p className="text-muted-foreground">Track sales opportunities and business development</p>
+          </div>
           <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
             <Plus className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Add Opportunity</span>
           </Button>
-        }
-      />
-      
-      <ResponsivePageShell headerHeight={120}>
-        <div className="container-fluid p-4 lg:p-6 space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-            <StatsCard
-              title="Total Opportunities"
-              value={stats.loading ? "..." : stats.totalOpportunities}
-              icon={Target}
-            />
-            <StatsCard
-              title="Active Deals"
-              value={stats.loading ? "..." : stats.activeDeals}
-              icon={TrendingUp}
-            />
-            <StatsCard
-              title="Closed Won"
-              value={stats.loading ? "..." : stats.closedWon}
-              icon={CheckCircle}
-            />
-            <StatsCard
-              title="Pipeline Value"
-              value={stats.loading ? "..." : stats.pipelineValue}
-              icon={DollarSign}
-            />
-          </div>
-
-          {/* Opportunities Table */}
-          <OpportunitiesTable />
         </div>
-      </ResponsivePageShell>
+        
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+          <StatsCard
+            title="Total Opportunities"
+            value={stats.loading ? "..." : stats.totalOpportunities}
+            icon={Target}
+          />
+          <StatsCard
+            title="Active Deals"
+            value={stats.loading ? "..." : stats.activeDeals}
+            icon={TrendingUp}
+          />
+          <StatsCard
+            title="Closed Won"
+            value={stats.loading ? "..." : stats.closedWon}
+            icon={CheckCircle}
+          />
+          <StatsCard
+            title="Pipeline Value"
+            value={stats.loading ? "..." : stats.pipelineValue}
+            icon={DollarSign}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 mx-4 flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+        <OpportunitiesTable />
+      </div>
 
       <AddOpportunityDialog 
         open={isAddDialogOpen} 
@@ -63,6 +62,6 @@ export function Opportunities() {
           setIsAddDialogOpen(false);
         }} 
       />
-    </div>
+    </section>
   );
 }
