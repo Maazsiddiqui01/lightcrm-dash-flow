@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
-  ChevronLeft, 
-  ChevronRight, 
   Search, 
   Download, 
   Settings, 
@@ -22,7 +20,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getResponsiveColumns } from "@/utils/columnManagement";
-import { useScrollSync } from "@/hooks/useScrollSync";
+import { useTableLayout } from "@/hooks/useTableLayout";
+import { VirtualizedTable } from "./VirtualizedTable";
+import { TablePagination } from "./TablePagination";
 
 export interface ColumnDef<T = any> {
   key: string;
@@ -71,6 +71,9 @@ interface ResponsiveAdvancedTableProps<T = any> {
   initialPageSize?: number;
   tableType?: 'contacts' | 'opportunities' | 'interactions' | 'tom';
   stickyFirstColumn?: boolean;
+  enablePagination?: boolean;
+  enableVirtualization?: boolean;
+  rowHeight?: number;
 }
 
 export function ResponsiveAdvancedTable<T extends Record<string, any>>({
@@ -93,58 +96,34 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   className,
   initialPageSize = 50,
   tableType = 'contacts',
-  stickyFirstColumn = true
+  stickyFirstColumn = true,
+  enablePagination = true,
+  enableVirtualization = false,
+  rowHeight = 52
 }: ResponsiveAdvancedTableProps<T>) {
   const [columns, setColumns] = useState(initialColumns);
   const [containerWidth, setContainerWidth] = useState(0);
-  const topScrollRef = useRef<HTMLDivElement>(null);
-  const mainScrollRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(initialPageSize);
+  
+  // Use the table layout hook for dynamic height calculation
+  const { availableHeight, containerRef: layoutContainerRef, maxTableHeight } = useTableLayout({
+    headerHeight: 120, // Toolbar + header
+    footerHeight: enablePagination ? 60 : 0,
+    padding: 16
+  });
+  
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Sync horizontal scrollbars
-  useScrollSync(topScrollRef.current, mainScrollRef.current);
-
-  // Update top scrollbar width to match main content
-  useLayoutEffect(() => {
-    const topScroll = topScrollRef.current;
-    const mainScroll = mainScrollRef.current;
-    
-    if (!topScroll || !mainScroll) return;
-
-    const updateTopScrollWidth = () => {
-      const scrollWidth = mainScroll.scrollWidth;
-      const clientWidth = mainScroll.clientWidth;
-      
-      if (scrollWidth > clientWidth) {
-        topScroll.style.display = 'block';
-        topScroll.firstElementChild && 
-          ((topScroll.firstElementChild as HTMLElement).style.width = `${scrollWidth}px`);
-      } else {
-        topScroll.style.display = 'none';
-      }
-    };
-
-    // Use ResizeObserver to track content changes
-    const resizeObserver = new ResizeObserver(updateTopScrollWidth);
-    resizeObserver.observe(mainScroll);
-
-    // Initial sync
-    updateTopScrollWidth();
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
-
-  // No longer need pageSize state since we're showing all data
-
   // Measure container width for responsive columns
-  useLayoutEffect(() => {
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     
     const measure = () => {
       setContainerWidth(container.clientWidth);
+      // Also update the layout container ref
+      layoutContainerRef(container);
     };
     
     measure();
@@ -152,7 +131,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     resizeObserver.observe(container);
     
     return () => resizeObserver.disconnect();
-  }, []);
+  }, [layoutContainerRef]);
 
   // Update columns based on container width
   useEffect(() => {
@@ -162,11 +141,25 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     }
   }, [containerWidth, initialColumns, tableType]);
 
-  // Show all data without pagination
+  // Calculate pagination if enabled
+  const totalPages = enablePagination ? Math.ceil(data.length / pageSize) : 1;
+  
   const displayData = useMemo(() => {
     if (!data || !Array.isArray(data)) return [];
+    
+    if (enablePagination) {
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      return data.slice(start, end);
+    }
+    
     return data;
-  }, [data]);
+  }, [data, currentPage, pageSize, enablePagination]);
+
+  // Reset to first page when data changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [data.length]);
 
   // Visible columns only
   const visibleColumns = useMemo(() => 
@@ -185,68 +178,77 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   const handleSort = (key: string) => {
     if (!onSort) return;
     
-    let newDirection: 'asc' | 'desc' | null = 'asc';
     if (sortKey === key) {
-      if (sortDirection === 'asc') newDirection = 'desc';
-      else if (sortDirection === 'desc') newDirection = null;
+      const newDirection = sortDirection === 'asc' ? 'desc' : sortDirection === 'desc' ? null : 'asc';
+      onSort(key, newDirection);
+    } else {
+      onSort(key, 'asc');
     }
-    
-    onSort(key, newDirection);
   };
 
-  // Export CSV functionality
+  // Export functionality
   const exportToCSV = () => {
     if (!data.length) return;
-    
-    const headers = visibleColumns.map(col => col.label);
-    const rows = data.map(row => 
-      visibleColumns.map(col => {
-        const value = row[col.key];
-        return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
-      })
-    );
-    
-    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    
+
+    const csvContent = [
+      // Header row
+      visibleColumns.map(col => `"${col.label}"`).join(','),
+      // Data rows
+      ...data.map(row =>
+        visibleColumns.map(col => {
+          const value = row[col.key];
+          const stringValue = value?.toString() || '';
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }).join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    link.href = url;
-    link.download = `${exportFilename}.csv`;
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${exportFilename}.csv`);
+    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
-  // Render cell content with tooltip for truncated text
+  // Render cell content with truncation and tooltip
   const renderCellContent = (column: ColumnDef<T>, row: T) => {
     const value = row[column.key];
-    const rendered = column.render ? column.render(value, row) : value;
+    const content = column.render ? column.render(value, row) : value?.toString() || '';
     
-    if (typeof rendered === 'string' && rendered.length > 30) {
+    if (typeof content === 'string' && content.length > 50) {
       return (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="block truncate">{rendered}</span>
+              <span className="truncate block">{content}</span>
             </TooltipTrigger>
             <TooltipContent>
-              <p className="max-w-xs">{rendered}</p>
+              <p className="max-w-xs">{content}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       );
     }
     
-    return <span className="block truncate">{rendered}</span>;
+    return content;
   };
 
+  // Handle page size change
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
+
+  // Loading state
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div ref={containerRef} className={cn("space-y-4", className)}>
         {/* Toolbar skeleton */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex justify-between items-center">
           <Skeleton className="h-10 w-64" />
           <div className="flex gap-2">
             <Skeleton className="h-10 w-24" />
@@ -257,7 +259,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         {/* Table skeleton */}
         <div className="rounded-xl border bg-card">
           <div className="p-4 space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
@@ -266,8 +268,123 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     );
   }
 
+  // Use virtualized table for large datasets or when explicitly enabled
+  if (enableVirtualization || data.length > 1000) {
+    return (
+      <div ref={containerRef} className={cn("space-y-4 flex flex-col", className)}>
+        {/* Toolbar */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+          {/* Search and Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            {onSearchChange && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={searchValue}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="pl-10 w-full sm:w-64"
+                />
+              </div>
+            )}
+            
+            {filters && (
+              <div className="flex items-center gap-2">
+                {filters}
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-wrap gap-2">
+            {/* Column visibility */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {columns.map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.key}
+                    className="capitalize"
+                    checked={column.visible !== false}
+                    onCheckedChange={(checked) => toggleColumnVisibility(column.key, checked)}
+                    disabled={column.key === visibleColumns[0]?.key && stickyFirstColumn}
+                  >
+                    {column.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Export */}
+            <Button variant="outline" size="sm" onClick={exportToCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </div>
+
+        {/* Active Filters */}
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">Active filters:</span>
+            {activeFilters.map((filter, index) => (
+              <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                {filter.label}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-0 hover:bg-transparent"
+                  onClick={filter.onRemove}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            ))}
+            {onClearAllFilters && (
+              <Button variant="ghost" size="sm" onClick={onClearAllFilters}>
+                Clear all
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Virtualized Table */}
+        <div className="flex-1 min-h-0">
+          <VirtualizedTable
+            data={displayData}
+            columns={visibleColumns}
+            containerHeight={maxTableHeight}
+            rowHeight={rowHeight}
+            onRowClick={onRowClick}
+            loading={loading}
+            stickyFirstColumn={stickyFirstColumn}
+            className="flex-1"
+          />
+        </div>
+
+        {/* Pagination */}
+        {enablePagination && (
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={data.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Regular table implementation for smaller datasets
   return (
-    <div ref={containerRef} className={cn("space-y-4", className)}>
+    <div ref={containerRef} className={cn("space-y-4 flex flex-col", className)}>
       {/* Toolbar */}
       <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
         {/* Search and Filters */}
@@ -349,34 +466,26 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         </div>
       )}
 
-      {/* Sticky top scrollbar */}
-      <div 
-        ref={topScrollRef}
-        className="h-3 overflow-x-auto overflow-y-hidden sticky top-0 bg-card z-20 border-b border-border"
-        style={{ display: 'none' }}
-        aria-label="Horizontal scroll for table"
-        data-scroll-sync="top"
-      >
-        <div className="h-px" />
-      </div>
-
       {/* Table Container */}
-      <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex-1 min-h-0">
-        <div ref={mainScrollRef} className="overflow-auto h-[calc(100vh-20rem)]" id="table-scroll" style={{ minWidth: '100%' }}>
-          <Table className="table-fixed min-w-[1200px]">
-            <TableHeader className="sticky top-0 z-10 bg-card">
+      <div 
+        className="rounded-xl border bg-card shadow-sm overflow-hidden flex-1 min-h-0"
+        style={{ height: maxTableHeight }}
+      >
+        <div className="overflow-auto h-full">
+          <Table className="table-responsive">
+            <TableHeader className="table-header-sticky">
               <TableRow className="border-b">
                 {visibleColumns.map((column, index) => (
                   <TableHead
                     key={column.key}
                     className={cn(
-                      "h-12 px-4 text-left align-middle font-medium text-muted-foreground select-none bg-card",
-                      index === 0 && stickyFirstColumn && "sticky left-0 z-20 bg-card after:absolute after:inset-y-0 after:-right-px after:w-px after:bg-border",
-                      column.sortable && "cursor-pointer hover:text-foreground",
+                      "table-cell-compact text-left align-middle font-medium text-muted-foreground select-none bg-table-header",
+                      index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-table-header border-r border-border",
+                      column.sortable && "cursor-pointer hover:text-foreground transition-colors",
                       column.headerClassName
                     )}
                     style={{
-                      width: index === 0 && stickyFirstColumn ? '200px' : 'auto',
+                      width: column.width,
                       minWidth: column.minWidth || (index === 0 ? '200px' : '120px'),
                       maxWidth: column.maxWidth
                     }}
@@ -422,46 +531,55 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                   </TableCell>
                 </TableRow>
               ) : (
-                displayData.map((row, rowIndex) => (
-                  <TableRow
-                    key={rowIndex}
-                    className={cn(
-                      "border-b hover:bg-muted/50 transition-colors",
-                      onRowClick && "cursor-pointer"
-                    )}
-                    onClick={() => onRowClick?.(row)}
-                  >
-                    {visibleColumns.map((column, cellIndex) => (
-                      <TableCell
-                        key={column.key}
-                        className={cn(
-                          "h-12 px-4 align-middle",
-                          cellIndex === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-card after:absolute after:inset-y-0 after:-right-px after:w-px after:bg-border",
-                          column.className
-                        )}
-                        style={{
-                          width: cellIndex === 0 && stickyFirstColumn ? '200px' : 'auto',
-                          minWidth: column.minWidth || (cellIndex === 0 ? '200px' : '120px'),
-                          maxWidth: column.maxWidth
-                        }}
-                      >
-                        {renderCellContent(column, row)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                displayData.map((row, rowIndex) => {
+                  const isEven = rowIndex % 2 === 0;
+                  return (
+                    <TableRow
+                      key={rowIndex}
+                      className={cn(
+                        "transition-colors",
+                        isEven ? "bg-background" : "bg-table-row-even",
+                        onRowClick && "cursor-pointer hover:bg-table-row-hover"
+                      )}
+                      onClick={() => onRowClick?.(row)}
+                    >
+                      {visibleColumns.map((column, cellIndex) => (
+                        <TableCell
+                          key={column.key}
+                          className={cn(
+                            "table-cell-compact align-middle text-fluid-base",
+                            cellIndex === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-inherit border-r border-border",
+                            column.className
+                          )}
+                          style={{
+                            width: column.width,
+                            minWidth: column.minWidth || (cellIndex === 0 ? '200px' : '120px'),
+                            maxWidth: column.maxWidth
+                          }}
+                        >
+                          {renderCellContent(column, row)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
         </div>
-
-        {/* Footer with total count */}
-        <div className="flex items-center justify-between px-4 py-3 border-t bg-card">
-          <div className="text-sm text-muted-foreground">
-            Showing all {displayData.length} records
-          </div>
-        </div>
       </div>
+
+      {/* Pagination */}
+      {enablePagination && (
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={data.length}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      )}
     </div>
   );
 }

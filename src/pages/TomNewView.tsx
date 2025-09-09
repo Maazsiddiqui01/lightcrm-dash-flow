@@ -540,7 +540,7 @@ export function TomNewView() {
         }
       `}</style>
       <section className="h-full flex flex-col overflow-hidden">
-        <div className="p-4 space-y-4">
+        <div className="container-fluid p-4 space-y-4">
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-2xl font-bold">Tom New View</h1>
@@ -691,7 +691,7 @@ export function TomNewView() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 mx-4 mb-4">
+        <div className="container-fluid flex-1 min-h-0">
           <AdvancedTable
             data={data || []}
             columns={columns}
@@ -702,6 +702,8 @@ export function TomNewView() {
             exportFilename={`tom-new-view-${format(new Date(), 'yyyy-MM-dd')}`}
             tableType="tom"
             stickyFirstColumn={true}
+            enablePagination={true}
+            enableVirtualization={data.length > 500}
             initialPageSize={50}
           />
         </div>

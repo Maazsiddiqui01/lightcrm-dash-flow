@@ -9,9 +9,9 @@ export function Interactions() {
   const stats = useInteractionStats();
 
   return (
-    <section className="h-full flex flex-col overflow-hidden">
+    <section className="container-fluid h-full flex flex-col overflow-hidden gap-6 py-6">
       {/* Header Cards */}
-      <div className="p-4 space-y-4">
+      <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold">Interactions</h1>
           <p className="text-muted-foreground">View communication history and touchpoints</p>
@@ -41,7 +41,7 @@ export function Interactions() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 mx-4 mb-4">
+      <div className="flex-1 min-h-0">
         <InteractionsTable />
       </div>
     </section>
