@@ -13,7 +13,7 @@ export function Opportunities() {
   const stats = useOpportunityStats();
 
   return (
-    <section className="container-fluid h-full flex flex-col overflow-hidden gap-6 py-6">
+    <section className="container-fluid flex flex-col gap-6 py-6">
       {/* Header Cards */}
       <div className="space-y-4">
         <div className="flex justify-between items-start">
@@ -51,7 +51,7 @@ export function Opportunities() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className="pb-6">
         <OpportunitiesTable />
       </div>
 

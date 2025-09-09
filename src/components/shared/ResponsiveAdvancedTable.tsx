@@ -358,7 +358,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
           <VirtualizedTable
             data={displayData}
             columns={visibleColumns}
-            containerHeight={Math.min(450, maxTableHeight)}
+            containerHeight={Math.min(600, maxTableHeight)}
             rowHeight={rowHeight}
             onRowClick={onRowClick}
             loading={loading}
@@ -469,7 +469,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       {/* Table Container */}
       <div 
         className="rounded-xl border bg-card shadow-sm overflow-hidden flex-1"
-        style={{ height: Math.min(450, maxTableHeight) }}
+        style={{ height: Math.min(600, maxTableHeight) }}
       >
         <div className="overflow-auto h-full scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           <Table className="table-responsive">

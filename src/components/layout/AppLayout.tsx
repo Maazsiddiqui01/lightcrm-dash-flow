@@ -8,9 +8,9 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, onFiltersClick }: AppLayoutProps) {
   return (
-    <div className="grid h-dvh grid-rows-[auto_1fr] overflow-hidden">
+    <div className="min-h-screen flex flex-col">
       <TopNav onFiltersClick={onFiltersClick} />
-      <main className="min-w-0 overflow-hidden">
+      <main className="flex-1 min-w-0">
         {children}
       </main>
     </div>

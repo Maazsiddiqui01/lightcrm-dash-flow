@@ -539,7 +539,7 @@ export function TomNewView() {
           100% { transform: translateX(100%); } 
         }
       `}</style>
-      <section className="h-full flex flex-col overflow-hidden">
+      <section className="flex flex-col">
         <div className="container-fluid p-4 space-y-4">
           <div className="flex justify-between items-start">
             <div>
@@ -691,7 +691,7 @@ export function TomNewView() {
           </div>
         </div>
 
-        <div className="container-fluid flex-1 min-h-0">
+        <div className="container-fluid pb-6">
           <AdvancedTable
             data={data || []}
             columns={columns}
@@ -704,7 +704,7 @@ export function TomNewView() {
             stickyFirstColumn={true}
             enablePagination={true}
             enableVirtualization={data.length > 500}
-            initialPageSize={50}
+            initialPageSize={25}
           />
         </div>
 
