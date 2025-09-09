@@ -424,7 +424,7 @@ export function ContactsTable() {
         presets={presets}
         exportFilename="contacts"
           />
-        </div>
+      </div>
       </div>
 
       <ContactDrawer

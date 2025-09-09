@@ -622,7 +622,7 @@ export function OpportunitiesTable() {
           exportFilename="opportunities"
           tableType="opportunities"
           stickyFirstColumn={true}
-          initialPageSize={filteredOpportunities.length}
+          initialPageSize={50}
           className="h-full"
         />
       </div>

@@ -91,7 +91,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   presets = [],
   exportFilename = "export",
   className,
-  initialPageSize = 25,
+  initialPageSize = 50,
   tableType = 'contacts',
   stickyFirstColumn = true
 }: ResponsiveAdvancedTableProps<T>) {
@@ -369,7 +369,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
       {/* Table Container */}
       <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex-1 min-h-0">
-        <div ref={mainScrollRef} className="overflow-auto h-full" id="table-scroll" style={{ minWidth: '100%' }}>
+        <div ref={mainScrollRef} className="overflow-auto max-h-[calc(100vh-24rem)]" id="table-scroll" style={{ minWidth: '100%' }}>
           <Table className="table-fixed min-w-[1200px]">
             <TableHeader>
               <TableRow className="border-b">

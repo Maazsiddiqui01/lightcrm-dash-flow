@@ -384,7 +384,7 @@ export function InteractionsTable() {
             tableId="interactions"
             presets={presets}
             exportFilename="interactions"
-            initialPageSize={filteredInteractions.length || 10000}
+            initialPageSize={50}
             tableType="interactions"
             stickyFirstColumn={true}
           />

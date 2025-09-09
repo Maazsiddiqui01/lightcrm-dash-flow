@@ -41,7 +41,7 @@ export function Interactions() {
         </div>
       </div>
 
-      <div className="mt-4 mx-4 flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+      <div className="flex-1 min-h-0 mx-4 mb-4">
         <InteractionsTable />
       </div>
     </section>
