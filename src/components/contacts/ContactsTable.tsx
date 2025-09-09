@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { useDistinctValues } from "@/hooks/useDistinctValues";
 import { jsonToCsv, downloadFile } from "@/utils/csvExport";
+import { exportContactsDetailedCSV } from "@/utils/exportDetailedCsv";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 interface ContactApp {
@@ -399,123 +400,18 @@ export function ContactsTable() {
     });
 
     try {
-      const contactIds = filteredContacts.map(c => c.id);
+      const filteredIds = filteredContacts.map(c => c.id);
+      await exportContactsDetailedCSV(filteredIds);
       
-      // Fetch comprehensive contact data - use * to get all columns
-      const { data: detailedContacts, error: contactsError } = await supabase
-        .from('contacts_app')
-        .select('*')
-        .in('id', contactIds);
-
-      if (contactsError) {
-        throw contactsError;
-      }
-
-      // Fetch recent interactions for each contact
-      const emailList = detailedContacts?.map(c => c.email_address?.toLowerCase()).filter(Boolean) || [];
-      let interactions: any[] = [];
-      
-      if (emailList.length > 0) {
-        const { data: interactionData, error: interactionsError } = await supabase
-          .from('interactions_flat')
-          .select('email, occurred_at, subject')
-          .in('email', emailList);
-        
-        if (interactionsError) {
-          throw interactionsError;
-        }
-        interactions = interactionData || [];
-      }
-
-      // Fetch opportunities for each contact
-      const { data: opportunities, error: oppsError } = await supabase
-        .from('opportunities_raw')
-        .select('deal_name, deal_source_individual_1, deal_source_individual_2')
-        .limit(1000);
-
-      if (oppsError) {
-        throw oppsError;
-      }
-
-      // Process and join data
-      const exportData = detailedContacts?.map(contact => {
-        // Find most recent interaction
-        const contactInteractions = interactions?.filter(i => 
-          i.email?.toLowerCase() === contact.email_address?.toLowerCase()
-        ) || [];
-        const mostRecentInteraction = contactInteractions.sort((a, b) => 
-          new Date(b.occurred_at || 0).getTime() - new Date(a.occurred_at || 0).getTime()
-        )[0];
-
-        // Find opportunities where this contact is a deal source
-        const normalizeContactName = (contact.full_name || '')
-          .toLowerCase()
-          .replace(/\s+/g, ' ')
-          .trim();
-        
-        const contactOpps = opportunities?.filter(opp => {
-          const name1 = (opp.deal_source_individual_1 || '')
-            .toLowerCase()
-            .replace(/\s+/g, ' ')
-            .trim();
-          const name2 = (opp.deal_source_individual_2 || '')
-            .toLowerCase()
-            .replace(/\s+/g, ' ')
-            .trim();
-          return name1 === normalizeContactName || name2 === normalizeContactName;
-        }) || [];
-
-        // Dedupe opportunities by deal_name
-        const uniqueOpps = Array.from(
-          new Map(contactOpps.map(opp => [opp.deal_name?.toLowerCase(), opp.deal_name]))
-          .values()
-        ).filter(Boolean);
-
-        return {
-          'Full Name': contact.full_name || '',
-          'Email': contact.email_address || '',
-          'Organization': contact.organization || '',
-          'Title': contact.title || '',
-          'Areas of Specialization': contact.areas_of_specialization || '',
-          'LG Focus Areas (Comprehensive)': contact.lg_focus_areas_comprehensive_list || '',
-          'LG Focus Area 1': contact.lg_focus_area_1 || '',
-          'LG Focus Area 2': contact.lg_focus_area_2 || '',
-          'LG Focus Area 3': contact.lg_focus_area_3 || '',
-          'LG Focus Area 4': contact.lg_focus_area_4 || '',
-          'LG Focus Area 5': contact.lg_focus_area_5 || '',
-          'LG Focus Area 6': contact.lg_focus_area_6 || '',
-          'LG Focus Area 7': contact.lg_focus_area_7 || '',
-          'LG Focus Area 8': contact.lg_focus_area_8 || '',
-          'LG Sector': contact.lg_sector || '',
-          'Delta Type': contact.delta_type || '',
-          'Delta': contact.delta || '',
-          'Emails': contact.of_emails || '',
-          'Meetings': contact.of_meetings || '',
-          'Most Recent Contact': contact.most_recent_contact ? 
-            new Date(contact.most_recent_contact).toISOString().split('T')[0] : '',
-          'Next Scheduled Outreach Date': '',
-          'Recent Interaction At': mostRecentInteraction?.occurred_at ? 
-            new Date(mostRecentInteraction.occurred_at).toISOString() : '',
-          'Recent Interaction Subject': mostRecentInteraction?.subject || '',
-          'Opportunities (as Deal Source)': uniqueOpps.join(', '),
-          'Notes': contact.notes || ''
-        };
-      }) || [];
-
-      const currentDate = new Date().toISOString().split('T')[0];
-      const filename = `contacts-detailed-${currentDate}.csv`;
-      const csvContent = jsonToCsv(exportData);
-      downloadFile(csvContent, filename, 'text/csv');
-
       toast({
         title: "Export completed",
-        description: `Exported ${exportData.length} contacts with detailed information`
+        description: `Exported ${filteredContacts.length} contacts with detailed information`
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Export error:', error);
       toast({
         title: "Export failed",
-        description: "Failed to export detailed CSV. Please try again.",
+        description: error?.message || "Failed to export detailed CSV. Please try again.",
         variant: "destructive"
       });
     } finally {
