@@ -400,6 +400,7 @@ export function ContactsTable() {
 
     try {
       const contactIds = filteredContacts.map(c => c.id);
+      console.log('Exporting contact IDs:', contactIds);
       
       // Fetch comprehensive contact data
       const { data: detailedContacts, error: contactsError } = await supabase
@@ -414,15 +415,31 @@ export function ContactsTable() {
         `)
         .in('id', contactIds);
 
-      if (contactsError) throw contactsError;
+      if (contactsError) {
+        console.error('Contacts query error:', contactsError);
+        throw contactsError;
+      }
+      
+      console.log('Fetched contacts:', detailedContacts?.length);
 
       // Fetch recent interactions for each contact
-      const { data: interactions, error: interactionsError } = await supabase
-        .from('interactions_flat')
-        .select('email, occurred_at, subject')
-        .in('email', detailedContacts?.map(c => c.email_address?.toLowerCase()).filter(Boolean) || []);
-
-      if (interactionsError) throw interactionsError;
+      const emailList = detailedContacts?.map(c => c.email_address?.toLowerCase()).filter(Boolean) || [];
+      console.log('Email list for interactions:', emailList.length);
+      let interactions: any[] = [];
+      
+      if (emailList.length > 0) {
+        const { data: interactionData, error: interactionsError } = await supabase
+          .from('interactions_flat')
+          .select('email, occurred_at, subject')
+          .in('email', emailList);
+        
+        if (interactionsError) {
+          console.error('Interactions query error:', interactionsError);
+          throw interactionsError;
+        }
+        interactions = interactionData || [];
+        console.log('Fetched interactions:', interactions.length);
+      }
 
       // Fetch opportunities for each contact
       const { data: opportunities, error: oppsError } = await supabase
@@ -430,7 +447,12 @@ export function ContactsTable() {
         .select('deal_name, deal_source_individual_1, deal_source_individual_2')
         .limit(1000);
 
-      if (oppsError) throw oppsError;
+      if (oppsError) {
+        console.error('Opportunities query error:', oppsError);
+        throw oppsError;
+      }
+      
+      console.log('Fetched opportunities:', opportunities?.length);
 
       // Process and join data
       const exportData = detailedContacts?.map(contact => {
