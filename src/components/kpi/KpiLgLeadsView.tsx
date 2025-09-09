@@ -13,7 +13,7 @@ import { StatsCard } from '@/components/shared/StatsCard';
 interface LgLeadData {
   lg_lead: string;
   avg_hours_per_week: number;
-  opportunities: string;
+  opportunities: number;
   top_opportunities: string;
 }
 
@@ -76,7 +76,7 @@ export function KpiLgLeadsView({
 
     const totalHours = data.reduce((sum, item) => sum + item.avg_hours_per_week, 0);
     const avgHoursPerWeek = totalHours / data.length;
-    const totalOpportunities = data.reduce((sum, item) => sum + parseInt(item.opportunities || '0'), 0);
+    const totalOpportunities = data.reduce((sum, item) => sum + (item.opportunities || 0), 0);
 
     return {
       totalHours: Math.round(totalHours * 100) / 100,

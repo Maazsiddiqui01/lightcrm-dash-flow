@@ -30,7 +30,7 @@ interface MonthlyMeeting {
 interface LgLead {
   lg_lead: string;
   avg_hours_per_week: number;
-  opportunities: string;
+  opportunities: number;
 }
 
 interface KpiData {

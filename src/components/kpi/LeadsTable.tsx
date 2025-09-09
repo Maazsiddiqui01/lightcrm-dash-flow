@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 interface LgLead {
   lg_lead: string;
   avg_hours_per_week: number;
-  opportunities: string;
+  opportunities: number;
 }
 
 interface LeadsTableProps {
@@ -24,16 +24,10 @@ const formatHours = (hours: number) => {
   return rounded.toFixed(2);
 };
 
-const formatOpportunities = (opportunities: string) => {
-  // Handle non-string values safely
-  if (!opportunities || typeof opportunities !== 'string') return '—';
-  const trimmed = opportunities.trim();
-  if (trimmed === '') return '—';
-  // Limit display length and add ellipsis if needed
-  if (trimmed.length > 100) {
-    return trimmed.substring(0, 100) + '...';
-  }
-  return trimmed;
+const formatOpportunities = (opportunities: number) => {
+  // Handle numeric values
+  if (opportunities === 0) return '0';
+  return opportunities.toString();
 };
 
 export function LeadsTable({ data, loading }: LeadsTableProps) {
@@ -136,7 +130,7 @@ export function LeadsTable({ data, loading }: LeadsTableProps) {
                       {formatHours(lead.avg_hours_per_week)}
                     </TableCell>
                     <TableCell className="max-w-md">
-                      <div className="truncate" title={lead.opportunities}>
+                      <div className="truncate" title={lead.opportunities.toString()}>
                         {formatOpportunities(lead.opportunities)}
                       </div>
                     </TableCell>
