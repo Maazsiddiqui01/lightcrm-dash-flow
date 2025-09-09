@@ -196,8 +196,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-full bg-primary-light flex items-center justify-center">
               <Plus className="h-4 w-4 text-primary" />
@@ -209,18 +209,19 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Required Fields */}
-          <div className="space-y-2">
-            <Label htmlFor="full_name">Full Name *</Label>
-            <Input
-              id="full_name"
-              value={formData.full_name}
-              onChange={(e) => handleInputChange("full_name", e.target.value)}
-              placeholder="Enter full name"
-              required
-            />
-          </div>
+        <div className="flex-1 overflow-y-auto px-1">
+          <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            {/* Required Fields */}
+            <div className="space-y-2">
+              <Label htmlFor="full_name">Full Name *</Label>
+              <Input
+                id="full_name"
+                value={formData.full_name}
+                onChange={(e) => handleInputChange("full_name", e.target.value)}
+                placeholder="Enter full name"
+                required
+              />
+            </div>
 
           <div className="space-y-2">
             <Label htmlFor="email_address">Email *</Label>
@@ -390,26 +391,27 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
             ))}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleInputChange("notes", e.target.value)}
-              placeholder="Add any notes about this contact..."
-              className="min-h-[80px] resize-none"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => handleInputChange("notes", e.target.value)}
+                placeholder="Add any notes about this contact..."
+                className="min-h-[80px] resize-none"
+              />
+            </div>
+          </form>
+        </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Adding..." : "Add Contact"}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting} onClick={handleSubmit}>
+            {isSubmitting ? "Adding..." : "Add Contact"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
