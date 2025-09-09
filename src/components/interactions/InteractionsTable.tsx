@@ -385,6 +385,8 @@ export function InteractionsTable() {
             presets={presets}
             exportFilename="interactions"
             initialPageSize={filteredInteractions.length || 10000}
+            tableType="interactions"
+            stickyFirstColumn={true}
           />
         </div>
       </div>

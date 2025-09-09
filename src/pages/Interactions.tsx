@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useInteractionStats } from "@/hooks/useInteractionStats";
 import { MessageSquare, Mail, Calendar, Clock } from "lucide-react";
+import { ResponsivePageShell } from "@/components/layout/ResponsivePageShell";
 
 export function Interactions() {
   const stats = useInteractionStats();
@@ -14,10 +15,10 @@ export function Interactions() {
         description="View communication history and touchpoints"
       />
       
-      <main className="flex-1">
-        <div className="container-fluid py-4 lg:py-6">
+      <ResponsivePageShell headerHeight={120}>
+        <div className="container-fluid p-4 lg:p-6 space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
             <StatsCard
               title="Total Interactions"
               value={stats.loading ? "..." : stats.totalInteractions}
@@ -41,11 +42,9 @@ export function Interactions() {
           </div>
 
           {/* Interactions Table */}
-          <div className="rounded-lg bg-card shadow-sm border border-border overflow-hidden">
-            <InteractionsTable />
-          </div>
+          <InteractionsTable />
         </div>
-      </main>
+      </ResponsivePageShell>
     </div>
   );
 }

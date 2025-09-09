@@ -6,6 +6,7 @@ import { useOpportunityStats } from "@/hooks/useOpportunityStats";
 import { Plus, Target, TrendingUp, CheckCircle, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { AddOpportunityDialog } from "@/components/opportunities/AddOpportunityDialog";
+import { ResponsivePageShell } from "@/components/layout/ResponsivePageShell";
 
 export function Opportunities() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -24,10 +25,10 @@ export function Opportunities() {
         }
       />
       
-      <main className="flex-1">
-        <div className="container-fluid py-4 lg:py-6">
+      <ResponsivePageShell headerHeight={120}>
+        <div className="container-fluid p-4 lg:p-6 space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
             <StatsCard
               title="Total Opportunities"
               value={stats.loading ? "..." : stats.totalOpportunities}
@@ -51,11 +52,9 @@ export function Opportunities() {
           </div>
 
           {/* Opportunities Table */}
-          <div className="rounded-lg bg-card shadow-sm border border-border overflow-hidden">
-            <OpportunitiesTable />
-          </div>
+          <OpportunitiesTable />
         </div>
-      </main>
+      </ResponsivePageShell>
 
       <AddOpportunityDialog 
         open={isAddDialogOpen} 

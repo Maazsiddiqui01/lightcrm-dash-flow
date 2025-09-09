@@ -6,6 +6,7 @@ import { useContactStats } from "@/hooks/useContactStats";
 import { Plus, Users, Mail, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
+import { ResponsivePageShell } from "@/components/layout/ResponsivePageShell";
 
 export function Contacts() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -24,10 +25,10 @@ export function Contacts() {
         }
       />
       
-      <main className="flex-1">
-        <div className="container-fluid py-4 lg:py-6">
+      <ResponsivePageShell headerHeight={120}>
+        <div className="container-fluid p-4 lg:p-6 space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
             <StatsCard
               title="Total Contacts"
               value={stats.loading ? "..." : stats.totalContacts}
@@ -52,11 +53,9 @@ export function Contacts() {
           </div>
 
           {/* Contacts Table */}
-          <div className="rounded-lg bg-card shadow-sm border border-border overflow-hidden">
-            <ContactsTable />
-          </div>
+          <ContactsTable />
         </div>
-      </main>
+      </ResponsivePageShell>
 
       <AddContactDialog 
         open={isAddDialogOpen} 
