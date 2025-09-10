@@ -20,6 +20,7 @@ export const getColumnPriorities = (tableType: 'contacts' | 'opportunities' | 'i
     },
     opportunities: {
       'deal_name': 100, // Always visible (sticky)
+      'actions': 95, // Actions column should always be visible
       'amount': 90,
       'stage': 85,
       'contact_name': 80,
@@ -92,6 +93,11 @@ export const getResponsiveColumns = <T>(
   const maxColumns = Math.floor((availableWidth - stickyColumnWidth) / baseColumnWidth) + 1;
 
   return columns.map(col => {
+    // Always show columns that have enableHiding: false
+    if (col.enableHiding === false) {
+      return { ...col, visible: true };
+    }
+    
     const priority = priorities[col.key] || 0;
     const sortedIndex = sortedColumns.findIndex(sortedCol => sortedCol.key === col.key);
     

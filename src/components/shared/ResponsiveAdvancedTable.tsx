@@ -219,7 +219,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   // Handle column visibility toggle
   const toggleColumnVisibility = (columnKey: string, visible: boolean) => {
     setColumns(prev => prev.map(col => 
-      col.key === columnKey ? { ...col, visible } : col
+      col.key === columnKey && col.enableHiding !== false ? { ...col, visible } : col
     ));
   };
 
@@ -398,7 +398,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                {columns.map((column) => (
+                {columns.filter(column => column.enableHiding !== false).map((column) => (
                   <DropdownMenuCheckboxItem
                     key={column.key}
                     className="capitalize"
@@ -521,7 +521,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                {columns.map((column) => (
+                {columns.filter(column => column.enableHiding !== false).map((column) => (
                   <DropdownMenuCheckboxItem
                     key={column.key}
                     className="capitalize"
