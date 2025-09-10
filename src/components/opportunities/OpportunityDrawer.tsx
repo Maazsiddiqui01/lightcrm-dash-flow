@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Save, ExternalLink, Target, DollarSign, Calendar, Building } from "lucide-react";
+import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
+import { OpportunityNotesSection } from "./OpportunityNotesSection";
 
 interface Opportunity {
   id: string;
@@ -36,6 +38,7 @@ interface Opportunity {
   ebitda_notes: string;
   investment_professional_point_person_1: string;
   investment_professional_point_person_2: string;
+  next_steps: string;
   most_recent_notes: string;
   url: string;
   created_at: string;
@@ -54,6 +57,18 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
   const [editedFields, setEditedFields] = useState<Partial<Opportunity>>({});
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
+  
+  // Use the opportunity notes hook
+  const {
+    currentNotes,
+    timeline,
+    isLoadingCurrent,
+    isLoadingTimeline,
+    saveNextSteps,
+    saveMostRecentNotes,
+    isSavingNextSteps,
+    isSavingNotes,
+  } = useOpportunityNotes(opportunity?.id);
 
   useEffect(() => {
     if (opportunity) {
@@ -376,16 +391,31 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
 
           <Separator />
 
-          {/* Notes */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Most Recent Notes</h3>
-            <Textarea
-              value={editedFields.most_recent_notes || ""}
-              onChange={(e) => handleFieldChange("most_recent_notes", e.target.value)}
-              placeholder="Enter most recent notes"
-              className="min-h-[100px] resize-none"
-            />
-          </div>
+          {/* Next Steps - Interactive with Timeline */}
+          <OpportunityNotesSection
+            title="Next Steps"
+            field="next_steps"
+            currentValue={currentNotes?.next_steps || null}
+            timeline={timeline}
+            onSave={(content) => saveNextSteps({ opportunityId: opportunity.id, content })}
+            isSaving={isSavingNextSteps}
+            isLoadingCurrent={isLoadingCurrent}
+            isLoadingTimeline={isLoadingTimeline}
+          />
+
+          <Separator />
+
+          {/* Most Recent Notes - Interactive with Timeline */}
+          <OpportunityNotesSection
+            title="Most Recent Notes"
+            field="most_recent_notes"
+            currentValue={currentNotes?.most_recent_notes || null}
+            timeline={timeline}
+            onSave={(content) => saveMostRecentNotes({ opportunityId: opportunity.id, content })}
+            isSaving={isSavingNotes}
+            isLoadingCurrent={isLoadingCurrent}
+            isLoadingTimeline={isLoadingTimeline}
+          />
 
           <Separator />
 

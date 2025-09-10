@@ -461,6 +461,69 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunity_note_events: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          field: string
+          id: string
+          opportunity_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          field: string
+          id?: string
+          opportunity_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          field?: string
+          id?: string
+          opportunity_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_opps_base"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities_ai"
+            referencedColumns: ["opportunity_id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       contacts_ai: {
@@ -543,6 +606,54 @@ export type Database = {
           of_emails: number | null
           of_meetings: number | null
           total_of_contacts: number | null
+        }
+        Relationships: []
+      }
+      contacts_norm: {
+        Row: {
+          areas_of_specialization: string | null
+          delta: number | null
+          delta_type: string | null
+          email_lc: string | null
+          full_name: string | null
+          id: string | null
+          lg_focus_areas_comprehensive_list: string | null
+          lg_sector: string | null
+          most_recent_contact: string | null
+          norm_full_name: string | null
+          notes: string | null
+          organization: string | null
+          title: string | null
+        }
+        Insert: {
+          areas_of_specialization?: string | null
+          delta?: number | null
+          delta_type?: string | null
+          email_lc?: never
+          full_name?: string | null
+          id?: string | null
+          lg_focus_areas_comprehensive_list?: string | null
+          lg_sector?: string | null
+          most_recent_contact?: string | null
+          norm_full_name?: never
+          notes?: string | null
+          organization?: string | null
+          title?: string | null
+        }
+        Update: {
+          areas_of_specialization?: string | null
+          delta?: number | null
+          delta_type?: string | null
+          email_lc?: never
+          full_name?: string | null
+          id?: string | null
+          lg_focus_areas_comprehensive_list?: string | null
+          lg_sector?: string | null
+          most_recent_contact?: string | null
+          norm_full_name?: never
+          notes?: string | null
+          organization?: string | null
+          title?: string | null
         }
         Relationships: []
       }
@@ -665,6 +776,19 @@ export type Database = {
         }
         Relationships: []
       }
+      interactions_norm: {
+        Row: {
+          cc_emails_lc: string | null
+          email_lc: string | null
+          from_email_lc: string | null
+          id: string | null
+          occurred_at: string | null
+          source: string | null
+          subject: string | null
+          to_emails_lc: string | null
+        }
+        Relationships: []
+      }
       interactions_parsed: {
         Row: {
           cc_emails: string | null
@@ -710,11 +834,104 @@ export type Database = {
         }
         Relationships: []
       }
+      kpi_contacts_headline: {
+        Row: {
+          meetings_last_90d: number | null
+          total_contacts: number | null
+        }
+        Relationships: []
+      }
       kpi_lg_leads: {
         Row: {
           email: string | null
           last_name: string | null
           name: string | null
+        }
+        Relationships: []
+      }
+      kpi_meetings_monthly: {
+        Row: {
+          meeting_count: number | null
+          month_start: string | null
+        }
+        Relationships: []
+      }
+      kpi_opps_base: {
+        Row: {
+          date_of_origination_raw: string | null
+          deal_name: string | null
+          ebitda_m: number | null
+          id: string | null
+          ip1: string | null
+          ip2: string | null
+          is_addon: boolean | null
+          is_family_founder: boolean | null
+          is_platform: boolean | null
+          lg_focus_area: string | null
+          ownership_type: string | null
+          platform_add_on: string | null
+          referral_company: string | null
+          referral_contact_1: string | null
+          referral_contact_2: string | null
+          sector: string | null
+          status: string | null
+          tier: string | null
+        }
+        Insert: {
+          date_of_origination_raw?: never
+          deal_name?: never
+          ebitda_m?: number | null
+          id?: string | null
+          ip1?: never
+          ip2?: never
+          is_addon?: never
+          is_family_founder?: never
+          is_platform?: never
+          lg_focus_area?: never
+          ownership_type?: never
+          platform_add_on?: never
+          referral_company?: never
+          referral_contact_1?: never
+          referral_contact_2?: never
+          sector?: never
+          status?: never
+          tier?: never
+        }
+        Update: {
+          date_of_origination_raw?: never
+          deal_name?: never
+          ebitda_m?: number | null
+          id?: string | null
+          ip1?: never
+          ip2?: never
+          is_addon?: never
+          is_family_founder?: never
+          is_platform?: never
+          lg_focus_area?: never
+          ownership_type?: never
+          platform_add_on?: never
+          referral_company?: never
+          referral_contact_1?: never
+          referral_contact_2?: never
+          sector?: never
+          status?: never
+          tier?: never
+        }
+        Relationships: []
+      }
+      kpi_referral_companies: {
+        Row: {
+          opp_count: number | null
+          referral_company_display: string | null
+          referral_company_key: string | null
+        }
+        Relationships: []
+      }
+      kpi_referral_contacts: {
+        Row: {
+          opp_count: number | null
+          referral_contact_display: string | null
+          referral_contact_key: string | null
         }
         Relationships: []
       }
@@ -859,6 +1076,120 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities_norm: {
+        Row: {
+          date_of_origination: string | null
+          deal_name: string | null
+          deal_source_company: string | null
+          deal_source_individual_1: string | null
+          deal_source_individual_2: string | null
+          ebitda: string | null
+          id: string | null
+          lg_focus_area: string | null
+          norm_src_1: string | null
+          norm_src_2: string | null
+          ownership_type: string | null
+          platform_add_on: string | null
+          sector: string | null
+          status: string | null
+          tier: string | null
+        }
+        Insert: {
+          date_of_origination?: string | null
+          deal_name?: string | null
+          deal_source_company?: string | null
+          deal_source_individual_1?: string | null
+          deal_source_individual_2?: string | null
+          ebitda?: string | null
+          id?: string | null
+          lg_focus_area?: string | null
+          norm_src_1?: never
+          norm_src_2?: never
+          ownership_type?: string | null
+          platform_add_on?: string | null
+          sector?: string | null
+          status?: string | null
+          tier?: string | null
+        }
+        Update: {
+          date_of_origination?: string | null
+          deal_name?: string | null
+          deal_source_company?: string | null
+          deal_source_individual_1?: string | null
+          deal_source_individual_2?: string | null
+          ebitda?: string | null
+          id?: string | null
+          lg_focus_area?: string | null
+          norm_src_1?: never
+          norm_src_2?: never
+          ownership_type?: string | null
+          platform_add_on?: string | null
+          sector?: string | null
+          status?: string | null
+          tier?: string | null
+        }
+        Relationships: []
+      }
+      opportunity_notes_timeline: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          field: string | null
+          opportunity_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          field?: string | null
+          opportunity_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          field?: string | null
+          opportunity_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_opps_base"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities_ai"
+            referencedColumns: ["opportunity_id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities_raw"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tom_new_view: {
         Row: {
           areas_of_specialization: string | null
@@ -894,6 +1225,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_opportunity_note: {
+        Args: { p_content: string; p_field: string; p_opportunity_id: string }
+        Returns: undefined
+      }
       adjust_weekend: {
         Args: { ts: string }
         Returns: string
@@ -970,6 +1305,39 @@ export type Database = {
           to_emails: string
         }[]
       }
+      kpi_default_meeting_min: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      kpi_header: {
+        Args: {
+          p_end: string
+          p_focus_areas?: string[]
+          p_leads?: string[]
+          p_ownership?: string[]
+          p_sector?: string[]
+          p_start: string
+        }
+        Returns: {
+          notable_opportunities: number
+          total_contacts: number
+          total_meetings: number
+        }[]
+      }
+      kpi_leads_performance: {
+        Args: {
+          p_end: string
+          p_focus_areas?: string[]
+          p_sector?: string[]
+          p_start: string
+        }
+        Returns: {
+          avg_hours_per_week: number
+          lg_lead: string
+          opportunities: number
+          top_opportunities: string
+        }[]
+      }
       kpi_lg_hours_and_opps: {
         Args: { p_default_meeting_min?: number; p_end: string; p_start: string }
         Returns: {
@@ -989,6 +1357,18 @@ export type Database = {
         Returns: {
           count: number
           month: string
+        }[]
+      }
+      kpi_meetings_per_month: {
+        Args: {
+          p_end: string
+          p_focus_areas?: string[]
+          p_sector?: string[]
+          p_start: string
+        }
+        Returns: {
+          meetings: number
+          month_label: string
         }[]
       }
       kpi_summary: {
