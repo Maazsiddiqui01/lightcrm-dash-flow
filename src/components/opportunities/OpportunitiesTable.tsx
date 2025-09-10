@@ -67,12 +67,11 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const [sortKey, setSortKey] = useState<string>("created_at");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const [selectedRows, setSelectedRows] = useState<Opportunity[]>([]);
-  const selectedRowsRef = useRef<Set<string>>(new Set());
   const { toast } = useToast();
 
-  // Update selectedRowsRef when selectedRows changes
-  useEffect(() => {
-    selectedRowsRef.current = new Set(selectedRows.map(row => row.id));
+  // Get selected row IDs as a Set for export functionality
+  const selectedRowIds = useMemo(() => {
+    return new Set(selectedRows.map(row => row.id));
   }, [selectedRows]);
 
   useEffect(() => {
@@ -363,7 +362,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
           <div className="flex items-center gap-2">
             <ExportDropdown 
               data={filteredOpportunities}
-              selectedRows={selectedRowsRef.current}
+              selectedRows={selectedRowIds}
               filters={filters}
             />
           </div>
