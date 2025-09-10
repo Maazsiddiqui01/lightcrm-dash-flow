@@ -7,8 +7,9 @@ import { ExportDropdown } from "./ExportDropdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Building2 } from "lucide-react";
+import { Building2, Mail, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
 
 interface Opportunity {
   id: string;
@@ -316,6 +317,43 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
           </Tooltip>
         </TooltipProvider>
       )
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      width: 140,
+      minWidth: 120,
+      enableHiding: false,
+      render: (value, row) => (
+        <Button
+          size="sm"
+          className="bg-blue-600 text-white hover:bg-blue-700 h-8 px-3 text-xs"
+          onClick={async (e) => {
+            e.stopPropagation(); // Prevent row click
+            try {
+              toast({ 
+                title: 'AI is drafting your email…',
+                description: 'This may take a moment'
+              });
+              await sendOpportunityEmail(row.id);
+              toast({ 
+                title: 'Draft requested', 
+                description: 'Check your inbox shortly.' 
+              });
+            } catch (error: any) {
+              console.error('Send email error:', error);
+              toast({
+                title: 'Failed to request draft',
+                description: error?.message ?? 'Please try again.',
+                variant: 'destructive',
+              });
+            }
+          }}
+        >
+          <Mail className="h-3 w-3 mr-1" />
+          Send Email
+        </Button>
+      )
     }
   ];
 
@@ -323,15 +361,15 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const presets: TablePreset[] = [
     {
       name: "Compact",
-      columns: ["deal_name", "status", "tier", "sector", "date_of_origination"]
+      columns: ["deal_name", "status", "tier", "sector", "date_of_origination", "actions"]
     },
     {
       name: "Standard",
-      columns: ["deal_name", "status", "tier", "sector", "lg_focus_area", "deal_source_company", "date_of_origination"]
+      columns: ["deal_name", "status", "tier", "sector", "lg_focus_area", "deal_source_company", "date_of_origination", "actions"]
     },
     {
       name: "Wide",
-      columns: ["deal_name", "status", "tier", "sector", "lg_focus_area", "deal_source_company", "date_of_origination", "ebitda"]
+      columns: ["deal_name", "status", "tier", "sector", "lg_focus_area", "deal_source_company", "date_of_origination", "ebitda", "actions"]
     }
   ];
 

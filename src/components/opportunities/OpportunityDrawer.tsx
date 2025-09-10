@@ -14,9 +14,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Save, ExternalLink, Target, DollarSign, Calendar, Building } from "lucide-react";
+import { Save, ExternalLink, Target, DollarSign, Calendar, Building, Mail } from "lucide-react";
 import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
 import { OpportunityNotesSection } from "./OpportunityNotesSection";
+import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
 
 interface Opportunity {
   id: string;
@@ -208,10 +209,40 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 </Badge>
               )}
             </div>
-            <Button onClick={handleSave} disabled={isUpdating}>
-              <Save className="h-4 w-4 mr-2" />
-              {isUpdating ? "Saving..." : "Save Changes"}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+                onClick={async () => {
+                  try {
+                    toast({ 
+                      title: 'AI is drafting your email…',
+                      description: 'This may take a moment'
+                    });
+                    await sendOpportunityEmail(opportunity.id);
+                    toast({ 
+                      title: 'Draft requested', 
+                      description: 'Check your inbox shortly.' 
+                    });
+                  } catch (error: any) {
+                    console.error('Send email error:', error);
+                    toast({
+                      title: 'Failed to request draft',
+                      description: error?.message ?? 'Please try again.',
+                      variant: 'destructive',
+                    });
+                  }
+                }}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Send Email
+              </Button>
+              <Button onClick={handleSave} disabled={isUpdating}>
+                <Save className="h-4 w-4 mr-2" />
+                {isUpdating ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
           </div>
 
           {/* Deal Information */}
