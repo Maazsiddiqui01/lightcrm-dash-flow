@@ -1,8 +1,10 @@
 import { OpportunitiesTable } from "@/components/opportunities/OpportunitiesTable";
+import { OpportunityFilterBar } from "@/components/opportunities/OpportunityFilterBar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useOpportunityStats } from "@/hooks/useOpportunityStats";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { Plus, Target, TrendingUp, CheckCircle, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { AddOpportunityDialog } from "@/components/opportunities/AddOpportunityDialog";
@@ -11,6 +13,41 @@ import { ResponsivePageShell } from "@/components/layout/ResponsivePageShell";
 export function Opportunities() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const stats = useOpportunityStats();
+
+  const { filters: rawFilters, updateFilters: rawUpdateFilters, clearFilters } = useUrlFilters({
+    focusArea: [],
+    ownershipType: [],
+    ebitdaMin: undefined,
+    ebitdaMax: undefined,
+    tier: [],
+    status: [],
+    sector: [],
+    leads: [],
+    platformAddOn: [],
+    referralContacts: [],
+    referralCompanies: [],
+    dateOfOrigination: []
+  });
+
+  // Type-safe filter conversion
+  const filters = {
+    focusArea: (rawFilters.focusArea as string[]) || [],
+    ownershipType: (rawFilters.ownershipType as string[]) || [],
+    ebitdaMin: typeof rawFilters.ebitdaMin === 'number' ? rawFilters.ebitdaMin : undefined,
+    ebitdaMax: typeof rawFilters.ebitdaMax === 'number' ? rawFilters.ebitdaMax : undefined,
+    tier: (rawFilters.tier as string[]) || [],
+    status: (rawFilters.status as string[]) || [],
+    sector: (rawFilters.sector as string[]) || [],
+    leads: (rawFilters.leads as string[]) || [],
+    platformAddOn: (rawFilters.platformAddOn as string[]) || [],
+    referralContacts: (rawFilters.referralContacts as string[]) || [],
+    referralCompanies: (rawFilters.referralCompanies as string[]) || [],
+    dateOfOrigination: (rawFilters.dateOfOrigination as string[]) || []
+  };
+
+  const updateFilters = (newFilters: any) => {
+    rawUpdateFilters(newFilters);
+  };
 
   return (
     <section className="container-fluid flex flex-col gap-6 py-6">
@@ -51,8 +88,15 @@ export function Opportunities() {
         </div>
       </div>
 
+      {/* Filter Bar */}
+      <OpportunityFilterBar 
+        filters={filters}
+        onFiltersChange={updateFilters}
+        onClearFilters={clearFilters}
+      />
+
       <div className="pb-6">
-        <OpportunitiesTable />
+        <OpportunitiesTable filters={filters} />
       </div>
 
       <AddOpportunityDialog 

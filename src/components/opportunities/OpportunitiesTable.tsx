@@ -3,14 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdvancedTable, ColumnDef, TablePreset } from "@/components/shared/AdvancedTable";
 import { OpportunityDrawer } from "./OpportunityDrawer";
 import { AddOpportunityDialog } from "./AddOpportunityDialog";
-import { FilterModal, ActiveFilters } from "@/components/shared/FilterModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Filter, Building2 } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { useDistinctValues } from "@/hooks/useDistinctValues";
 
 interface Opportunity {
   id: string;
@@ -39,7 +36,26 @@ interface Opportunity {
   dealcloud: boolean;
 }
 
-export function OpportunitiesTable() {
+interface OpportunityFilters {
+  focusArea: string[];
+  ownershipType: string[];
+  ebitdaMin?: number;
+  ebitdaMax?: number;
+  tier: string[];
+  status: string[];
+  sector: string[];
+  leads: string[];
+  platformAddOn: string[];
+  referralContacts: string[];
+  referralCompanies: string[];
+  dateOfOrigination: string[];
+}
+
+interface OpportunitiesTableProps {
+  filters: OpportunityFilters;
+}
+
+export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,96 +65,6 @@ export function OpportunitiesTable() {
   const [sortKey, setSortKey] = useState<string>("created_at");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const { toast } = useToast();
-
-  // Advanced filters
-  const { filters, updateFilters, clearFilters, removeFilter } = useUrlFilters({
-    focusAreas: [],
-    sectors: [],
-    tiers: [],
-    platformAddOns: [],
-    ownershipTypes: [],
-    lgLeads: [],
-    dealSourceCompanies: [],
-    referralSources: [],
-    dateOfOrigination: '',
-    statuses: [],
-    ebitda: null
-  });
-
-  // Fetch distinct values for filters
-  const { values: focusAreaOptions } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'lg_focus_area'
-  });
-
-  const { values: sectorOptions } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'sector'
-  });
-
-  const { values: tierOptions } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'tier'
-  });
-
-  const { values: platformAddOnOptions } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'platform_add_on'
-  });
-
-  const { values: ownershipTypeOptions } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'ownership_type'
-  });
-
-  const { values: statusOptions } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'status'
-  });
-
-  const { values: dealSourceCompanyOptions } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'deal_source_company'
-  });
-
-  // Get LG Lead options (from both point person columns)
-  const { values: lgLead1Options } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'investment_professional_point_person_1'
-  });
-
-  const { values: lgLead2Options } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'investment_professional_point_person_2'
-  });
-
-  // Get referral source options (from both individual columns)
-  const { values: referral1Options } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'deal_source_individual_1'
-  });
-
-  const { values: referral2Options } = useDistinctValues({
-    table: 'opportunities_raw',
-    column: 'deal_source_individual_2'
-  });
-
-  // Combine LG Lead and referral source options
-  const lgLeadOptions = useMemo(() => {
-    const combined = [...lgLead1Options, ...lgLead2Options];
-    const unique = Array.from(new Set(combined.map(opt => opt.value)))
-      .map(value => ({ value, label: value }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-    return unique;
-  }, [lgLead1Options, lgLead2Options]);
-
-  const referralSourceOptions = useMemo(() => {
-    const combined = [...referral1Options, ...referral2Options];
-    const unique = Array.from(new Set(combined.map(opt => opt.value)))
-      .map(value => ({ value, label: value }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-    return unique;
-  }, [referral1Options, referral2Options]);
 
   useEffect(() => {
     fetchOpportunities();
@@ -152,64 +78,56 @@ export function OpportunitiesTable() {
         .select("*");
 
       // Apply filters
-      const focusAreas = filters.focusAreas as string[] || [];
-      const sectors = filters.sectors as string[] || [];
-      const tiers = filters.tiers as string[] || [];
-      const platformAddOns = filters.platformAddOns as string[] || [];
-      const ownershipTypes = filters.ownershipTypes as string[] || [];
-      const statuses = filters.statuses as string[] || [];
-      const lgLeads = filters.lgLeads as string[] || [];
-      const dealSourceCompanies = filters.dealSourceCompanies as string[] || [];
-      const referralSources = filters.referralSources as string[] || [];
-      const dateOfOrigination = filters.dateOfOrigination as string || '';
-
-      if (focusAreas.length > 0) {
-        query = query.in('lg_focus_area', focusAreas);
+      if (filters.focusArea.length > 0) {
+        query = query.in('lg_focus_area', filters.focusArea);
       }
 
-      if (sectors.length > 0) {
-        query = query.in('sector', sectors);
+      if (filters.sector.length > 0) {
+        query = query.in('sector', filters.sector);
       }
 
-      if (tiers.length > 0) {
-        query = query.in('tier', tiers);
+      if (filters.tier.length > 0) {
+        query = query.in('tier', filters.tier);
       }
 
-      if (platformAddOns.length > 0) {
-        query = query.in('platform_add_on', platformAddOns);
+      if (filters.status.length > 0) {
+        query = query.in('status', filters.status);
       }
 
-      if (ownershipTypes.length > 0) {
-        query = query.in('ownership_type', ownershipTypes);
+      if (filters.ownershipType.length > 0) {
+        query = query.in('ownership_type', filters.ownershipType);
       }
 
-      if (statuses.length > 0) {
-        query = query.in('status', statuses);
+      if (filters.platformAddOn.length > 0) {
+        query = query.in('platform_add_on', filters.platformAddOn);
       }
 
-      if (dealSourceCompanies.length > 0) {
-        query = query.in('deal_source_company', dealSourceCompanies);
+      if (filters.referralCompanies.length > 0) {
+        query = query.in('deal_source_company', filters.referralCompanies);
       }
 
       // LG Lead: match either person #1 or #2
-      if (lgLeads.length > 0) {
-        const lgQuery = lgLeads.map(lead => 
-          `investment_professional_point_person_1.eq.${lead},investment_professional_point_person_2.eq.${lead}`
+      if (filters.leads.length > 0) {
+        const lgQuery = filters.leads.map(lead => 
+          `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
         ).join(',');
         query = query.or(lgQuery);
       }
 
       // Referral Source: match either individual #1 or #2
-      if (referralSources.length > 0) {
-        const refQuery = referralSources.map(ref =>
-          `deal_source_individual_1.eq.${ref},deal_source_individual_2.eq.${ref}`
+      if (filters.referralContacts.length > 0) {
+        const refQuery = filters.referralContacts.map(ref =>
+          `deal_source_individual_1.ilike.%${ref}%,deal_source_individual_2.ilike.%${ref}%`
         ).join(',');
         query = query.or(refQuery);
       }
 
       // Date of Origination (text contains)
-      if (dateOfOrigination) {
-        query = query.ilike('date_of_origination', `%${dateOfOrigination}%`);
+      if (filters.dateOfOrigination.length > 0) {
+        const dateQuery = filters.dateOfOrigination.map(date =>
+          `date_of_origination.ilike.%${date}%`
+        ).join(',');
+        query = query.or(dateQuery);
       }
 
       if (sortKey && sortDirection) {
@@ -226,8 +144,7 @@ export function OpportunitiesTable() {
       let filteredData = data || [];
 
       // Client-side EBITDA filtering (since it's a text field with numbers)
-      const ebitdaFilter = filters.ebitda as { operator: '>=' | '<='; value: number } | null;
-      if (ebitdaFilter && ebitdaFilter.value !== null) {
+      if (filters.ebitdaMin !== undefined || filters.ebitdaMax !== undefined) {
         filteredData = filteredData.filter(opp => {
           const ebitdaText = opp.ebitda;
           if (!ebitdaText) return false;
@@ -239,9 +156,18 @@ export function OpportunitiesTable() {
           const numValue = parseFloat(match[0].replace(/,/g, ''));
           if (isNaN(numValue)) return false;
           
-          return ebitdaFilter.operator === '>=' 
-            ? numValue >= ebitdaFilter.value
-            : numValue <= ebitdaFilter.value;
+          let passesMin = true;
+          let passesMax = true;
+          
+          if (filters.ebitdaMin !== undefined) {
+            passesMin = numValue >= filters.ebitdaMin;
+          }
+          
+          if (filters.ebitdaMax !== undefined) {
+            passesMax = numValue <= filters.ebitdaMax;
+          }
+          
+          return passesMin && passesMax;
         });
       }
 
@@ -271,140 +197,6 @@ export function OpportunitiesTable() {
     });
   }, [opportunities, searchTerm]);
 
-  // Create filter field definitions
-  const filterFields = [
-    {
-      key: 'focusAreas',
-      label: 'Focus Area',
-      type: 'multi-select' as const,
-      options: focusAreaOptions,
-      searchable: true,
-      placeholder: 'Select focus areas...'
-    },
-    {
-      key: 'sectors',
-      label: 'Sector',
-      type: 'multi-select' as const,
-      options: sectorOptions,
-      searchable: true,
-      placeholder: 'Select sectors...'
-    },
-    {
-      key: 'tiers',
-      label: 'Tier',
-      type: 'multi-select' as const,
-      options: tierOptions,
-      searchable: true,
-      placeholder: 'Select tiers...'
-    },
-    {
-      key: 'platformAddOns',
-      label: 'Platform Add-On',
-      type: 'multi-select' as const,
-      options: platformAddOnOptions,
-      searchable: true,
-      placeholder: 'Select platform add-ons...'
-    },
-    {
-      key: 'ebitda',
-      label: 'EBITDA',
-      type: 'number-compare' as const,
-      placeholder: 'Enter EBITDA threshold...'
-    },
-    {
-      key: 'ownershipTypes',
-      label: 'Ownership Type',
-      type: 'multi-select' as const,
-      options: ownershipTypeOptions,
-      searchable: true,
-      placeholder: 'Select ownership types...'
-    },
-    {
-      key: 'lgLeads',
-      label: 'LG Lead',
-      type: 'multi-select' as const,
-      options: lgLeadOptions,
-      searchable: true,
-      placeholder: 'Select LG leads...'
-    },
-    {
-      key: 'dealSourceCompanies',
-      label: 'Deal Source Company',
-      type: 'multi-select' as const,
-      options: dealSourceCompanyOptions,
-      searchable: true,
-      placeholder: 'Select deal source companies...'
-    },
-    {
-      key: 'referralSources',
-      label: 'Referral Source',
-      type: 'multi-select' as const,
-      options: referralSourceOptions,
-      searchable: true,
-      placeholder: 'Select referral sources...'
-    },
-    {
-      key: 'dateOfOrigination',
-      label: 'Date of Origination',
-      type: 'text' as const,
-      placeholder: 'Search date (e.g., Q1, 2023, Jan)...'
-    },
-    {
-      key: 'statuses',
-      label: 'Status',
-      type: 'multi-select' as const,
-      options: statusOptions,
-      searchable: true,
-      placeholder: 'Select statuses...'
-    }
-  ];
-
-  // Create active filter chips
-  const activeFilterChips = useMemo(() => {
-    const chips: Array<{ key: string; label: string; value: string }> = [];
-    
-    const focusAreas = filters.focusAreas as string[] || [];
-    focusAreas.forEach(fa => chips.push({ key: 'focusAreas', label: 'Focus Area', value: fa }));
-    
-    const sectors = filters.sectors as string[] || [];
-    sectors.forEach(sector => chips.push({ key: 'sectors', label: 'Sector', value: sector }));
-    
-    const tiers = filters.tiers as string[] || [];
-    tiers.forEach(tier => chips.push({ key: 'tiers', label: 'Tier', value: tier }));
-    
-    const platformAddOns = filters.platformAddOns as string[] || [];
-    platformAddOns.forEach(addon => chips.push({ key: 'platformAddOns', label: 'Platform Add-On', value: addon }));
-    
-    const ownershipTypes = filters.ownershipTypes as string[] || [];
-    ownershipTypes.forEach(type => chips.push({ key: 'ownershipTypes', label: 'Ownership Type', value: type }));
-    
-    const lgLeads = filters.lgLeads as string[] || [];
-    lgLeads.forEach(lead => chips.push({ key: 'lgLeads', label: 'LG Lead', value: lead }));
-    
-    const dealSourceCompanies = filters.dealSourceCompanies as string[] || [];
-    dealSourceCompanies.forEach(company => chips.push({ key: 'dealSourceCompanies', label: 'Deal Source Company', value: company }));
-    
-    const referralSources = filters.referralSources as string[] || [];
-    referralSources.forEach(source => chips.push({ key: 'referralSources', label: 'Referral Source', value: source }));
-    
-    const statuses = filters.statuses as string[] || [];
-    statuses.forEach(status => chips.push({ key: 'statuses', label: 'Status', value: status }));
-    
-    const dateOfOrigination = filters.dateOfOrigination as string || '';
-    if (dateOfOrigination) {
-      chips.push({ key: 'dateOfOrigination', label: 'Date of Origination', value: dateOfOrigination });
-    }
-    
-    const ebitda = filters.ebitda as { operator: '>=' | '<='; value: number } | null;
-    if (ebitda && ebitda.value !== null) {
-      chips.push({ key: 'ebitda', label: 'EBITDA', value: `${ebitda.operator} ${ebitda.value}` });
-    }
-    
-    return chips;
-  }, [filters]);
-
-  const activeFilterCount = activeFilterChips.length;
-
   const handleRowClick = (opportunity: Opportunity) => {
     setSelectedOpportunity(opportunity);
     setIsDrawerOpen(true);
@@ -413,14 +205,6 @@ export function OpportunitiesTable() {
   const handleSort = (key: string, direction: 'asc' | 'desc' | null) => {
     setSortKey(key);
     setSortDirection(direction);
-  };
-
-  const handleApplyFilters = () => {
-    // Filters are already applied through useEffect dependency on filters
-  };
-
-  const handleRemoveFilter = (key: string, value?: string) => {
-    removeFilter(key, value);
   };
 
   // Column definitions
@@ -545,9 +329,9 @@ export function OpportunitiesTable() {
 
   const emptyState = {
     title: "No opportunities found",
-    description: searchTerm || activeFilterCount > 0
-      ? "Try adjusting your search or filters to find opportunities."
-      : "Start tracking investment opportunities by adding your first deal.",
+    description: searchTerm 
+      ? "Try adjusting your search to find opportunities."
+      : "No opportunities match the current filters.",
     action: (
       <Button onClick={() => setIsAddDialogOpen(true)}>
         <Building2 className="h-4 w-4 mr-2" />
@@ -558,48 +342,14 @@ export function OpportunitiesTable() {
 
   return (
     <>
-      {/* Filters */}
-      <div className="p-4 space-y-4 border-b">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold">All Opportunities</h3>
-            <p className="text-sm text-muted-foreground">
-              {filteredOpportunities?.length || 0} opportunit{filteredOpportunities?.length !== 1 ? 'ies' : 'y'} total
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <FilterModal
-              title="Opportunity Filters"
-              fields={filterFields}
-              values={filters}
-              onValuesChange={updateFilters}
-              onApply={handleApplyFilters}
-              onClearAll={clearFilters}
-              activeFilterCount={activeFilterCount}
-            >
-              <Button variant="outline" className="focus-ring">
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-                {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {activeFilterCount}
-                  </Badge>
-                )}
-              </Button>
-            </FilterModal>
-          </div>
+      {/* Header */}
+      <div className="p-4 border-b">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold">All Opportunities</h3>
+          <p className="text-sm text-muted-foreground">
+            {filteredOpportunities?.length || 0} opportunit{filteredOpportunities?.length !== 1 ? 'ies' : 'y'} total
+          </p>
         </div>
-
-        {/* Active Filters */}
-        {activeFilterChips.length > 0 && (
-          <div className="bg-muted rounded-lg p-4 border border-border">
-            <ActiveFilters
-              filters={activeFilterChips}
-              onRemoveFilter={handleRemoveFilter}
-              onClearAll={clearFilters}
-            />
-          </div>
-        )}
       </div>
 
       {/* Table Container */}
@@ -628,6 +378,7 @@ export function OpportunitiesTable() {
           idKey="id"
         />
       </div>
+      
       <OpportunityDrawer
         opportunity={selectedOpportunity}
         open={isDrawerOpen}
