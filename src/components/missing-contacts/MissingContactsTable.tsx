@@ -5,24 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AdvancedTable } from "@/components/shared/AdvancedTable";
 import { AddContactModal } from "./AddContactModal";
-import { useMissingCandidates, useApproveMissingContact, useDismissMissingContact } from "@/hooks/useMissingContacts";
+import { useMissingCandidates, useApproveMissing, useDismissMissing } from "@/hooks/useMissingContacts";
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, UserX } from "lucide-react";
+import { MissingCandidate } from "@/types/missing-contacts";
 
 interface MissingContactsTableProps {
   search: string;
   statusFilter: string;
   selectedRows: Set<string>;
   onSelectedRowsChange: (rows: Set<string>) => void;
-}
-
-interface MissingCandidate {
-  id: number;
-  full_name: string | null;
-  email: string;
-  organization: string | null;
-  status: string;
-  created_at: string;
 }
 
 export function MissingContactsTable({ 
@@ -39,43 +31,41 @@ export function MissingContactsTable({
   
   const { data, isLoading, error } = useMissingCandidates({
     search,
-    status: statusFilter === 'all' ? undefined : statusFilter,
-    page: 0,
-    pageSize: 100, // Start with larger page size for client-side filtering
+    status: statusFilter === 'all' ? ['pending', 'approved', 'dismissed'] : [statusFilter as any],
+    page: 1,
+    pageSize: 100,
   });
 
   console.log('useMissingCandidates result:', { data, isLoading, error });
 
   // Client-side filtered data for display
   const filteredData = useMemo(() => {
-    if (!data?.candidates) {
+    if (!data?.rows) {
       console.log('No candidates data available');
       return [];
     }
-    console.log('Raw candidates:', data.candidates);
-    return data.candidates.filter(candidate => candidate && candidate.id);
-  }, [data?.candidates]);
+    console.log('Raw candidates:', data.rows);
+    return data.rows.filter(candidate => candidate && candidate.id && candidate.email);
+  }, [data?.rows]);
 
-  const approveMutation = useApproveMissingContact();
-  const dismissMutation = useDismissMissingContact();
+  const approveMutation = useApproveMissing();
+  const dismissMutation = useDismissMissing();
 
-  const handleApprove = async (candidate: MissingCandidate) => {
-    setSelectedCandidate(candidate);
+  const handleApprove = async (email: string) => {
+    if (!email) return;
+    try {
+      await approveMutation.mutateAsync(email);
+    } catch (error) {
+      // Error handled by mutation's onError
+    }
   };
 
   const handleDismiss = async (email: string) => {
+    if (!email) return;
     try {
       await dismissMutation.mutateAsync(email);
-      toast({
-        title: "Success",
-        description: "Contact candidate dismissed successfully.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to dismiss contact",
-        variant: "destructive",
-      });
+    } catch (error) {
+      // Error handled by mutation's onError
     }
   };
 
@@ -93,26 +83,23 @@ export function MissingContactsTable({
   const handleSelectAll = (checked: boolean) => {
     console.log('handleSelectAll called:', { checked, dataLength: filteredData.length });
     if (checked && filteredData.length > 0) {
-      const allIds = new Set(filteredData.map(c => c?.id?.toString()).filter(Boolean));
+      const allIds = new Set<string>();
+      filteredData.forEach(c => {
+        if (c?.id) {
+          allIds.add(c.id);
+        }
+      });
       console.log('All IDs:', allIds);
       onSelectedRowsChange(allIds);
     } else {
-      onSelectedRowsChange(new Set());
+      onSelectedRowsChange(new Set<string>());
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="secondary">Pending</Badge>;
-      case 'approved':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Approved</Badge>;
-      case 'dismissed':
-        return <Badge variant="destructive">Dismissed</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
+  function StatusBadge({ s }: { s: string }) {
+    const tone = s === 'approved' ? 'default' : s === 'dismissed' ? 'destructive' : 'secondary';
+    return <Badge variant={tone as any} className="capitalize">{s || 'pending'}</Badge>;
+  }
 
   const columns = [
     {
@@ -128,8 +115,8 @@ export function MissingContactsTable({
         }
         return (
           <Checkbox
-            checked={selectedRows.has(candidate.id.toString())}
-            onCheckedChange={(checked) => handleSelectRow(candidate.id.toString(), checked as boolean)}
+            checked={selectedRows.has(candidate.id)}
+            onCheckedChange={(checked) => handleSelectRow(candidate.id, checked as boolean)}
             aria-label={`Select ${candidate.email}`}
           />
         );
@@ -174,7 +161,7 @@ export function MissingContactsTable({
       render: (candidate: MissingCandidate) => {
         console.log('Rendering status for candidate:', candidate);
         if (!candidate) return <Badge>Unknown</Badge>;
-        return getStatusBadge(candidate.status);
+        return <StatusBadge s={candidate.status} />;
       },
     },
     {
@@ -194,17 +181,17 @@ export function MissingContactsTable({
       enableHiding: false,
       render: (candidate: MissingCandidate) => {
         console.log('Rendering actions for candidate:', candidate);
-        if (!candidate || !candidate.id) {
+        if (!candidate || !candidate.id || !candidate.email) {
           console.warn('Invalid candidate for actions:', candidate);
-          return <div>Invalid data</div>;
+          return <div className="text-muted-foreground text-xs">No email</div>;
         }
         return (
           <div className="flex items-center gap-2">
             <Button
               size="sm"
               className="bg-green-600 text-white hover:bg-green-700"
-              onClick={() => handleApprove(candidate)}
-              disabled={candidate.status !== 'pending'}
+              onClick={() => handleApprove(candidate.email)}
+              disabled={!candidate.email || candidate.status !== 'pending' || approveMutation.isPending}
             >
               <UserCheck className="h-3 w-3 mr-1" />
               Approve
@@ -213,7 +200,7 @@ export function MissingContactsTable({
               size="sm"
               variant="outline"
               onClick={() => handleDismiss(candidate.email)}
-              disabled={candidate.status !== 'pending' || dismissMutation.isPending}
+              disabled={!candidate.email || candidate.status !== 'pending' || dismissMutation.isPending}
             >
               <UserX className="h-3 w-3 mr-1" />
               Dismiss
@@ -248,13 +235,6 @@ export function MissingContactsTable({
         enableRowSelection={false}
       />
 
-      {selectedCandidate && (
-        <AddContactModal
-          candidate={selectedCandidate}
-          open={!!selectedCandidate}
-          onClose={() => setSelectedCandidate(null)}
-        />
-      )}
     </>
   );
 }

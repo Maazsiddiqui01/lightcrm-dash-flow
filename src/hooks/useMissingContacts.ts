@@ -1,22 +1,7 @@
-import React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-
-interface MissingCandidate {
-  id: number;
-  full_name: string | null;
-  email: string;
-  organization: string | null;
-  status: string;
-  created_at: string;
-}
-
-interface UseMissingCandidatesParams {
-  search?: string;
-  status?: string;
-  page: number;
-  pageSize: number;
-}
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { mapRowToCandidate, MissingCandidate } from '@/types/missing-contacts';
 
 interface ContactData {
   full_name?: string;
@@ -29,15 +14,19 @@ interface ContactData {
   notes?: string;
 }
 
-export function useMissingCandidates({
-  search,
-  status,
-  page,
-  pageSize,
-}: UseMissingCandidatesParams) {
-  console.log('useMissingCandidates called with:', { search, status, page, pageSize });
+export function useMissingCandidates(params: {
+  search?: string;
+  status?: ('pending'|'approved'|'dismissed')[] | string;
+  domain?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const { search = '', status = ['pending'], domain = '', page = 1, pageSize = 25 } = params;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   return useQuery({
-    queryKey: ["missing-candidates", { search, status, page, pageSize }],
+    queryKey: ['missing-candidates', { search, status, domain, page, pageSize }],
     queryFn: async () => {
       // Use direct fetch since this table isn't in the generated types yet
       const SUPABASE_URL = "https://wjghdqkxwuyptxzdidtf.supabase.co";
@@ -52,13 +41,18 @@ export function useMissingCandidates({
         params.append("or", `email.ilike.%${search}%,full_name.ilike.%${search}%,organization.ilike.%${search}%`);
       }
 
-      if (status) {
+      // Handle legacy single status string or new array format
+      if (typeof status === 'string' && status !== 'all') {
         params.append("status", `eq.${status}`);
+      } else if (Array.isArray(status) && status.length) {
+        status.forEach(s => params.append("status", `eq.${s}`));
+      }
+      
+      if (domain) {
+        params.append("organization", `ilike.%${domain}%`);
       }
 
       // Apply pagination
-      const from = page * pageSize;
-      const to = from + pageSize - 1;
       params.append("offset", from.toString());
       params.append("limit", pageSize.toString());
 
@@ -78,49 +72,52 @@ export function useMissingCandidates({
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const message = `HTTP error! status: ${response.status}`;
+        console.error('Load candidates error', message);
+        toast({ title: 'Failed to load candidates', description: message, variant: 'destructive' });
+        throw new Error(message);
       }
 
       const data = await response.json();
       const count = response.headers.get('content-range')?.split('/')[1] || '0';
-
-      return {
-        candidates: (data || []) as MissingCandidate[],
-        totalCount: parseInt(count) || 0,
+      
+      const rows = (data || []).map(mapRowToCandidate);
+      return { 
+        candidates: rows, 
+        rows, 
+        totalCount: parseInt(count) || rows.length,
+        count: parseInt(count) || rows.length 
       };
     },
   });
 }
 
 export function useRefreshMissingContacts() {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase.rpc as any)("refresh_missing_contacts", {
-        p_exclude_domain: "lindsaygoldbergllc.com",
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      const { error } = await (supabase.rpc as any)('refresh_missing_contacts', { p_exclude_domain: 'lindsaygoldbergllc.com' });
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["missing-candidates"] });
+      qc.invalidateQueries({ queryKey: ['missing-candidates'] });
+      toast({ title: 'Refreshed', description: 'Staged contacts were updated.' });
+    },
+    onError: (e: any) => {
+      toast({ title: 'Refresh failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
     },
   });
 }
 
 export function useApproveMissingContact() {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
       email,
       contactData,
     }: {
       email: string;
-      contactData: ContactData;
+      contactData?: ContactData;
     }) => {
       // Step 1: Call the approve RPC which creates the contact and updates status
       const { data: contactId, error: approveError } = await (supabase.rpc as any)(
@@ -137,46 +134,69 @@ export function useApproveMissingContact() {
       }
 
       // Step 2: Update the contact with additional fields if provided
-      const updateFields: any = {};
-      
-      if (contactData.full_name && contactData.full_name !== contactData.email_address) {
-        updateFields.full_name = contactData.full_name;
-      }
-      if (contactData.organization) updateFields.organization = contactData.organization;
-      if (contactData.title) updateFields.title = contactData.title;
-      if (contactData.lg_sector) updateFields.lg_sector = contactData.lg_sector;
-      if (contactData.lg_focus_areas_comprehensive_list) {
-        updateFields.lg_focus_areas_comprehensive_list = contactData.lg_focus_areas_comprehensive_list;
-      }
-      if (contactData.areas_of_specialization) {
-        updateFields.areas_of_specialization = contactData.areas_of_specialization;
-      }
-      if (contactData.notes) updateFields.notes = contactData.notes;
+      if (contactData) {
+        const updateFields: any = {};
+        
+        if (contactData.full_name && contactData.full_name !== contactData.email_address) {
+          updateFields.full_name = contactData.full_name;
+        }
+        if (contactData.organization) updateFields.organization = contactData.organization;
+        if (contactData.title) updateFields.title = contactData.title;
+        if (contactData.lg_sector) updateFields.lg_sector = contactData.lg_sector;
+        if (contactData.lg_focus_areas_comprehensive_list) {
+          updateFields.lg_focus_areas_comprehensive_list = contactData.lg_focus_areas_comprehensive_list;
+        }
+        if (contactData.areas_of_specialization) {
+          updateFields.areas_of_specialization = contactData.areas_of_specialization;
+        }
+        if (contactData.notes) updateFields.notes = contactData.notes;
 
-      // Only update if there are additional fields to set
-      if (Object.keys(updateFields).length > 0) {
-        const { error: updateError } = await supabase
-          .from("contacts_raw")
-          .update(updateFields)
-          .eq("id", contactId as string);
+        // Only update if there are additional fields to set
+        if (Object.keys(updateFields).length > 0) {
+          const { error: updateError } = await supabase
+            .from("contacts_raw")
+            .update(updateFields)
+            .eq("id", contactId as string);
 
-        if (updateError) {
-          console.warn("Failed to update additional contact fields:", updateError);
-          // Don't throw here since the main contact creation succeeded
+          if (updateError) {
+            console.warn("Failed to update additional contact fields:", updateError);
+            // Don't throw here since the main contact creation succeeded
+          }
         }
       }
 
       return contactId;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["missing-candidates"] });
+      qc.invalidateQueries({ queryKey: ["missing-candidates"] });
+      toast({ title: 'Contact approved', description: 'Added to Contacts.' });
+    },
+    onError: (e: any) => {
+      toast({ title: 'Approve failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
+    },
+  });
+}
+
+export function useApproveMissing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const { data, error } = await (supabase.rpc as any)('approve_missing_contact', { p_email: email });
+      if (error) throw error;
+      return data as string | null; // new contact id
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['missing-candidates'] });
+      toast({ title: 'Contact approved', description: 'Added to Contacts.' });
+    },
+    onError: (e: any) => {
+      toast({ title: 'Approve failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
     },
   });
 }
 
 export function useDismissMissingContact() {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (email: string) => {
       const { data, error } = await (supabase.rpc as any)("dismiss_missing_contact", {
@@ -190,7 +210,28 @@ export function useDismissMissingContact() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["missing-candidates"] });
+      qc.invalidateQueries({ queryKey: ["missing-candidates"] });
+      toast({ title: 'Dismissed', description: 'Candidate was dismissed.' });
+    },
+    onError: (e: any) => {
+      toast({ title: 'Dismiss failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
+    },
+  });
+}
+
+export function useDismissMissing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await (supabase.rpc as any)('dismiss_missing_contact', { p_email: email });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['missing-candidates'] });
+      toast({ title: 'Dismissed', description: 'Candidate was dismissed.' });
+    },
+    onError: (e: any) => {
+      toast({ title: 'Dismiss failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
     },
   });
 }
