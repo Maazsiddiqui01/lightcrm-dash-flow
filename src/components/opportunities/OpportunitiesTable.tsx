@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdvancedTable, ColumnDef, TablePreset } from "@/components/shared/AdvancedTable";
 import { OpportunityDrawer } from "./OpportunityDrawer";
 import { AddOpportunityDialog } from "./AddOpportunityDialog";
+import { ExportDropdown } from "./ExportDropdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -65,7 +66,14 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string>("created_at");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
+  const [selectedRows, setSelectedRows] = useState<Opportunity[]>([]);
+  const selectedRowsRef = useRef<Set<string>>(new Set());
   const { toast } = useToast();
+
+  // Update selectedRowsRef when selectedRows changes
+  useEffect(() => {
+    selectedRowsRef.current = new Set(selectedRows.map(row => row.id));
+  }, [selectedRows]);
 
   useEffect(() => {
     fetchOpportunities();
@@ -345,11 +353,20 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
     <>
       {/* Header */}
       <div className="p-4 border-b">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold">All Opportunities</h3>
-          <p className="text-sm text-muted-foreground">
-            {filteredOpportunities?.length || 0} opportunit{filteredOpportunities?.length !== 1 ? 'ies' : 'y'} total
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold">All Opportunities</h3>
+            <p className="text-sm text-muted-foreground">
+              {filteredOpportunities?.length || 0} opportunit{filteredOpportunities?.length !== 1 ? 'ies' : 'y'} total
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <ExportDropdown 
+              data={filteredOpportunities}
+              selectedRows={selectedRowsRef.current}
+              filters={filters}
+            />
+          </div>
         </div>
       </div>
 
@@ -376,6 +393,8 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
           initialPageSize={50}
           className="h-full"
           enableRowSelection={true}
+          onSelectedRowsChange={setSelectedRows}
+          hideExportButton={true}
           idKey="id"
         />
       </div>

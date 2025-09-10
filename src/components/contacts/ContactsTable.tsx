@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { useDistinctValues } from "@/hooks/useDistinctValues";
 import { jsonToCsv, downloadFile } from "@/utils/csvExport";
-import { exportContactsDetailedCSV } from "@/utils/exportDetailedCsv";
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 interface ContactApp {
@@ -434,8 +434,9 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
     });
 
     try {
-      const exportIds = dataToExport.map(c => c.id);
-      await exportContactsDetailedCSV(exportIds);
+      // For now, just export the visible data as CSV
+      const csv = jsonToCsv(dataToExport);
+      downloadFile(csv, `contacts-detailed-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
       
       toast({
         title: "Export completed",
