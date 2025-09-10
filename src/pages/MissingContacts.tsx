@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { MissingContactsTable } from "@/components/missing-contacts/MissingContactsTable";
 import { Button } from "@/components/ui/button";
