@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { title: "Dashboard", url: "/dashboard" },
+  { title: "Sourcing Greatness", url: "/sourcing-greatness" },
   { title: "Contacts", url: "/contacts" },
   { title: "Opportunities", url: "/opportunities" },
   { title: "Interactions", url: "/interactions" },

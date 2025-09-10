@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Home, Users, Target, MessageSquare, Table, Bot, LogOut, Eye, BarChart3 } from "lucide-react";
 
 const menuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
+  { title: "Sourcing Greatness", url: "/sourcing-greatness", icon: BarChart3 },
   { title: "Contacts", url: "/contacts", icon: Users },
   { title: "Opportunities", url: "/opportunities", icon: Target },
   { title: "Interactions", url: "/interactions", icon: MessageSquare },
