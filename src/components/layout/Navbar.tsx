@@ -8,7 +8,7 @@ export function Navbar() {
           <div className="flex items-center">
             <Building2 className="h-8 w-8 text-navbar-foreground mr-3" />
             <h1 className="text-xl font-semibold text-navbar-foreground">
-              Light CRM
+              Sourcing Greatness
             </h1>
           </div>
           <div className="flex items-center space-x-4">
