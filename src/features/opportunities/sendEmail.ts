@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-const N8N_URL = 'https://inverisllc.app.n8n.cloud/webhook-test/45f40922-1372-4e56-a357-491fb490df3b';
+const N8N_URL = 'https://inverisllc.app.n8n.cloud/webhook/Opportunities-Email';
 
 export async function sendOpportunityEmail(opportunityId: string) {
   // 1) fetch row from opportunities_raw (since opportunities_email_payload view may not exist yet)
