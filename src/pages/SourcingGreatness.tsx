@@ -21,6 +21,7 @@ interface SourcingFilters {
   ownershipType: 'all' | 'family_founder' | 'other';
   ebitdaBucket: string[];
   searchText: string;
+  [key: string]: any;
 }
 
 const defaultFilters: SourcingFilters = {
@@ -38,7 +39,10 @@ const defaultFilters: SourcingFilters = {
 
 export default function SourcingGreatness() {
   const { toast } = useToast();
-  const [filters, setFilters] = useUrlFilters('sourcing', defaultFilters);
+  const { filters, updateFilters: setFilters } = useUrlFilters(defaultFilters);
+
+  // Type-safe filter accessors
+  const filterState = filters as SourcingFilters;
 
   // Fetch opportunities data
   const { data: opportunities = [], isLoading: oppsLoading } = useQuery({
@@ -47,41 +51,41 @@ export default function SourcingGreatness() {
       let query = supabase.from('opportunities_app').select('*');
       
       // Apply filters
-      if (filters.sector.length > 0) {
-        query = query.in('sector', filters.sector);
+      if (Array.isArray(filterState.sector) && filterState.sector.length > 0) {
+        query = query.in('sector', filterState.sector);
       }
-      if (filters.focusArea.length > 0) {
-        query = query.or(filters.focusArea.map(fa => `lg_focus_area.ilike.%${fa}%`).join(','));
+      if (Array.isArray(filterState.focusArea) && filterState.focusArea.length > 0) {
+        query = query.or(filterState.focusArea.map(fa => `lg_focus_area.ilike.%${fa}%`).join(','));
       }
-      if (filters.lgLead.length > 0) {
-        const leadFilters = filters.lgLead.map(lead => 
+      if (Array.isArray(filterState.lgLead) && filterState.lgLead.length > 0) {
+        const leadFilters = filterState.lgLead.map(lead => 
           `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
         ).join(',');
         query = query.or(leadFilters);
       }
-      if (filters.tier.length > 0) {
-        query = query.in('tier', filters.tier);
+      if (Array.isArray(filterState.tier) && filterState.tier.length > 0) {
+        query = query.in('tier', filterState.tier);
       }
-      if (filters.status.length > 0) {
-        query = query.in('status', filters.status);
+      if (Array.isArray(filterState.status) && filterState.status.length > 0) {
+        query = query.in('status', filterState.status);
       }
-      if (filters.platformAddon === 'platform') {
+      if (filterState.platformAddon === 'platform') {
         query = query.ilike('platform_add_on', '%platform%');
-      } else if (filters.platformAddon === 'addon') {
+      } else if (filterState.platformAddon === 'addon') {
         query = query.ilike('platform_add_on', '%add%');
       }
-      if (filters.ownershipType === 'family_founder') {
+      if (filterState.ownershipType === 'family_founder') {
         query = query.or('ownership_type.ilike.%family%,ownership_type.ilike.%founder%');
-      } else if (filters.ownershipType === 'other') {
+      } else if (filterState.ownershipType === 'other') {
         query = query.not('ownership_type', 'ilike', '%family%').not('ownership_type', 'ilike', '%founder%');
       }
-      if (filters.searchText) {
-        query = query.or(`deal_name.ilike.%${filters.searchText}%,deal_source_individual_1.ilike.%${filters.searchText}%,deal_source_individual_2.ilike.%${filters.searchText}%`);
+      if (filterState.searchText) {
+        query = query.or(`deal_name.ilike.%${filterState.searchText}%,deal_source_individual_1.ilike.%${filterState.searchText}%,deal_source_individual_2.ilike.%${filterState.searchText}%`);
       }
 
       // Date filter on text field
-      const [startYear] = filters.dateRange;
-      const [endYear] = filters.dateRange;
+      const [startYear] = filterState.dateRange;
+      const [endYear] = filterState.dateRange;
       if (startYear && endYear) {
         const startYearStr = startYear.split('-')[0];
         const endYearStr = endYear.split('-')[0];
@@ -97,59 +101,110 @@ export default function SourcingGreatness() {
     staleTime: 60_000,
   });
 
-  // Fetch meetings data
+  // Fetch meetings data - using interactions_app instead
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery({
-    queryKey: ['kpi-meetings-monthly'],
+    queryKey: ['sourcing-meetings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('kpi_meetings_monthly')
-        .select('*')
-        .order('month_start');
+        .from('interactions_app')
+        .select('occurred_at')
+        .ilike('source', '%meeting%')
+        .order('occurred_at');
       if (error) throw error;
-      return data || [];
+      
+      // Group by month
+      const monthlyData: { [key: string]: number } = {};
+      data?.forEach(interaction => {
+        if (interaction.occurred_at) {
+          const monthKey = new Date(interaction.occurred_at).toISOString().substring(0, 7);
+          monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+        }
+      });
+      
+      return Object.entries(monthlyData).map(([month, count]) => ({
+        month_start: month + '-01',
+        meeting_count: count
+      }));
     },
     staleTime: 60_000,
   });
 
-  // Fetch referral data
+  // Fetch referral data - simplified from opportunities
   const { data: referralContacts = [] } = useQuery({
-    queryKey: ['kpi-referral-contacts'],
+    queryKey: ['sourcing-referral-contacts'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('kpi_referral_contacts')
-        .select('*')
-        .order('opp_count', { ascending: false })
-        .limit(10);
+        .from('opportunities_app')
+        .select('deal_source_individual_1, deal_source_individual_2')
+        .not('deal_source_individual_1', 'is', null);
       if (error) throw error;
-      return data || [];
+      
+      // Count referrals
+      const counts: { [key: string]: number } = {};
+      data?.forEach(opp => {
+        if (opp.deal_source_individual_1) {
+          counts[opp.deal_source_individual_1] = (counts[opp.deal_source_individual_1] || 0) + 1;
+        }
+        if (opp.deal_source_individual_2) {
+          counts[opp.deal_source_individual_2] = (counts[opp.deal_source_individual_2] || 0) + 1;
+        }
+      });
+      
+      return Object.entries(counts)
+        .map(([name, count]) => ({ referral_contact_display: name, opp_count: count }))
+        .sort((a, b) => b.opp_count - a.opp_count)
+        .slice(0, 10);
     },
     staleTime: 60_000,
   });
 
   const { data: referralCompanies = [] } = useQuery({
-    queryKey: ['kpi-referral-companies'],
+    queryKey: ['sourcing-referral-companies'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('kpi_referral_companies')
-        .select('*')
-        .order('opp_count', { ascending: false })
-        .limit(10);
+        .from('opportunities_app')
+        .select('deal_source_company')
+        .not('deal_source_company', 'is', null);
       if (error) throw error;
-      return data || [];
+      
+      // Count companies
+      const counts: { [key: string]: number } = {};
+      data?.forEach(opp => {
+        if (opp.deal_source_company) {
+          counts[opp.deal_source_company] = (counts[opp.deal_source_company] || 0) + 1;
+        }
+      });
+      
+      return Object.entries(counts)
+        .map(([name, count]) => ({ referral_company_display: name, opp_count: count }))
+        .sort((a, b) => b.opp_count - a.opp_count)
+        .slice(0, 10);
     },
     staleTime: 60_000,
   });
 
-  // Fetch contacts headline
+  // Fetch contacts headline - using contacts_app
   const { data: contactsHeadline } = useQuery({
-    queryKey: ['kpi-contacts-headline'],
+    queryKey: ['sourcing-contacts-headline'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('kpi_contacts_headline')
-        .select('*')
-        .single();
-      if (error) throw error;
-      return data;
+      const { count: totalContacts } = await supabase
+        .from('contacts_app')
+        .select('*', { count: 'exact', head: true });
+      
+      // Get meetings in last 90 days
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      
+      const { count: meetingsCount } = await supabase
+        .from('interactions_app')
+        .select('*', { count: 'exact', head: true })
+        .ilike('source', '%meeting%')
+        .gte('occurred_at', ninetyDaysAgo.toISOString());
+      
+      return {
+        total_contacts: totalContacts || 0,
+        meetings_last_90d: meetingsCount || 0
+      };
     },
     staleTime: 60_000,
   });
@@ -158,10 +213,10 @@ export default function SourcingGreatness() {
   const metrics = useMemo(() => {
     const filtered = opportunities.filter(opp => {
       // Apply EBITDA bucket filter
-      if (filters.ebitdaBucket.length > 0) {
+      if (Array.isArray(filterState.ebitdaBucket) && filterState.ebitdaBucket.length > 0) {
         const ebitda = Number(opp.ebitda_in_ms) || 0;
         const bucket = ebitda < 20 ? '<20' : ebitda <= 35 ? '20-35' : '>35';
-        if (!filters.ebitdaBucket.includes(bucket)) return false;
+        if (!filterState.ebitdaBucket.includes(bucket)) return false;
       }
       return true;
     });
@@ -189,16 +244,16 @@ export default function SourcingGreatness() {
       pipelineValue: filtered.reduce((sum, o) => sum + (Number(o.ebitda_in_ms) || 0), 0),
       filteredOpportunities: filtered,
     };
-  }, [opportunities, filters]);
+  }, [opportunities, filterState]);
 
   // Filter meetings by date range
   const filteredMeetings = useMemo(() => {
-    const [start, end] = filters.dateRange;
+    const [start, end] = filterState.dateRange;
     return meetings.filter(m => {
       const monthStart = new Date(m.month_start);
       return monthStart >= new Date(start) && monthStart <= new Date(end);
     });
-  }, [meetings, filters.dateRange]);
+  }, [meetings, filterState.dateRange]);
 
   const totalMeetings = filteredMeetings.reduce((sum, m) => sum + (Number(m.meeting_count) || 0), 0);
 
@@ -215,13 +270,13 @@ export default function SourcingGreatness() {
           />
           <ExportButtons 
             opportunities={metrics.filteredOpportunities}
-            filters={filters}
+            filters={filterState}
           />
         </div>
 
         {/* Slicers */}
         <Slicers 
-          filters={filters}
+          filters={filterState}
           onFiltersChange={setFilters}
         />
 

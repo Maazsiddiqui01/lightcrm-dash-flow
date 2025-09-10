@@ -91,7 +91,7 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
     if (type === 'ebitda') {
       const buckets = { '<20': 0, '20-35': 0, '>35': 0 };
       data.forEach(opp => {
-        const ebitda = Number(opp.ebitda_m) || 0;
+        const ebitda = Number(opp.ebitda_in_ms) || 0;
         if (ebitda < 20) buckets['<20']++;
         else if (ebitda <= 35) buckets['20-35']++;
         else buckets['>35']++;
@@ -118,11 +118,11 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
       const value = opp[field] || 'Unknown';
       acc[value] = (acc[value] || 0) + 1;
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
 
     return Object.entries(counts)
-      .map(([key, count]) => ({ [field]: key, count }))
-      .sort((a, b) => b.count - a.count)
+      .map(([key, count]) => ({ [field]: key, count: Number(count) }))
+      .sort((a, b) => Number(b.count) - Number(a.count))
       .slice(0, 10);
   };
 
