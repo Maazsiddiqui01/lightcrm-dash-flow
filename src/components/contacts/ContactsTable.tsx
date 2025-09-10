@@ -27,9 +27,30 @@ interface ContactApp {
   of_meetings: number | null;
   all_opps: number | null;
   most_recent_contact: string | null;
+  lg_sector: string | null;
+  category: string | null;
+  delta_type: string | null;
+  delta: number | null;
 }
 
-export function ContactsTable() {
+interface ContactsTableProps {
+  filters?: {
+    focusAreas?: string[];
+    sectors?: string[];
+    areasOfSpecialization?: string[];
+    organizations?: string[];
+    titles?: string[];
+    categories?: string[];
+    deltaType?: string[];
+    hasOpportunities?: string[];
+    mostRecentContactStart?: string;
+    mostRecentContactEnd?: string;
+    deltaMin?: number;
+    deltaMax?: number;
+  };
+}
+
+export function ContactsTable({ filters: externalFilters = {} }: ContactsTableProps) {
   const [contacts, setContacts] = useState<ContactApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,62 +62,94 @@ export function ContactsTable() {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   
-  // Advanced filters
-  const { filters, updateFilters, clearFilters, removeFilter } = useUrlFilters({
-    organizations: [],
-    focusAreas: [],
-    specializations: []
-  });
-  
-  // Fetch distinct values for filters
-  const { values: organizationOptions } = useDistinctValues({
-    table: 'contacts_app',
-    column: 'organization',
-    searchTerm: ''
-  });
-  
-  const { values: focusAreaOptions } = useDistinctValues({
-    table: 'contacts_app',
-    column: 'lg_focus_areas_comprehensive_list',
-    searchTerm: '',
-    isTextArray: true
-  });
-  
-  const { values: specializationOptions } = useDistinctValues({
-    table: 'contacts_app',
-    column: 'areas_of_specialization',
-    searchTerm: '',
-    isTextArray: true
-  });
-
   useEffect(() => {
     fetchContacts();
-  }, [sortKey, sortDirection, filters]);
+  }, [sortKey, sortDirection, externalFilters]);
 
   const fetchContacts = async () => {
     try {
       setLoading(true);
       let query = supabase
-        .from("contacts_app")
+        .from("contacts_raw")
         .select("*");
 
-      // Apply filters
-      const orgs = filters.organizations as string[] || [];
-      const focusAreas = filters.focusAreas as string[] || [];
-      const specializations = filters.specializations as string[] || [];
-      
-      if (orgs.length > 0) {
-        query = query.in('organization', orgs);
-      }
-      
+      // Apply external filters
+      const {
+        focusAreas = [],
+        sectors = [],
+        areasOfSpecialization = [],
+        organizations = [],
+        titles = [],
+        categories = [],
+        deltaType = [],
+        hasOpportunities = [],
+        mostRecentContactStart,
+        mostRecentContactEnd,
+        deltaMin,
+        deltaMax
+      } = externalFilters;
+
+      // Focus Areas - partial match in comma-separated list
       if (focusAreas.length > 0) {
         const focusQuery = focusAreas.map(fa => `lg_focus_areas_comprehensive_list.ilike.%${fa}%`).join(',');
         query = query.or(focusQuery);
       }
-      
-      if (specializations.length > 0) {
-        const specQuery = specializations.map(spec => `areas_of_specialization.ilike.%${spec}%`).join(',');
+
+      // Sectors
+      if (sectors.length > 0) {
+        query = query.in('lg_sector', sectors);
+      }
+
+      // Areas of Specialization - partial match
+      if (areasOfSpecialization.length > 0) {
+        const specQuery = areasOfSpecialization.map(spec => `areas_of_specialization.ilike.%${spec}%`).join(',');
         query = query.or(specQuery);
+      }
+
+      // Organizations
+      if (organizations.length > 0) {
+        query = query.in('organization', organizations);
+      }
+
+      // Titles
+      if (titles.length > 0) {
+        query = query.in('title', titles);
+      }
+
+      // Categories
+      if (categories.length > 0) {
+        query = query.in('category', categories);
+      }
+
+      // Delta Type (Outreach Cadence)
+      if (deltaType.length > 0) {
+        query = query.in('delta_type', deltaType);
+      }
+
+      // Has Opportunities
+      if (hasOpportunities.length > 0) {
+        if (hasOpportunities.includes('Yes')) {
+          query = query.gt('all_opps', 0);
+        }
+        if (hasOpportunities.includes('No') && !hasOpportunities.includes('Yes')) {
+          query = query.eq('all_opps', 0);
+        }
+      }
+
+      // Most Recent Contact Date Range
+      if (mostRecentContactStart) {
+        query = query.gte('most_recent_contact', mostRecentContactStart);
+      }
+      if (mostRecentContactEnd) {
+        query = query.lte('most_recent_contact', mostRecentContactEnd);
+      }
+
+      // Delta Days Range
+      if (deltaMin !== null && deltaMin !== undefined) {
+        query = query.gte('delta', deltaMin);
+      }
+      if (deltaMax !== null && deltaMax !== undefined) {
+        query = query.lte('delta', deltaMax);
       }
 
       if (sortKey && sortDirection) {
@@ -136,51 +189,30 @@ export function ContactsTable() {
     });
   }, [contacts, searchTerm]);
 
-  // Create filter field definitions
-  const filterFields = [
-    {
-      key: 'organizations',
-      label: 'Organizations',
-      type: 'multi-select' as const,
-      options: organizationOptions,
-      searchable: true,
-      placeholder: 'Select organizations...'
-    },
-    {
-      key: 'focusAreas', 
-      label: 'Focus Areas',
-      type: 'multi-select' as const,
-      options: focusAreaOptions,
-      searchable: true,
-      placeholder: 'Select focus areas...'
-    },
-    {
-      key: 'specializations',
-      label: 'Areas of Specialization', 
-      type: 'multi-select' as const,
-      options: specializationOptions,
-      searchable: true,
-      placeholder: 'Select specializations...'
-    }
-  ];
-  
-  // Create active filter chips
-  const activeFilterChips = useMemo(() => {
-    const chips: Array<{ key: string; label: string; value: string }> = [];
-    
-    const orgs = filters.organizations as string[] || [];
-    orgs.forEach(org => chips.push({ key: 'organizations', label: 'Organization', value: org }));
-    
-    const focusAreas = filters.focusAreas as string[] || [];
-    focusAreas.forEach(fa => chips.push({ key: 'focusAreas', label: 'Focus Area', value: fa }));
-    
-    const specializations = filters.specializations as string[] || [];
-    specializations.forEach(spec => chips.push({ key: 'specializations', label: 'Specialization', value: spec }));
-    
-    return chips;
-  }, [filters]);
+  // Calculate active filter count from external filters
+  const activeFilterCount = useMemo(() => {
+    return Object.values(externalFilters).reduce((count: number, value) => {
+      if (Array.isArray(value)) {
+        return count + value.length;
+      }
+      if (value !== null && value !== undefined && value !== '') {
+        return count + 1;
+      }
+      return count;
+    }, 0);
+  }, [externalFilters]);
 
-  const activeFilterCount = activeFilterChips.length;
+  // Remove unused filter-related functions since we're using external filters
+  const handleRemoveFilter = () => {
+    // Placeholder - not needed with external filters
+  };
+
+  const clearFilters = () => {
+    // Placeholder - not needed with external filters
+  };
+
+  // Create placeholder for activeFilterChips since filters are managed externally
+  const activeFilterChips: any[] = [];
 
   const handleRowClick = (contact: ContactApp) => {
     setSelectedContact(contact);
@@ -193,11 +225,7 @@ export function ContactsTable() {
   };
 
   const handleApplyFilters = () => {
-    // Filters are already applied through useEffect dependency on filters
-  };
-
-  const handleRemoveFilter = (key: string, value?: string) => {
-    removeFilter(key, value);
+    // Filters are already applied through useEffect dependency on externalFilters
   };
 
   // Column definitions
@@ -441,7 +469,7 @@ export function ContactsTable() {
 
   const emptyState = {
     title: "No contacts found",
-    description: searchTerm || activeFilterCount > 0 
+    description: searchTerm || (typeof activeFilterCount === 'number' && activeFilterCount > 0) 
       ? "Try adjusting your search or filters to find contacts."
       : "Start building your professional network by adding your first contact.",
     action: (
@@ -463,25 +491,6 @@ export function ContactsTable() {
             </p>
           </div>
         <div className="flex items-center space-x-2">
-          <FilterModal
-            title="Contact Filters"
-            fields={filterFields}
-            values={filters}
-            onValuesChange={updateFilters}
-            onApply={handleApplyFilters}
-            onClearAll={clearFilters}
-            activeFilterCount={activeFilterCount}
-          >
-            <Button variant="outline" className="focus-ring">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-              {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {activeFilterCount}
-                </Badge>
-              )}
-            </Button>
-          </FilterModal>
           {/* Split Export Button */}
           <div className="flex">
             <Button 

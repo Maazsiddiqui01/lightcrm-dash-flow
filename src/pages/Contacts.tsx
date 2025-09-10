@@ -7,10 +7,27 @@ import { Plus, Users, Mail, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { ResponsivePageShell } from "@/components/layout/ResponsivePageShell";
+import { ContactFilterBar } from "@/components/contacts/ContactFilterBar";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
 
 export function Contacts() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const stats = useContactStats();
+  
+  const { filters, updateFilters, clearFilters } = useUrlFilters({
+    focusAreas: [],
+    sectors: [],
+    areasOfSpecialization: [],
+    organizations: [],
+    titles: [],
+    categories: [],
+    deltaType: [],
+    hasOpportunities: [],
+    mostRecentContactStart: null,
+    mostRecentContactEnd: null,
+    deltaMin: null,
+    deltaMax: null
+  });
 
   return (
     <section className="container-fluid flex flex-col gap-6 py-6">
@@ -52,8 +69,15 @@ export function Contacts() {
         </div>
       </div>
 
+      {/* Filters */}
+      <ContactFilterBar 
+        filters={filters}
+        onFiltersChange={updateFilters}
+        onClearFilters={clearFilters}
+      />
+
       <div className="pb-6">
-        <ContactsTable />
+        <ContactsTable filters={filters} />
       </div>
 
       <AddContactDialog 

@@ -1,0 +1,246 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { ComboboxMulti } from '@/components/shared/ComboboxMulti';
+import { RangeInput } from '@/components/shared/RangeInput';
+import { Input } from '@/components/ui/input';
+import { CalendarIcon, RotateCcw } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { useDistinctOptions } from '@/hooks/useDistinctOptions';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
+interface ContactFilterBarProps {
+  filters: {
+    focusAreas?: string[];
+    sectors?: string[];
+    areasOfSpecialization?: string[];
+    mostRecentContactStart?: string;
+    mostRecentContactEnd?: string;
+    deltaType?: string[];
+    deltaMin?: number;
+    deltaMax?: number;
+    organizations?: string[];
+    titles?: string[];
+    categories?: string[];
+    hasOpportunities?: string[];
+  };
+  onFiltersChange: (filters: any) => void;
+  onClearFilters: () => void;
+}
+
+export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: ContactFilterBarProps) {
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    filters.mostRecentContactStart ? new Date(filters.mostRecentContactStart) : undefined
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    filters.mostRecentContactEnd ? new Date(filters.mostRecentContactEnd) : undefined
+  );
+
+  // Fetch distinct options for filters
+  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useDistinctOptions('contacts_raw', 'lg_focus_areas_comprehensive_list', { isCommaSeparated: true });
+  const { data: sectorOptions = [], isLoading: sectorsLoading } = useDistinctOptions('contacts_raw', 'lg_sector');
+  const { data: specializationOptions = [], isLoading: specializationsLoading } = useDistinctOptions('contacts_raw', 'areas_of_specialization', { isCommaSeparated: true });
+  const { data: organizationOptions = [], isLoading: organizationsLoading } = useDistinctOptions('contacts_raw', 'organization');
+  const { data: titleOptions = [], isLoading: titlesLoading } = useDistinctOptions('contacts_raw', 'title');
+  const { data: categoryOptions = [], isLoading: categoriesLoading } = useDistinctOptions('contacts_raw', 'category');
+
+  // Delta type options (static)
+  const deltaTypeOptions = [
+    { value: 'Meeting', label: 'Meeting' },
+    { value: 'Email', label: 'Email' }
+  ];
+
+  // Has opportunities options (static)
+  const hasOpportunitiesOptions = [
+    { value: 'Yes', label: 'Yes' },
+    { value: 'No', label: 'No' }
+  ];
+
+  const handleFilterChange = (key: string, value: any) => {
+    onFiltersChange({
+      ...filters,
+      [key]: value
+    });
+  };
+
+  const handleDateChange = (type: 'start' | 'end', date: Date | undefined) => {
+    if (type === 'start') {
+      setStartDate(date);
+      handleFilterChange('mostRecentContactStart', date ? date.toISOString() : undefined);
+    } else {
+      setEndDate(date);
+      handleFilterChange('mostRecentContactEnd', date ? date.toISOString() : undefined);
+    }
+  };
+
+  const hasActiveFilters = Object.values(filters).some(value => 
+    Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null && value !== ''
+  );
+
+  return (
+    <div className="space-y-4 p-4 bg-card rounded-lg border">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-foreground">Filters</h3>
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClearFilters}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reset All
+          </Button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+        {/* Focus Areas */}
+        <ComboboxMulti
+          label="Focus Areas"
+          options={focusAreaOptions}
+          values={filters.focusAreas || []}
+          onChange={(values) => handleFilterChange('focusAreas', values)}
+          searchPlaceholder="Search focus areas..."
+          loading={focusAreasLoading}
+        />
+
+        {/* Sectors */}
+        <ComboboxMulti
+          label="Sector"
+          options={sectorOptions}
+          values={filters.sectors || []}
+          onChange={(values) => handleFilterChange('sectors', values)}
+          searchPlaceholder="Search sectors..."
+          loading={sectorsLoading}
+        />
+
+        {/* Areas of Specialization */}
+        <ComboboxMulti
+          label="Areas of Specialization"
+          options={specializationOptions}
+          values={filters.areasOfSpecialization || []}
+          onChange={(values) => handleFilterChange('areasOfSpecialization', values)}
+          searchPlaceholder="Search specializations..."
+          loading={specializationsLoading}
+        />
+
+        {/* Organizations */}
+        <ComboboxMulti
+          label="Organization"
+          options={organizationOptions}
+          values={filters.organizations || []}
+          onChange={(values) => handleFilterChange('organizations', values)}
+          searchPlaceholder="Search organizations..."
+          loading={organizationsLoading}
+        />
+
+        {/* Titles */}
+        <ComboboxMulti
+          label="Title"
+          options={titleOptions}
+          values={filters.titles || []}
+          onChange={(values) => handleFilterChange('titles', values)}
+          searchPlaceholder="Search titles..."
+          loading={titlesLoading}
+        />
+
+        {/* Categories */}
+        <ComboboxMulti
+          label="Category"
+          options={categoryOptions}
+          values={filters.categories || []}
+          onChange={(values) => handleFilterChange('categories', values)}
+          searchPlaceholder="Search categories..."
+          loading={categoriesLoading}
+        />
+
+        {/* Delta Type (Outreach Cadence) */}
+        <ComboboxMulti
+          label="Outreach Cadence"
+          options={deltaTypeOptions}
+          values={filters.deltaType || []}
+          onChange={(values) => handleFilterChange('deltaType', values)}
+          searchPlaceholder="Select cadence type..."
+        />
+
+        {/* Has Opportunities */}
+        <ComboboxMulti
+          label="Has Opportunities"
+          options={hasOpportunitiesOptions}
+          values={filters.hasOpportunities || []}
+          onChange={(values) => handleFilterChange('hasOpportunities', values)}
+          searchPlaceholder="Select option..."
+        />
+
+        {/* Most Recent Contact Date Range */}
+        <div className="flex flex-col space-y-2">
+          <label className="text-sm font-medium text-foreground">Most Recent Contact</label>
+          <div className="flex gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex-1 justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(startDate, "PPP") : "From"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(date) => handleDateChange('start', date)}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex-1 justify-start text-left font-normal",
+                    !endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "PPP") : "To"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={(date) => handleDateChange('end', date)}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        {/* Delta Days Range (Outreach Cadence Days) */}
+        <RangeInput
+          label="Outreach Cadence (Days)"
+          minValue={filters.deltaMin}
+          maxValue={filters.deltaMax}
+          onMinChange={(value) => handleFilterChange('deltaMin', value)}
+          onMaxChange={(value) => handleFilterChange('deltaMax', value)}
+          minPlaceholder="Min days"
+          maxPlaceholder="Max days"
+          step={1}
+        />
+      </div>
+    </div>
+  );
+}

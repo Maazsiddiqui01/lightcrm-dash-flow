@@ -6,6 +6,65 @@ interface Option {
   label: string;
 }
 
+// Generic useDistinctOptions function
+interface UseDistinctOptionsProps {
+  search?: string;
+  enabled?: boolean;
+  isCommaSeparated?: boolean;
+}
+
+export function useDistinctOptions(table: string, column: string, options: UseDistinctOptionsProps = {}) {
+  const { search = '', enabled = true, isCommaSeparated = false } = options;
+  
+  return useQuery({
+    queryKey: ['distinct-options', table, column, search, isCommaSeparated],
+    queryFn: async () => {
+      // Direct query approach
+      const { data, error } = await supabase
+        .from(table as any)
+        .select(`${column}`, { head: false })
+        .not(column, 'is', null)
+        .neq(column, '')
+        .order(column, { ascending: true })
+        .limit(1000);
+
+      if (error) throw error;
+
+      const uniqueValues = new Set<string>();
+      
+      (data || []).forEach((row: any) => {
+        const value = row[column];
+        if (value && typeof value === 'string') {
+          const trimmed = value.trim();
+          if (trimmed) {
+            if (isCommaSeparated) {
+              // Split comma-separated values and add each individually
+              const splitValues = trimmed.split(',').map(v => v.trim()).filter(v => v);
+              splitValues.forEach(splitValue => uniqueValues.add(splitValue));
+            } else {
+              uniqueValues.add(trimmed);
+            }
+          }
+        }
+      });
+
+      let result = Array.from(uniqueValues);
+      
+      // Apply search filter if provided
+      if (search) {
+        const searchLower = search.toLowerCase();
+        result = result.filter(value => value.toLowerCase().includes(searchLower));
+      }
+
+      return result
+        .sort()
+        .map(value => ({ value, label: value }));
+    },
+    enabled,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
 // Opportunities hooks with direct queries
 export const useOpportunityFocusAreas = (search?: string) => {
   return useQuery({
@@ -489,6 +548,41 @@ export const useContactFocusAreas = (search?: string) => {
       const uniqueAreas = new Set<string>();
       (data || []).forEach(row => {
         const areas = row.lg_focus_areas_comprehensive_list?.split(',') || [];
+        areas.forEach(area => {
+          const trimmed = area.trim();
+          if (trimmed) uniqueAreas.add(trimmed);
+        });
+      });
+      
+      let areas = Array.from(uniqueAreas);
+      if (search) {
+        const searchLower = search.toLowerCase();
+        areas = areas.filter(area => area.toLowerCase().includes(searchLower));
+      }
+      
+      return areas
+        .sort()
+        .map(value => ({ value, label: value }));
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useContactAreasOfSpecialization = (search?: string) => {
+  return useQuery({
+    queryKey: ['contact-areas-specialization', search],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contacts_app')
+        .select('areas_of_specialization', { head: false })
+        .not('areas_of_specialization', 'is', null)
+        .neq('areas_of_specialization', '');
+      
+      if (error) throw error;
+      
+      const uniqueAreas = new Set<string>();
+      (data || []).forEach(row => {
+        const areas = row.areas_of_specialization?.split(',') || [];
         areas.forEach(area => {
           const trimmed = area.trim();
           if (trimmed) uniqueAreas.add(trimmed);
