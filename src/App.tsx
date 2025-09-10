@@ -26,6 +26,7 @@ function App() {
   console.log('React version check:', React?.version);
 
   try {
+    console.log('About to render QueryProvider...');
     return (
       <QueryProvider>
         <AuthProvider>
