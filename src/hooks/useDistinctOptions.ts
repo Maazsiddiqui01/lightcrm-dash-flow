@@ -414,7 +414,7 @@ export const useContactSectors = (search?: string) => {
     queryKey: ['contact-sectors', search],
     queryFn: async () => {
       let query = supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('lg_sector', { head: false })
         .not('lg_sector', 'is', null)
         .neq('lg_sector', '');
@@ -445,7 +445,7 @@ export const useContactCategories = (search?: string) => {
     queryKey: ['contact-categories', search],
     queryFn: async () => {
       let query = supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('category', { head: false })
         .not('category', 'is', null)
         .neq('category', '');
@@ -476,7 +476,7 @@ export const useContactOrganizations = (search?: string) => {
     queryKey: ['contact-organizations', search],
     queryFn: async () => {
       let query = supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('organization', { head: false })
         .not('organization', 'is', null)
         .neq('organization', '');
@@ -507,7 +507,7 @@ export const useContactTitles = (search?: string) => {
     queryKey: ['contact-titles', search],
     queryFn: async () => {
       let query = supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('title', { head: false })
         .not('title', 'is', null)
         .neq('title', '');
@@ -538,7 +538,7 @@ export const useContactFocusAreas = (search?: string) => {
     queryKey: ['contact-focus-areas', search],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('lg_focus_areas_comprehensive_list', { head: false })
         .not('lg_focus_areas_comprehensive_list', 'is', null)
         .neq('lg_focus_areas_comprehensive_list', '');
@@ -573,7 +573,7 @@ export const useContactAreasOfSpecialization = (search?: string) => {
     queryKey: ['contact-areas-specialization', search],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('areas_of_specialization', { head: false })
         .not('areas_of_specialization', 'is', null)
         .neq('areas_of_specialization', '');

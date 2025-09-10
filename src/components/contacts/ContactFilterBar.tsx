@@ -8,9 +8,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useDistinctOptions } from '@/hooks/useDistinctOptions';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { 
+  useContactSectors,
+  useContactCategories,
+  useContactOrganizations,
+  useContactTitles,
+  useContactFocusAreas,
+  useContactAreasOfSpecialization
+} from '@/hooks/useDistinctOptions';
 
 interface ContactFilterBarProps {
   filters: {
@@ -40,12 +45,12 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
   );
 
   // Fetch distinct options for filters
-  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useDistinctOptions('contacts_raw', 'lg_focus_areas_comprehensive_list', { isCommaSeparated: true });
-  const { data: sectorOptions = [], isLoading: sectorsLoading } = useDistinctOptions('contacts_raw', 'lg_sector');
-  const { data: specializationOptions = [], isLoading: specializationsLoading } = useDistinctOptions('contacts_raw', 'areas_of_specialization', { isCommaSeparated: true });
-  const { data: organizationOptions = [], isLoading: organizationsLoading } = useDistinctOptions('contacts_raw', 'organization');
-  const { data: titleOptions = [], isLoading: titlesLoading } = useDistinctOptions('contacts_raw', 'title');
-  const { data: categoryOptions = [], isLoading: categoriesLoading } = useDistinctOptions('contacts_raw', 'category');
+  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useContactFocusAreas();
+  const { data: sectorOptions = [], isLoading: sectorsLoading } = useContactSectors();
+  const { data: specializationOptions = [], isLoading: specializationsLoading } = useContactAreasOfSpecialization();
+  const { data: organizationOptions = [], isLoading: organizationsLoading } = useContactOrganizations();
+  const { data: titleOptions = [], isLoading: titlesLoading } = useContactTitles();
+  const { data: categoryOptions = [], isLoading: categoriesLoading } = useContactCategories();
 
   // Delta type options (static)
   const deltaTypeOptions = [
