@@ -35,6 +35,8 @@ export function MissingContactsTable({
   
   const { toast } = useToast();
   
+  console.log('MissingContactsTable render with filters:', { search, statusFilter });
+  
   const { data, isLoading, error } = useMissingCandidates({
     search,
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -42,10 +44,16 @@ export function MissingContactsTable({
     pageSize: 100, // Start with larger page size for client-side filtering
   });
 
+  console.log('useMissingCandidates result:', { data, isLoading, error });
+
   // Client-side filtered data for display
   const filteredData = useMemo(() => {
-    if (!data?.candidates) return [];
-    return data.candidates;
+    if (!data?.candidates) {
+      console.log('No candidates data available');
+      return [];
+    }
+    console.log('Raw candidates:', data.candidates);
+    return data.candidates.filter(candidate => candidate && candidate.id);
   }, [data?.candidates]);
 
   const approveMutation = useApproveMissingContact();
@@ -72,6 +80,7 @@ export function MissingContactsTable({
   };
 
   const handleSelectRow = (candidateId: string, checked: boolean) => {
+    console.log('handleSelectRow called:', { candidateId, checked });
     const newSelected = new Set(selectedRows);
     if (checked) {
       newSelected.add(candidateId);
@@ -82,8 +91,10 @@ export function MissingContactsTable({
   };
 
   const handleSelectAll = (checked: boolean) => {
-    if (checked && data?.candidates) {
-      const allIds = new Set(data.candidates.map(c => c.id.toString()));
+    console.log('handleSelectAll called:', { checked, dataLength: filteredData.length });
+    if (checked && filteredData.length > 0) {
+      const allIds = new Set(filteredData.map(c => c?.id?.toString()).filter(Boolean));
+      console.log('All IDs:', allIds);
       onSelectedRowsChange(allIds);
     } else {
       onSelectedRowsChange(new Set());
@@ -109,73 +120,107 @@ export function MissingContactsTable({
       label: 'Select',
       width: 50,
       enableHiding: false,
-      render: (candidate: MissingCandidate) => (
-        <Checkbox
-          checked={selectedRows.has(candidate.id.toString())}
-          onCheckedChange={(checked) => handleSelectRow(candidate.id.toString(), checked as boolean)}
-          aria-label={`Select ${candidate.email}`}
-        />
-      ),
+      render: (candidate: MissingCandidate) => {
+        console.log('Rendering checkbox for candidate:', candidate);
+        if (!candidate || !candidate.id) {
+          console.warn('Invalid candidate for checkbox:', candidate);
+          return null;
+        }
+        return (
+          <Checkbox
+            checked={selectedRows.has(candidate.id.toString())}
+            onCheckedChange={(checked) => handleSelectRow(candidate.id.toString(), checked as boolean)}
+            aria-label={`Select ${candidate.email}`}
+          />
+        );
+      },
     },
     {
       key: 'full_name',
       label: 'Full Name',
       width: 200,
-      render: (candidate: MissingCandidate) => candidate.full_name || '—',
+      render: (candidate: MissingCandidate) => {
+        console.log('Rendering full_name for candidate:', candidate);
+        if (!candidate) return '—';
+        return candidate.full_name || '—';
+      },
     },
     {
       key: 'email',
       label: 'Email',
       width: 250,
-      render: (candidate: MissingCandidate) => (
-        <span className="font-mono text-sm">{candidate.email}</span>
-      ),
+      render: (candidate: MissingCandidate) => {
+        console.log('Rendering email for candidate:', candidate);
+        if (!candidate) return '—';
+        return (
+          <span className="font-mono text-sm">{candidate.email}</span>
+        );
+      },
     },
     {
       key: 'organization',
       label: 'Organization',
       width: 200,
-      render: (candidate: MissingCandidate) => candidate.organization || '—',
+      render: (candidate: MissingCandidate) => {
+        console.log('Rendering organization for candidate:', candidate);
+        if (!candidate) return '—';
+        return candidate.organization || '—';
+      },
     },
     {
       key: 'status',
       label: 'Status',
       width: 120,
-      render: (candidate: MissingCandidate) => getStatusBadge(candidate.status),
+      render: (candidate: MissingCandidate) => {
+        console.log('Rendering status for candidate:', candidate);
+        if (!candidate) return <Badge>Unknown</Badge>;
+        return getStatusBadge(candidate.status);
+      },
     },
     {
       key: 'created_at',
       label: 'Created At',
       width: 150,
-      render: (candidate: MissingCandidate) => format(new Date(candidate.created_at), 'MMM d, yyyy'),
+      render: (candidate: MissingCandidate) => {
+        console.log('Rendering created_at for candidate:', candidate);
+        if (!candidate || !candidate.created_at) return '—';
+        return format(new Date(candidate.created_at), 'MMM d, yyyy');
+      },
     },
     {
       key: 'actions',
       label: 'Actions',
       width: 160,
       enableHiding: false,
-      render: (candidate: MissingCandidate) => (
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            className="bg-green-600 text-white hover:bg-green-700"
-            onClick={() => handleApprove(candidate)}
-            disabled={candidate.status !== 'pending'}
-          >
-            <UserCheck className="h-3 w-3 mr-1" />
-            Approve
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleDismiss(candidate.email)}
-            disabled={candidate.status !== 'pending' || dismissMutation.isPending}
-          >
-            <UserX className="h-3 w-3 mr-1" />
-            Dismiss
-          </Button>
-        </div>
-      ),
+      render: (candidate: MissingCandidate) => {
+        console.log('Rendering actions for candidate:', candidate);
+        if (!candidate || !candidate.id) {
+          console.warn('Invalid candidate for actions:', candidate);
+          return <div>Invalid data</div>;
+        }
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="bg-green-600 text-white hover:bg-green-700"
+              onClick={() => handleApprove(candidate)}
+              disabled={candidate.status !== 'pending'}
+            >
+              <UserCheck className="h-3 w-3 mr-1" />
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleDismiss(candidate.email)}
+              disabled={candidate.status !== 'pending' || dismissMutation.isPending}
+            >
+              <UserX className="h-3 w-3 mr-1" />
+              Dismiss
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
