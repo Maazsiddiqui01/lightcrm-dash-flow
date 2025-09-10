@@ -35,7 +35,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function MeetingsChart({ data, loading }: MeetingsChartProps) {
   // Transform data for chart
-  const chartData = data
+  const chartData = (data || [])
     .sort((a, b) => a.month.localeCompare(b.month))
     .map(item => ({
       ...item,
