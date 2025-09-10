@@ -21,6 +21,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PageTransition } from "@/components/shared/PageTransition";
 import "./App.css";
 
+// Create QueryClient outside component to avoid re-creation
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -31,54 +32,34 @@ const queryClient = new QueryClient({
   },
 });
 
+console.log('React:', React);
+console.log('QueryClient:', queryClient);
+
 function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Auth route - public */}
-            <Route path="/auth" element={<Auth />} />
-            
-            {/* Protected routes */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Navigate to="/sourcing-greatness" replace />
-              </ProtectedRoute>
-            } />
-            
-            {/* All other routes - wrapped with AppLayout */}
-            <Route path="/*" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <a href="#main-content" className="skip-link">Skip to main content</a>
-                  <main id="main-content" className="h-full">
-                    <PageTransition>
-                      <Routes>
-                        <Route path="/sourcing-greatness" element={<SourcingGreatness />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/contacts" element={<Contacts />} />
-                        <Route path="/missing-contacts" element={<MissingContacts />} />
-                        <Route path="/opportunities" element={<Opportunities />} />
-                        <Route path="/interactions" element={<Interactions />} />
-                        <Route path="/kpis" element={<KPIs />} />
-                        <Route path="/tom-new-view" element={<TomNewView />} />
-                        <Route path="/make-your-own-view" element={<MakeYourOwnView />} />
-                        <Route path="/datatable-test" element={<DataTableTest />} />
-                        <Route path="/ask-ai" element={<AskAI />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </PageTransition>
-                  </main>
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-          </Routes>
-          <Toaster />
-        </Router>
-      </AuthProvider>
-    </QueryClientProvider>
-  );
+  console.log('App component rendering...');
+  console.log('React version check:', React?.version);
+  
+  // Test if React is working at all
+  const [testState, setTestState] = React.useState('React is working!');
+  
+  React.useEffect(() => {
+    console.log('useEffect is working!');
+    setTestState('React hooks are working!');
+  }, []);
+
+  // Try without QueryClient first to isolate the issue
+  try {
+    return (
+      <div style={{ padding: '20px' }}>
+        <h1>App Loading Test</h1>
+        <p>{testState}</p>
+        <p>If you can see this, React is working!</p>
+      </div>
+    );
+  } catch (error) {
+    console.error('App render error:', error);
+    return <div>Error loading app: {String(error)}</div>;
+  }
 }
 
 export default App;
