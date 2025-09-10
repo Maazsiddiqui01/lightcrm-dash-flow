@@ -12,6 +12,7 @@ import { MakeYourOwnView } from "@/pages/MakeYourOwnView";
 import { TomNewView } from "@/pages/TomNewView";
 import { KPIs } from "@/pages/KPIs";
 import { DataTableTest } from "@/pages/DataTableTest";
+import MissingContacts from "@/pages/MissingContacts";
 import { Auth } from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
@@ -48,6 +49,7 @@ function App() {
                         <Route path="/sourcing-greatness" element={<SourcingGreatness />} />
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/contacts" element={<Contacts />} />
+                        <Route path="/missing-contacts" element={<MissingContacts />} />
                         <Route path="/opportunities" element={<Opportunities />} />
                         <Route path="/interactions" element={<Interactions />} />
                         <Route path="/kpis" element={<KPIs />} />

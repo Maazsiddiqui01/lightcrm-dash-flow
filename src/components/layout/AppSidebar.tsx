@@ -17,6 +17,7 @@ import { Home, Users, Target, MessageSquare, Table, Bot, LogOut, Eye, BarChart3 
 const menuItems = [
   { title: "Sourcing Greatness", url: "/sourcing-greatness", icon: BarChart3 },
   { title: "Contacts", url: "/contacts", icon: Users },
+  { title: "Missing Contacts", url: "/missing-contacts", icon: Users },
   { title: "Opportunities", url: "/opportunities", icon: Target },
   { title: "Interactions", url: "/interactions", icon: MessageSquare },
   { title: "KPIs", url: "/kpis", icon: BarChart3 },
