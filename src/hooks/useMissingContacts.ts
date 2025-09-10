@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,6 +35,7 @@ export function useMissingCandidates({
   page,
   pageSize,
 }: UseMissingCandidatesParams) {
+  console.log('useMissingCandidates called with:', { search, status, page, pageSize });
   return useQuery({
     queryKey: ["missing-candidates", { search, status, page, pageSize }],
     queryFn: async () => {
