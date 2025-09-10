@@ -1,34 +1,34 @@
 import { useMemo } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { KpiCards } from '@/components/kpi/KpiCards';
-import { FiltersDrawer } from '@/components/kpi/FiltersDrawer';
+import { KpiCardsNew } from '@/components/kpi/KpiCardsNew';
+import { KpiFilterBar } from '@/components/kpi/KpiFilterBar';
 import { MeetingsChart } from '@/components/kpi/MeetingsChart';
 import { KpiLgLeadsView } from '@/components/kpi/KpiLgLeadsView';
-import { useKpiData } from '@/hooks/useKpiData';
+import { useKpiFilters } from '@/state/useKpiFilters';
+import { useKpiHeader, useKpiMeetingsPerMonth, useKpiLeadsPerformance } from '@/hooks/useKpiQueries';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function KPIs() {
-  const { data, filters, updateFilters, refetch } = useKpiData();
+  const filters = useKpiFilters();
+  
+  const { data: headerData, isLoading: headerLoading, refetch: refetchHeader } = useKpiHeader(filters);
+  const { data: meetingsData, isLoading: meetingsLoading, refetch: refetchMeetings } = useKpiMeetingsPerMonth(filters);
+  const { data: leadsData, isLoading: leadsLoading, refetch: refetchLeads } = useKpiLeadsPerformance(filters);
 
   const dateRange = useMemo(() => {
-    const start = new Date(filters.start).toLocaleDateString();
-    const end = new Date(filters.end).toLocaleDateString();
+    const start = new Date(filters.dateStart).toLocaleDateString();
+    const end = new Date(filters.dateEnd).toLocaleDateString();
     return `${start} - ${end}`;
-  }, [filters.start, filters.end]);
+  }, [filters.dateStart, filters.dateEnd]);
 
-  const handleReset = () => {
-    const currentYear = new Date().getFullYear();
-    const resetFilters = {
-      start: new Date(currentYear, 0, 1).toISOString().split('T')[0],
-      end: new Date().toISOString().split('T')[0],
-      focus_areas: [],
-      lg_leads: [],
-      ebitda_min: 35,
-      family_owned_only: true,
-    };
-    updateFilters(resetFilters);
+  const isLoading = headerLoading || meetingsLoading || leadsLoading;
+
+  const refetchAll = () => {
+    refetchHeader();
+    refetchMeetings();
+    refetchLeads();
   };
 
   const actions = (
@@ -36,18 +36,13 @@ export function KPIs() {
       <Button
         variant="ghost"
         size="sm"
-        onClick={refetch}
-        disabled={data.loading}
+        onClick={refetchAll}
+        disabled={isLoading}
       >
-        <RefreshCw className={`h-4 w-4 mr-2 ${data.loading ? 'animate-spin' : ''}`} />
+        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
         Refresh
       </Button>
-      <FiltersDrawer
-        filters={filters}
-        filterValues={data.filterValues}
-        onFiltersChange={updateFilters}
-        onReset={handleReset}
-      />
+      <KpiFilterBar />
     </div>
   );
 
@@ -60,37 +55,25 @@ export function KPIs() {
       />
 
       <main className="flex-1 p-6 space-y-6 bg-background overflow-auto">
-        {/* Error State */}
-        {data.error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>{data.error}</span>
-              <Button variant="outline" size="sm" onClick={refetch}>
-                Retry
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
         {/* KPI Cards */}
-        <KpiCards
-          summary={data.summary}
+        <KpiCardsNew
+          summary={headerData}
           dateRange={dateRange}
-          loading={data.loading}
+          loading={headerLoading}
+          filters={filters}
         />
 
         {/* Meetings Chart */}
         <MeetingsChart
-          data={data.monthlyMeetings}
-          loading={data.loading}
+          data={meetingsData}
+          loading={meetingsLoading}
         />
 
         {/* LG Leads Performance */}
         <KpiLgLeadsView
-          startDate={new Date(filters.start)}
-          endDate={new Date(filters.end)}
-          selectedLeads={filters.lg_leads}
+          startDate={new Date(filters.dateStart)}
+          endDate={new Date(filters.dateEnd)}
+          selectedLeads={[]}
         />
       </main>
     </div>
