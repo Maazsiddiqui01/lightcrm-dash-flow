@@ -143,7 +143,8 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   
   const containerRef = useRef<HTMLDivElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
-  const topScrollRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null); // used as the top custom scrollbar track
+  const topThumbRef = useRef<HTMLDivElement>(null); // draggable thumb inside the top track
   const [tableScrollWidth, setTableScrollWidth] = useState(1200);
   const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
   const isSyncingRef = useRef(false);
@@ -335,67 +336,129 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     setCurrentPage(1);
   };
 
-  // Sync scroll between top and main table scrollbars (two-way, RAF-based)
+  // Visible custom top scrollbar (track + draggable thumb) synced with table scroll
   useEffect(() => {
-    const tableScrollEl = tableScrollRef.current;
-    const topScrollEl = topScrollRef.current;
-    
-    if (!tableScrollEl || !topScrollEl) return;
+    const tableEl = tableScrollRef.current;
+    const trackEl = topScrollRef.current;
+    const thumbEl = topThumbRef.current;
+    if (!tableEl || !trackEl || !thumbEl) return;
+
+    const getSizes = () => {
+      const scrollWidth = tableEl.scrollWidth;
+      const clientWidth = tableEl.clientWidth;
+      const maxScrollLeft = Math.max(0, scrollWidth - clientWidth);
+      const trackWidth = trackEl.clientWidth;
+      const ratio = clientWidth / Math.max(scrollWidth, 1);
+      const thumbWidth = Math.max(32, Math.round(trackWidth * ratio));
+      const maxThumbOffset = Math.max(0, trackWidth - thumbWidth);
+      return { scrollWidth, clientWidth, maxScrollLeft, trackWidth, thumbWidth, maxThumbOffset };
+    };
+
+    const updateThumb = () => {
+      const { maxScrollLeft, thumbWidth, maxThumbOffset } = getSizes();
+      // size
+      thumbEl.style.width = `${thumbWidth}px`;
+      // position
+      const scrollLeft = tableEl.scrollLeft;
+      const thumbLeft = maxScrollLeft > 0 ? (scrollLeft / maxScrollLeft) * maxThumbOffset : 0;
+      thumbEl.style.transform = `translateX(${thumbLeft}px)`;
+    };
 
     const updateMeasurements = () => {
-      const sW = tableScrollEl.scrollWidth;
-      const cW = tableScrollEl.clientWidth;
+      const sW = tableEl.scrollWidth;
+      const cW = tableEl.clientWidth;
       setTableScrollWidth(sW);
       setHasHorizontalOverflow(sW > cW);
-      // Keep positions in sync after width changes
-      if (topScrollEl.scrollLeft !== tableScrollEl.scrollLeft) {
-        topScrollEl.scrollLeft = tableScrollEl.scrollLeft;
-      }
+      updateThumb();
     };
 
-    // Initial measurement
+    // Observe table and track size changes
+    const resizeObserver = new ResizeObserver(() => updateMeasurements());
+    resizeObserver.observe(tableEl);
+    const innerTable = tableEl.querySelector('table');
+    if (innerTable) resizeObserver.observe(innerTable);
+    resizeObserver.observe(trackEl);
+
+    // Sync from table scroll -> thumb position
+    const onTableScroll = () => {
+      if (isSyncingRef.current) return;
+      isSyncingRef.current = true;
+      rafIdRef.current = requestAnimationFrame(() => {
+        updateThumb();
+        isSyncingRef.current = false;
+      });
+    };
+    tableEl.addEventListener('scroll', onTableScroll, { passive: true });
+
+    // Convert wheel on track to horizontal scroll
+    const onTrackWheel = (e: WheelEvent) => {
+      const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      if (delta !== 0) {
+        tableEl.scrollLeft += delta;
+      }
+    };
+    trackEl.addEventListener('wheel', onTrackWheel, { passive: true });
+
+    // Dragging logic
+    let dragging = false;
+    let startX = 0;
+    let startThumbLeft = 0;
+
+    const onThumbPointerDown = (e: PointerEvent) => {
+      dragging = true;
+      thumbEl.setPointerCapture?.(e.pointerId);
+      startX = e.clientX;
+      const { maxScrollLeft, maxThumbOffset } = getSizes();
+      const currentScrollLeft = tableEl.scrollLeft;
+      startThumbLeft = maxScrollLeft > 0 ? (currentScrollLeft / maxScrollLeft) * maxThumbOffset : 0;
+      e.preventDefault();
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!dragging) return;
+      const { maxThumbOffset, maxScrollLeft } = getSizes();
+      const dx = e.clientX - startX;
+      const newThumbLeft = Math.min(Math.max(0, startThumbLeft + dx), maxThumbOffset);
+      const newScrollLeft = maxThumbOffset > 0 ? (newThumbLeft / maxThumbOffset) * maxScrollLeft : 0;
+      isSyncingRef.current = true;
+      tableEl.scrollLeft = newScrollLeft;
+      updateThumb();
+      isSyncingRef.current = false;
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (!dragging) return;
+      dragging = false;
+      try { thumbEl.releasePointerCapture?.(e.pointerId); } catch {}
+    };
+
+    thumbEl.addEventListener('pointerdown', onThumbPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+
+    // Click on track to jump
+    const onTrackPointerDown = (e: PointerEvent) => {
+      if (e.target === thumbEl) return;
+      const rect = trackEl.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const { thumbWidth, maxThumbOffset, maxScrollLeft } = getSizes();
+      const targetThumbLeft = Math.min(Math.max(0, offsetX - thumbWidth / 2), maxThumbOffset);
+      const targetScrollLeft = maxThumbOffset > 0 ? (targetThumbLeft / maxThumbOffset) * maxScrollLeft : 0;
+      tableEl.scrollLeft = targetScrollLeft;
+      updateThumb();
+    };
+    trackEl.addEventListener('pointerdown', onTrackPointerDown);
+
+    // Initial measure
     updateMeasurements();
 
-    // Observe both the scroll container and its table for sizing changes
-    const resizeObserver = new ResizeObserver(updateMeasurements);
-    resizeObserver.observe(tableScrollEl);
-    const table = tableScrollEl.querySelector('table');
-    if (table) resizeObserver.observe(table);
-
-    // Scroll sync handlers using a re-entrancy guard
-    const syncFromTableToTop = () => {
-      if (isSyncingRef.current) return;
-      isSyncingRef.current = true;
-      rafIdRef.current = requestAnimationFrame(() => {
-        topScrollEl.scrollLeft = tableScrollEl.scrollLeft;
-        isSyncingRef.current = false;
-      });
-    };
-
-    const syncFromTopToTable = () => {
-      if (isSyncingRef.current) return;
-      isSyncingRef.current = true;
-      rafIdRef.current = requestAnimationFrame(() => {
-        tableScrollEl.scrollLeft = topScrollEl.scrollLeft;
-        isSyncingRef.current = false;
-      });
-    };
-
-    // Convert vertical wheel gestures into horizontal scroll on the top bar
-    const handleTopWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        topScrollEl.scrollLeft += e.deltaY;
-      }
-    };
-
-    tableScrollEl.addEventListener('scroll', syncFromTableToTop, { passive: true });
-    topScrollEl.addEventListener('scroll', syncFromTopToTable, { passive: true });
-    topScrollEl.addEventListener('wheel', handleTopWheel, { passive: true });
-
     return () => {
-      tableScrollEl.removeEventListener('scroll', syncFromTableToTop);
-      topScrollEl.removeEventListener('scroll', syncFromTopToTable);
-      topScrollEl.removeEventListener('wheel', handleTopWheel);
+      tableEl.removeEventListener('scroll', onTableScroll);
+      trackEl.removeEventListener('wheel', onTrackWheel);
+      trackEl.removeEventListener('pointerdown', onTrackPointerDown);
+      thumbEl.removeEventListener('pointerdown', onThumbPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
       resizeObserver.disconnect();
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
@@ -663,12 +726,18 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       {/* Top Horizontal Scrollbar */}
       {hasHorizontalOverflow && (
         <div className="sticky top-0 z-20 bg-background border-b border-border">
-          <div 
-            ref={topScrollRef}
-            className="x-scrollbar overflow-x-auto overflow-y-hidden h-3"
-            aria-label="Horizontal scroll"
-          >
-            <div style={{ width: `${tableScrollWidth}px`, height: 1 }} />
+          <div className="px-3 py-2">
+            <div
+              ref={topScrollRef}
+              className="relative h-6 rounded-full bg-muted border border-border cursor-pointer select-none"
+              aria-label="Horizontal scroll"
+            >
+              <div
+                ref={topThumbRef}
+                className="absolute top-0 h-full rounded-full bg-primary/60 hover:bg-primary shadow-sm"
+                style={{ width: 48, transform: 'translateX(0px)' }}
+              />
+            </div>
           </div>
         </div>
       )}
