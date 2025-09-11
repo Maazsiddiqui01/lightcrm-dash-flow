@@ -76,11 +76,9 @@ export function Contacts() {
           onClearFilters={clearFilters}
         />
 
-        <TableViewport
-          header={null}
-          table={<ContactsTable filters={filters} />}
-          minTableWidth={1400}
-        />
+        <div className="h-[calc(100vh-320px)] min-h-0">
+          <ContactsTable filters={filters} />
+        </div>
 
         <AddContactDialog 
           open={isAddDialogOpen} 

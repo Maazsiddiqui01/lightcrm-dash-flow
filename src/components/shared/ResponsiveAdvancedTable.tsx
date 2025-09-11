@@ -81,7 +81,6 @@ interface ResponsiveAdvancedTableProps<T = any> {
   onSelectedRowsChange?: (selectedRows: T[]) => void;
   selectedRowExportFn?: (selectedRows: T[]) => void;
   idKey?: string;
-  showTopPagination?: boolean;
 }
 
 export function ResponsiveAdvancedTable<T extends Record<string, any>>({
@@ -112,8 +111,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   enableRowSelection = false,
   onSelectedRowsChange,
   selectedRowExportFn,
-  idKey = 'id',
-  showTopPagination = true
+  idKey = 'id'
 }: ResponsiveAdvancedTableProps<T>) {
   const [columns, setColumns] = useState(initialColumns);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -329,7 +327,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     setCurrentPage(1);
   };
 
-
   // Loading state
   if (loading) {
     return (
@@ -356,7 +353,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   }
 
   // Use virtualized table for large datasets or when explicitly enabled
-  if (enableVirtualization) {
+  if (enableVirtualization || data.length > 1000) {
     return (
       <div ref={containerRef} className={cn("space-y-4 flex flex-col", className)}>
         {/* Toolbar */}
@@ -573,151 +570,136 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         </div>
       )}
 
-      {/* Top Pagination */}
-      {enablePagination && showTopPagination && (
-        <div className="border-b bg-muted/20 px-4 py-2">
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={data.length}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={handlePageSizeChange}
-            position="top"
-            className="border-0 bg-transparent p-0"
-          />
-        </div>
-      )}
-
-      {/* Table Container - Single horizontal scroll */}
-      <div className="overflow-x-auto border-0 bg-card">
-        <Table className="w-full" style={{ minWidth: "1200px" }}>
-          <TableHeader className="sticky top-0 z-10 bg-card">
-            <TableRow className="border-b bg-muted/20">
-              {visibleColumns.map((column, index) => (
-                <TableHead
-                  key={column.key}
-                  className={cn(
-                    "table-cell-compact text-left align-middle font-medium text-muted-foreground select-none bg-card",
-                    index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-card border-r border-border",
-                    column.sortable && "cursor-pointer hover:text-foreground transition-colors",
-                    column.headerClassName
-                  )}
-                  style={{
-                    width: column.width,
-                    minWidth: column.minWidth || (index === 0 ? '200px' : '120px'),
-                    maxWidth: column.maxWidth
-                  }}
-                  onClick={() => column.sortable && handleSort(column.key)}
-                >
-                  {column.key === 'select' ? (
-                    <div className="flex items-center justify-center">
-                      <Checkbox
-                        checked={rowSelection.isAllPageSelected(displayData)}
-                        onCheckedChange={() => rowSelection.toggleSelectAll(displayData)}
-                        className={rowSelection.isSomePageSelected(displayData) && !rowSelection.isAllPageSelected(displayData) ? "data-[state=checked]:bg-primary/50" : ""}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="truncate">{column.label}</span>
-                      {column.sortable && (
-                        <div className="flex flex-col">
-                          {sortKey === column.key ? (
-                            sortDirection === 'asc' ? (
-                              <ArrowUp className="h-3 w-3" />
-                            ) : sortDirection === 'desc' ? (
-                              <ArrowDown className="h-3 w-3" />
+      {/* Table Container */}
+      <div 
+        className="rounded-xl border bg-card shadow-sm overflow-hidden flex-1"
+        style={{ height: Math.min(600, maxTableHeight) }}
+      >
+        <div className="overflow-auto h-full scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+          <Table className="table-responsive">
+            <TableHeader className="table-header-sticky">
+              <TableRow className="border-b">
+                {visibleColumns.map((column, index) => (
+                  <TableHead
+                    key={column.key}
+                    className={cn(
+                      "table-cell-compact text-left align-middle font-medium text-muted-foreground select-none bg-table-header",
+                      index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-table-header border-r border-border",
+                      column.sortable && "cursor-pointer hover:text-foreground transition-colors",
+                      column.headerClassName
+                    )}
+                    style={{
+                      width: column.width,
+                      minWidth: column.minWidth || (index === 0 ? '200px' : '120px'),
+                      maxWidth: column.maxWidth
+                    }}
+                    onClick={() => column.sortable && handleSort(column.key)}
+                  >
+                    {column.key === 'select' ? (
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={rowSelection.isAllPageSelected(displayData)}
+                          onCheckedChange={() => rowSelection.toggleSelectAll(displayData)}
+                          className={rowSelection.isSomePageSelected(displayData) && !rowSelection.isAllPageSelected(displayData) ? "data-[state=checked]:bg-primary/50" : ""}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{column.label}</span>
+                        {column.sortable && (
+                          <div className="flex flex-col">
+                            {sortKey === column.key ? (
+                              sortDirection === 'asc' ? (
+                                <ArrowUp className="h-3 w-3" />
+                              ) : sortDirection === 'desc' ? (
+                                <ArrowDown className="h-3 w-3" />
+                              ) : (
+                                <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                              )
                             ) : (
                               <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {displayData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={visibleColumns.length} className="h-32">
-                  <div className="flex flex-col items-center justify-center text-center space-y-2">
-                    <div className="text-muted-foreground">
-                      {emptyState?.title || "No results found"}
-                    </div>
-                    {emptyState?.description && (
-                      <div className="text-sm text-muted-foreground">
-                        {emptyState.description}
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
-                    {emptyState?.action}
-                  </div>
-                </TableCell>
+                  </TableHead>
+                ))}
               </TableRow>
-            ) : (
-              displayData.map((row, rowIndex) => {
-                const isEven = rowIndex % 2 === 0;
-                return (
-                  <TableRow
-                    key={rowIndex}
-                    className={cn(
-                      "transition-colors",
-                      isEven ? "bg-background" : "bg-table-row-even",
-                      onRowClick && "cursor-pointer hover:bg-table-row-hover"
-                    )}
-                    onClick={(e) => {
-                      // Don't trigger row click if clicking on checkbox
-                      if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
-                        e.stopPropagation();
-                        return;
-                      }
-                      onRowClick?.(row);
-                    }}
-                  >
-                    {visibleColumns.map((column, cellIndex) => (
-                      <TableCell
-                        key={column.key}
-                        className={cn(
-                          "table-cell-compact align-middle text-fluid-base",
-                          cellIndex === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-inherit border-r border-border",
-                          column.className
-                        )}
-                        style={{
-                          width: column.width,
-                          minWidth: column.minWidth || (cellIndex === 0 ? '200px' : '120px'),
-                          maxWidth: column.maxWidth
-                        }}
-                      >
-                        {renderCellContent(column, row)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {displayData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={visibleColumns.length} className="h-32">
+                    <div className="flex flex-col items-center justify-center text-center space-y-2">
+                      <div className="text-muted-foreground">
+                        {emptyState?.title || "No results found"}
+                      </div>
+                      {emptyState?.description && (
+                        <div className="text-sm text-muted-foreground">
+                          {emptyState.description}
+                        </div>
+                      )}
+                      {emptyState?.action}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                displayData.map((row, rowIndex) => {
+                  const isEven = rowIndex % 2 === 0;
+                  return (
+                    <TableRow
+                      key={rowIndex}
+                      className={cn(
+                        "transition-colors",
+                        isEven ? "bg-background" : "bg-table-row-even",
+                        onRowClick && "cursor-pointer hover:bg-table-row-hover"
+                      )}
+                      onClick={(e) => {
+                        // Don't trigger row click if clicking on checkbox
+                        if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
+                          e.stopPropagation();
+                          return;
+                        }
+                        onRowClick?.(row);
+                      }}
+                    >
+                      {visibleColumns.map((column, cellIndex) => (
+                        <TableCell
+                          key={column.key}
+                          className={cn(
+                            "table-cell-compact align-middle text-fluid-base",
+                            cellIndex === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-inherit border-r border-border",
+                            column.className
+                          )}
+                          style={{
+                            width: column.width,
+                            minWidth: column.minWidth || (cellIndex === 0 ? '200px' : '120px'),
+                            maxWidth: column.maxWidth
+                          }}
+                        >
+                          {renderCellContent(column, row)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
-      {/* Bottom Pagination */}
+      {/* Pagination */}
       {enablePagination && (
-        <div className="border-t bg-muted/20 px-4 py-2">
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={data.length}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={handlePageSizeChange}
-            position="bottom"
-            className="border-0 bg-transparent p-0"
-          />
-        </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={data.length}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={handlePageSizeChange}
+        />
       )}
     </div>
   );
