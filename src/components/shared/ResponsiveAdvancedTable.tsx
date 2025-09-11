@@ -574,23 +574,25 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
       {/* Top Pagination */}
       {enablePagination && showTopPagination && (
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          totalItems={data.length}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={handlePageSizeChange}
-          position="top"
-          className="border-b"
-        />
+        <div className="border-b bg-muted/20 px-4 py-2">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={data.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={handlePageSizeChange}
+            position="top"
+            className="border-0 bg-transparent p-0"
+          />
+        </div>
       )}
 
-      {/* Table Container */}
-      <div className="rounded-none border-0 bg-card overflow-x-auto overflow-y-visible flex-1">
-        <Table className="table-responsive" style={{ minWidth: "1200px" }}>
+      {/* Table Container - Single horizontal scroll */}
+      <div className="overflow-x-auto border-0 bg-card">
+        <Table className="w-full" style={{ minWidth: "1200px" }}>
           <TableHeader className="sticky top-0 z-10 bg-card">
-            <TableRow className="border-b">
+            <TableRow className="border-b bg-muted/20">
               {visibleColumns.map((column, index) => (
                 <TableHead
                   key={column.key}
@@ -703,15 +705,18 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
       {/* Bottom Pagination */}
       {enablePagination && (
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          totalItems={data.length}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={handlePageSizeChange}
-          position="bottom"
-        />
+        <div className="border-t bg-muted/20 px-4 py-2">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={data.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={handlePageSizeChange}
+            position="bottom"
+            className="border-0 bg-transparent p-0"
+          />
+        </div>
       )}
     </div>
   );
