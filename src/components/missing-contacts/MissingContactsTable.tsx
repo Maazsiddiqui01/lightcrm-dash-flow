@@ -17,16 +17,14 @@ interface MissingContactsTableProps {
   selectedRows: Set<string>;
   onSelectedRowsChange: (rows: Set<string>) => void;
   pageSize: number;
-  headerActions?: React.ReactNode;
 }
 
-export function MissingContactsTable({ 
-  search, 
-  statusFilter, 
-  selectedRows, 
+export function MissingContactsTable({
+  search,
+  statusFilter,
+  selectedRows,
   onSelectedRowsChange,
-  pageSize,
-  headerActions
+  pageSize
 }: MissingContactsTableProps) {
   const { toast } = useToast();
   
@@ -244,11 +242,6 @@ export function MissingContactsTable({
 
   const header = (
     <div className="flex flex-col gap-4">
-      {headerActions && (
-        <div className="flex items-center justify-between">
-          {headerActions}
-        </div>
-      )}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
           {filteredData.length} candidates found
@@ -298,11 +291,19 @@ export function MissingContactsTable({
   );
 
   return (
-    <TableViewport
-      header={header}
-      table={table}
-      footer={footer}
-      minTableWidth={1400}
+    <AdvancedTable
+      data={paginatedData}
+      columns={columns}
+      loading={isLoading}
+      tableId="missing-contacts"
+      emptyState={{
+        title: "No candidates found",
+        description: "Click 'Refresh from Interactions' to scan for new contacts.",
+      }}
+      enablePagination={true}
+      enableRowSelection={false}
+      initialPageSize={pageSize}
+      showTopPagination={true}
     />
   );
 }
