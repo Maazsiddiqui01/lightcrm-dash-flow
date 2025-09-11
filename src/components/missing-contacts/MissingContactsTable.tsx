@@ -4,7 +4,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AdvancedTable } from "@/components/shared/AdvancedTable";
-import { AddContactModal } from "./AddContactModal";
 import { useMissingCandidates, useApproveMissing, useDismissMissing } from "@/hooks/useMissingContacts";
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, UserX } from "lucide-react";
@@ -15,38 +14,46 @@ interface MissingContactsTableProps {
   statusFilter: string;
   selectedRows: Set<string>;
   onSelectedRowsChange: (rows: Set<string>) => void;
+  pageSize: number;
 }
 
 export function MissingContactsTable({ 
   search, 
   statusFilter, 
   selectedRows, 
-  onSelectedRowsChange 
+  onSelectedRowsChange,
+  pageSize
 }: MissingContactsTableProps) {
-  const [selectedCandidate, setSelectedCandidate] = useState<MissingCandidate | null>(null);
-  
   const { toast } = useToast();
   
-  console.log('MissingContactsTable render with filters:', { search, statusFilter });
-  
-  const { data, isLoading, error } = useMissingCandidates({
-    search,
-    status: statusFilter === 'all' ? ['pending', 'approved', 'dismissed'] : [statusFilter as any],
-    page: 1,
-    pageSize: 100,
+  const { data: rawData, isLoading, error } = useMissingCandidates({
+    search: '',
+    status: statusFilter,
   });
-
-  console.log('useMissingCandidates result:', { data, isLoading, error });
 
   // Client-side filtered data for display
   const filteredData = useMemo(() => {
-    if (!data?.rows) {
-      console.log('No candidates data available');
-      return [];
-    }
-    console.log('Raw candidates:', data.rows);
-    return data.rows.filter(candidate => candidate && candidate.id && candidate.email);
-  }, [data?.rows]);
+    if (!rawData) return [];
+    
+    return rawData.filter((candidate: any) => {
+      if (!candidate || !candidate.email) return false;
+      
+      // Apply search filter
+      if (search) {
+        const searchLower = search.toLowerCase();
+        const emailMatch = candidate.email.toLowerCase().includes(searchLower);
+        const nameMatch = candidate.full_name?.toLowerCase().includes(searchLower) || false;
+        const domainMatch = candidate.email.split('@')[1]?.toLowerCase().includes(searchLower) || false;
+        const orgMatch = candidate.organization?.toLowerCase().includes(searchLower) || false;
+        
+        if (!emailMatch && !nameMatch && !domainMatch && !orgMatch) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [rawData, search]);
 
   const approveMutation = useApproveMissing();
   const dismissMutation = useDismissMissing();
@@ -55,8 +62,16 @@ export function MissingContactsTable({
     if (!email) return;
     try {
       await approveMutation.mutateAsync(email);
-    } catch (error) {
-      // Error handled by mutation's onError
+      toast({
+        title: "Success",
+        description: "Contact approved and added to contacts.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve contact",
+        variant: "destructive",
+      });
     }
   };
 
@@ -64,13 +79,20 @@ export function MissingContactsTable({
     if (!email) return;
     try {
       await dismissMutation.mutateAsync(email);
-    } catch (error) {
-      // Error handled by mutation's onError
+      toast({
+        title: "Success",
+        description: "Contact dismissed.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to dismiss contact",
+        variant: "destructive",
+      });
     }
   };
 
   const handleSelectRow = (candidateId: string, checked: boolean) => {
-    console.log('handleSelectRow called:', { candidateId, checked });
     const newSelected = new Set(selectedRows);
     if (checked) {
       newSelected.add(candidateId);
@@ -80,25 +102,9 @@ export function MissingContactsTable({
     onSelectedRowsChange(newSelected);
   };
 
-  const handleSelectAll = (checked: boolean) => {
-    console.log('handleSelectAll called:', { checked, dataLength: filteredData.length });
-    if (checked && filteredData.length > 0) {
-      const allIds = new Set<string>();
-      filteredData.forEach(c => {
-        if (c?.id) {
-          allIds.add(c.id);
-        }
-      });
-      console.log('All IDs:', allIds);
-      onSelectedRowsChange(allIds);
-    } else {
-      onSelectedRowsChange(new Set<string>());
-    }
-  };
-
-  function StatusBadge({ s }: { s: string }) {
-    const tone = s === 'approved' ? 'default' : s === 'dismissed' ? 'destructive' : 'secondary';
-    return <Badge variant={tone as any} className="capitalize">{s || 'pending'}</Badge>;
+  function StatusBadge({ status }: { status: string }) {
+    const variant = status === 'approved' ? 'default' : status === 'dismissed' ? 'destructive' : 'secondary';
+    return <Badge variant={variant} className="capitalize">{status || 'pending'}</Badge>;
   }
 
   const columns = [
@@ -108,11 +114,7 @@ export function MissingContactsTable({
       width: 50,
       enableHiding: false,
       render: (candidate: MissingCandidate) => {
-        console.log('Rendering checkbox for candidate:', candidate);
-        if (!candidate || !candidate.id) {
-          console.warn('Invalid candidate for checkbox:', candidate);
-          return null;
-        }
+        if (!candidate?.id) return null;
         return (
           <Checkbox
             checked={selectedRows.has(candidate.id)}
@@ -127,9 +129,7 @@ export function MissingContactsTable({
       label: 'Full Name',
       width: 200,
       render: (candidate: MissingCandidate) => {
-        console.log('Rendering full_name for candidate:', candidate);
-        if (!candidate) return '—';
-        return candidate.full_name || '—';
+        return candidate?.full_name || '—';
       },
     },
     {
@@ -137,8 +137,9 @@ export function MissingContactsTable({
       label: 'Email',
       width: 250,
       render: (candidate: MissingCandidate) => {
-        console.log('Rendering email for candidate:', candidate);
-        if (!candidate) return '—';
+        if (!candidate?.email) {
+          return <Badge variant="outline" className="text-muted-foreground">No email</Badge>;
+        }
         return (
           <span className="font-mono text-sm">{candidate.email}</span>
         );
@@ -149,9 +150,7 @@ export function MissingContactsTable({
       label: 'Organization',
       width: 200,
       render: (candidate: MissingCandidate) => {
-        console.log('Rendering organization for candidate:', candidate);
-        if (!candidate) return '—';
-        return candidate.organization || '—';
+        return candidate?.organization || '—';
       },
     },
     {
@@ -159,9 +158,7 @@ export function MissingContactsTable({
       label: 'Status',
       width: 120,
       render: (candidate: MissingCandidate) => {
-        console.log('Rendering status for candidate:', candidate);
-        if (!candidate) return <Badge>Unknown</Badge>;
-        return <StatusBadge s={candidate.status} />;
+        return <StatusBadge status={candidate?.status || 'pending'} />;
       },
     },
     {
@@ -169,9 +166,12 @@ export function MissingContactsTable({
       label: 'Created At',
       width: 150,
       render: (candidate: MissingCandidate) => {
-        console.log('Rendering created_at for candidate:', candidate);
-        if (!candidate || !candidate.created_at) return '—';
-        return format(new Date(candidate.created_at), 'MMM d, yyyy');
+        if (!candidate?.created_at) return '—';
+        try {
+          return format(new Date(candidate.created_at), 'yyyy-MM-dd HH:mm');
+        } catch {
+          return '—';
+        }
       },
     },
     {
@@ -180,18 +180,20 @@ export function MissingContactsTable({
       width: 160,
       enableHiding: false,
       render: (candidate: MissingCandidate) => {
-        console.log('Rendering actions for candidate:', candidate);
-        if (!candidate || !candidate.id || !candidate.email) {
-          console.warn('Invalid candidate for actions:', candidate);
+        if (!candidate?.email) {
           return <div className="text-muted-foreground text-xs">No email</div>;
         }
+        
+        const isApproveDisabled = candidate.status !== 'pending' || approveMutation.isPending;
+        const isDismissDisabled = candidate.status !== 'pending' || dismissMutation.isPending;
+        
         return (
           <div className="flex items-center gap-2">
             <Button
               size="sm"
               className="bg-green-600 text-white hover:bg-green-700"
               onClick={() => handleApprove(candidate.email)}
-              disabled={!candidate.email || candidate.status !== 'pending' || approveMutation.isPending}
+              disabled={isApproveDisabled}
             >
               <UserCheck className="h-3 w-3 mr-1" />
               Approve
@@ -200,7 +202,7 @@ export function MissingContactsTable({
               size="sm"
               variant="outline"
               onClick={() => handleDismiss(candidate.email)}
-              disabled={!candidate.email || candidate.status !== 'pending' || dismissMutation.isPending}
+              disabled={isDismissDisabled}
             >
               <UserX className="h-3 w-3 mr-1" />
               Dismiss
@@ -231,7 +233,7 @@ export function MissingContactsTable({
           description: "Click 'Refresh from Interactions' to scan for new contacts.",
         }}
         enablePagination={true}
-        initialPageSize={25}
+        initialPageSize={pageSize}
         enableRowSelection={false}
       />
 

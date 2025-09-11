@@ -16,78 +16,36 @@ interface ContactData {
 
 export function useMissingCandidates(params: {
   search?: string;
-  status?: ('pending'|'approved'|'dismissed')[] | string;
-  domain?: string;
-  page?: number;
-  pageSize?: number;
+  status?: string;
 }) {
-  const { search = '', status = ['pending'], domain = '', page = 1, pageSize = 25 } = params;
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const { search = '', status = 'all' } = params;
 
   return useQuery({
-    queryKey: ['missing-candidates', { search, status, domain, page, pageSize }],
+    queryKey: ['missing-contacts', { search, status }],
     queryFn: async () => {
-      // Use direct fetch since this table isn't in the generated types yet
+      // Use direct API call since table isn't in generated types
       const SUPABASE_URL = "https://wjghdqkxwuyptxzdidtf.supabase.co";
       const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqZ2hkcWt4d3V5cHR4emRpZHRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwNjA0NDEsImV4cCI6MjA3MTYzNjQ0MX0._zZEVM4XENutH8AxM_4Sh_DSGDGbFOTy6kC5-UGLFIs";
       
-      let url = `${SUPABASE_URL}/rest/v1/contacts_missing_candidates?select=*`;
+      let url = `${SUPABASE_URL}/rest/v1/contacts_missing_candidates?select=id,email,full_name,organization,status,created_at,updated_at&order=created_at.desc`;
       
-      const params = new URLSearchParams();
-      
-      // Apply filters
-      if (search) {
-        params.append("or", `email.ilike.%${search}%,full_name.ilike.%${search}%,organization.ilike.%${search}%`);
-      }
-
-      // Handle legacy single status string or new array format
-      if (typeof status === 'string' && status !== 'all') {
-        params.append("status", `eq.${status}`);
-      } else if (Array.isArray(status) && status.length) {
-        status.forEach(s => params.append("status", `eq.${s}`));
-      }
-      
-      if (domain) {
-        params.append("organization", `ilike.%${domain}%`);
-      }
-
-      // Apply pagination
-      params.append("offset", from.toString());
-      params.append("limit", pageSize.toString());
-
-      // Order by created_at desc
-      params.append("order", "created_at.desc");
-
-      if (params.toString()) {
-        url += `&${params.toString()}`;
+      if (status !== 'all') {
+        url += `&status=eq.${status}`;
       }
 
       const response = await fetch(url, {
         headers: {
           'apikey': SUPABASE_KEY,
           'authorization': `Bearer ${SUPABASE_KEY}`,
-          'prefer': 'count=exact',
         },
       });
 
       if (!response.ok) {
-        const message = `HTTP error! status: ${response.status}`;
-        console.error('Load candidates error', message);
-        toast({ title: 'Failed to load candidates', description: message, variant: 'destructive' });
-        throw new Error(message);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      const count = response.headers.get('content-range')?.split('/')[1] || '0';
-      
-      const rows = (data || []).map(mapRowToCandidate);
-      return { 
-        candidates: rows, 
-        rows, 
-        totalCount: parseInt(count) || rows.length,
-        count: parseInt(count) || rows.length 
-      };
+      return data || [];
     },
   });
 }
@@ -96,15 +54,16 @@ export function useRefreshMissingContacts() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase.rpc as any)('refresh_missing_contacts', { p_exclude_domain: 'lindsaygoldbergllc.com' });
+      const { error } = await (supabase.rpc as any)('refresh_missing_contacts', { 
+        exclude_domain: 'lindsaygoldbergllc.com' 
+      });
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['missing-candidates'] });
-      toast({ title: 'Refreshed', description: 'Staged contacts were updated.' });
+      qc.invalidateQueries({ queryKey: ['missing-contacts'] });
     },
     onError: (e: any) => {
-      toast({ title: 'Refresh failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
+      throw e;
     },
   });
 }
@@ -186,11 +145,10 @@ export function useApproveMissing() {
       return data as string | null; // new contact id
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['missing-candidates'] });
-      toast({ title: 'Contact approved', description: 'Added to Contacts.' });
+      qc.invalidateQueries({ queryKey: ['missing-contacts'] });
     },
     onError: (e: any) => {
-      toast({ title: 'Approve failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
+      throw e;
     },
   });
 }
@@ -227,11 +185,10 @@ export function useDismissMissing() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['missing-candidates'] });
-      toast({ title: 'Dismissed', description: 'Candidate was dismissed.' });
+      qc.invalidateQueries({ queryKey: ['missing-contacts'] });
     },
     onError: (e: any) => {
-      toast({ title: 'Dismiss failed', description: e?.message ?? 'Unknown error', variant: 'destructive' });
+      throw e;
     },
   });
 }
