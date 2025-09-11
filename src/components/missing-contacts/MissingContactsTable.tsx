@@ -4,6 +4,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AdvancedTable } from "@/components/shared/AdvancedTable";
+import TableViewport from "@/components/shared/TableViewport";
+import { TopPagination } from "@/components/shared/TopPagination";
 import { useMissingCandidates, useApproveMissing, useDismissMissing } from "@/hooks/useMissingContacts";
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, UserX } from "lucide-react";
@@ -15,6 +17,7 @@ interface MissingContactsTableProps {
   selectedRows: Set<string>;
   onSelectedRowsChange: (rows: Set<string>) => void;
   pageSize: number;
+  headerActions?: React.ReactNode;
 }
 
 export function MissingContactsTable({ 
@@ -22,7 +25,8 @@ export function MissingContactsTable({
   statusFilter, 
   selectedRows, 
   onSelectedRowsChange,
-  pageSize
+  pageSize,
+  headerActions
 }: MissingContactsTableProps) {
   const { toast } = useToast();
   
@@ -232,9 +236,38 @@ export function MissingContactsTable({
     );
   }
 
-  return (
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(filteredData.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const header = (
+    <div className="flex flex-col gap-4">
+      {headerActions && (
+        <div className="flex items-center justify-between">
+          {headerActions}
+        </div>
+      )}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          {filteredData.length} candidates found
+        </div>
+        <TopPagination
+          page={currentPage}
+          pageCount={totalPages}
+          pageSize={pageSize}
+          totalItems={filteredData.length}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={() => {}} // Controlled by parent
+        />
+      </div>
+    </div>
+  );
+
+  const table = (
     <AdvancedTable
-      data={filteredData}
+      data={paginatedData}
       columns={columns}
       loading={isLoading}
       tableId="missing-contacts"
@@ -242,9 +275,34 @@ export function MissingContactsTable({
         title: "No candidates found",
         description: "Click 'Refresh from Interactions' to scan for new contacts.",
       }}
-      enablePagination={true}
-      initialPageSize={pageSize}
+      enablePagination={false}
       enableRowSelection={false}
+    />
+  );
+
+  const footer = (
+    <div className="flex items-center justify-between">
+      <div className="text-sm text-muted-foreground">
+        Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} candidates
+      </div>
+      <TopPagination
+        page={currentPage}
+        pageCount={totalPages}
+        pageSize={pageSize}
+        totalItems={filteredData.length}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={() => {}} // Controlled by parent
+        showPageInfo={false}
+      />
+    </div>
+  );
+
+  return (
+    <TableViewport
+      header={header}
+      table={table}
+      footer={footer}
+      minTableWidth={1400}
     />
   );
 }

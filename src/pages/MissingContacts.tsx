@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { MissingContactsTable } from "@/components/missing-contacts/MissingContactsTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RefreshCw, Download, UserCheck, UserX } from "lucide-react";
 import { useRefreshMissingContacts, useMissingCandidates, useApproveMissing, useDismissMissing } from "@/hooks/useMissingContacts";
 import { useToast } from "@/hooks/use-toast";
+import TableViewport from "@/components/shared/TableViewport";
 
 export default function MissingContacts() {
   const [search, setSearch] = useState("");
@@ -239,20 +239,24 @@ export default function MissingContacts() {
   );
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Missing Contacts"
-        description="Review and promote new contacts discovered from interactions."
-        actions={actions}
-      />
-      
-      <MissingContactsTable
-        search={search}
-        statusFilter={statusFilter}
-        selectedRows={selectedRows}
-        onSelectedRowsChange={setSelectedRows}
-        pageSize={pageSize}
-      />
+    <div className="min-h-0 flex-1 overflow-x-hidden">
+      <div className="space-y-4 p-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold">Missing Contacts</h1>
+          <p className="text-muted-foreground">Review and promote new contacts discovered from interactions.</p>
+        </div>
+        
+        <div className="h-[calc(100vh-200px)] min-h-0">
+          <MissingContactsTable
+            search={search}
+            statusFilter={statusFilter}
+            selectedRows={selectedRows}
+            onSelectedRowsChange={setSelectedRows}
+            pageSize={pageSize}
+            headerActions={actions}
+          />
+        </div>
+      </div>
     </div>
   );
 }

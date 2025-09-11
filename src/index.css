@@ -6,6 +6,11 @@
 @layer base {
   html {
     font-size: clamp(14px, 1vw, 16px);
+    overflow-x: hidden;
+  }
+  
+  body {
+    overflow-x: hidden;
   }
   
   .text-fluid-sm { font-size: clamp(12px, 0.85vw, 14px); }

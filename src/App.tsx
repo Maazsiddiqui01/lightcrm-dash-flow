@@ -46,25 +46,22 @@ function App() {
             <Route path="/*" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <a href="#main-content" className="skip-link">Skip to main content</a>
-                  <main id="main-content" className="h-full">
-                    <PageTransition>
-                      <Routes>
-                        <Route path="/sourcing-greatness" element={<Navigate to="/dashboard" replace />} />
-                        <Route path="/dashboard" element={<SourceGreatnessPage />} />
-                        <Route path="/contacts" element={<Contacts />} />
-                        <Route path="/missing-contacts" element={<MissingContacts />} />
-                        <Route path="/opportunities" element={<Opportunities />} />
-                        <Route path="/interactions" element={<Interactions />} />
-                        <Route path="/kpis" element={<KPIs />} />
-                        <Route path="/tom-new-view" element={<TomNewView />} />
-                        <Route path="/make-your-own-view" element={<MakeYourOwnView />} />
-                        <Route path="/datatable-test" element={<DataTableTest />} />
-                        <Route path="/ask-ai" element={<AskAI />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </PageTransition>
-                  </main>
+                  <PageTransition>
+                    <Routes>
+                      <Route path="/sourcing-greatness" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/dashboard" element={<SourceGreatnessPage />} />
+                      <Route path="/contacts" element={<Contacts />} />
+                      <Route path="/missing-contacts" element={<MissingContacts />} />
+                      <Route path="/opportunities" element={<Opportunities />} />
+                      <Route path="/interactions" element={<Interactions />} />
+                      <Route path="/kpis" element={<KPIs />} />
+                      <Route path="/tom-new-view" element={<TomNewView />} />
+                      <Route path="/make-your-own-view" element={<MakeYourOwnView />} />
+                      <Route path="/datatable-test" element={<DataTableTest />} />
+                      <Route path="/ask-ai" element={<AskAI />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </PageTransition>
                 </AppLayout>
               </ProtectedRoute>
             } />
