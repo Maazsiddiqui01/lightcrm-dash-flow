@@ -23,29 +23,15 @@ export function useMissingCandidates(params: {
   return useQuery({
     queryKey: ['missing-contacts', { search, status }],
     queryFn: async () => {
-      // Use direct API call since table isn't in generated types
-      const SUPABASE_URL = "https://wjghdqkxwuyptxzdidtf.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqZ2hkcWt4d3V5cHR4emRpZHRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwNjA0NDEsImV4cCI6MjA3MTYzNjQ0MX0._zZEVM4XENutH8AxM_4Sh_DSGDGbFOTy6kC5-UGLFIs";
-      
-      let url = `${SUPABASE_URL}/rest/v1/contacts_missing_candidates?select=id,email,full_name,organization,status,created_at,updated_at&order=created_at.desc`;
-      
-      if (status !== 'all') {
-        url += `&status=eq.${status}`;
+      const { data, error } = await (supabase.from as any)('contacts_missing_candidates')
+        .select('id,email,full_name,organization,status,created_at,updated_at')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to load missing contacts');
       }
 
-      const response = await fetch(url, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'authorization': `Bearer ${SUPABASE_KEY}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data || [];
+      return (data || []).map(mapRowToCandidate);
     },
   });
 }
@@ -55,7 +41,7 @@ export function useRefreshMissingContacts() {
   return useMutation({
     mutationFn: async () => {
       const { error } = await (supabase.rpc as any)('refresh_missing_contacts', { 
-        exclude_domain: 'lindsaygoldbergllc.com' 
+        p_exclude_domain: 'lindsaygoldbergllc.com' 
       });
       if (error) throw error;
     },
@@ -127,7 +113,7 @@ export function useApproveMissingContact() {
       return contactId;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["missing-candidates"] });
+      qc.invalidateQueries({ queryKey: ["missing-contacts"] });
       toast({ title: 'Contact approved', description: 'Added to Contacts.' });
     },
     onError: (e: any) => {
@@ -168,7 +154,7 @@ export function useDismissMissingContact() {
       return data;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["missing-candidates"] });
+      qc.invalidateQueries({ queryKey: ["missing-contacts"] });
       toast({ title: 'Dismissed', description: 'Candidate was dismissed.' });
     },
     onError: (e: any) => {

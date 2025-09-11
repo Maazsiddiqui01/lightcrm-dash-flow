@@ -51,9 +51,14 @@ export function MissingContactsTable({
         }
       }
       
+      // Apply status filter client-side
+      if (statusFilter !== 'all' && (candidate.status || 'pending') !== statusFilter) {
+        return false;
+      }
+      
       return true;
     });
-  }, [rawData, search]);
+  }, [rawData, search, statusFilter]);
 
   const approveMutation = useApproveMissing();
   const dismissMutation = useDismissMissing();
