@@ -7,7 +7,7 @@ import { AdvancedTable } from "@/components/shared/AdvancedTable";
 import { useMissingCandidates, useApproveMissing, useDismissMissing } from "@/hooks/useMissingContacts";
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, UserX } from "lucide-react";
-import { MissingCandidate } from "@/types/missing-contacts";
+import { MissingContact } from "@/types/missingContacts";
 
 interface MissingContactsTableProps {
   search: string;
@@ -35,14 +35,12 @@ export function MissingContactsTable({
   const filteredData = useMemo(() => {
     if (!rawData) return [];
     
-    return rawData.filter((candidate: any) => {
-      if (!candidate || !candidate.email) return false;
-      
+    return rawData.filter((candidate: MissingContact) => {
       // Apply search filter
       if (search) {
         const searchLower = search.toLowerCase();
         const emailMatch = candidate.email?.toLowerCase().includes(searchLower) || false;
-        const nameMatch = candidate.fullName?.toLowerCase().includes(searchLower) || false;
+        const nameMatch = candidate.full_name?.toLowerCase().includes(searchLower) || false;
         const domainMatch = candidate.email?.split('@')[1]?.toLowerCase().includes(searchLower) || false;
         const orgMatch = candidate.organization?.toLowerCase().includes(searchLower) || false;
         
@@ -107,6 +105,9 @@ export function MissingContactsTable({
     onSelectedRowsChange(newSelected);
   };
 
+  const dashIfEmpty = (v?: string | null) =>
+    v && v.trim() !== "" ? v.trim() : "—";
+
   function StatusBadge({ status }: { status: string }) {
     const variant = status === 'approved' ? 'default' : status === 'dismissed' ? 'destructive' : 'secondary';
     return <Badge variant={variant} className="capitalize">{status || 'pending'}</Badge>;
@@ -118,34 +119,34 @@ export function MissingContactsTable({
       label: 'Select',
       width: 50,
       enableHiding: false,
-      render: (candidate: MissingCandidate) => {
+      render: (candidate: MissingContact) => {
         if (!candidate?.id) return null;
         return (
           <Checkbox
-            checked={selectedRows.has(candidate.id)}
-            onCheckedChange={(checked) => handleSelectRow(candidate.id, checked as boolean)}
+            checked={selectedRows.has(candidate.id.toString())}
+            onCheckedChange={(checked) => handleSelectRow(candidate.id.toString(), checked as boolean)}
             aria-label={`Select ${candidate.email}`}
           />
         );
       },
     },
     {
-      key: 'fullName',
+      key: 'full_name',
       label: 'Full Name',
       width: 200,
-      render: (candidate: MissingCandidate) => {
-        const name = candidate?.fullName?.trim();
-        return name || '—';
+      render: (candidate: MissingContact) => {
+        const name = dashIfEmpty(candidate?.full_name);
+        return <span className="truncate" title={candidate?.full_name ?? ""}>{name}</span>;
       },
     },
     {
       key: 'email',
       label: 'Email',
       width: 250,
-      render: (candidate: MissingCandidate) => {
+      render: (candidate: MissingContact) => {
         const email = candidate?.email?.trim();
         if (!email) {
-          return <Badge variant="outline" className="text-muted-foreground">No email</Badge>;
+          return <Badge variant="secondary">No email</Badge>;
         }
         return (
           <a href={`mailto:${email}`} className="font-mono text-sm text-primary underline hover:no-underline">
@@ -158,27 +159,27 @@ export function MissingContactsTable({
       key: 'organization',
       label: 'Organization',
       width: 200,
-      render: (candidate: MissingCandidate) => {
-        const org = candidate?.organization?.trim();
-        return org || '—';
+      render: (candidate: MissingContact) => {
+        const org = dashIfEmpty(candidate?.organization);
+        return <span className="truncate" title={candidate?.organization ?? ""}>{org}</span>;
       },
     },
     {
       key: 'status',
       label: 'Status',
       width: 120,
-      render: (candidate: MissingCandidate) => {
+      render: (candidate: MissingContact) => {
         return <StatusBadge status={candidate?.status || 'pending'} />;
       },
     },
     {
-      key: 'createdAt',
+      key: 'created_at',
       label: 'Created At',
       width: 150,
-      render: (candidate: MissingCandidate) => {
-        if (!candidate?.createdAt) return '—';
+      render: (candidate: MissingContact) => {
+        if (!candidate?.created_at) return '—';
         try {
-          return format(new Date(candidate.createdAt), 'MMM d, yyyy p');
+          return format(new Date(candidate.created_at), 'MMM d, yyyy p');
         } catch {
           return '—';
         }
@@ -189,7 +190,7 @@ export function MissingContactsTable({
       label: 'Actions',
       width: 160,
       enableHiding: false,
-      render: (candidate: MissingCandidate) => {
+      render: (candidate: MissingContact) => {
         if (!candidate?.email) {
           return <div className="text-muted-foreground text-xs">No email</div>;
         }

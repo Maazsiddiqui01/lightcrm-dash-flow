@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { mapRowToCandidate, MissingCandidate } from '@/types/missing-contacts';
+import { MissingContactsArraySchema, type MissingContact } from '@/types/missingContacts';
 
 interface ContactData {
   full_name?: string;
@@ -22,16 +22,19 @@ export function useMissingCandidates(params: {
 
   return useQuery({
     queryKey: ['missing-contacts', { search, status }],
-    queryFn: async () => {
+    queryFn: async (): Promise<MissingContact[]> => {
       const { data, error } = await (supabase.from as any)('contacts_missing_candidates')
-        .select('id,email,full_name,organization,status,created_at,updated_at')
+        .select('id, full_name, email, organization, status, created_at')
         .order('created_at', { ascending: false });
+      if (error) throw error;
 
-      if (error) {
-        throw new Error(error.message || 'Failed to load missing contacts');
+      // Validate with zod
+      const parsed = MissingContactsArraySchema.safeParse(data);
+      if (!parsed.success) {
+        console.error('Data validation failed:', parsed.error.flatten());
+        throw new Error('Invalid data shape for contacts_missing_candidates');
       }
-
-      return (data || []).map(mapRowToCandidate);
+      return parsed.data;
     },
   });
 }
