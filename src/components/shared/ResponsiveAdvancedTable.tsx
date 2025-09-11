@@ -649,119 +649,136 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         </div>
       )}
 
-      {/* Table Container - Single horizontal scroll */}
-      <div className="overflow-x-auto border-0 bg-card">
-        <Table className="w-full" style={{ minWidth: "1200px" }}>
-          <TableHeader className="sticky top-0 z-10 bg-card">
-            <TableRow className="border-b bg-muted/20">
-              {visibleColumns.map((column, index) => (
-                <TableHead
-                  key={column.key}
-                  className={cn(
-                    "table-cell-compact text-left align-middle font-medium text-muted-foreground select-none bg-card",
-                    index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-card border-r border-border",
-                    column.sortable && "cursor-pointer hover:text-foreground transition-colors",
-                    column.headerClassName
-                  )}
-                  style={{
-                    width: column.width,
-                    minWidth: column.minWidth || (index === 0 ? '200px' : '120px'),
-                    maxWidth: column.maxWidth
-                  }}
-                  onClick={() => column.sortable && handleSort(column.key)}
-                >
-                  {column.key === 'select' ? (
-                    <div className="flex items-center justify-center">
-                      <Checkbox
-                        checked={rowSelection.isAllPageSelected(displayData)}
-                        onCheckedChange={() => rowSelection.toggleSelectAll(displayData)}
-                        className={rowSelection.isSomePageSelected(displayData) && !rowSelection.isAllPageSelected(displayData) ? "data-[state=checked]:bg-primary/50" : ""}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="truncate">{column.label}</span>
-                      {column.sortable && (
-                        <div className="flex flex-col">
-                          {sortKey === column.key ? (
-                            sortDirection === 'asc' ? (
-                              <ArrowUp className="h-3 w-3" />
-                            ) : sortDirection === 'desc' ? (
-                              <ArrowDown className="h-3 w-3" />
+      {/* Table Container with Dual Horizontal Scrollbars */}
+      <div className="border rounded-lg bg-card">
+        {/* TOP sticky scrollbar */}
+        <div className="sticky top-0 z-30 bg-card border-b border-border">
+          <div
+            ref={topScrollRef}
+            className="overflow-x-auto overflow-y-hidden h-4 scrollbar-visible"
+            style={{ scrollbarGutter: 'stable' }}
+          >
+            <div style={{ width: spacerWidth, height: 1 }} />
+          </div>
+        </div>
+
+        {/* Main table with BOTTOM native scrollbar */}
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto max-h-[70vh]"
+        >
+          <Table className="w-full" style={{ minWidth: "1200px" }}>
+            <TableHeader className="sticky top-0 z-10 bg-card">
+              <TableRow className="border-b bg-muted/20">
+                {visibleColumns.map((column, index) => (
+                  <TableHead
+                    key={column.key}
+                    className={cn(
+                      "table-cell-compact text-left align-middle font-medium text-muted-foreground select-none bg-card",
+                      index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-card border-r border-border",
+                      column.sortable && "cursor-pointer hover:text-foreground transition-colors",
+                      column.headerClassName
+                    )}
+                    style={{
+                      width: column.width,
+                      minWidth: column.minWidth || (index === 0 ? '200px' : '120px'),
+                      maxWidth: column.maxWidth
+                    }}
+                    onClick={() => column.sortable && handleSort(column.key)}
+                  >
+                    {column.key === 'select' ? (
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={rowSelection.isAllPageSelected(displayData)}
+                          onCheckedChange={() => rowSelection.toggleSelectAll(displayData)}
+                          className={rowSelection.isSomePageSelected(displayData) && !rowSelection.isAllPageSelected(displayData) ? "data-[state=checked]:bg-primary/50" : ""}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{column.label}</span>
+                        {column.sortable && (
+                          <div className="flex flex-col">
+                            {sortKey === column.key ? (
+                              sortDirection === 'asc' ? (
+                                <ArrowUp className="h-3 w-3" />
+                              ) : sortDirection === 'desc' ? (
+                                <ArrowDown className="h-3 w-3" />
+                              ) : (
+                                <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                              )
                             ) : (
                               <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {displayData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={visibleColumns.length} className="h-32">
-                  <div className="flex flex-col items-center justify-center text-center space-y-2">
-                    <div className="text-muted-foreground">
-                      {emptyState?.title || "No results found"}
-                    </div>
-                    {emptyState?.description && (
-                      <div className="text-sm text-muted-foreground">
-                        {emptyState.description}
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
-                    {emptyState?.action}
-                  </div>
-                </TableCell>
+                  </TableHead>
+                ))}
               </TableRow>
-            ) : (
-              displayData.map((row, rowIndex) => {
-                const isEven = rowIndex % 2 === 0;
-                return (
-                  <TableRow
-                    key={rowIndex}
-                    className={cn(
-                      "transition-colors",
-                      isEven ? "bg-background" : "bg-table-row-even",
-                      onRowClick && "cursor-pointer hover:bg-table-row-hover"
-                    )}
-                    onClick={(e) => {
-                      // Don't trigger row click if clicking on checkbox
-                      if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
-                        e.stopPropagation();
-                        return;
-                      }
-                      onRowClick?.(row);
-                    }}
-                  >
-                    {visibleColumns.map((column, cellIndex) => (
-                      <TableCell
-                        key={column.key}
-                        className={cn(
-                          "table-cell-compact align-middle text-fluid-base",
-                          cellIndex === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-inherit border-r border-border",
-                          column.className
-                        )}
-                        style={{
-                          width: column.width,
-                          minWidth: column.minWidth || (cellIndex === 0 ? '200px' : '120px'),
-                          maxWidth: column.maxWidth
-                        }}
-                      >
-                        {renderCellContent(column, row)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {displayData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={visibleColumns.length} className="h-32">
+                    <div className="flex flex-col items-center justify-center text-center space-y-2">
+                      <div className="text-muted-foreground">
+                        {emptyState?.title || "No results found"}
+                      </div>
+                      {emptyState?.description && (
+                        <div className="text-sm text-muted-foreground">
+                          {emptyState.description}
+                        </div>
+                      )}
+                      {emptyState?.action}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                displayData.map((row, rowIndex) => {
+                  const isEven = rowIndex % 2 === 0;
+                  return (
+                    <TableRow
+                      key={rowIndex}
+                      className={cn(
+                        "transition-colors",
+                        isEven ? "bg-background" : "bg-table-row-even",
+                        onRowClick && "cursor-pointer hover:bg-table-row-hover"
+                      )}
+                      onClick={(e) => {
+                        // Don't trigger row click if clicking on checkbox
+                        if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
+                          e.stopPropagation();
+                          return;
+                        }
+                        onRowClick?.(row);
+                      }}
+                    >
+                      {visibleColumns.map((column, cellIndex) => (
+                        <TableCell
+                          key={column.key}
+                          className={cn(
+                            "table-cell-compact align-middle text-fluid-base",
+                            cellIndex === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-inherit border-r border-border",
+                            column.className
+                          )}
+                          style={{
+                            width: column.width,
+                            minWidth: column.minWidth || (cellIndex === 0 ? '200px' : '120px'),
+                            maxWidth: column.maxWidth
+                          }}
+                        >
+                          {renderCellContent(column, row)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Bottom Pagination */}

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RefreshCw, Download, UserCheck, UserX } from "lucide-react";
 import { useRefreshMissingContacts, useMissingCandidates, useApproveMissing, useDismissMissing } from "@/hooks/useMissingContacts";
 import { useToast } from "@/hooks/use-toast";
-import { DualScrollbar } from "@/components/shared/DualScrollbar";
+
 
 export default function MissingContacts() {
   const [search, setSearch] = useState("");
@@ -248,15 +248,13 @@ export default function MissingContacts() {
         
         <div className="space-y-4">
           {actions}
-          <DualScrollbar minWidth={1200} className="flex-1">
-            <MissingContactsTable
-              search={search}
-              statusFilter={statusFilter}
-              selectedRows={selectedRows}
-              onSelectedRowsChange={setSelectedRows}
-              pageSize={pageSize}
-            />
-          </DualScrollbar>
+          <MissingContactsTable
+            search={search}
+            statusFilter={statusFilter}
+            selectedRows={selectedRows}
+            onSelectedRowsChange={setSelectedRows}
+            pageSize={pageSize}
+          />
         </div>
       </div>
     </div>
