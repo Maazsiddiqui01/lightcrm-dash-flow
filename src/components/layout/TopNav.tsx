@@ -9,13 +9,14 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { title: "Dashboard", url: "/dashboard" },
   { title: "Contacts", url: "/contacts" },
+  { title: "New Contacts", url: "/missing-contacts" },
   { title: "Opportunities", url: "/opportunities" },
   { title: "Interactions", url: "/interactions" },
   { title: "KPIs", url: "/kpis" },
   { title: "Make Your Own View", url: "/make-your-own-view" },
 ];
 
-const filterPages = ["/contacts", "/opportunities", "/interactions", "/kpis"];
+const filterPages = ["/contacts", "/missing-contacts", "/opportunities", "/interactions", "/kpis"];
 
 interface TopNavProps {
   onFiltersClick?: () => void;
