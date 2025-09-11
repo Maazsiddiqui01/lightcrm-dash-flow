@@ -50,6 +50,7 @@ function App() {
                   <main id="main-content" className="h-full">
                     <PageTransition>
                       <Routes>
+                        <Route path="/sourcing-greatness" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/dashboard" element={<SourceGreatnessPage />} />
                         <Route path="/contacts" element={<Contacts />} />
                         <Route path="/missing-contacts" element={<MissingContacts />} />
