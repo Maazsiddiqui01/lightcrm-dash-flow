@@ -188,7 +188,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       isSyncingRef.current = true;
       const x = topEl.scrollLeft;
       rafId = requestAnimationFrame(() => {
-        bodyEl.scrollLeft = x;
+        if (bodyEl) bodyEl.scrollLeft = x;
         isSyncingRef.current = false;
       });
     };
@@ -198,7 +198,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       isSyncingRef.current = true;
       const x = bodyEl.scrollLeft;
       rafId = requestAnimationFrame(() => {
-        topEl.scrollLeft = x;
+        if (topEl) topEl.scrollLeft = x;
         isSyncingRef.current = false;
       });
     };
@@ -214,7 +214,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       topEl.removeEventListener('scroll', syncFromTop);
       bodyEl.removeEventListener('scroll', syncFromBody);
     };
-  }, []);
+  }, [loading, columns.length, data.length]);
 
   // Measure content width to size the top scrollbar spacer
   useEffect(() => {
@@ -238,7 +238,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       ro.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, []);
+  }, [loading, columns.length, data.length, containerWidth]);
 
 
   // Calculate pagination if enabled
