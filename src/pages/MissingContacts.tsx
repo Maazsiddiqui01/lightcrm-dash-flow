@@ -246,18 +246,12 @@ export default function MissingContacts() {
           <p className="text-muted-foreground">Review and promote new contacts discovered from interactions.</p>
         </div>
         
-        <TableViewport
-          header={actions}
-          table={
-            <MissingContactsTable
-              search={search}
-              statusFilter={statusFilter}
-              selectedRows={selectedRows}
-              onSelectedRowsChange={setSelectedRows}
-              pageSize={pageSize}
-            />
-          }
-          minTableWidth={1200}
+        <MissingContactsTable
+          search={search}
+          statusFilter={statusFilter}
+          selectedRows={selectedRows}
+          onSelectedRowsChange={setSelectedRows}
+          pageSize={pageSize}
         />
       </div>
     </div>

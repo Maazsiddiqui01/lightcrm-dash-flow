@@ -142,6 +142,8 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   });
   
   const containerRef = useRef<HTMLDivElement>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
 
   // Measure container width for responsive columns
   useEffect(() => {
@@ -328,6 +330,34 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     setPageSize(newPageSize);
     setCurrentPage(1);
   };
+
+  // Sync scroll between top and main table scrollbars
+  useEffect(() => {
+    const tableScrollEl = tableScrollRef.current;
+    const topScrollEl = topScrollRef.current;
+    
+    if (!tableScrollEl || !topScrollEl) return;
+
+    const syncFromTableToTop = () => {
+      if (topScrollEl && tableScrollEl) {
+        topScrollEl.scrollLeft = tableScrollEl.scrollLeft;
+      }
+    };
+
+    const syncFromTopToTable = () => {
+      if (topScrollEl && tableScrollEl) {
+        tableScrollEl.scrollLeft = topScrollEl.scrollLeft;
+      }
+    };
+
+    tableScrollEl.addEventListener('scroll', syncFromTableToTop);
+    topScrollEl.addEventListener('scroll', syncFromTopToTable);
+
+    return () => {
+      tableScrollEl.removeEventListener('scroll', syncFromTableToTop);
+      topScrollEl.removeEventListener('scroll', syncFromTopToTable);
+    };
+  }, []);
 
   // Loading state
   if (loading) {
@@ -574,23 +604,36 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
       {/* Top Pagination */}
       {enablePagination && showTopPagination && (
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          totalItems={data.length}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={handlePageSizeChange}
-          position="top"
-          className="border-b"
-        />
+        <div className="border-b bg-muted/20 px-4 py-2">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={data.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={handlePageSizeChange}
+            position="top"
+            className="border-0 bg-transparent p-0"
+          />
+        </div>
       )}
 
-      {/* Table Container */}
-      <div className="rounded-none border-0 bg-card overflow-x-auto overflow-y-visible flex-1">
-        <Table className="table-responsive" style={{ minWidth: "1200px" }}>
+      {/* Top Horizontal Scrollbar */}
+      <div className="sticky top-0 z-20 bg-background border-b border-border">
+        <div 
+          ref={topScrollRef}
+          className="overflow-x-auto overflow-y-hidden h-4 bg-muted/10"
+          style={{ scrollbarWidth: 'thin' }}
+        >
+          <div style={{ width: '1200px', height: '1px' }}></div>
+        </div>
+      </div>
+
+      {/* Table Container - Single horizontal scroll */}
+      <div ref={tableScrollRef} className="overflow-x-auto border-0 bg-card">
+        <Table className="w-full" style={{ minWidth: "1200px" }}>
           <TableHeader className="sticky top-0 z-10 bg-card">
-            <TableRow className="border-b">
+            <TableRow className="border-b bg-muted/20">
               {visibleColumns.map((column, index) => (
                 <TableHead
                   key={column.key}
@@ -703,15 +746,18 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
       {/* Bottom Pagination */}
       {enablePagination && (
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          totalItems={data.length}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={handlePageSizeChange}
-          position="bottom"
-        />
+        <div className="border-t bg-muted/20 px-4 py-2">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={data.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={handlePageSizeChange}
+            position="bottom"
+            className="border-0 bg-transparent p-0"
+          />
+        </div>
       )}
     </div>
   );
