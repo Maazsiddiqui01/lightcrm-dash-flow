@@ -41,9 +41,11 @@ export function Interactions() {
           </div>
         </div>
 
-        <div className="h-[calc(100vh-280px)] min-h-0">
-          <InteractionsTable />
-        </div>
+        <TableViewport
+          header={null}
+          table={<InteractionsTable />}
+          minTableWidth={1200}
+        />
       </section>
     </div>
   );

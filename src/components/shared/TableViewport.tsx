@@ -11,12 +11,28 @@ export function useScrollSync(topEl: HTMLDivElement | null, mainEl: HTMLDivEleme
       topEl.scrollLeft = mainEl.scrollLeft; 
     };
     
+    // Sync the width of the top scrollbar content with the actual table width
+    const updateTopScrollWidth = () => {
+      if (topEl && mainEl) {
+        const content = topEl.firstElementChild as HTMLElement;
+        if (content) {
+          content.style.width = `${mainEl.scrollWidth}px`;
+        }
+      }
+    };
+    
     topEl.addEventListener("scroll", onTop, { passive: true });
     mainEl.addEventListener("scroll", onMain, { passive: true });
+    
+    // Update width when content changes
+    updateTopScrollWidth();
+    const resizeObserver = new ResizeObserver(updateTopScrollWidth);
+    resizeObserver.observe(mainEl);
     
     return () => {
       topEl.removeEventListener("scroll", onTop);
       mainEl.removeEventListener("scroll", onMain);
+      resizeObserver.disconnect();
     };
   }, [topEl, mainEl]);
 }
@@ -53,7 +69,7 @@ export default function TableViewport({
       {/* sticky top horizontal scrollbar */}
       <div
         ref={topBarRef}
-        className="sticky top-0 z-20 h-4 overflow-x-auto overflow-y-hidden bg-card border-b"
+        className="sticky top-0 z-30 h-8 overflow-x-auto overflow-y-hidden bg-card border-b"
         aria-label="Horizontal scroll"
       >
         <div style={{ width: `${minTableWidth}px`, height: 1 }} />
@@ -62,7 +78,7 @@ export default function TableViewport({
       {/* main scroll container for the table */}
       <div 
         ref={scrollRef} 
-        className="min-h-0 flex-1 overflow-auto" 
+        className="overflow-x-auto overflow-y-visible" 
         aria-label="Table scroll area"
       >
         <div style={{ minWidth: `${minTableWidth}px` }} className="relative">

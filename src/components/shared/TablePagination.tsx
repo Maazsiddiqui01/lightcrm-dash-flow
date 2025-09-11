@@ -14,6 +14,7 @@ interface TablePaginationProps {
   className?: string;
   showPageSizeSelector?: boolean;
   pageSizeOptions?: number[];
+  position?: "top" | "bottom";
 }
 
 export function TablePagination({
@@ -25,7 +26,8 @@ export function TablePagination({
   onPageSizeChange,
   className,
   showPageSizeSelector = true,
-  pageSizeOptions = [25, 50, 100]
+  pageSizeOptions = [25, 50, 100],
+  position = "bottom"
 }: TablePaginationProps) {
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
@@ -50,7 +52,8 @@ export function TablePagination({
 
   return (
     <div className={cn(
-      "flex items-center justify-between gap-4 px-4 py-3 bg-background border-t border-border sticky bottom-0 z-10",
+      "flex items-center justify-between gap-4 px-4 py-3 bg-background border-border",
+      position === "bottom" ? "border-t" : "border-b",
       className
     )}>
       <div className="flex items-center gap-4 text-sm text-muted-foreground">

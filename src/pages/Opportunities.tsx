@@ -95,9 +95,11 @@ export function Opportunities() {
           onClearFilters={clearFilters}
         />
 
-        <div className="h-[calc(100vh-320px)] min-h-0">
-          <OpportunitiesTable filters={filters} />
-        </div>
+        <TableViewport
+          header={null}
+          table={<OpportunitiesTable filters={filters} />}
+          minTableWidth={1200}
+        />
 
         <AddOpportunityDialog 
           open={isAddDialogOpen} 
