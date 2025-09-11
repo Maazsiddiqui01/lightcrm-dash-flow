@@ -7,7 +7,7 @@ import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { Plus, Target, TrendingUp, CheckCircle, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { AddOpportunityDialog } from "@/components/opportunities/AddOpportunityDialog";
-import TableViewport from "@/components/shared/TableViewport";
+import { DualScrollbar } from "@/components/shared/DualScrollbar";
 
 export function Opportunities() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -95,11 +95,9 @@ export function Opportunities() {
           onClearFilters={clearFilters}
         />
 
-        <TableViewport
-          header={null}
-          table={<OpportunitiesTable filters={filters} />}
-          minTableWidth={1400}
-        />
+        <DualScrollbar minWidth={1400} className="flex-1">
+          <OpportunitiesTable filters={filters} />
+        </DualScrollbar>
 
         <AddOpportunityDialog 
           open={isAddDialogOpen} 
