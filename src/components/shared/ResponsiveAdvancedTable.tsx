@@ -261,34 +261,38 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     setCurrentPage(1);
   }, [data.length]);
 
-  // Add checkbox column if row selection is enabled
-  const columnsWithSelection = useMemo(() => {
-    if (!enableRowSelection) return columns;
+  // Add checkbox column if row selection is enabled and get visible columns
+  const { columnsWithSelection, visibleColumns } = useMemo(() => {
+    let workingColumns = columns;
     
-    const checkboxColumn: ColumnDef<T> = {
-      key: 'select',
-      label: '',
-      width: 50,
-      minWidth: 50,
-      maxWidth: 50,
-      sticky: true,
-      enableHiding: false,
-      render: (value, row) => (
-        <Checkbox
-          checked={rowSelection.isRowSelected(row[idKey])}
-          onCheckedChange={() => rowSelection.toggleRow(row[idKey])}
-        />
-      )
+    if (enableRowSelection) {
+      const checkboxColumn: ColumnDef<T> = {
+        key: 'select',
+        label: '',
+        width: 50,
+        minWidth: 50,
+        maxWidth: 50,
+        sticky: true,
+        enableHiding: false,
+        render: (value, row) => (
+          <Checkbox
+            checked={rowSelection.isRowSelected(row[idKey])}
+            onCheckedChange={() => rowSelection.toggleRow(row[idKey])}
+          />
+        )
+      };
+      
+      workingColumns = [checkboxColumn, ...columns];
+    }
+    
+    // Filter visible columns
+    const visible = workingColumns.filter(col => col.visible !== false);
+    
+    return {
+      columnsWithSelection: workingColumns,
+      visibleColumns: visible
     };
-    
-    return [checkboxColumn, ...columns];
   }, [enableRowSelection, columns, rowSelection, idKey]);
-
-  // Visible columns only
-  const visibleColumns = useMemo(() => 
-    columnsWithSelection.filter(col => col.visible !== false), 
-    [columnsWithSelection]
-  );
 
   // Handle column visibility toggle
   const toggleColumnVisibility = (columnKey: string, visible: boolean) => {
