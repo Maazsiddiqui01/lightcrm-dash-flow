@@ -7,7 +7,7 @@ import { useState } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { ContactFilterBar } from "@/components/contacts/ContactFilterBar";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { DualScrollbar } from "@/components/shared/DualScrollbar";
+import TableViewport from "@/components/shared/TableViewport";
 
 export function Contacts() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -76,9 +76,11 @@ export function Contacts() {
           onClearFilters={clearFilters}
         />
 
-        <DualScrollbar minWidth={1400} className="flex-1">
-          <ContactsTable filters={filters} />
-        </DualScrollbar>
+        <TableViewport
+          header={null}
+          table={<ContactsTable filters={filters} />}
+          minTableWidth={1200}
+        />
 
         <AddContactDialog 
           open={isAddDialogOpen} 

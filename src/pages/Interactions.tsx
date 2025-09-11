@@ -2,7 +2,7 @@ import { InteractionsTable } from "@/components/interactions/InteractionsTable";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useInteractionStats } from "@/hooks/useInteractionStats";
 import { MessageSquare, Mail, Calendar, Clock } from "lucide-react";
-import { DualScrollbar } from "@/components/shared/DualScrollbar";
+import TableViewport from "@/components/shared/TableViewport";
 
 export function Interactions() {
   const stats = useInteractionStats();
@@ -41,9 +41,11 @@ export function Interactions() {
           </div>
         </div>
 
-        <DualScrollbar minWidth={1400} className="flex-1">
-          <InteractionsTable />
-        </DualScrollbar>
+        <TableViewport
+          header={null}
+          table={<InteractionsTable />}
+          minTableWidth={1200}
+        />
       </section>
     </div>
   );

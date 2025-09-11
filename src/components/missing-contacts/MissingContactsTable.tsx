@@ -291,28 +291,19 @@ export function MissingContactsTable({
   );
 
   return (
-    <div className="space-y-4">
-      {/* Header with controls */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="text-sm text-muted-foreground">
-          {filteredData.length} candidates found
-        </div>
-      </div>
-      
-      <AdvancedTable
-        data={paginatedData}
-        columns={columns}
-        loading={isLoading}
-        tableId="missing-contacts"
-        emptyState={{
-          title: "No candidates found",
-          description: "Click 'Refresh from Interactions' to scan for new contacts.",
-        }}
-        enablePagination={true}
-        enableRowSelection={false}
-        initialPageSize={pageSize}
-        showTopPagination={true}
-      />
-    </div>
+    <AdvancedTable
+      data={paginatedData}
+      columns={columns}
+      loading={isLoading}
+      tableId="missing-contacts"
+      emptyState={{
+        title: "No candidates found",
+        description: "Click 'Refresh from Interactions' to scan for new contacts.",
+      }}
+      enablePagination={true}
+      enableRowSelection={false}
+      initialPageSize={pageSize}
+      showTopPagination={true}
+    />
   );
 }

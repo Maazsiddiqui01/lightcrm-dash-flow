@@ -329,7 +329,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     setCurrentPage(1);
   };
 
-
   // Loading state
   if (loading) {
     return (
@@ -356,7 +355,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   }
 
   // Use virtualized table for large datasets or when explicitly enabled
-  if (enableVirtualization) {
+  if (enableVirtualization || data.length > 1000) {
     return (
       <div ref={containerRef} className={cn("space-y-4 flex flex-col", className)}>
         {/* Toolbar */}
@@ -575,25 +574,23 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
       {/* Top Pagination */}
       {enablePagination && showTopPagination && (
-        <div className="border-b bg-muted/20 px-4 py-2">
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={data.length}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={handlePageSizeChange}
-            position="top"
-            className="border-0 bg-transparent p-0"
-          />
-        </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={data.length}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={handlePageSizeChange}
+          position="top"
+          className="border-b"
+        />
       )}
 
-      {/* Table Container - Single horizontal scroll */}
-      <div className="overflow-x-auto border-0 bg-card">
-        <Table className="w-full" style={{ minWidth: "1200px" }}>
+      {/* Table Container */}
+      <div className="rounded-none border-0 bg-card overflow-x-auto overflow-y-visible flex-1">
+        <Table className="table-responsive" style={{ minWidth: "1200px" }}>
           <TableHeader className="sticky top-0 z-10 bg-card">
-            <TableRow className="border-b bg-muted/20">
+            <TableRow className="border-b">
               {visibleColumns.map((column, index) => (
                 <TableHead
                   key={column.key}
@@ -706,18 +703,15 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
       {/* Bottom Pagination */}
       {enablePagination && (
-        <div className="border-t bg-muted/20 px-4 py-2">
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={data.length}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={handlePageSizeChange}
-            position="bottom"
-            className="border-0 bg-transparent p-0"
-          />
-        </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={data.length}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={handlePageSizeChange}
+          position="bottom"
+        />
       )}
     </div>
   );

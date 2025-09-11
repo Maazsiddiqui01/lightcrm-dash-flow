@@ -508,31 +508,6 @@ All colors MUST be HSL.
     }
   }
 
-  /* Scrollbar Utilities for Table Viewport */
-  .scroll-stable { 
-    scrollbar-gutter: stable both-edges; 
-  }
-
-  .scrollbar-visible { 
-    height: 10px; 
-  }
-
-  /* Enhanced scrollbar track/visibility for top bar */
-  .x-scrollbar { 
-    scrollbar-gutter: stable both-edges;
-    scrollbar-width: thin; 
-    scrollbar-color: hsl(var(--muted-foreground)) transparent; 
-  }
-
-  .x-scrollbar::-webkit-scrollbar { 
-    height: 12px; 
-  }
-
-  .x-scrollbar::-webkit-scrollbar-thumb { 
-    background-color: hsl(var(--muted-foreground)); 
-    border-radius: 8px; 
-  }
-
   /* Custom Scrollbar Styles */
   .scrollbar-thin {
     scrollbar-width: thin;
