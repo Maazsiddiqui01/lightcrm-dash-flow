@@ -143,6 +143,12 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Dual horizontal scrollbar sync refs
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isSyncingRef = useRef(false);
+  const [spacerWidth, setSpacerWidth] = useState(1200);
+
   // Measure container width for responsive columns
   useEffect(() => {
     const container = containerRef.current;
@@ -168,6 +174,60 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       setColumns(responsiveColumns);
     }
   }, [containerWidth, initialColumns, tableType]);
+
+  // Sync horizontal scroll between top clone and table body (bottom native)
+  useEffect(() => {
+    const topEl = topScrollRef.current;
+    const bodyEl = scrollRef.current;
+    if (!topEl || !bodyEl) return;
+
+    const onTop = () => {
+      if (isSyncingRef.current) return;
+      isSyncingRef.current = true;
+      bodyEl.scrollLeft = topEl.scrollLeft;
+      isSyncingRef.current = false;
+    };
+
+    const onBody = () => {
+      if (isSyncingRef.current) return;
+      isSyncingRef.current = true;
+      topEl.scrollLeft = bodyEl.scrollLeft;
+      isSyncingRef.current = false;
+    };
+
+    topEl.addEventListener('scroll', onTop, { passive: true });
+    bodyEl.addEventListener('scroll', onBody, { passive: true });
+
+    return () => {
+      topEl.removeEventListener('scroll', onTop);
+      bodyEl.removeEventListener('scroll', onBody);
+    };
+  }, []);
+
+  // Measure content width to size the top scrollbar spacer
+  useEffect(() => {
+    const bodyEl = scrollRef.current;
+    if (!bodyEl) return;
+
+    const measure = () => {
+      const table = bodyEl.querySelector('table') as HTMLTableElement | null;
+      const width = table ? table.scrollWidth : bodyEl.scrollWidth;
+      setSpacerWidth(Math.max(width, bodyEl.clientWidth, 1200));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(bodyEl);
+    const table = bodyEl.querySelector('table');
+    if (table) ro.observe(table);
+    window.addEventListener('resize', measure);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+
 
   // Calculate pagination if enabled
   const totalPages = enablePagination ? Math.ceil(data.length / pageSize) : 1;
