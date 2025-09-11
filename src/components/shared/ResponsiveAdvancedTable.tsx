@@ -329,6 +329,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     setCurrentPage(1);
   };
 
+
   // Loading state
   if (loading) {
     return (
@@ -355,7 +356,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   }
 
   // Use virtualized table for large datasets or when explicitly enabled
-  if (enableVirtualization || data.length > 1000) {
+  if (enableVirtualization) {
     return (
       <div ref={containerRef} className={cn("space-y-4 flex flex-col", className)}>
         {/* Toolbar */}

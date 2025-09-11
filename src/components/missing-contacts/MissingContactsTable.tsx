@@ -312,7 +312,6 @@ export function MissingContactsTable({
         enableRowSelection={false}
         initialPageSize={pageSize}
         showTopPagination={true}
-        className="overflow-x-auto"
       />
     </div>
   );
