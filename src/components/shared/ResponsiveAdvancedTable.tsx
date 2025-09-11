@@ -181,26 +181,38 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     const bodyEl = scrollRef.current;
     if (!topEl || !bodyEl) return;
 
-    const onTop = () => {
+    let rafId = 0;
+
+    const syncFromTop = () => {
       if (isSyncingRef.current) return;
       isSyncingRef.current = true;
-      bodyEl.scrollLeft = topEl.scrollLeft;
-      isSyncingRef.current = false;
+      const x = topEl.scrollLeft;
+      rafId = requestAnimationFrame(() => {
+        bodyEl.scrollLeft = x;
+        isSyncingRef.current = false;
+      });
     };
 
-    const onBody = () => {
+    const syncFromBody = () => {
       if (isSyncingRef.current) return;
       isSyncingRef.current = true;
-      topEl.scrollLeft = bodyEl.scrollLeft;
-      isSyncingRef.current = false;
+      const x = bodyEl.scrollLeft;
+      rafId = requestAnimationFrame(() => {
+        topEl.scrollLeft = x;
+        isSyncingRef.current = false;
+      });
     };
 
-    topEl.addEventListener('scroll', onTop, { passive: true });
-    bodyEl.addEventListener('scroll', onBody, { passive: true });
+    // Initial alignment
+    topEl.scrollLeft = bodyEl.scrollLeft;
+
+    topEl.addEventListener('scroll', syncFromTop, { passive: true });
+    bodyEl.addEventListener('scroll', syncFromBody, { passive: true });
 
     return () => {
-      topEl.removeEventListener('scroll', onTop);
-      bodyEl.removeEventListener('scroll', onBody);
+      cancelAnimationFrame(rafId);
+      topEl.removeEventListener('scroll', syncFromTop);
+      bodyEl.removeEventListener('scroll', syncFromBody);
     };
   }, []);
 
