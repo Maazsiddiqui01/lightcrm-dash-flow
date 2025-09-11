@@ -34,6 +34,11 @@ export function useMissingCandidates(params: {
         console.error('Data validation failed:', parsed.error.flatten());
         throw new Error('Invalid data shape for contacts_missing_candidates');
       }
+      
+      // Debug: Show actual data shape
+      console.table(parsed.data?.slice(0,3));
+      console.log('Raw data keys:', Object.keys(parsed.data?.[0] || {}));
+      
       return parsed.data;
     },
   });

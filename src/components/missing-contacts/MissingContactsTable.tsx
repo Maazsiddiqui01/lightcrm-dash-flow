@@ -119,7 +119,7 @@ export function MissingContactsTable({
       label: 'Select',
       width: 50,
       enableHiding: false,
-      render: (candidate: MissingContact) => {
+      render: (value: any, candidate: MissingContact) => {
         if (!candidate?.id) return null;
         return (
           <Checkbox
@@ -134,17 +134,17 @@ export function MissingContactsTable({
       key: 'full_name',
       label: 'Full Name',
       width: 200,
-      render: (candidate: MissingContact) => {
-        const name = dashIfEmpty(candidate?.full_name);
-        return <span className="truncate" title={candidate?.full_name ?? ""}>{name}</span>;
+      render: (value: string | null, candidate: MissingContact) => {
+        const name = dashIfEmpty(candidate.full_name);
+        return <span className="truncate" title={candidate.full_name ?? ""}>{name}</span>;
       },
     },
     {
       key: 'email',
       label: 'Email',
       width: 250,
-      render: (candidate: MissingContact) => {
-        const email = candidate?.email?.trim();
+      render: (value: string | null, candidate: MissingContact) => {
+        const email = candidate.email?.trim();
         if (!email) {
           return <Badge variant="secondary">No email</Badge>;
         }
@@ -159,25 +159,25 @@ export function MissingContactsTable({
       key: 'organization',
       label: 'Organization',
       width: 200,
-      render: (candidate: MissingContact) => {
-        const org = dashIfEmpty(candidate?.organization);
-        return <span className="truncate" title={candidate?.organization ?? ""}>{org}</span>;
+      render: (value: string | null, candidate: MissingContact) => {
+        const org = dashIfEmpty(candidate.organization);
+        return <span className="truncate" title={candidate.organization ?? ""}>{org}</span>;
       },
     },
     {
       key: 'status',
       label: 'Status',
       width: 120,
-      render: (candidate: MissingContact) => {
-        return <StatusBadge status={candidate?.status || 'pending'} />;
+      render: (value: string, candidate: MissingContact) => {
+        return <StatusBadge status={candidate.status || 'pending'} />;
       },
     },
     {
       key: 'created_at',
       label: 'Created At',
       width: 150,
-      render: (candidate: MissingContact) => {
-        if (!candidate?.created_at) return '—';
+      render: (value: string, candidate: MissingContact) => {
+        if (!candidate.created_at) return '—';
         try {
           return format(new Date(candidate.created_at), 'MMM d, yyyy p');
         } catch {
@@ -190,7 +190,7 @@ export function MissingContactsTable({
       label: 'Actions',
       width: 160,
       enableHiding: false,
-      render: (candidate: MissingContact) => {
+      render: (value: any, candidate: MissingContact) => {
         if (!candidate?.email) {
           return <div className="text-muted-foreground text-xs">No email</div>;
         }
@@ -203,7 +203,7 @@ export function MissingContactsTable({
             <Button
               size="sm"
               className="bg-green-600 text-white hover:bg-green-700"
-              onClick={() => handleApprove(candidate.email)}
+              onClick={() => handleApprove(candidate.email!)}
               disabled={isApproveDisabled}
             >
               <UserCheck className="h-3 w-3 mr-1" />
@@ -212,7 +212,7 @@ export function MissingContactsTable({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleDismiss(candidate.email)}
+              onClick={() => handleDismiss(candidate.email!)}
               disabled={isDismissDisabled}
             >
               <UserX className="h-3 w-3 mr-1" />
@@ -233,21 +233,18 @@ export function MissingContactsTable({
   }
 
   return (
-    <>
-      <AdvancedTable
-        data={filteredData}
-        columns={columns}
-        loading={isLoading}
-        tableId="missing-contacts"
-        emptyState={{
-          title: "No candidates found",
-          description: "Click 'Refresh from Interactions' to scan for new contacts.",
-        }}
-        enablePagination={true}
-        initialPageSize={pageSize}
-        enableRowSelection={false}
-      />
-
-    </>
+    <AdvancedTable
+      data={filteredData}
+      columns={columns}
+      loading={isLoading}
+      tableId="missing-contacts"
+      emptyState={{
+        title: "No candidates found",
+        description: "Click 'Refresh from Interactions' to scan for new contacts.",
+      }}
+      enablePagination={true}
+      initialPageSize={pageSize}
+      enableRowSelection={false}
+    />
   );
 }
