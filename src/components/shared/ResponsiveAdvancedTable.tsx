@@ -169,39 +169,45 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     return () => resizeObserver.disconnect();
   }, [layoutContainerRef]);
 
+  // Apply view mode to columns (memoized to prevent infinite re-renders)
+  const applyViewModeToColumns = useMemo(() => {
+    return (cols: ColumnDef<T>[], availableWidth: number, mode: 'fit' | 'wide') => {
+      console.log('applyViewModeToColumns called with mode:', mode, 'availableWidth:', availableWidth);
+      
+      if (mode === 'fit') {
+        // Fit mode: distribute available width among all visible columns
+        const visibleCols = cols.filter(col => col.visible !== false);
+        const minWidthsTotal = visibleCols.reduce((sum, col) => sum + (col.minWidth || 120), 0);
+        
+        if (availableWidth > minWidthsTotal) {
+          const extraWidth = availableWidth - minWidthsTotal;
+          const distributedWidth = extraWidth / visibleCols.length;
+          
+          return cols.map(col => ({
+            ...col,
+            width: col.visible !== false ? (col.minWidth || 120) + distributedWidth : col.width
+          }));
+        }
+      }
+      
+      // Wide mode: use preferred widths or defaults
+      return cols.map(col => ({
+        ...col,
+        width: col.width || 200 // Default wide width
+      }));
+    };
+  }, []);
+
   // Update columns based on container width and view mode
   useEffect(() => {
+    console.log('Effect triggered - containerWidth:', containerWidth, 'viewMode:', viewMode);
     if (containerWidth > 0) {
       const responsiveColumns = getResponsiveColumns(initialColumns, containerWidth, tableType);
       const columnsWithViewMode = applyViewModeToColumns(responsiveColumns, containerWidth, viewMode);
+      console.log('Updating columns with view mode:', viewMode, 'columns:', columnsWithViewMode.map(c => ({ key: c.key, width: c.width })));
       setColumns(columnsWithViewMode);
     }
-  }, [containerWidth, initialColumns, tableType, viewMode]);
-
-  // Apply view mode to columns
-  const applyViewModeToColumns = (cols: ColumnDef<T>[], availableWidth: number, mode: 'fit' | 'wide') => {
-    if (mode === 'fit') {
-      // Fit mode: distribute available width among all visible columns
-      const visibleCols = cols.filter(col => col.visible !== false);
-      const minWidthsTotal = visibleCols.reduce((sum, col) => sum + (col.minWidth || 120), 0);
-      
-      if (availableWidth > minWidthsTotal) {
-        const extraWidth = availableWidth - minWidthsTotal;
-        const distributedWidth = extraWidth / visibleCols.length;
-        
-        return cols.map(col => ({
-          ...col,
-          width: col.visible !== false ? (col.minWidth || 120) + distributedWidth : col.width
-        }));
-      }
-    }
-    
-    // Wide mode: use preferred widths or defaults
-    return cols.map(col => ({
-      ...col,
-      width: col.width || 200 // Default wide width
-    }));
-  };
+  }, [containerWidth, initialColumns, tableType, viewMode, applyViewModeToColumns]);
 
   // Sync horizontal scroll between top clone and table body (bottom native)
   useEffect(() => {
@@ -529,7 +535,10 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
               <Button
                 variant={viewMode === 'fit' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setViewMode('fit')}
+                onClick={() => {
+                  console.log('Switching to fit mode, current mode:', viewMode);
+                  setViewMode('fit');
+                }}
                 className="rounded-r-none border-r-0"
               >
                 Fit to Table
@@ -537,7 +546,10 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
               <Button
                 variant={viewMode === 'wide' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setViewMode('wide')}
+                onClick={() => {
+                  console.log('Switching to wide mode, current mode:', viewMode);
+                  setViewMode('wide');
+                }}
                 className="rounded-l-none"
               >
                 Wide View
@@ -672,7 +684,10 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
               <Button
                 variant={viewMode === 'fit' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setViewMode('fit')}
+                onClick={() => {
+                  console.log('Switching to fit mode, current mode:', viewMode);
+                  setViewMode('fit');
+                }}
                 className="rounded-r-none border-r-0"
               >
                 Fit to Table
@@ -680,7 +695,10 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
               <Button
                 variant={viewMode === 'wide' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setViewMode('wide')}
+                onClick={() => {
+                  console.log('Switching to wide mode, current mode:', viewMode);
+                  setViewMode('wide');
+                }}
                 className="rounded-l-none"
               >
                 Wide View
