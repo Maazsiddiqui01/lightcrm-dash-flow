@@ -41,9 +41,9 @@ export function MissingContactsTable({
       // Apply search filter
       if (search) {
         const searchLower = search.toLowerCase();
-        const emailMatch = candidate.email.toLowerCase().includes(searchLower);
-        const nameMatch = candidate.full_name?.toLowerCase().includes(searchLower) || false;
-        const domainMatch = candidate.email.split('@')[1]?.toLowerCase().includes(searchLower) || false;
+        const emailMatch = candidate.email?.toLowerCase().includes(searchLower) || false;
+        const nameMatch = candidate.fullName?.toLowerCase().includes(searchLower) || false;
+        const domainMatch = candidate.email?.split('@')[1]?.toLowerCase().includes(searchLower) || false;
         const orgMatch = candidate.organization?.toLowerCase().includes(searchLower) || false;
         
         if (!emailMatch && !nameMatch && !domainMatch && !orgMatch) {
@@ -130,11 +130,12 @@ export function MissingContactsTable({
       },
     },
     {
-      key: 'full_name',
+      key: 'fullName',
       label: 'Full Name',
       width: 200,
       render: (candidate: MissingCandidate) => {
-        return candidate?.full_name || '—';
+        const name = candidate?.fullName?.trim();
+        return name || '—';
       },
     },
     {
@@ -142,11 +143,14 @@ export function MissingContactsTable({
       label: 'Email',
       width: 250,
       render: (candidate: MissingCandidate) => {
-        if (!candidate?.email) {
+        const email = candidate?.email?.trim();
+        if (!email) {
           return <Badge variant="outline" className="text-muted-foreground">No email</Badge>;
         }
         return (
-          <span className="font-mono text-sm">{candidate.email}</span>
+          <a href={`mailto:${email}`} className="font-mono text-sm text-primary underline hover:no-underline">
+            {email}
+          </a>
         );
       },
     },
@@ -155,7 +159,8 @@ export function MissingContactsTable({
       label: 'Organization',
       width: 200,
       render: (candidate: MissingCandidate) => {
-        return candidate?.organization || '—';
+        const org = candidate?.organization?.trim();
+        return org || '—';
       },
     },
     {
@@ -167,13 +172,13 @@ export function MissingContactsTable({
       },
     },
     {
-      key: 'created_at',
+      key: 'createdAt',
       label: 'Created At',
       width: 150,
       render: (candidate: MissingCandidate) => {
-        if (!candidate?.created_at) return '—';
+        if (!candidate?.createdAt) return '—';
         try {
-          return format(new Date(candidate.created_at), 'yyyy-MM-dd HH:mm');
+          return format(new Date(candidate.createdAt), 'MMM d, yyyy p');
         } catch {
           return '—';
         }

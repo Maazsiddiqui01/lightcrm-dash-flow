@@ -1,10 +1,10 @@
 export type MissingCandidate = {
   id: string;
-  full_name: string;
+  fullName: string;
   email: string;
-  organization: string;   // domain or org guess
+  organization: string;
   status: 'pending' | 'approved' | 'dismissed';
-  created_at: string | null; // ISO
+  createdAt: string | null; // ISO
 };
 
 // A defensive mapper that tolerates different column names / nulls
@@ -38,10 +38,10 @@ export function mapRowToCandidate(r: any): MissingCandidate {
 
   return {
     id: String(r?.id ?? crypto.randomUUID()),
-    full_name: String(fullName || '').trim(),
+    fullName: String(fullName || '').trim(),
     email: String(email || '').trim(),
     organization: String(organization || '').trim(),
     status: (status === 'approved' || status === 'dismissed') ? status : 'pending',
-    created_at: createdAt ? new Date(createdAt).toISOString() : null,
+    createdAt: createdAt ? new Date(createdAt).toISOString() : null,
   };
 }
