@@ -341,21 +341,20 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
     // Update table scroll width when table content changes
     const updateScrollWidth = () => {
-      const table = tableScrollEl.querySelector('table');
-      if (table) {
-        setTableScrollWidth(table.scrollWidth);
-      }
+      // Use container's scrollWidth to ensure parity with its own scrolling range
+      setTableScrollWidth(tableScrollEl.scrollWidth);
+      // Keep positions in sync after width changes
+      topScrollEl.scrollLeft = tableScrollEl.scrollLeft;
     };
 
     // Initial measurement
     updateScrollWidth();
 
-    // Use ResizeObserver to detect table size changes
+    // Observe both the scroll container and its table for sizing changes
     const resizeObserver = new ResizeObserver(updateScrollWidth);
+    resizeObserver.observe(tableScrollEl);
     const table = tableScrollEl.querySelector('table');
-    if (table) {
-      resizeObserver.observe(table);
-    }
+    if (table) resizeObserver.observe(table);
 
     // Scroll sync handlers
     let isTopScrolling = false;
