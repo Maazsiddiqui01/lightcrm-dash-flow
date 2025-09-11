@@ -144,6 +144,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   const containerRef = useRef<HTMLDivElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const topScrollRef = useRef<HTMLDivElement>(null);
+  const [tableScrollWidth, setTableScrollWidth] = useState(1200);
 
   // Measure container width for responsive columns
   useEffect(() => {
@@ -338,15 +339,41 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     
     if (!tableScrollEl || !topScrollEl) return;
 
+    // Update table scroll width when table content changes
+    const updateScrollWidth = () => {
+      const table = tableScrollEl.querySelector('table');
+      if (table) {
+        setTableScrollWidth(table.scrollWidth);
+      }
+    };
+
+    // Initial measurement
+    updateScrollWidth();
+
+    // Use ResizeObserver to detect table size changes
+    const resizeObserver = new ResizeObserver(updateScrollWidth);
+    const table = tableScrollEl.querySelector('table');
+    if (table) {
+      resizeObserver.observe(table);
+    }
+
+    // Scroll sync handlers
+    let isTopScrolling = false;
+    let isTableScrolling = false;
+
     const syncFromTableToTop = () => {
-      if (topScrollEl && tableScrollEl) {
+      if (!isTopScrolling && topScrollEl && tableScrollEl) {
+        isTableScrolling = true;
         topScrollEl.scrollLeft = tableScrollEl.scrollLeft;
+        setTimeout(() => { isTableScrolling = false; }, 0);
       }
     };
 
     const syncFromTopToTable = () => {
-      if (topScrollEl && tableScrollEl) {
+      if (!isTableScrolling && topScrollEl && tableScrollEl) {
+        isTopScrolling = true;
         tableScrollEl.scrollLeft = topScrollEl.scrollLeft;
+        setTimeout(() => { isTopScrolling = false; }, 0);
       }
     };
 
@@ -356,8 +383,9 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     return () => {
       tableScrollEl.removeEventListener('scroll', syncFromTableToTop);
       topScrollEl.removeEventListener('scroll', syncFromTopToTable);
+      resizeObserver.disconnect();
     };
-  }, []);
+  }, [displayData, visibleColumns]);
 
   // Loading state
   if (loading) {
@@ -625,7 +653,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
           className="overflow-x-auto overflow-y-hidden h-4 bg-muted/10"
           style={{ scrollbarWidth: 'thin' }}
         >
-          <div style={{ width: '1200px', height: '1px' }}></div>
+          <div style={{ width: `${tableScrollWidth}px`, height: '1px' }}></div>
         </div>
       </div>
 
