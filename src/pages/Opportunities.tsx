@@ -95,7 +95,11 @@ export function Opportunities() {
           onClearFilters={clearFilters}
         />
 
-        <OpportunitiesTable filters={filters} />
+        <TableViewport
+          header={null}
+          table={<OpportunitiesTable filters={filters} />}
+          minTableWidth={1400}
+        />
 
         <AddOpportunityDialog 
           open={isAddDialogOpen} 

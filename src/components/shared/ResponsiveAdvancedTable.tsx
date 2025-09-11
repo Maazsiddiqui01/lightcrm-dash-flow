@@ -142,12 +142,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   });
   
   const containerRef = useRef<HTMLDivElement>(null);
-  const tableScrollRef = useRef<HTMLDivElement>(null);
-  const topScrollRef = useRef<HTMLDivElement>(null);
-  const [tableScrollWidth, setTableScrollWidth] = useState(1200);
-  const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
-  const isSyncingRef = useRef(false);
-  const rafIdRef = useRef<number | null>(null);
 
   // Measure container width for responsive columns
   useEffect(() => {
@@ -335,71 +329,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     setCurrentPage(1);
   };
 
-  // Sync scroll between top and main table scrollbars (two-way, RAF-based)
-  useEffect(() => {
-    const tableScrollEl = tableScrollRef.current;
-    const topScrollEl = topScrollRef.current;
-    
-    if (!tableScrollEl || !topScrollEl) return;
-
-    const updateMeasurements = () => {
-      const sW = tableScrollEl.scrollWidth;
-      const cW = tableScrollEl.clientWidth;
-      setTableScrollWidth(sW);
-      setHasHorizontalOverflow(sW > cW);
-      // Keep positions in sync after width changes
-      if (topScrollEl.scrollLeft !== tableScrollEl.scrollLeft) {
-        topScrollEl.scrollLeft = tableScrollEl.scrollLeft;
-      }
-    };
-
-    // Initial measurement
-    updateMeasurements();
-
-    // Observe both the scroll container and its table for sizing changes
-    const resizeObserver = new ResizeObserver(updateMeasurements);
-    resizeObserver.observe(tableScrollEl);
-    const table = tableScrollEl.querySelector('table');
-    if (table) resizeObserver.observe(table);
-
-    // Scroll sync handlers using a re-entrancy guard
-    const syncFromTableToTop = () => {
-      if (isSyncingRef.current) return;
-      isSyncingRef.current = true;
-      rafIdRef.current = requestAnimationFrame(() => {
-        topScrollEl.scrollLeft = tableScrollEl.scrollLeft;
-        isSyncingRef.current = false;
-      });
-    };
-
-    const syncFromTopToTable = () => {
-      if (isSyncingRef.current) return;
-      isSyncingRef.current = true;
-      rafIdRef.current = requestAnimationFrame(() => {
-        tableScrollEl.scrollLeft = topScrollEl.scrollLeft;
-        isSyncingRef.current = false;
-      });
-    };
-
-    // Convert vertical wheel gestures into horizontal scroll on the top bar
-    const handleTopWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        topScrollEl.scrollLeft += e.deltaY;
-      }
-    };
-
-    tableScrollEl.addEventListener('scroll', syncFromTableToTop, { passive: true });
-    topScrollEl.addEventListener('scroll', syncFromTopToTable, { passive: true });
-    topScrollEl.addEventListener('wheel', handleTopWheel, { passive: true });
-
-    return () => {
-      tableScrollEl.removeEventListener('scroll', syncFromTableToTop);
-      topScrollEl.removeEventListener('scroll', syncFromTopToTable);
-      topScrollEl.removeEventListener('wheel', handleTopWheel);
-      resizeObserver.disconnect();
-      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-    };
-  }, [displayData, visibleColumns]);
 
   // Loading state
   if (loading) {
@@ -660,21 +589,8 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         </div>
       )}
 
-      {/* Top Horizontal Scrollbar */}
-      {hasHorizontalOverflow && (
-        <div className="sticky top-0 z-20 bg-background border-b border-border">
-          <div 
-            ref={topScrollRef}
-            className="x-scrollbar overflow-x-auto overflow-y-auto h-3"
-            aria-label="Horizontal scroll"
-          >
-            <div style={{ width: `${tableScrollWidth}px`, height: 1 }} />
-          </div>
-        </div>
-      )}
-
       {/* Table Container - Single horizontal scroll */}
-      <div ref={tableScrollRef} className="overflow-x-auto border-0 bg-card">
+      <div className="overflow-x-auto border-0 bg-card">
         <Table className="w-full" style={{ minWidth: "1200px" }}>
           <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow className="border-b bg-muted/20">
