@@ -145,6 +145,9 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const topScrollRef = useRef<HTMLDivElement>(null);
   const [tableScrollWidth, setTableScrollWidth] = useState(1200);
+  const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
+  const isSyncingRef = useRef(false);
+  const rafIdRef = useRef<number | null>(null);
 
   // Measure container width for responsive columns
   useEffect(() => {
@@ -332,57 +335,69 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     setCurrentPage(1);
   };
 
-  // Sync scroll between top and main table scrollbars
+  // Sync scroll between top and main table scrollbars (two-way, RAF-based)
   useEffect(() => {
     const tableScrollEl = tableScrollRef.current;
     const topScrollEl = topScrollRef.current;
     
     if (!tableScrollEl || !topScrollEl) return;
 
-    // Update table scroll width when table content changes
-    const updateScrollWidth = () => {
-      // Use container's scrollWidth to ensure parity with its own scrolling range
-      setTableScrollWidth(tableScrollEl.scrollWidth);
+    const updateMeasurements = () => {
+      const sW = tableScrollEl.scrollWidth;
+      const cW = tableScrollEl.clientWidth;
+      setTableScrollWidth(sW);
+      setHasHorizontalOverflow(sW > cW);
       // Keep positions in sync after width changes
-      topScrollEl.scrollLeft = tableScrollEl.scrollLeft;
+      if (topScrollEl.scrollLeft !== tableScrollEl.scrollLeft) {
+        topScrollEl.scrollLeft = tableScrollEl.scrollLeft;
+      }
     };
 
     // Initial measurement
-    updateScrollWidth();
+    updateMeasurements();
 
     // Observe both the scroll container and its table for sizing changes
-    const resizeObserver = new ResizeObserver(updateScrollWidth);
+    const resizeObserver = new ResizeObserver(updateMeasurements);
     resizeObserver.observe(tableScrollEl);
     const table = tableScrollEl.querySelector('table');
     if (table) resizeObserver.observe(table);
 
-    // Scroll sync handlers
-    let isTopScrolling = false;
-    let isTableScrolling = false;
-
+    // Scroll sync handlers using a re-entrancy guard
     const syncFromTableToTop = () => {
-      if (!isTopScrolling && topScrollEl && tableScrollEl) {
-        isTableScrolling = true;
+      if (isSyncingRef.current) return;
+      isSyncingRef.current = true;
+      rafIdRef.current = requestAnimationFrame(() => {
         topScrollEl.scrollLeft = tableScrollEl.scrollLeft;
-        setTimeout(() => { isTableScrolling = false; }, 0);
-      }
+        isSyncingRef.current = false;
+      });
     };
 
     const syncFromTopToTable = () => {
-      if (!isTableScrolling && topScrollEl && tableScrollEl) {
-        isTopScrolling = true;
+      if (isSyncingRef.current) return;
+      isSyncingRef.current = true;
+      rafIdRef.current = requestAnimationFrame(() => {
         tableScrollEl.scrollLeft = topScrollEl.scrollLeft;
-        setTimeout(() => { isTopScrolling = false; }, 0);
+        isSyncingRef.current = false;
+      });
+    };
+
+    // Convert vertical wheel gestures into horizontal scroll on the top bar
+    const handleTopWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        topScrollEl.scrollLeft += e.deltaY;
       }
     };
 
-    tableScrollEl.addEventListener('scroll', syncFromTableToTop);
-    topScrollEl.addEventListener('scroll', syncFromTopToTable);
+    tableScrollEl.addEventListener('scroll', syncFromTableToTop, { passive: true });
+    topScrollEl.addEventListener('scroll', syncFromTopToTable, { passive: true });
+    topScrollEl.addEventListener('wheel', handleTopWheel, { passive: true });
 
     return () => {
       tableScrollEl.removeEventListener('scroll', syncFromTableToTop);
       topScrollEl.removeEventListener('scroll', syncFromTopToTable);
+      topScrollEl.removeEventListener('wheel', handleTopWheel);
       resizeObserver.disconnect();
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
   }, [displayData, visibleColumns]);
 
@@ -412,7 +427,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   }
 
   // Use virtualized table for large datasets or when explicitly enabled
-  if (enableVirtualization || data.length > 1000) {
+  if (enableVirtualization) {
     return (
       <div ref={containerRef} className={cn("space-y-4 flex flex-col", className)}>
         {/* Toolbar */}
@@ -646,15 +661,17 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       )}
 
       {/* Top Horizontal Scrollbar */}
-      <div className="sticky top-0 z-20 bg-background border-b border-border">
-        <div 
-          ref={topScrollRef}
-          className="overflow-x-auto overflow-y-hidden h-4 bg-muted/10"
-          style={{ scrollbarWidth: 'thin' }}
-        >
-          <div style={{ width: `${tableScrollWidth}px`, height: '1px' }}></div>
+      {hasHorizontalOverflow && (
+        <div className="sticky top-0 z-20 bg-background border-b border-border">
+          <div 
+            ref={topScrollRef}
+            className="x-scrollbar overflow-x-auto overflow-y-hidden h-3"
+            aria-label="Horizontal scroll"
+          >
+            <div style={{ width: `${tableScrollWidth}px`, height: 1 }} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Table Container - Single horizontal scroll */}
       <div ref={tableScrollRef} className="overflow-x-auto border-0 bg-card">
