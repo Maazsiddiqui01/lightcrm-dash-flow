@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
 
 interface OppsChartProps {
   type: 'tier' | 'status' | 'ebitda' | 'platform-addon' | 'referral-contacts' | 'referral-companies';
@@ -173,16 +173,26 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
               data={chartData}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={120}
-              paddingAngle={5}
+              innerRadius={50}
+              outerRadius={100}
+              paddingAngle={2}
               dataKey={config.valueKey}
+              label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+              labelLine={false}
             >
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip />
+            <Tooltip 
+              formatter={(value, name) => [value, name]}
+              labelFormatter={(label) => `${label}`}
+            />
+            <Legend 
+              verticalAlign="bottom" 
+              height={36}
+              formatter={(value, entry) => `${value}: ${entry.payload?.[config.valueKey] || ''}`}
+            />
           </PieChart>
         </ResponsiveContainer>
       );
@@ -206,8 +216,13 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
               width={90}
               tick={{ fontSize: 10 }}
             />
-            <Tooltip />
-            <Bar dataKey={config.valueKey} fill="hsl(var(--primary))" />
+            <Tooltip 
+              formatter={(value) => [value, 'Count']}
+              labelStyle={{ color: 'hsl(var(--foreground))' }}
+            />
+            <Bar dataKey={config.valueKey} fill="hsl(var(--primary))">
+              <LabelList dataKey={config.valueKey} position="right" />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       );
@@ -215,7 +230,7 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
 
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis 
             dataKey={config.dataKey} 
@@ -224,8 +239,13 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
             tick={{ fontSize: 10 }}
           />
           <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-          <Tooltip />
-          <Bar dataKey={config.valueKey} fill="hsl(var(--primary))" />
+          <Tooltip 
+            formatter={(value) => [value, 'Count']}
+            labelStyle={{ color: 'hsl(var(--foreground))' }}
+          />
+          <Bar dataKey={config.valueKey} fill="hsl(var(--primary))">
+            <LabelList dataKey={config.valueKey} position="top" />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     );

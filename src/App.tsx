@@ -4,7 +4,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Dashboard } from "@/pages/Dashboard";
-import SourcingGreatness from "@/pages/SourcingGreatness";
+import SourceGreatnessPage from "@/pages/SourceGreatnessPage";
 import { Contacts } from "@/pages/Contacts";
 import { Opportunities } from "@/pages/Opportunities";
 import { Interactions } from "@/pages/Interactions";
@@ -38,7 +38,7 @@ function App() {
             {/* Protected routes */}
             <Route path="/" element={
               <ProtectedRoute>
-                <Navigate to="/sourcing-greatness" replace />
+                <Navigate to="/dashboard" replace />
               </ProtectedRoute>
             } />
             
@@ -50,8 +50,7 @@ function App() {
                   <main id="main-content" className="h-full">
                     <PageTransition>
                       <Routes>
-                        <Route path="/sourcing-greatness" element={<SourcingGreatness />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/dashboard" element={<SourceGreatnessPage />} />
                         <Route path="/contacts" element={<Contacts />} />
                         <Route path="/missing-contacts" element={<MissingContacts />} />
                         <Route path="/opportunities" element={<Opportunities />} />

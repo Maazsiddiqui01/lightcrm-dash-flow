@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { DashboardHero } from '@/components/layout/DashboardHero';
 import { KpiCard } from '@/components/sourcing/KpiCard';
 import { Slicers } from '@/components/sourcing/Slicers';
 import { MeetingsChart } from '@/components/sourcing/MeetingsChart';
@@ -37,7 +37,7 @@ const defaultFilters: SourcingFilters = {
   searchText: '',
 };
 
-export default function SourcingGreatness() {
+export default function SourceGreatnessPage() {
   const { toast } = useToast();
   const { filters, updateFilters: setFilters } = useUrlFilters(defaultFilters);
 
@@ -262,12 +262,11 @@ export default function SourcingGreatness() {
   return (
     <div className="min-h-0 h-[calc(100vh-140px)] overflow-auto">
       <div className="space-y-6 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <PageHeader 
-            title="Sourcing Greatness" 
-            description="Interactive dashboard with KPIs and analytics"
-          />
+        {/* Hero Section */}
+        <DashboardHero />
+
+        {/* Export Controls */}
+        <div className="flex justify-end">
           <ExportButtons 
             opportunities={metrics.filteredOpportunities}
             filters={filterState}
