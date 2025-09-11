@@ -7,14 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { title: "Sourcing Greatness", url: "/sourcing-greatness" },
+  { title: "Dashboard", url: "/dashboard" },
   { title: "Contacts", url: "/contacts" },
   { title: "Opportunities", url: "/opportunities" },
   { title: "Interactions", url: "/interactions" },
   { title: "KPIs", url: "/kpis" },
-  { title: "Tom New View", url: "/tom-new-view" },
   { title: "Make Your Own View", url: "/make-your-own-view" },
-  { title: "Ask AI", url: "/ask-ai" },
 ];
 
 const filterPages = ["/contacts", "/opportunities", "/interactions", "/kpis"];
