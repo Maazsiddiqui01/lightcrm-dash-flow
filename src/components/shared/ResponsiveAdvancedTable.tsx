@@ -119,8 +119,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   const [containerWidth, setContainerWidth] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
-  const [viewMode, setViewMode] = useState<'fit' | 'wide'>('fit');
-  const [isResizing, setIsResizing] = useState<string | null>(null);
   
   // Row selection
   const rowSelection = useSelectedRows({ 
@@ -169,45 +167,13 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     return () => resizeObserver.disconnect();
   }, [layoutContainerRef]);
 
-  // Apply view mode to columns (memoized to prevent infinite re-renders)
-  const applyViewModeToColumns = useMemo(() => {
-    return (cols: ColumnDef<T>[], availableWidth: number, mode: 'fit' | 'wide') => {
-      console.log('applyViewModeToColumns called with mode:', mode, 'availableWidth:', availableWidth);
-      
-      if (mode === 'fit') {
-        // Fit mode: distribute available width among all visible columns
-        const visibleCols = cols.filter(col => col.visible !== false);
-        const minWidthsTotal = visibleCols.reduce((sum, col) => sum + (col.minWidth || 120), 0);
-        
-        if (availableWidth > minWidthsTotal) {
-          const extraWidth = availableWidth - minWidthsTotal;
-          const distributedWidth = extraWidth / visibleCols.length;
-          
-          return cols.map(col => ({
-            ...col,
-            width: col.visible !== false ? (col.minWidth || 120) + distributedWidth : col.width
-          }));
-        }
-      }
-      
-      // Wide mode: use preferred widths or defaults
-      return cols.map(col => ({
-        ...col,
-        width: col.width || 200 // Default wide width
-      }));
-    };
-  }, []);
-
-  // Update columns based on container width and view mode
+  // Update columns based on container width
   useEffect(() => {
-    console.log('Effect triggered - containerWidth:', containerWidth, 'viewMode:', viewMode);
     if (containerWidth > 0) {
       const responsiveColumns = getResponsiveColumns(initialColumns, containerWidth, tableType);
-      const columnsWithViewMode = applyViewModeToColumns(responsiveColumns, containerWidth, viewMode);
-      console.log('Updating columns with view mode:', viewMode, 'columns:', columnsWithViewMode.map(c => ({ key: c.key, width: c.width })));
-      setColumns(columnsWithViewMode);
+      setColumns(responsiveColumns);
     }
-  }, [containerWidth, initialColumns, tableType, viewMode, applyViewModeToColumns]);
+  }, [containerWidth, initialColumns, tableType]);
 
   // Sync horizontal scroll between top clone and table body (bottom native)
   useEffect(() => {
@@ -329,38 +295,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     setColumns(prev => prev.map(col => 
       col.key === columnKey && col.enableHiding !== false ? { ...col, visible } : col
     ));
-  };
-
-  // Handle column resizing
-  const handleColumnResize = (columnKey: string, newWidth: number) => {
-    setColumns(prev => prev.map(col => 
-      col.key === columnKey ? { ...col, width: Math.max(newWidth, col.minWidth || 80) } : col
-    ));
-  };
-
-  // Handle mouse-based column resizing
-  const handleResizeMouseDown = (e: React.MouseEvent, columnKey: string) => {
-    e.preventDefault();
-    setIsResizing(columnKey);
-    
-    const startX = e.clientX;
-    const column = columns.find(col => col.key === columnKey);
-    const startWidth = column?.width || 200;
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - startX;
-      const newWidth = startWidth + deltaX;
-      handleColumnResize(columnKey, newWidth);
-    };
-    
-    const handleMouseUp = () => {
-      setIsResizing(null);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
   };
 
   // Handle sorting
@@ -530,32 +464,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
               </Button>
             )}
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center border rounded-md">
-              <Button
-                variant={viewMode === 'fit' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  console.log('Switching to fit mode, current mode:', viewMode);
-                  setViewMode('fit');
-                }}
-                className="rounded-r-none border-r-0"
-              >
-                Fit to Table
-              </Button>
-              <Button
-                variant={viewMode === 'wide' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  console.log('Switching to wide mode, current mode:', viewMode);
-                  setViewMode('wide');
-                }}
-                className="rounded-l-none"
-              >
-                Wide View
-              </Button>
-            </div>
-
             {/* Column visibility */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -679,32 +587,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
               </Button>
             )}
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center border rounded-md">
-              <Button
-                variant={viewMode === 'fit' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  console.log('Switching to fit mode, current mode:', viewMode);
-                  setViewMode('fit');
-                }}
-                className="rounded-r-none border-r-0"
-              >
-                Fit to Table
-              </Button>
-              <Button
-                variant={viewMode === 'wide' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  console.log('Switching to wide mode, current mode:', viewMode);
-                  setViewMode('wide');
-                }}
-                className="rounded-l-none"
-              >
-                Wide View
-              </Button>
-            </div>
-
             {/* Column visibility */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -804,7 +686,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                   <TableHead
                     key={column.key}
                     className={cn(
-                      "table-cell-compact text-left align-middle font-medium text-muted-foreground select-none bg-card relative",
+                      "table-cell-compact text-left align-middle font-medium text-muted-foreground select-none bg-card",
                       index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-card border-r border-border",
                       column.sortable && "cursor-pointer hover:text-foreground transition-colors",
                       column.headerClassName
@@ -816,46 +698,34 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                     }}
                     onClick={() => column.sortable && handleSort(column.key)}
                   >
-                    <div className="flex items-center justify-between pr-2">
-                      {column.key === 'select' ? (
-                        <div className="flex items-center justify-center">
-                          <Checkbox
-                            checked={rowSelection.isAllPageSelected(displayData)}
-                            onCheckedChange={() => rowSelection.toggleSelectAll(displayData)}
-                            className={rowSelection.isSomePageSelected(displayData) && !rowSelection.isAllPageSelected(displayData) ? "data-[state=checked]:bg-primary/50" : ""}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="truncate">{column.label}</span>
-                          {column.sortable && (
-                            <div className="flex flex-col">
-                              {sortKey === column.key ? (
-                                sortDirection === 'asc' ? (
-                                  <ArrowUp className="h-3 w-3" />
-                                ) : sortDirection === 'desc' ? (
-                                  <ArrowDown className="h-3 w-3" />
-                                ) : (
-                                  <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-                                )
+                    {column.key === 'select' ? (
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={rowSelection.isAllPageSelected(displayData)}
+                          onCheckedChange={() => rowSelection.toggleSelectAll(displayData)}
+                          className={rowSelection.isSomePageSelected(displayData) && !rowSelection.isAllPageSelected(displayData) ? "data-[state=checked]:bg-primary/50" : ""}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{column.label}</span>
+                        {column.sortable && (
+                          <div className="flex flex-col">
+                            {sortKey === column.key ? (
+                              sortDirection === 'asc' ? (
+                                <ArrowUp className="h-3 w-3" />
+                              ) : sortDirection === 'desc' ? (
+                                <ArrowDown className="h-3 w-3" />
                               ) : (
                                 <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* Resize Handle */}
-                      <div
-                        className={cn(
-                          "absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors",
-                          isResizing === column.key && "bg-primary/50"
+                              )
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                            )}
+                          </div>
                         )}
-                        onMouseDown={(e) => handleResizeMouseDown(e, column.key)}
-                        title="Drag to resize column"
-                      />
-                    </div>
+                      </div>
+                    )}
                   </TableHead>
                 ))}
               </TableRow>
