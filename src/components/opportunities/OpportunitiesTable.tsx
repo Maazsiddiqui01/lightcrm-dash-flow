@@ -4,7 +4,7 @@ import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedT
 import { OpportunityDrawer } from "./OpportunityDrawer";
 import { AddOpportunityDialog } from "./AddOpportunityDialog";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Briefcase, Mail } from "lucide-react";
+import { Download, Plus, Briefcase, Mail, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { jsonToCsv, downloadFile } from "@/utils/csvExport";
@@ -17,6 +17,17 @@ import { useEditMode } from "@/hooks/useEditMode";
 import { useColumnVisibility } from "@/hooks/useColumnVisibility";
 import { ColumnsMenu } from "@/components/shared/ColumnsMenu";
 import { EditToolbar } from "@/components/shared/EditToolbar";
+
+// Multi-sort imports
+import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
+import { SortChips } from "@/components/shared/SortChips";
+import { 
+  loadSortState, 
+  saveSortState, 
+  clearSortState,
+  buildSupabaseOrder,
+  applyClientSort 
+} from "@/lib/sort/customSort";
 
 interface OpportunityRaw {
   id: string;
@@ -77,6 +88,16 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   
+  // Multi-sort state
+  const [sortLevels, setSortLevels] = useState<SortLevel[]>([]);
+  const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
+  
+  // Load sort state on mount
+  useEffect(() => {
+    const savedSort = loadSortState('opportunities_raw');
+    setSortLevels(savedSort);
+  }, []);
+  
   // Initialize edit mode and column visibility
   const editMode = useEditMode('opportunities_raw', opportunities, setOpportunities);
   const columnVisibility = useColumnVisibility('columns:opportunities_raw');
@@ -123,9 +144,17 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
     return [...baseColumns, emailColumn];
   }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility]);
   
+  // Create column options for sort dialog
+  const columnOptions: ColumnOption[] = useMemo(() => {
+    return tableColumns.map(col => ({
+      key: col.name,
+      label: col.displayName,
+    }));
+  }, [tableColumns]);
+  
   useEffect(() => {
     fetchOpportunities();
-  }, [sortKey, sortDirection, filters]);
+  }, [sortLevels, filters]);
 
   const fetchOpportunities = async () => {
     try {
@@ -200,9 +229,21 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         query = query.or(dateQueries.join(','));
       }
 
-      // Apply sorting
-      if (sortKey && sortDirection) {
-        query = query.order(sortKey, { ascending: sortDirection === 'asc', nullsFirst: false });
+      // Apply multi-sort (server-side for non-custom orders)
+      const serverOrders = buildSupabaseOrder(sortLevels);
+      if (serverOrders.length > 0) {
+        serverOrders.forEach(order => {
+          query = query.order(order.column, { 
+            ascending: order.ascending, 
+            nullsFirst: false 
+          });
+        });
+      } else if (sortLevels.length === 0) {
+        // Fallback to default sort
+        query = query.order('created_at', { ascending: false, nullsFirst: false });
+      } else {
+        // All levels have custom orders, use default for stable pagination
+        query = query.order('id', { ascending: true });
       }
 
       const { data, error } = await query;
@@ -217,7 +258,9 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         return;
       }
 
-      setOpportunities(data || []);
+      // Apply client-side sorting for custom orders
+      const sortedData = applyClientSort(data || [], sortLevels);
+      setOpportunities(sortedData);
     } catch (error) {
       console.error("Unexpected error:", error);
       toast({
@@ -246,6 +289,18 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
     setIsDrawerOpen(true);
   };
 
+  // Handle multi-sort changes
+  const handleSortChange = (newSortLevels: SortLevel[]) => {
+    setSortLevels(newSortLevels);
+    saveSortState('opportunities_raw', newSortLevels);
+  };
+
+  // Clear sort
+  const handleClearSort = () => {
+    setSortLevels([]);
+    clearSortState('opportunities_raw');
+  };
+
   const handleSort = (key: string, direction: 'asc' | 'desc' | null) => {
     setSortKey(key);
     setSortDirection(direction);
@@ -272,7 +327,10 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const exportSummaryCsv = async () => {
     setIsExporting(true);
     try {
-      const exportData = filteredOpportunities.map(opp => ({
+      // Apply same sorting to export data
+      const exportOpportunities = applyClientSort(filteredOpportunities, sortLevels);
+      
+      const exportData = exportOpportunities.map(opp => ({
         'Deal Name': opp.deal_name || '',
         'Status': opp.status || '',
         'Tier': opp.tier || '',
@@ -311,13 +369,16 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const exportDetailedCsv = async () => {
     setIsExporting(true);
     try {
+      // Apply same sorting to export data
+      const exportOpportunities = applyClientSort(filteredOpportunities, sortLevels);
+      
       // Export all columns from opportunities_raw
-      const csv = jsonToCsv(filteredOpportunities);
+      const csv = jsonToCsv(exportOpportunities);
       downloadFile(csv, `opportunities-detailed-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
       
       toast({
         title: "Export Successful",
-        description: `Exported ${filteredOpportunities.length} opportunities with all details to CSV.`,
+        description: `Exported ${exportOpportunities.length} opportunities with all details to CSV.`,
       });
     } catch (error) {
       console.error("Export error:", error);
@@ -345,6 +406,14 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         isSaving={editMode.isSaving}
       />
 
+      {/* Sort Chips */}
+      <SortChips
+        sortLevels={sortLevels}
+        columns={columnOptions}
+        onClear={handleClearSort}
+        className="mb-2"
+      />
+
       {/* Header with actions */}
       <div className="flex justify-between items-center">
         <div>
@@ -360,6 +429,15 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
             onShowAll={columnVisibility.showAllColumns}
             onHideAll={columnVisibility.hideAllColumns}
           />
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsSortDialogOpen(true)}
+          >
+            <ArrowUpDown className="h-4 w-4 mr-2" />
+            Sort
+          </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -423,6 +501,15 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
           fetchOpportunities();
           setIsAddDialogOpen(false);
         }}
+      />
+
+      {/* Multi-Sort Dialog */}
+      <MultiSortDialog
+        open={isSortDialogOpen}
+        onOpenChange={setIsSortDialogOpen}
+        columns={columnOptions}
+        sortLevels={sortLevels}
+        onApply={handleSortChange}
       />
     </div>
   );

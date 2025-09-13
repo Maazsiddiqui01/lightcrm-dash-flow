@@ -4,7 +4,7 @@ import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedT
 import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, User } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { jsonToCsv, downloadFile } from "@/utils/csvExport";
@@ -16,6 +16,17 @@ import { useEditMode } from "@/hooks/useEditMode";
 import { useColumnVisibility } from "@/hooks/useColumnVisibility";
 import { ColumnsMenu } from "@/components/shared/ColumnsMenu";
 import { EditToolbar } from "@/components/shared/EditToolbar";
+
+// Multi-sort imports
+import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
+import { SortChips } from "@/components/shared/SortChips";
+import { 
+  loadSortState, 
+  saveSortState, 
+  clearSortState,
+  buildSupabaseOrder,
+  applyClientSort 
+} from "@/lib/sort/customSort";
 
 interface ContactRaw {
   id: string;
@@ -97,6 +108,16 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   
+  // Multi-sort state
+  const [sortLevels, setSortLevels] = useState<SortLevel[]>([]);
+  const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
+  
+  // Load sort state on mount
+  useEffect(() => {
+    const savedSort = loadSortState('contacts_raw');
+    setSortLevels(savedSort);
+  }, []);
+  
   // Initialize edit mode and column visibility
   const editMode = useEditMode('contacts_raw', contacts, setContacts);
   const columnVisibility = useColumnVisibility('columns:contacts_raw');
@@ -119,9 +140,17 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
     );
   }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility]);
   
+  // Create column options for sort dialog
+  const columnOptions: ColumnOption[] = useMemo(() => {
+    return tableColumns.map(col => ({
+      key: col.name,
+      label: col.displayName,
+    }));
+  }, [tableColumns]);
+  
   useEffect(() => {
     fetchContacts();
-  }, [sortKey, sortDirection, externalFilters]);
+  }, [sortLevels, externalFilters]);
 
   const fetchContacts = async () => {
     try {
@@ -209,9 +238,21 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
         query = query.lte('delta', deltaMax);
       }
 
-      // Apply sorting
-      if (sortKey && sortDirection) {
-        query = query.order(sortKey, { ascending: sortDirection === 'asc', nullsFirst: false });
+      // Apply multi-sort (server-side for non-custom orders)
+      const serverOrders = buildSupabaseOrder(sortLevels);
+      if (serverOrders.length > 0) {
+        serverOrders.forEach(order => {
+          query = query.order(order.column, { 
+            ascending: order.ascending, 
+            nullsFirst: false 
+          });
+        });
+      } else if (sortLevels.length === 0) {
+        // Fallback to default sort
+        query = query.order('most_recent_contact', { ascending: false, nullsFirst: false });
+      } else {
+        // All levels have custom orders, use default for stable pagination
+        query = query.order('id', { ascending: true });
       }
 
       const { data, error } = await query;
@@ -226,7 +267,9 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
         return;
       }
 
-      setContacts(data || []);
+      // Apply client-side sorting for custom orders
+      const sortedData = applyClientSort(data || [], sortLevels);
+      setContacts(sortedData);
     } catch (error) {
       console.error("Unexpected error:", error);
       toast({
@@ -254,6 +297,18 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
     setIsDrawerOpen(true);
   };
 
+  // Handle multi-sort changes
+  const handleSortChange = (newSortLevels: SortLevel[]) => {
+    setSortLevels(newSortLevels);
+    saveSortState('contacts_raw', newSortLevels);
+  };
+
+  // Clear sort
+  const handleClearSort = () => {
+    setSortLevels([]);
+    clearSortState('contacts_raw');
+  };
+
   const handleSort = (key: string, direction: 'asc' | 'desc' | null) => {
     setSortKey(key);
     setSortDirection(direction);
@@ -263,7 +318,10 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
   const exportSummaryCsv = async () => {
     setIsExporting(true);
     try {
-      const exportData = filteredContacts.map(contact => ({
+      // Apply same sorting to export data
+      const exportContacts = applyClientSort(filteredContacts, sortLevels);
+      
+      const exportData = exportContacts.map(contact => ({
         'Full Name': contact.full_name || '',
         'Email': contact.email_address || '',
         'Organization': contact.organization || '',
@@ -303,13 +361,16 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
   const exportDetailedCsv = async () => {
     setIsExporting(true);
     try {
+      // Apply same sorting to export data
+      const exportContacts = applyClientSort(filteredContacts, sortLevels);
+      
       // Export all columns from contacts_raw
-      const csv = jsonToCsv(filteredContacts);
+      const csv = jsonToCsv(exportContacts);
       downloadFile(csv, `contacts-detailed-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
       
       toast({
         title: "Export Successful",
-        description: `Exported ${filteredContacts.length} contacts with all details to CSV.`,
+        description: `Exported ${exportContacts.length} contacts with all details to CSV.`,
       });
     } catch (error) {
       console.error("Export error:", error);
@@ -337,6 +398,14 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
         isSaving={editMode.isSaving}
       />
 
+      {/* Sort Chips */}
+      <SortChips
+        sortLevels={sortLevels}
+        columns={columnOptions}
+        onClear={handleClearSort}
+        className="mb-2"
+      />
+
       {/* Header with actions */}
       <div className="flex justify-between items-center">
         <div>
@@ -352,6 +421,15 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
             onShowAll={columnVisibility.showAllColumns}
             onHideAll={columnVisibility.hideAllColumns}
           />
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsSortDialogOpen(true)}
+          >
+            <ArrowUpDown className="h-4 w-4 mr-2" />
+            Sort
+          </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -415,6 +493,15 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
           fetchContacts();
           setIsAddDialogOpen(false);
         }}
+      />
+
+      {/* Multi-Sort Dialog */}
+      <MultiSortDialog
+        open={isSortDialogOpen}
+        onOpenChange={setIsSortDialogOpen}
+        columns={columnOptions}
+        sortLevels={sortLevels}
+        onApply={handleSortChange}
       />
     </div>
   );
