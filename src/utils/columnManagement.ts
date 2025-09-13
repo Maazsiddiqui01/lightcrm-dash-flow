@@ -76,8 +76,12 @@ export const getResponsiveColumns = <T>(
   const estimatedMinWidth = 1200; // Base minimum width for all columns
   
   if (availableWidth >= estimatedMinWidth) {
-    // Show all columns if we have enough space
-    return columns.map(col => ({ ...col, visible: true }));
+    // Show all columns if we have enough space, but respect explicit user overrides
+    return columns.map(col => {
+      if (col.visible === false) return { ...col, visible: false };
+      if (col.visible === true) return { ...col, visible: true };
+      return { ...col, visible: true };
+    });
   }
 
   // Sort columns by priority (descending)
@@ -93,10 +97,14 @@ export const getResponsiveColumns = <T>(
   const maxColumns = Math.floor((availableWidth - stickyColumnWidth) / baseColumnWidth) + 1;
 
   return columns.map(col => {
-    // Always show columns that have enableHiding: false
+    // Respect non-hidable columns
     if (col.enableHiding === false) {
       return { ...col, visible: true };
     }
+
+    // Respect explicit user overrides first
+    if (col.visible === false) return { ...col, visible: false };
+    if (col.visible === true) return { ...col, visible: true };
     
     const priority = priorities[col.key] || 0;
     const sortedIndex = sortedColumns.findIndex(sortedCol => sortedCol.key === col.key);
