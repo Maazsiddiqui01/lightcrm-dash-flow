@@ -345,14 +345,6 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
           </h3>
         </div>
         <div className="flex gap-2">
-          <ColumnsMenu
-            columns={dynamicColumns}
-            columnVisibility={columnVisibility.columnVisibility}
-            onColumnVisibilityChange={columnVisibility.updateColumnVisibility}
-            onShowAll={columnVisibility.showAllColumns}
-            onHideAll={columnVisibility.hideAllColumns}
-          />
-          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={isExporting}>
@@ -397,6 +389,7 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
         initialPageSize={25}
         tableId="contacts-table"
         tableType="contacts"
+        hideColumnsButton={true}
       />
 
       {/* Drawers and Dialogs */}
