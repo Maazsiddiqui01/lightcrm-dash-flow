@@ -397,6 +397,7 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
         initialPageSize={25}
         tableId="contacts-table"
         tableType="contacts"
+        hideColumnsButton={true}
       />
 
       {/* Drawers and Dialogs */}

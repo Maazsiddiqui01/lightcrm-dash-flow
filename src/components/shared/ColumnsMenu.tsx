@@ -48,7 +48,7 @@ export function ColumnsMenu<T>({
           Columns ({visibleCount}/{filteredColumns.length})
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto">
+      <DropdownMenuContent className="w-72 max-h-[60vh] overflow-y-auto z-50">
         <DropdownMenuLabel>Show Columns</DropdownMenuLabel>
         
         <div className="p-2">
@@ -86,23 +86,26 @@ export function ColumnsMenu<T>({
 
         <DropdownMenuSeparator />
 
-        <div className="p-2 space-y-2 max-h-64 overflow-y-auto">
+        <div className="p-2 space-y-2 max-h-[50vh] overflow-y-auto">
           {filteredColumns.map((column) => (
             <div
               key={column.key}
-              className="flex items-center space-x-2 cursor-pointer"
-              onClick={() => onColumnVisibilityChange(column.key, !columnVisibility[column.key])}
+              className="flex items-center space-x-2"
             >
               <Checkbox
                 id={column.key}
                 checked={columnVisibility[column.key] !== false}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   onColumnVisibilityChange(column.key, !!checked)
                 }
               />
               <label
                 htmlFor={column.key}
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onColumnVisibilityChange(column.key, !(columnVisibility[column.key] !== false));
+                }}
               >
                 {column.label}
               </label>

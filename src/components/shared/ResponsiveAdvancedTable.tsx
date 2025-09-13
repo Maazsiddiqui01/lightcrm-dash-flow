@@ -82,6 +82,7 @@ interface ResponsiveAdvancedTableProps<T = any> {
   selectedRowExportFn?: (selectedRows: T[]) => void;
   idKey?: string;
   showTopPagination?: boolean;
+  hideColumnsButton?: boolean;
 }
 
 export function ResponsiveAdvancedTable<T extends Record<string, any>>({
@@ -113,7 +114,8 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   onSelectedRowsChange,
   selectedRowExportFn,
   idKey = 'id',
-  showTopPagination = true
+  showTopPagination = true,
+  hideColumnsButton = false
 }: ResponsiveAdvancedTableProps<T>) {
   const [columns, setColumns] = useState(initialColumns);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -469,27 +471,29 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
             )}
 
             {/* Column visibility */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Columns
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {columns.filter(column => column.enableHiding !== false).map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.key}
-                    className="capitalize"
-                    checked={column.visible !== false}
-                    onCheckedChange={(checked) => toggleColumnVisibility(column.key, checked)}
-                    disabled={column.key === visibleColumns[0]?.key && stickyFirstColumn}
-                  >
-                    {column.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!hideColumnsButton && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Columns
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {columns.filter(column => column.enableHiding !== false).map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.key}
+                      className="capitalize"
+                      checked={column.visible !== false}
+                      onCheckedChange={(checked) => toggleColumnVisibility(column.key, checked)}
+                      disabled={column.key === visibleColumns[0]?.key && stickyFirstColumn}
+                    >
+                      {column.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {/* Export */}
             {!hideExportButton && (
@@ -592,27 +596,29 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
             )}
 
             {/* Column visibility */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Columns
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {columns.filter(column => column.enableHiding !== false).map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.key}
-                    className="capitalize"
-                    checked={column.visible !== false}
-                    onCheckedChange={(checked) => toggleColumnVisibility(column.key, checked)}
-                    disabled={column.key === visibleColumns[0]?.key && stickyFirstColumn}
-                  >
-                    {column.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!hideColumnsButton && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Columns
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {columns.filter(column => column.enableHiding !== false).map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.key}
+                      className="capitalize"
+                      checked={column.visible !== false}
+                      onCheckedChange={(checked) => toggleColumnVisibility(column.key, checked)}
+                      disabled={column.key === visibleColumns[0]?.key && stickyFirstColumn}
+                    >
+                      {column.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {/* Export */}
             {!hideExportButton && (
