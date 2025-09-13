@@ -86,11 +86,12 @@ export function ColumnsMenu<T>({
 
         <DropdownMenuSeparator />
 
-        <div className="p-2 space-y-2 max-h-80 overflow-y-auto">
+        <div className="p-2 space-y-2 max-h-64 overflow-y-auto">
           {filteredColumns.map((column) => (
             <div
               key={column.key}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 cursor-pointer"
+              onClick={() => onColumnVisibilityChange(column.key, !columnVisibility[column.key])}
             >
               <Checkbox
                 id={column.key}
@@ -101,8 +102,7 @@ export function ColumnsMenu<T>({
               />
               <label
                 htmlFor={column.key}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                onClick={() => onColumnVisibilityChange(column.key, !(columnVisibility[column.key] !== false))}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
               >
                 {column.label}
               </label>

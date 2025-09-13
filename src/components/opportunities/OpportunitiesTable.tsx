@@ -405,7 +405,6 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         initialPageSize={25}
         tableId="opportunities-table"
         tableType="opportunities"
-        hideColumnsButton={true}
       />
 
       {/* Drawers and Dialogs */}
