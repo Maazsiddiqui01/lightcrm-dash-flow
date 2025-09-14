@@ -109,7 +109,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           options={focusAreaOptions}
           values={filters.focusAreas || []}
           onChange={(values) => handleFilterChange('focusAreas', values)}
-          searchPlaceholder="Search focus areas..."
+          searchPlaceholder="Search Focus Areas"
           loading={focusAreasLoading}
         />
 
@@ -119,7 +119,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           options={sectorOptions}
           values={filters.sectors || []}
           onChange={(values) => handleFilterChange('sectors', values)}
-          searchPlaceholder="Search sectors..."
+          searchPlaceholder="Search Sectors"
           loading={sectorsLoading}
         />
 
@@ -129,7 +129,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           options={specializationOptions}
           values={filters.areasOfSpecialization || []}
           onChange={(values) => handleFilterChange('areasOfSpecialization', values)}
-          searchPlaceholder="Search specializations..."
+          searchPlaceholder="Search Specializations"
           loading={specializationsLoading}
         />
 
@@ -139,7 +139,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           options={organizationOptions}
           values={filters.organizations || []}
           onChange={(values) => handleFilterChange('organizations', values)}
-          searchPlaceholder="Search organizations..."
+          searchPlaceholder="Search Organizations"
           loading={organizationsLoading}
         />
 
@@ -149,7 +149,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           options={titleOptions}
           values={filters.titles || []}
           onChange={(values) => handleFilterChange('titles', values)}
-          searchPlaceholder="Search titles..."
+          searchPlaceholder="Search Titles"
           loading={titlesLoading}
         />
 
@@ -159,7 +159,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           options={categoryOptions}
           values={filters.categories || []}
           onChange={(values) => handleFilterChange('categories', values)}
-          searchPlaceholder="Search categories..."
+          searchPlaceholder="Search Categories"
           loading={categoriesLoading}
         />
 
@@ -169,7 +169,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           options={deltaTypeOptions}
           values={filters.deltaType || []}
           onChange={(values) => handleFilterChange('deltaType', values)}
-          searchPlaceholder="Select cadence type..."
+          searchPlaceholder="Select Cadence Type"
         />
 
         {/* Has Opportunities */}
@@ -178,7 +178,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           options={hasOpportunitiesOptions}
           values={filters.hasOpportunities || []}
           onChange={(values) => handleFilterChange('hasOpportunities', values)}
-          searchPlaceholder="Select option..."
+          searchPlaceholder="Select Option"
         />
 
         {/* Most Recent Contact Date Range */}

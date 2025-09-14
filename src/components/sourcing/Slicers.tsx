@@ -304,14 +304,14 @@ function MultiSelectDropdown({ label, options, selected, onToggle }: MultiSelect
             aria-expanded={open}
             className="w-full justify-between"
           >
-            {selected.length > 0 ? `${selected.length} selected` : `Select ${label.toLowerCase()}...`}
+            {selected.length > 0 ? `${selected.length} selected` : `Select ${label}`}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0">
           <Command>
-            <CommandInput placeholder={`Search ${label.toLowerCase()}...`} />
-            <CommandEmpty>No {label.toLowerCase()} found.</CommandEmpty>
+            <CommandInput placeholder={`Search ${label}`} />
+            <CommandEmpty>No {label} found.</CommandEmpty>
             <CommandGroup className="max-h-64 overflow-auto">
               {options.map((option) => (
                 <CommandItem

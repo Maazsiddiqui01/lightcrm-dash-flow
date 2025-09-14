@@ -72,7 +72,7 @@ export function ComboboxMulti({
           >
             <div className="flex flex-wrap gap-1 max-w-full">
               {selectedOptions.length === 0 ? (
-                <span className="text-muted-foreground">Select {label.toLowerCase()}...</span>
+                <span className="text-muted-foreground">Select {label}</span>
               ) : selectedOptions.length <= 2 ? (
                 selectedOptions.map(option => (
                   <Badge key={option.value} variant="secondary" className="text-xs">

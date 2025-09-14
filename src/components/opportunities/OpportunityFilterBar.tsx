@@ -87,7 +87,7 @@ export function OpportunityFilterBar({
           options={focusAreas}
           values={filters.focusArea}
           onChange={(values) => updateFilter('focusArea', values)}
-          searchPlaceholder="Search focus areas..."
+          searchPlaceholder="Search Focus Areas"
           loading={focusAreasLoading}
         />
 
@@ -96,7 +96,7 @@ export function OpportunityFilterBar({
           options={sectors}
           values={filters.sector}
           onChange={(values) => updateFilter('sector', values)}
-          searchPlaceholder="Search sectors..."
+          searchPlaceholder="Search Sectors"
           loading={sectorsLoading}
         />
 
@@ -105,7 +105,7 @@ export function OpportunityFilterBar({
           options={statuses}
           values={filters.status}
           onChange={(values) => updateFilter('status', values)}
-          searchPlaceholder="Search statuses..."
+          searchPlaceholder="Search Statuses"
           loading={statusesLoading}
         />
 
@@ -114,7 +114,7 @@ export function OpportunityFilterBar({
           options={tiers}
           values={filters.tier}
           onChange={(values) => updateFilter('tier', values)}
-          searchPlaceholder="Search tiers..."
+          searchPlaceholder="Search Tiers"
           loading={tiersLoading}
         />
 
@@ -123,7 +123,7 @@ export function OpportunityFilterBar({
           options={ownershipTypes}
           values={filters.ownershipType}
           onChange={(values) => updateFilter('ownershipType', values)}
-          searchPlaceholder="Search ownership types..."
+          searchPlaceholder="Search Ownership Types"
           loading={ownershipLoading}
         />
 
@@ -132,7 +132,7 @@ export function OpportunityFilterBar({
           options={leads}
           values={filters.leads}
           onChange={(values) => updateFilter('leads', values)}
-          searchPlaceholder="Search leads..."
+          searchPlaceholder="Search LG Leads"
           loading={leadsLoading}
         />
 
@@ -141,7 +141,7 @@ export function OpportunityFilterBar({
           options={platformAddOns}
           values={filters.platformAddOn}
           onChange={(values) => updateFilter('platformAddOn', values)}
-          searchPlaceholder="Search platform/add-on..."
+          searchPlaceholder="Search Platform/Add-On"
           loading={platformLoading}
         />
 
@@ -150,7 +150,7 @@ export function OpportunityFilterBar({
           options={referralContacts}
           values={filters.referralContacts}
           onChange={(values) => updateFilter('referralContacts', values)}
-          searchPlaceholder="Search referral contacts..."
+          searchPlaceholder="Search Referral Contacts"
           loading={referralContactsLoading}
         />
 
@@ -159,7 +159,7 @@ export function OpportunityFilterBar({
           options={referralCompanies}
           values={filters.referralCompanies}
           onChange={(values) => updateFilter('referralCompanies', values)}
-          searchPlaceholder="Search companies..."
+          searchPlaceholder="Search Companies"
           loading={referralCompaniesLoading}
         />
 
@@ -168,7 +168,7 @@ export function OpportunityFilterBar({
           options={dateOrigins}
           values={filters.dateOfOrigination}
           onChange={(values) => updateFilter('dateOfOrigination', values)}
-          searchPlaceholder="Search dates..."
+          searchPlaceholder="Search Dates"
           loading={dateOriginsLoading}
         />
 
