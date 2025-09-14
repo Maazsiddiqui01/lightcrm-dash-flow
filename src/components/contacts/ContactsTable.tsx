@@ -6,8 +6,8 @@ import { AddContactDialog } from "./AddContactDialog";
 import { Button } from "@/components/ui/button";
 import { Download, Plus, User, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { jsonToCsv, downloadFile } from "@/utils/csvExport";
+import { SplitButton } from "@/components/shared/SplitButton";
+import { exportCsv } from "@/lib/export/exportService";
 
 // Dynamic column imports
 import { CONTACTS_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -314,70 +314,28 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
     setSortDirection(direction);
   };
 
-  // Export functions
-  const exportSummaryCsv = async () => {
+  // New export function using the shared service
+  const handleExport = async (mode: 'current' | 'detailed') => {
     setIsExporting(true);
-    try {
-      // Apply same sorting to export data
-      const exportContacts = applyClientSort(filteredContacts, sortLevels);
-      
-      const exportData = exportContacts.map(contact => ({
-        'Full Name': contact.full_name || '',
-        'Email': contact.email_address || '',
-        'Organization': contact.organization || '',
-        'Title': contact.title || '',
-        'LG Sector': contact.lg_sector || '',
-        'Focus Areas': contact.lg_focus_areas_comprehensive_list || '',
-        'Areas of Specialization': contact.areas_of_specialization || '',
-        'Category': contact.category || '',
-        'Most Recent Contact': contact.most_recent_contact || '',
-        'Total Contacts': contact.total_of_contacts || 0,
-        'Emails': contact.of_emails || 0,
-        'Meetings': contact.of_meetings || 0,
-        'All Opportunities': contact.all_opps || 0,
-        'Delta': contact.delta || 0,
-        'Delta Type': contact.delta_type || '',
-      }));
+    
+    // For now, use all visible columns from the dynamic columns
+    const visibleColumns = dynamicColumns
+      .filter(col => columnVisibility.columnVisibility[col.key] !== false)
+      .map(col => col.key);
+    
+    const columnHeaders = Object.fromEntries(
+      dynamicColumns.map(col => [col.key, col.label])
+    );
 
-      const csv = jsonToCsv(exportData);
-      downloadFile(csv, `contacts-summary-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
-      
-      toast({
-        title: "Export Successful",
-        description: `Exported ${exportData.length} contacts to CSV.`,
-      });
-    } catch (error) {
-      console.error("Export error:", error);
-      toast({
-        title: "Export Failed",
-        description: "Failed to export contacts. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const exportDetailedCsv = async () => {
-    setIsExporting(true);
     try {
-      // Apply same sorting to export data
-      const exportContacts = applyClientSort(filteredContacts, sortLevels);
-      
-      // Export all columns from contacts_raw
-      const csv = jsonToCsv(exportContacts);
-      downloadFile(csv, `contacts-detailed-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
-      
-      toast({
-        title: "Export Successful",
-        description: `Exported ${exportContacts.length} contacts with all details to CSV.`,
-      });
-    } catch (error) {
-      console.error("Export error:", error);
-      toast({
-        title: "Export Failed",
-        description: "Failed to export detailed contacts. Please try again.",
-        variant: "destructive",
+      await exportCsv({
+        page: 'contacts',
+        mode,
+        selectedIds: undefined, // No selection support yet
+        filters: { searchTerm },
+        sortLevels,
+        visibleColumns,
+        columnHeaders
       });
     } finally {
       setIsExporting(false);
@@ -431,22 +389,16 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
             Sort
           </Button>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" disabled={isExporting}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={exportSummaryCsv}>
-                Summary CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={exportDetailedCsv}>
-                Detailed CSV (All Columns)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <SplitButton
+            label="Export"
+            primaryAction={() => handleExport('current')}
+            menu={[
+              { label: 'Detailed (all columns)', onClick: () => handleExport('detailed') }
+            ]}
+            disabled={isExporting}
+            loading={isExporting}
+            icon={<Download className="h-4 w-4" />}
+          />
 
           <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />

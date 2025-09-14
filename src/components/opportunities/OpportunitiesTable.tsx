@@ -6,8 +6,8 @@ import { AddOpportunityDialog } from "./AddOpportunityDialog";
 import { Button } from "@/components/ui/button";
 import { Download, Plus, Briefcase, Mail, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { jsonToCsv, downloadFile } from "@/utils/csvExport";
+import { SplitButton } from "@/components/shared/SplitButton";
+import { exportCsv } from "@/lib/export/exportService";
 import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
 
 // Dynamic column imports
@@ -323,69 +323,28 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
     }
   };
 
-  // Export functions
-  const exportSummaryCsv = async () => {
+  // New export function using the shared service
+  const handleExport = async (mode: 'current' | 'detailed') => {
     setIsExporting(true);
-    try {
-      // Apply same sorting to export data
-      const exportOpportunities = applyClientSort(filteredOpportunities, sortLevels);
-      
-      const exportData = exportOpportunities.map(opp => ({
-        'Deal Name': opp.deal_name || '',
-        'Status': opp.status || '',
-        'Tier': opp.tier || '',
-        'Sector': opp.sector || '',
-        'LG Focus Area': opp.lg_focus_area || '',
-        'Platform Add-on': opp.platform_add_on || '',
-        'Ownership Type': opp.ownership_type || '',
-        'Deal Source Company': opp.deal_source_company || '',
-        'Deal Source Individual 1': opp.deal_source_individual_1 || '',
-        'Deal Source Individual 2': opp.deal_source_individual_2 || '',
-        'Date of Origination': opp.date_of_origination || '',
-        'EBITDA (MS)': opp.ebitda_in_ms || 0,
-        'IP Point Person 1': opp.investment_professional_point_person_1 || '',
-        'IP Point Person 2': opp.investment_professional_point_person_2 || '',
-      }));
+    
+    // For now, use all visible columns from the dynamic columns
+    const visibleColumns = dynamicColumns
+      .filter(col => columnVisibility.columnVisibility[col.key] !== false)
+      .map(col => col.key);
+    
+    const columnHeaders = Object.fromEntries(
+      dynamicColumns.map(col => [col.key, col.label])
+    );
 
-      const csv = jsonToCsv(exportData);
-      downloadFile(csv, `opportunities-summary-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
-      
-      toast({
-        title: "Export Successful",
-        description: `Exported ${exportData.length} opportunities to CSV.`,
-      });
-    } catch (error) {
-      console.error("Export error:", error);
-      toast({
-        title: "Export Failed",
-        description: "Failed to export opportunities. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const exportDetailedCsv = async () => {
-    setIsExporting(true);
     try {
-      // Apply same sorting to export data
-      const exportOpportunities = applyClientSort(filteredOpportunities, sortLevels);
-      
-      // Export all columns from opportunities_raw
-      const csv = jsonToCsv(exportOpportunities);
-      downloadFile(csv, `opportunities-detailed-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
-      
-      toast({
-        title: "Export Successful",
-        description: `Exported ${exportOpportunities.length} opportunities with all details to CSV.`,
-      });
-    } catch (error) {
-      console.error("Export error:", error);
-      toast({
-        title: "Export Failed",
-        description: "Failed to export detailed opportunities. Please try again.",
-        variant: "destructive",
+      await exportCsv({
+        page: 'opportunities',
+        mode,
+        selectedIds: undefined, // No selection support yet
+        filters: { searchTerm },
+        sortLevels,
+        visibleColumns,
+        columnHeaders
       });
     } finally {
       setIsExporting(false);
@@ -439,22 +398,16 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
             Sort
           </Button>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" disabled={isExporting}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={exportSummaryCsv}>
-                Summary CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={exportDetailedCsv}>
-                Detailed CSV (All Columns)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <SplitButton
+            label="Export"
+            primaryAction={() => handleExport('current')}
+            menu={[
+              { label: 'Detailed (all columns)', onClick: () => handleExport('detailed') }
+            ]}
+            disabled={isExporting}
+            loading={isExporting}
+            icon={<Download className="h-4 w-4" />}
+          />
 
           <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />
