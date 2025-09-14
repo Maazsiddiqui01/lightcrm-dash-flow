@@ -11,7 +11,7 @@ import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { useToast } from '@/hooks/use-toast';
 
 interface SourcingFilters {
-  dateRange: [string, string];
+  dateRange: string; // 'all' | year (e.g., '2024') | quarter (e.g., '2024 Q4')
   sector: string[];
   focusArea: string[];
   lgLead: string[];
@@ -25,7 +25,7 @@ interface SourcingFilters {
 }
 
 const defaultFilters: SourcingFilters = {
-  dateRange: ['2024-01-01', '2025-12-31'],
+  dateRange: 'all',
   sector: [],
   focusArea: [],
   lgLead: [],
@@ -48,9 +48,21 @@ export default function SourceGreatnessPage() {
   const { data: opportunities = [], isLoading: oppsLoading } = useQuery({
     queryKey: ['sourcing-opportunities', filters],
     queryFn: async () => {
-      let query = supabase.from('opportunities_app').select('*');
+      let query = supabase.from('opportunities_raw').select('*');
       
-      // Apply filters
+      // Apply date filter using text matching (simple approach)
+      if (filterState.dateRange !== 'all') {
+        if (filterState.dateRange.includes('Q')) {
+          // Quarter filter - match exact quarter string
+          query = query.ilike('date_of_origination', `%${filterState.dateRange}%`);
+        } else {
+          // Year filter - match any occurrence of the year
+          query = query.ilike('date_of_origination', `%${filterState.dateRange}%`);
+        }
+      }
+      // Note: When dateRange === 'all', no date filter is applied (includes null dates)
+      
+      // Apply other filters
       if (Array.isArray(filterState.sector) && filterState.sector.length > 0) {
         query = query.in('sector', filterState.sector);
       }
@@ -81,17 +93,6 @@ export default function SourceGreatnessPage() {
       }
       if (filterState.searchText) {
         query = query.or(`deal_name.ilike.%${filterState.searchText}%,deal_source_individual_1.ilike.%${filterState.searchText}%,deal_source_individual_2.ilike.%${filterState.searchText}%`);
-      }
-
-      // Date filter on text field
-      const [startYear] = filterState.dateRange;
-      const [endYear] = filterState.dateRange;
-      if (startYear && endYear) {
-        const startYearStr = startYear.split('-')[0];
-        const endYearStr = endYear.split('-')[0];
-        if (startYearStr === endYearStr) {
-          query = query.ilike('date_of_origination', `%${startYearStr}%`);
-        }
       }
 
       const { data, error } = await query;
@@ -246,14 +247,9 @@ export default function SourceGreatnessPage() {
     };
   }, [opportunities, filterState]);
 
-  // Filter meetings by date range
-  const filteredMeetings = useMemo(() => {
-    const [start, end] = filterState.dateRange;
-    return meetings.filter(m => {
-      const monthStart = new Date(m.month_start);
-      return monthStart >= new Date(start) && monthStart <= new Date(end);
-    });
-  }, [meetings, filterState.dateRange]);
+  // Meetings are not filtered by date range in this context
+  // They show the full communication timeline regardless of opportunity date filtering
+  const filteredMeetings = meetings;
 
   const totalMeetings = filteredMeetings.reduce((sum, m) => sum + (Number(m.meeting_count) || 0), 0);
 

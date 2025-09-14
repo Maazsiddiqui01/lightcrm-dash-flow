@@ -1,10 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Hero } from "@/components/layout/Hero";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, Target, MessageSquare, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
 
 interface Stats {
   totalContacts: number;
@@ -13,35 +17,95 @@ interface Stats {
   recentContacts: number;
 }
 
+interface DashboardFilters {
+  dateRange: string; // 'all' | year | quarter
+}
+
 export function Dashboard() {
-  const [stats, setStats] = useState<Stats>({
+  const navigate = useNavigate();
+  const { filters, updateFilters } = useUrlFilters({ dateRange: 'all' });
+  
+  // Get the date range filter value, defaulting to 'all'
+  const dateRange = (filters.dateRange as string) || 'all';
+
+  // Fetch date options from opportunities data
+  const { data: dateOptions = [] } = useQuery({
+    queryKey: ['dashboard-date-options'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('opportunities_raw')
+        .select('date_of_origination')
+        .not('date_of_origination', 'is', null);
+      if (error) throw error;
+      
+      const years = new Set<string>();
+      const quarters = new Set<string>();
+      
+      data?.forEach(row => {
+        const dateStr = row.date_of_origination;
+        if (!dateStr) return;
+        
+        // Extract year
+        const yearMatch = dateStr.match(/(\d{4})/);
+        if (yearMatch) {
+          years.add(yearMatch[1]);
+        }
+        
+        // Extract quarter if present
+        const quarterMatch = dateStr.match(/(\d{4}\s*Q[1-4])/);
+        if (quarterMatch) {
+          quarters.add(quarterMatch[1]);
+        }
+      });
+      
+      const options = [{ label: 'All', value: 'all' }];
+      
+      // Add years (descending)
+      Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)).forEach(year => {
+        options.push({ label: year, value: year });
+      });
+      
+      // Add quarters (descending)
+      Array.from(quarters).sort((a, b) => {
+        const [yearA, qA] = a.split(' Q');
+        const [yearB, qB] = b.split(' Q');
+        if (yearA !== yearB) return parseInt(yearB) - parseInt(yearA);
+        return parseInt(qB) - parseInt(qA);
+      }).forEach(quarter => {
+        options.push({ label: quarter, value: quarter });
+      });
+      
+      return options;
+    },
+    staleTime: 300_000,
+  });
+
+  // Fetch dashboard stats with date filtering
+  const { data: stats = {
     totalContacts: 0,
     totalOpportunities: 0,
     totalInteractions: 0,
     recentContacts: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch contacts count
+  }, isLoading: loading } = useQuery({
+    queryKey: ['dashboard-stats', dateRange],
+    queryFn: async () => {
+      // Fetch contacts count (not filtered by date)
       const { count: contactsCount } = await supabase
         .from('contacts_app')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch opportunities count  
-      const { count: opportunitiesCount } = await supabase
-        .from('opportunities_raw')
-        .select('*', { count: 'exact', head: true });
+      // Fetch opportunities count with date filter
+      let oppsQuery = supabase.from('opportunities_raw').select('*', { count: 'exact', head: true });
+      if (dateRange !== 'all') {
+        if (dateRange.includes('Q')) {
+          oppsQuery = oppsQuery.ilike('date_of_origination', `%${dateRange}%`);
+        } else {
+          oppsQuery = oppsQuery.ilike('date_of_origination', `%${dateRange}%`);
+        }
+      }
+      const { count: opportunitiesCount } = await oppsQuery;
 
-      // Fetch interactions count
+      // Fetch interactions count (not filtered by date)
       const { count: interactionsCount } = await supabase
         .from('interactions_app')
         .select('*', { count: 'exact', head: true });
@@ -55,18 +119,15 @@ export function Dashboard() {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', thirtyDaysAgo.toISOString());
 
-      setStats({
+      return {
         totalContacts: contactsCount || 0,
         totalOpportunities: opportunitiesCount || 0,
         totalInteractions: interactionsCount || 0,
         recentContacts: recentContactsCount || 0
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      };
+    },
+    staleTime: 60_000,
+  });
 
   const handleGetStarted = () => {
     navigate('/contacts');
@@ -84,9 +145,31 @@ export function Dashboard() {
       {/* Stats Section */}
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="space-y-8">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">Dashboard Overview</h2>
-            <p className="text-muted-foreground">Track your CRM performance at a glance</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Dashboard Overview</h2>
+              <p className="text-muted-foreground">Track your CRM performance at a glance</p>
+            </div>
+            
+            {/* Date Range Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-muted-foreground">Date Range:</label>
+              <Select
+                value={dateRange}
+                onValueChange={(value) => updateFilters({ ...filters, dateRange: value })}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-64 overflow-auto">
+                  {dateOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

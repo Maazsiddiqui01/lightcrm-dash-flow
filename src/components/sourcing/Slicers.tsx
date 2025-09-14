@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
@@ -16,13 +16,7 @@ interface SlicersProps {
   onFiltersChange: (filters: any) => void;
 }
 
-const DATE_PRESETS = [
-  { label: 'All', value: ['2020-01-01', '2030-12-31'] },
-  { label: '2024', value: ['2024-01-01', '2024-12-31'] },
-  { label: '2025', value: ['2025-01-01', '2025-12-31'] },
-  { label: '2024 Q4', value: ['2024-10-01', '2024-12-31'] },
-  { label: '2025 Q1', value: ['2025-01-01', '2025-03-31'] },
-];
+// Dynamic date options will be fetched from Supabase
 
 const PLATFORM_ADDON_OPTIONS = [
   { label: 'All', value: 'all' },
@@ -48,6 +42,59 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchDebounce]);
+
+  // Fetch date options from opportunities data directly
+  const { data: dateOptions = [] } = useQuery({
+    queryKey: ['date-options'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('opportunities_raw')
+        .select('date_of_origination')
+        .not('date_of_origination', 'is', null);
+      if (error) throw error;
+      
+      const years = new Set<string>();
+      const quarters = new Set<string>();
+      
+      data?.forEach(row => {
+        const dateStr = row.date_of_origination;
+        if (!dateStr) return;
+        
+        // Extract year (e.g., "2024 Q4" -> "2024", "Jun 2025" -> "2025")
+        const yearMatch = dateStr.match(/(\d{4})/);
+        if (yearMatch) {
+          years.add(yearMatch[1]);
+        }
+        
+        // Extract quarter if present (e.g., "2024 Q4" -> "2024 Q4")
+        const quarterMatch = dateStr.match(/(\d{4}\s*Q[1-4])/);
+        if (quarterMatch) {
+          quarters.add(quarterMatch[1]);
+        }
+      });
+      
+      const options = [{ label: 'All', value: 'all' }];
+      
+      // Add years (descending)
+      Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)).forEach(year => {
+        options.push({ label: year, value: year });
+      });
+      
+      // Add quarters (descending)
+      Array.from(quarters).sort((a, b) => {
+        const [yearA, qA] = a.split(' Q');
+        const [yearB, qB] = b.split(' Q');
+        if (yearA !== yearB) return parseInt(yearB) - parseInt(yearA);
+        return parseInt(qB) - parseInt(qA);
+      }).forEach(quarter => {
+        options.push({ label: quarter, value: quarter });
+      });
+      
+      return options;
+    },
+    staleTime: 300_000,
+  });
+
 
   // Fetch distinct values
   const { data: sectors = [] } = useQuery({
@@ -133,7 +180,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
 
   const clearAllFilters = () => {
     onFiltersChange({
-      dateRange: ['2024-01-01', '2025-12-31'],
+      dateRange: 'all',
       sector: [],
       focusArea: [],
       lgLead: [],
@@ -161,21 +208,16 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         <div className="space-y-2">
           <Label>Date Range</Label>
           <Select
-            value={DATE_PRESETS.find(p => 
-              p.value[0] === filters.dateRange[0] && p.value[1] === filters.dateRange[1]
-            )?.label || 'Custom'}
-            onValueChange={(value) => {
-              const preset = DATE_PRESETS.find(p => p.label === value);
-              if (preset) updateFilter('dateRange', preset.value);
-            }}
+            value={filters.dateRange}
+            onValueChange={(value) => updateFilter('dateRange', value)}
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              {DATE_PRESETS.map(preset => (
-                <SelectItem key={preset.label} value={preset.label}>
-                  {preset.label}
+            <SelectContent className="max-h-64 overflow-auto">
+              {dateOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
