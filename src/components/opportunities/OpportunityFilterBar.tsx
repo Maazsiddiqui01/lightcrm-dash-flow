@@ -14,6 +14,8 @@ import {
   useOpportunityReferralCompanies,
   useOpportunityDatesOfOrigination
 } from '@/hooks/useDistinctOptions';
+import { useQuery } from '@tanstack/react-query';
+import { fetchFocusAreaOptions, fetchSectorOptions } from '@/lib/options';
 
 interface OpportunityFilters {
   focusArea: string[];
@@ -42,11 +44,27 @@ export function OpportunityFilterBar({
   onFiltersChange, 
   onClearFilters 
 }: OpportunityFilterBarProps) {
-  const { data: focusAreas = [], isLoading: focusAreasLoading } = useOpportunityFocusAreas();
+  // Use new focus area and sector options
+  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useQuery({
+    queryKey: ['focus-area-options'],
+    queryFn: fetchFocusAreaOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: sectorOptionsData = [], isLoading: sectorsLoading } = useQuery({
+    queryKey: ['sector-options'], 
+    queryFn: fetchSectorOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Convert to the format expected by ComboboxMulti
+  const focusAreas = focusAreaOptions.map(opt => ({ value: opt.focus_area, label: opt.focus_area }));
+  const sectors = sectorOptionsData.map(sector => ({ value: sector, label: sector }));
+
+  // Use existing hooks for other options
   const { data: ownershipTypes = [], isLoading: ownershipLoading } = useOpportunityOwnershipTypes();
   const { data: tiers = [], isLoading: tiersLoading } = useOpportunityTiers();
   const { data: statuses = [], isLoading: statusesLoading } = useOpportunityStatuses();
-  const { data: sectors = [], isLoading: sectorsLoading } = useOpportunitySectors();
   const { data: leads = [], isLoading: leadsLoading } = useOpportunityLeads();
   const { data: platformAddOns = [], isLoading: platformLoading } = useOpportunityPlatformAddOn();
   const { data: referralContacts = [], isLoading: referralContactsLoading } = useOpportunityReferralContacts();

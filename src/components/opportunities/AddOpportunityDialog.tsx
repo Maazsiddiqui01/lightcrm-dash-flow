@@ -15,9 +15,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Target } from "lucide-react";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
-import { MultiSelectFocusArea } from "./MultiSelectFocusArea";
+import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
-import { splitTokens, tierOptions, normalizePlatformAddonMapping, normalizeOwnershipTypeMapping } from "@/lib/export/opportunityUtils";
+import { useQuery } from "@tanstack/react-query";
+import { fetchFocusAreaOptions, fetchSectorOptions } from "@/lib/options";
 
 interface AddOpportunityDialogProps {
   open: boolean;
@@ -52,23 +53,43 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
+  // Fetch focus area and sector options
+  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useQuery({
+    queryKey: ['focus-area-options'],
+    queryFn: fetchFocusAreaOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: sectorOptions = [], isLoading: isLoadingSectors } = useQuery({
+    queryKey: ['sector-options'], 
+    queryFn: fetchSectorOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+  
   const { 
-    focusAreaOptions,
-    sectorOptions,
-    statusOptions,
-    platformAddonOptions,
-    ownershipTypeOptions,
     lgLeadOptions,
     isLoading: isLoadingOptions
   } = useOpportunityOptions();
 
-  const allStatusOptions = [...statusOptions, ...customStatusOptions];
+  const isLoading = isLoadingFocusAreas || isLoadingSectors || isLoadingOptions;
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleFocusAreaChange = (newFocusAreas: string[]) => {
+    setSelectedFocusAreas(newFocusAreas);
+    
+    // Auto-fill sector if first focus area is selected and sector is currently blank
+    if (newFocusAreas.length === 1 && !formData.sector) {
+      const selectedOption = focusAreaOptions.find(opt => opt.focus_area === newFocusAreas[0]);
+      if (selectedOption?.sector) {
+        handleInputChange("sector", selectedOption.sector);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -240,12 +261,22 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
             <h3 className="text-sm font-medium text-foreground">Required Fields</h3>
             
             {/* LG Focus Area - Multi-select */}
-            <MultiSelectFocusArea
-              options={focusAreaOptions}
+            <FocusAreaSelect
               value={selectedFocusAreas}
-              onChange={setSelectedFocusAreas}
-              disabled={isLoadingOptions}
+              onChange={handleFocusAreaChange}
+              disabled={isLoading}
+              label="LG Focus Area"
             />
+
+            {/* Consolidated Focus Areas (Read-only) */}
+            {selectedFocusAreas.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm">LG Focus Area (Consolidated)</Label>
+                <p className="text-sm text-muted-foreground p-2 bg-muted rounded">
+                  {selectedFocusAreas.join(', ')}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="deal_name">Deal Name *</Label>
@@ -266,30 +297,31 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               onChange={(value) => handleInputChange("sector", value)}
               placeholder="Select sector"
               required
-              disabled={isLoadingOptions}
+              disabled={isLoading}
             />
 
-            {/* Status - Single-select dropdown with custom option */}
+            {/* Status - Single-select dropdown with predefined options */}
             <SingleSelectDropdown
               label="Status"
-              options={allStatusOptions}
+              options={['Active','Pass','Likely Pass','Longer-Term Opportunity']}
               value={formData.status}
               onChange={(value) => handleInputChange("status", value)}
               placeholder="Select status"
               required
               allowCustom
               onAddCustom={(value) => setCustomStatusOptions(prev => [...prev, value])}
-              disabled={isLoadingOptions}
+              disabled={isLoading}
             />
 
             {/* Tier - Hardcoded 1-5 */}
             <SingleSelectDropdown
               label="Tier"
-              options={tierOptions}
+              options={['1','2','3','4','5']}
               value={formData.tier}
               onChange={(value) => handleInputChange("tier", value)}
               placeholder="Select tier"
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -305,7 +337,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                 value={formData.investment_professional_point_person_1}
                 onChange={(value) => handleInputChange("investment_professional_point_person_1", value)}
                 placeholder="Select point person #1"
-                disabled={isLoadingOptions}
+                disabled={isLoading}
               />
 
               {/* Investment Professional Point Person #2 */}
@@ -315,19 +347,29 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                 value={formData.investment_professional_point_person_2}
                 onChange={(value) => handleInputChange("investment_professional_point_person_2", value)}
                 placeholder="Select point person #2"
-                disabled={isLoadingOptions}
+                disabled={isLoading}
               />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Platform Add-On */}
+              {/* Platform/Add-on */}
               <SingleSelectDropdown
-                label="Platform Add-On"
-                options={platformAddonOptions}
+                label="Platform/Add-on"
+                options={['Platform','Add-on']}
                 value={formData.platform_add_on}
-                onChange={(value) => handleInputChange("platform_add_on", normalizePlatformAddonMapping(value))}
-                placeholder="Select platform add-on"
-                disabled={isLoadingOptions}
+                onChange={(value) => handleInputChange("platform_add_on", value)}
+                placeholder="Select platform/add-on"
+                disabled={isLoading}
+              />
+
+              {/* Ownership Type */}
+              <SingleSelectDropdown
+                label="Ownership Type"
+                options={['Family/Founder','Sponsor Owned','Other']}
+                value={formData.ownership_type}
+                onChange={(value) => handleInputChange("ownership_type", value)}
+                placeholder="Select ownership type"
+                disabled={isLoading}
               />
 
               <div className="space-y-2">
@@ -373,69 +415,18 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="platform_add_on">Platform Add-On</Label>
-                <Input
-                  id="platform_add_on"
-                  value={formData.platform_add_on}
-                  onChange={(e) => handleInputChange("platform_add_on", e.target.value)}
-                  placeholder="Enter platform add-on"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="date_of_origination">Date of Origination</Label>
-                <Input
-                  id="date_of_origination"
-                  value={formData.date_of_origination}
-                  onChange={(e) => handleInputChange("date_of_origination", e.target.value)}
-                  placeholder="e.g., Q1 2024, Jan 2024"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="deal_source_individual_2">Deal Source Individual #2</Label>
-              <Input
-                id="deal_source_individual_2"
-                value={formData.deal_source_individual_2}
-                onChange={(e) => handleInputChange("deal_source_individual_2", e.target.value)}
-                placeholder="Enter individual #2"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="investment_professional_point_person_2">Investment Professional Point Person #2</Label>
-              <Input
-                id="investment_professional_point_person_2"
-                value={formData.investment_professional_point_person_2}
-                onChange={(e) => handleInputChange("investment_professional_point_person_2", e.target.value)}
-                placeholder="Enter point person #2"
-              />
-            </div>
-
            {/* Ownership */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="ownership">Ownership</Label>
-              <Input
-                id="ownership"
-                value={formData.ownership}
-                onChange={(e) => handleInputChange("ownership", e.target.value)}
-                placeholder="Enter ownership"
-              />
-            </div>
-            
-            {/* Ownership Type */}
-            <SingleSelectDropdown
-              label="Ownership Type"
-              options={ownershipTypeOptions}
-              value={formData.ownership_type}
-              onChange={(value) => handleInputChange("ownership_type", normalizeOwnershipTypeMapping(value))}
-              placeholder="Select ownership type"
-              disabled={isLoadingOptions}
-            />
-          </div>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="space-y-2">
+               <Label htmlFor="ownership">Ownership</Label>
+               <Input
+                 id="ownership"
+                 value={formData.ownership}
+                 onChange={(e) => handleInputChange("ownership", e.target.value)}
+                 placeholder="Enter ownership"
+               />
+             </div>
+           </div>
 
           {/* Summary */}
           <div className="space-y-2">

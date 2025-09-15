@@ -16,6 +16,8 @@ import {
   useContactFocusAreas,
   useContactAreasOfSpecialization
 } from '@/hooks/useDistinctOptions';
+import { useQuery } from '@tanstack/react-query';
+import { fetchFocusAreaOptions, fetchSectorOptions } from '@/lib/options';
 
 interface ContactFilterBarProps {
   filters: {
@@ -44,9 +46,24 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
     filters.mostRecentContactEnd ? new Date(filters.mostRecentContactEnd) : undefined
   );
 
-  // Fetch distinct options for filters
-  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useContactFocusAreas();
-  const { data: sectorOptions = [], isLoading: sectorsLoading } = useContactSectors();
+  // Use new focus area and sector options
+  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useQuery({
+    queryKey: ['focus-area-options'],
+    queryFn: fetchFocusAreaOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: sectorOptionsData = [], isLoading: sectorsLoading } = useQuery({
+    queryKey: ['sector-options'], 
+    queryFn: fetchSectorOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Convert to the format expected by ComboboxMulti
+  const focusAreaOptionsFormatted = focusAreaOptions.map(opt => ({ value: opt.focus_area, label: opt.focus_area }));
+  const sectorOptionsFormatted = sectorOptionsData.map(sector => ({ value: sector, label: sector }));
+
+  // Fetch distinct options for other filters
   const { data: specializationOptions = [], isLoading: specializationsLoading } = useContactAreasOfSpecialization();
   const { data: organizationOptions = [], isLoading: organizationsLoading } = useContactOrganizations();
   const { data: titleOptions = [], isLoading: titlesLoading } = useContactTitles();
@@ -106,7 +123,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
         {/* Focus Areas */}
         <ComboboxMulti
           label="Focus Areas"
-          options={focusAreaOptions}
+          options={focusAreaOptionsFormatted}
           values={filters.focusAreas || []}
           onChange={(values) => handleFilterChange('focusAreas', values)}
           searchPlaceholder="Search Focus Areas"
@@ -116,7 +133,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
         {/* Sectors */}
         <ComboboxMulti
           label="Sector"
-          options={sectorOptions}
+          options={sectorOptionsFormatted}
           values={filters.sectors || []}
           onChange={(values) => handleFilterChange('sectors', values)}
           searchPlaceholder="Search Sectors"

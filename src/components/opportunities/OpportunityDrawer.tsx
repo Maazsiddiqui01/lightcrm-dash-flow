@@ -19,9 +19,11 @@ import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
 import { OpportunityNotesSection } from "./OpportunityNotesSection";
 import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
-import { MultiSelectFocusArea } from "./MultiSelectFocusArea";
+import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
 import { splitTokens, tierOptions, normalizePlatformAddonMapping, normalizeOwnershipTypeMapping } from "@/lib/export/opportunityUtils";
+import { useQuery } from "@tanstack/react-query";
+import { fetchFocusAreaOptions, fetchSectorOptions } from "@/lib/options";
 
 interface Opportunity {
   id: string;
@@ -65,15 +67,29 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
   
+  // Fetch focus area options with sector mapping
+  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useQuery({
+    queryKey: ['focus-area-options'],
+    queryFn: fetchFocusAreaOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Fetch sector options
+  const { data: sectorOptions = [], isLoading: isLoadingSectors } = useQuery({
+    queryKey: ['sector-options'],
+    queryFn: fetchSectorOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+  
   const { 
-    focusAreaOptions,
-    sectorOptions,
     statusOptions,
     platformAddonOptions,
     ownershipTypeOptions,
     lgLeadOptions,
     isLoading: isLoadingOptions
   } = useOpportunityOptions();
+
+  const isLoading = isLoadingFocusAreas || isLoadingSectors || isLoadingOptions;
 
   const allStatusOptions = [...statusOptions, ...customStatusOptions];
   
@@ -119,6 +135,18 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleFocusAreaChange = (newFocusAreas: string[]) => {
+    setSelectedFocusAreas(newFocusAreas);
+    
+    // Auto-fill sector if first focus area is selected and sector is currently blank
+    if (newFocusAreas.length === 1 && !editedFields.sector) {
+      const selectedOption = focusAreaOptions.find(opt => opt.focus_area === newFocusAreas[0]);
+      if (selectedOption?.sector) {
+        handleFieldChange("sector", selectedOption.sector);
+      }
+    }
   };
 
   const handleSave = async () => {
@@ -284,12 +312,22 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
           {/* Deal Information */}
           <div className="space-y-4">
             {/* LG Focus Area - Multi-select */}
-            <MultiSelectFocusArea
-              options={focusAreaOptions}
+            <FocusAreaSelect
               value={selectedFocusAreas}
-              onChange={setSelectedFocusAreas}
-              disabled={isLoadingOptions}
+              onChange={handleFocusAreaChange}
+              disabled={isLoading}
+              label="LG Focus Area"
             />
+
+            {/* Consolidated Focus Areas (Read-only) */}
+            {selectedFocusAreas.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm">LG Focus Area (Consolidated)</Label>
+                <p className="text-sm text-muted-foreground p-2 bg-muted rounded">
+                  {selectedFocusAreas.join(', ')}
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Sector - Single-select dropdown */}
@@ -299,38 +337,39 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 value={editedFields.sector || ""}
                 onChange={(value) => handleFieldChange("sector", value)}
                 placeholder="Select sector"
-                disabled={isLoadingOptions}
+                disabled={isLoading}
               />
 
-              {/* Status - Single-select dropdown with custom option */}
+              {/* Status - Single-select dropdown with predefined options */}
               <SingleSelectDropdown
                 label="Status"
-                options={allStatusOptions}
+                options={['Active','Pass','Likely Pass','Longer-Term Opportunity']}
                 value={editedFields.status || ""}
                 onChange={(value) => handleFieldChange("status", value)}
                 placeholder="Select status"
                 allowCustom
                 onAddCustom={(value) => setCustomStatusOptions(prev => [...prev, value])}
-                disabled={isLoadingOptions}
+                disabled={isLoading}
               />
 
               {/* Tier - Hardcoded 1-5 */}
               <SingleSelectDropdown
                 label="Tier"
-                options={tierOptions}
+                options={['1','2','3','4','5']}
                 value={editedFields.tier || ""}
                 onChange={(value) => handleFieldChange("tier", value)}
                 placeholder="Select tier"
+                disabled={isLoading}
               />
 
               {/* Platform Add-On */}
               <SingleSelectDropdown
-                label="Platform Add-On"
-                options={platformAddonOptions}
+                label="Platform/Add-on"
+                options={['Platform','Add-on']}
                 value={editedFields.platform_add_on || ""}
-                onChange={(value) => handleFieldChange("platform_add_on", normalizePlatformAddonMapping(value))}
-                placeholder="Select platform add-on"
-                disabled={isLoadingOptions}
+                onChange={(value) => handleFieldChange("platform_add_on", value)}
+                placeholder="Select platform/add-on"
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -397,11 +436,11 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               {/* Ownership Type */}
               <SingleSelectDropdown
                 label="Ownership Type"
-                options={ownershipTypeOptions}
+                options={['Family/Founder','Sponsor Owned','Other']}
                 value={editedFields.ownership_type || ""}
-                onChange={(value) => handleFieldChange("ownership_type", normalizeOwnershipTypeMapping(value))}
+                onChange={(value) => handleFieldChange("ownership_type", value)}
                 placeholder="Select ownership type"
-                disabled={isLoadingOptions}
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -420,7 +459,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 value={editedFields.investment_professional_point_person_1 || ""}
                 onChange={(value) => handleFieldChange("investment_professional_point_person_1", value)}
                 placeholder="Select point person #1"
-                disabled={isLoadingOptions}
+                disabled={isLoading}
               />
 
               {/* Investment Professional Point Person #2 */}
@@ -430,7 +469,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 value={editedFields.investment_professional_point_person_2 || ""}
                 onChange={(value) => handleFieldChange("investment_professional_point_person_2", value)}
                 placeholder="Select point person #2"
-                disabled={isLoadingOptions}
+                disabled={isLoading}
               />
             </div>
           </div>

@@ -18,6 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase } from "lucide-react";
 import { useContactOpps } from "@/hooks/useContactOpps";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
+import { useQuery } from "@tanstack/react-query";
+import { fetchFocusAreaOptions, fetchSectorOptions } from "@/lib/options";
 
 interface ContactRaw {
   id: string;
@@ -82,7 +85,21 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   const [loading, setLoading] = useState(false);
   const [loadingInteractions, setLoadingInteractions] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const { toast } = useToast();
+
+  // Fetch focus area and sector options
+  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useQuery({
+    queryKey: ['focus-area-options'],
+    queryFn: fetchFocusAreaOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: sectorOptions = [], isLoading: isLoadingSectors } = useQuery({
+    queryKey: ['sector-options'],
+    queryFn: fetchSectorOptions,
+    staleTime: 10 * 60 * 1000,
+  });
 
   // Hook to fetch opportunities for this contact
   const { data: contactOpps = [], isLoading: isLoadingOpps, error: oppsError } = useContactOpps(contactData?.full_name);
@@ -93,6 +110,19 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
       loadContactData(contact.id);
     }
   }, [contact?.id, open]);
+
+  // Parse focus areas when contact data changes
+  useEffect(() => {
+    if (contactData?.lg_focus_areas_comprehensive_list) {
+      const areas = contactData.lg_focus_areas_comprehensive_list
+        .split(',')
+        .map(area => area.trim())
+        .filter(Boolean);
+      setSelectedFocusAreas(areas);
+    } else {
+      setSelectedFocusAreas([]);
+    }
+  }, [contactData?.lg_focus_areas_comprehensive_list]);
 
   // Load interactions when contact email changes
   useEffect(() => {
@@ -171,6 +201,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
         ...contactData,
         email_address: contactData.email_address?.toLowerCase() || null,
         delta: contactData.delta === null || contactData.delta === undefined || String(contactData.delta).trim() === "" ? null : Number(contactData.delta),
+        lg_focus_areas_comprehensive_list: selectedFocusAreas.join(', '),
         updated_at: new Date().toISOString()
       };
 
@@ -200,6 +231,18 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleFocusAreaChange = (newFocusAreas: string[]) => {
+    setSelectedFocusAreas(newFocusAreas);
+    
+    // Auto-fill sector if first focus area is selected and sector is currently blank
+    if (newFocusAreas.length === 1 && (!contactData?.lg_sector || contactData.lg_sector.trim() === '')) {
+      const selectedOption = focusAreaOptions.find(opt => opt.focus_area === newFocusAreas[0]);
+      if (selectedOption?.sector) {
+        updateField("lg_sector", selectedOption.sector);
+      }
     }
   };
 
@@ -322,11 +365,22 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
 
                 <div>
                   <Label htmlFor="lg_sector">LG Sector</Label>
-                  <Input
-                    id="lg_sector"
-                    value={contactData.lg_sector || ""}
-                    onChange={(e) => updateField("lg_sector", e.target.value)}
-                  />
+                  <Select 
+                    value={contactData.lg_sector || ""} 
+                    onValueChange={(value) => updateField("lg_sector", value)}
+                    disabled={isLoadingSectors}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select sector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sectorOptions.map((sector) => (
+                        <SelectItem key={sector} value={sector}>
+                          {sector}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
@@ -356,15 +410,32 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 />
               </div>
 
-              <div>
-                <Label htmlFor="lg_focus_areas_comprehensive_list">LG Focus Areas (Comprehensive List)</Label>
-                <Textarea
-                  id="lg_focus_areas_comprehensive_list"
-                  value={contactData.lg_focus_areas_comprehensive_list || ""}
-                  onChange={(e) => updateField("lg_focus_areas_comprehensive_list", e.target.value)}
-                  rows={3}
-                />
-              </div>
+                <div>
+                  <FocusAreaSelect
+                    value={selectedFocusAreas}
+                    onChange={handleFocusAreaChange}
+                    disabled={isLoadingFocusAreas}
+                    label="LG Focus Areas (Comprehensive List)"
+                  />
+                  {selectedFocusAreas.length > 0 && !contactData?.lg_sector && (
+                    <div className="mt-2">
+                      <p className="text-xs text-muted-foreground">
+                        💡 <button 
+                          type="button"
+                          className="text-primary hover:underline"
+                          onClick={() => {
+                            const firstOption = focusAreaOptions.find(opt => opt.focus_area === selectedFocusAreas[0]);
+                            if (firstOption?.sector) {
+                              updateField("lg_sector", firstOption.sector);
+                            }
+                          }}
+                        >
+                          Auto-fill sector with "{focusAreaOptions.find(opt => opt.focus_area === selectedFocusAreas[0])?.sector}"
+                        </button>
+                      </p>
+                    </div>
+                  )}
+                </div>
             </div>
 
             <Separator />
