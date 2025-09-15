@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useDistinctFocusAreas } from "@/hooks/useDistinctFocusAreas";  
-import { useDistinctSectors } from "@/hooks/useDistinctSectors";
+import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
+import { useQuery } from "@tanstack/react-query";
+import { fetchFocusAreaOptions, fetchSectorOptions } from "@/lib/options";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,6 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     full_name: "",
     email_address: "",
     organization: "",
-    lg_focus_area_1: "",
     title: "",
     areas_of_specialization: "",
     notes: "",
@@ -39,20 +39,23 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     category: "",
     phone: "",
     url_to_online_bio: "",
-    lg_focus_area_2: "",
-    lg_focus_area_3: "",
-    lg_focus_area_4: "",
-    lg_focus_area_5: "",
-    lg_focus_area_6: "",
-    lg_focus_area_7: "",
-    lg_focus_area_8: "",
   });
+  const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
-  // Fetch dropdown data
-  const { data: focusAreas, isLoading: loadingFocusAreas } = useDistinctFocusAreas();
-  const { data: sectors, isLoading: loadingSectors } = useDistinctSectors();
+  // Fetch focus area and sector options
+  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useQuery({
+    queryKey: ['focus-area-options'],
+    queryFn: fetchFocusAreaOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: sectorOptions = [], isLoading: isLoadingSectors } = useQuery({
+    queryKey: ['sector-options'], 
+    queryFn: fetchSectorOptions,
+    staleTime: 10 * 60 * 1000,
+  });
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -61,13 +64,25 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     }));
   };
 
+  const handleFocusAreaChange = (newFocusAreas: string[]) => {
+    setSelectedFocusAreas(newFocusAreas);
+    
+    // Auto-fill sector if first focus area is selected and sector is currently blank
+    if (newFocusAreas.length === 1 && !formData.lg_sector) {
+      const selectedOption = focusAreaOptions.find(opt => opt.focus_area === newFocusAreas[0]);
+      if (selectedOption?.sector) {
+        handleInputChange("lg_sector", selectedOption.sector);
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.full_name.trim() || !formData.email_address.trim() || !formData.organization.trim() || !formData.lg_focus_area_1.trim()) {
+    if (!formData.full_name.trim() || !formData.email_address.trim() || !formData.organization.trim() || selectedFocusAreas.length === 0) {
       toast({
         title: "Error",
-        description: "Full name, email, organization, and primary focus area are required",
+        description: "Full name, email, organization, and at least one focus area are required",
         variant: "destructive",
       });
       return;
@@ -92,11 +107,19 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
       const numOrNull = (v?: string | number) =>
         v === undefined || v === null || String(v).trim() === "" ? null : Number(v);
 
+      // Create consolidated focus areas list and individual slots
+      const consolidatedList = selectedFocusAreas.join(', ');
+      const focusAreaSlots: any = {};
+      for (let i = 1; i <= 8; i++) {
+        focusAreaSlots[`lg_focus_area_${i}`] = selectedFocusAreas[i - 1] || null;
+      }
+
       const payload = {
         full_name: formData.full_name.trim(),
         organization: formData.organization.trim(),
-        lg_focus_area_1: formData.lg_focus_area_1.trim(),
         email_address: formData.email_address.trim().toLowerCase(),
+        lg_focus_areas_comprehensive_list: consolidatedList,
+        ...focusAreaSlots,
         title: opt(formData.title),
         areas_of_specialization: opt(formData.areas_of_specialization),
         notes: opt(formData.notes),
@@ -106,13 +129,6 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
         category: opt(formData.category),
         phone: opt(formData.phone),
         url_to_online_bio: opt(formData.url_to_online_bio),
-        lg_focus_area_2: opt(formData.lg_focus_area_2),
-        lg_focus_area_3: opt(formData.lg_focus_area_3),
-        lg_focus_area_4: opt(formData.lg_focus_area_4),
-        lg_focus_area_5: opt(formData.lg_focus_area_5),
-        lg_focus_area_6: opt(formData.lg_focus_area_6),
-        lg_focus_area_7: opt(formData.lg_focus_area_7),
-        lg_focus_area_8: opt(formData.lg_focus_area_8),
       };
 
       // Insert into contacts_raw table
@@ -134,7 +150,6 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
         full_name: "",
         email_address: "",
         organization: "",
-        lg_focus_area_1: "",
         title: "",
         areas_of_specialization: "",
         notes: "",
@@ -144,14 +159,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
         category: "",
         phone: "",
         url_to_online_bio: "",
-        lg_focus_area_2: "",
-        lg_focus_area_3: "",
-        lg_focus_area_4: "",
-        lg_focus_area_5: "",
-        lg_focus_area_6: "",
-        lg_focus_area_7: "",
-        lg_focus_area_8: "",
       });
+      setSelectedFocusAreas([]);
 
       onContactAdded();
     } catch (error: any) {
@@ -173,7 +182,6 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
       full_name: "",
       email_address: "",
       organization: "",
-      lg_focus_area_1: "",
       title: "",
       areas_of_specialization: "",
       notes: "",
@@ -183,14 +191,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
       category: "",
       phone: "",
       url_to_online_bio: "",
-      lg_focus_area_2: "",
-      lg_focus_area_3: "",
-      lg_focus_area_4: "",
-      lg_focus_area_5: "",
-      lg_focus_area_6: "",
-      lg_focus_area_7: "",
-      lg_focus_area_8: "",
     });
+    setSelectedFocusAreas([]);
     onClose();
   };
 
@@ -246,29 +248,31 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="lg_focus_area_1">Primary Focus Area *</Label>
-            <Select
-              value={formData.lg_focus_area_1}
-              onValueChange={(value) => handleInputChange("lg_focus_area_1", value)}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select primary focus area" />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingFocusAreas ? (
-                  <SelectItem value="" disabled>Loading...</SelectItem>
-                ) : (
-                  focusAreas?.map((area) => (
-                    <SelectItem key={area} value={area}>
-                      {area}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Focus Areas - Multi-select */}
+          <FocusAreaSelect
+            value={selectedFocusAreas}
+            onChange={handleFocusAreaChange}
+            disabled={isLoadingFocusAreas}
+            label="LG Focus Areas"
+          />
+          {selectedFocusAreas.length > 0 && !formData.lg_sector && (
+            <div className="mt-2">
+              <p className="text-xs text-muted-foreground">
+                💡 <button 
+                  type="button"
+                  className="text-primary hover:underline"
+                  onClick={() => {
+                    const firstOption = focusAreaOptions.find(opt => opt.focus_area === selectedFocusAreas[0]);
+                    if (firstOption?.sector) {
+                      handleInputChange("lg_sector", firstOption.sector);
+                    }
+                  }}
+                >
+                  Auto-fill sector with "{focusAreaOptions.find(opt => opt.focus_area === selectedFocusAreas[0])?.sector}"
+                </button>
+              </p>
+            </div>
+          )}
 
           {/* Optional Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -291,10 +295,10 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                   <SelectValue placeholder="Select sector" />
                 </SelectTrigger>
                 <SelectContent>
-                  {loadingSectors ? (
+                  {isLoadingSectors ? (
                     <SelectItem value="" disabled>Loading...</SelectItem>
                   ) : (
-                    sectors?.map((sector) => (
+                    sectorOptions?.map((sector) => (
                       <SelectItem key={sector} value={sector}>
                         {sector}
                       </SelectItem>
@@ -374,21 +378,6 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
               onChange={(e) => handleInputChange("areas_of_specialization", e.target.value)}
               placeholder="Enter specializations (comma-separated)"
             />
-          </div>
-
-          {/* Additional Focus Areas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[2, 3, 4, 5, 6, 7, 8].map((num) => (
-              <div key={num} className="space-y-2">
-                <Label htmlFor={`lg_focus_area_${num}`}>Focus Area #{num}</Label>
-                <Input
-                  id={`lg_focus_area_${num}`}
-                  value={formData[`lg_focus_area_${num}` as keyof typeof formData] as string}
-                  onChange={(e) => handleInputChange(`lg_focus_area_${num}`, e.target.value)}
-                  placeholder={`Enter focus area ${num}`}
-                />
-              </div>
-            ))}
           </div>
 
             <div className="space-y-2">

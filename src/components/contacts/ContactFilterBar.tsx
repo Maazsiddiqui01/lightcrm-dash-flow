@@ -13,7 +13,6 @@ import {
   useContactCategories,
   useContactOrganizations,
   useContactTitles,
-  useContactFocusAreas,
   useContactAreasOfSpecialization
 } from '@/hooks/useDistinctOptions';
 import { useQuery } from '@tanstack/react-query';

@@ -3,11 +3,9 @@ import { RotateCcw } from 'lucide-react';
 import { ComboboxMulti } from '@/components/shared/ComboboxMulti';
 import { RangeInput } from '@/components/shared/RangeInput';
 import {
-  useOpportunityFocusAreas,
   useOpportunityOwnershipTypes,
   useOpportunityTiers,
   useOpportunityStatuses,
-  useOpportunitySectors,
   useOpportunityLeads,
   useOpportunityPlatformAddOn,
   useOpportunityReferralContacts,
