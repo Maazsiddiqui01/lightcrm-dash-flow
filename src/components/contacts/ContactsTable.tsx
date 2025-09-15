@@ -376,8 +376,8 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
             columns={dynamicColumns}
             columnVisibility={columnVisibility.columnVisibility}
             onColumnVisibilityChange={columnVisibility.updateColumnVisibility}
-            onShowAll={columnVisibility.showAllColumns}
-            onHideAll={columnVisibility.hideAllColumns}
+            onShowAll={(columns) => columnVisibility.showAllColumns(columns)}
+            onHideAll={(columns) => columnVisibility.hideAllColumns(columns)}
           />
 
           <Button

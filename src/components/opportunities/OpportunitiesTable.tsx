@@ -385,8 +385,8 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
             columns={dynamicColumns}
             columnVisibility={columnVisibility.columnVisibility}
             onColumnVisibilityChange={columnVisibility.updateColumnVisibility}
-            onShowAll={columnVisibility.showAllColumns}
-            onHideAll={columnVisibility.hideAllColumns}
+            onShowAll={(columns) => columnVisibility.showAllColumns(columns)}
+            onHideAll={(columns) => columnVisibility.hideAllColumns(columns)}
           />
 
           <Button

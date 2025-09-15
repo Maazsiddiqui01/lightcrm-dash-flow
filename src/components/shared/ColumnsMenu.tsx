@@ -16,8 +16,8 @@ interface ColumnsMenuProps<T> {
   columns: ColumnDef<T>[];
   columnVisibility: Record<string, boolean>;
   onColumnVisibilityChange: (columnKey: string, visible: boolean) => void;
-  onShowAll: () => void;
-  onHideAll: () => void;
+  onShowAll: (columns: ColumnDef<T>[]) => void;
+  onHideAll: (columns: ColumnDef<T>[]) => void;
 }
 
 export function ColumnsMenu<T>({
@@ -68,7 +68,7 @@ export function ColumnsMenu<T>({
             <Button
               variant="outline"
               size="sm"
-              onClick={onShowAll}
+              onClick={() => onShowAll(columns)}
               className="flex-1 text-xs"
             >
               Show All
@@ -76,7 +76,7 @@ export function ColumnsMenu<T>({
             <Button
               variant="outline"
               size="sm"
-              onClick={onHideAll}
+              onClick={() => onHideAll(columns)}
               className="flex-1 text-xs"
             >
               Hide All
