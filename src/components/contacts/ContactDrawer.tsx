@@ -19,8 +19,7 @@ import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, Extern
 import { useContactOpps } from "@/hooks/useContactOpps";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
-import { useQuery } from "@tanstack/react-query";
-import { fetchFocusAreaOptions, fetchSectorOptions } from "@/lib/options";
+import { useSectors, useFocusAreasBySector, findMatchingOption } from "@/hooks/useLookups";
 
 interface ContactRaw {
   id: string;
@@ -88,18 +87,9 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Fetch focus area and sector options
-  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useQuery({
-    queryKey: ['focus-area-options'],
-    queryFn: fetchFocusAreaOptions,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const { data: sectorOptions = [], isLoading: isLoadingSectors } = useQuery({
-    queryKey: ['sector-options'],
-    queryFn: fetchSectorOptions,
-    staleTime: 10 * 60 * 1000,
-  });
+  // Use canonical lookup options
+  const sectorsQuery = useSectors();
+  const focusAreasQuery = useFocusAreasBySector(contactData?.lg_sector || undefined);
 
   // Hook to fetch opportunities for this contact
   const { data: contactOpps = [], isLoading: isLoadingOpps, error: oppsError } = useContactOpps(contactData?.full_name);
@@ -239,9 +229,12 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     
     // Auto-fill sector if first focus area is selected and sector is currently blank
     if (newFocusAreas.length === 1 && (!contactData?.lg_sector || contactData.lg_sector.trim() === '')) {
-      const selectedOption = focusAreaOptions.find(opt => opt.focus_area === newFocusAreas[0]);
-      if (selectedOption?.sector) {
-        updateField("lg_sector", selectedOption.sector);
+      const selectedOption = focusAreasQuery.data?.find(opt => opt.value === newFocusAreas[0]);
+      if (selectedOption?.meta?.sector_id) {
+        const sector = sectorsQuery.data?.find(s => s.meta?.id === selectedOption.meta?.sector_id);
+        if (sector) {
+          updateField("lg_sector", sector.value);
+        }
       }
     }
   };
@@ -368,15 +361,15 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                   <Select 
                     value={contactData.lg_sector || ""} 
                     onValueChange={(value) => updateField("lg_sector", value)}
-                    disabled={isLoadingSectors}
+                    disabled={sectorsQuery.isLoading}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select sector" />
                     </SelectTrigger>
                     <SelectContent>
-                      {sectorOptions.map((sector) => (
-                        <SelectItem key={sector} value={sector}>
-                          {sector}
+                      {(sectorsQuery.data || []).map((sector) => (
+                        <SelectItem key={sector.value} value={sector.value}>
+                          {sector.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -414,7 +407,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                   <FocusAreaSelect
                     value={selectedFocusAreas}
                     onChange={handleFocusAreaChange}
-                    disabled={isLoadingFocusAreas}
+                    disabled={focusAreasQuery.isLoading}
                     label="LG Focus Areas (Comprehensive List)"
                   />
                   {selectedFocusAreas.length > 0 && !contactData?.lg_sector && (
@@ -424,13 +417,23 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                           type="button"
                           className="text-primary hover:underline"
                           onClick={() => {
-                            const firstOption = focusAreaOptions.find(opt => opt.focus_area === selectedFocusAreas[0]);
-                            if (firstOption?.sector) {
-                              updateField("lg_sector", firstOption.sector);
+                            const firstOption = focusAreasQuery.data?.find(opt => opt.value === selectedFocusAreas[0]);
+                            if (firstOption?.meta?.sector_id) {
+                              const sector = sectorsQuery.data?.find(s => s.meta?.id === firstOption.meta?.sector_id);
+                              if (sector) {
+                                updateField("lg_sector", sector.value);
+                              }
                             }
                           }}
                         >
-                          Auto-fill sector with "{focusAreaOptions.find(opt => opt.focus_area === selectedFocusAreas[0])?.sector}"
+                          Auto-fill sector with "{(() => {
+                            const firstOption = focusAreasQuery.data?.find(opt => opt.value === selectedFocusAreas[0]);
+                            if (firstOption?.meta?.sector_id) {
+                              const sector = sectorsQuery.data?.find(s => s.meta?.id === firstOption.meta?.sector_id);
+                              return sector?.label;
+                            }
+                            return '';
+                          })()}"
                         </button>
                       </p>
                     </div>

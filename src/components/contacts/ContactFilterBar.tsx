@@ -9,14 +9,12 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { 
-  useContactSectors,
   useContactCategories,
   useContactOrganizations,
   useContactTitles,
   useContactAreasOfSpecialization
 } from '@/hooks/useDistinctOptions';
-import { useQuery } from '@tanstack/react-query';
-import { fetchFocusAreaOptions, fetchSectorOptions } from '@/lib/options';
+import { useSectors, useFocusAreas } from '@/hooks/useLookups';
 
 interface ContactFilterBarProps {
   filters: {
@@ -45,22 +43,12 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
     filters.mostRecentContactEnd ? new Date(filters.mostRecentContactEnd) : undefined
   );
 
-  // Use new focus area and sector options
-  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useQuery({
-    queryKey: ['focus-area-options'],
-    queryFn: fetchFocusAreaOptions,
-    staleTime: 10 * 60 * 1000,
-  });
+  // Use canonical lookup options
+  const sectorsQuery = useSectors();
+  const focusAreasQuery = useFocusAreas();
 
-  const { data: sectorOptionsData = [], isLoading: sectorsLoading } = useQuery({
-    queryKey: ['sector-options'], 
-    queryFn: fetchSectorOptions,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  // Convert to the format expected by ComboboxMulti
-  const focusAreaOptionsFormatted = focusAreaOptions.map(opt => ({ value: opt.focus_area, label: opt.focus_area }));
-  const sectorOptionsFormatted = sectorOptionsData.map(sector => ({ value: sector, label: sector }));
+  const sectorOptions = sectorsQuery.data || [];
+  const focusAreaOptions = focusAreasQuery.data || [];
 
   // Fetch distinct options for other filters
   const { data: specializationOptions = [], isLoading: specializationsLoading } = useContactAreasOfSpecialization();
@@ -122,21 +110,21 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
         {/* Focus Areas */}
         <ComboboxMulti
           label="Focus Areas"
-          options={focusAreaOptionsFormatted}
+          options={focusAreaOptions}
           values={filters.focusAreas || []}
           onChange={(values) => handleFilterChange('focusAreas', values)}
           searchPlaceholder="Search Focus Areas"
-          loading={focusAreasLoading}
+          loading={focusAreasQuery.isLoading}
         />
 
         {/* Sectors */}
         <ComboboxMulti
           label="Sector"
-          options={sectorOptionsFormatted}
+          options={sectorOptions}
           values={filters.sectors || []}
           onChange={(values) => handleFilterChange('sectors', values)}
           searchPlaceholder="Search Sectors"
-          loading={sectorsLoading}
+          loading={sectorsQuery.isLoading}
         />
 
         {/* Areas of Specialization */}

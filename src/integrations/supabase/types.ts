@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      contacts_dismissed_emails: {
+        Row: {
+          dismissed_at: string | null
+          email: string
+          note: string | null
+        }
+        Insert: {
+          dismissed_at?: string | null
+          email: string
+          note?: string | null
+        }
+        Update: {
+          dismissed_at?: string | null
+          email?: string
+          note?: string | null
+        }
+        Relationships: []
+      }
+      contacts_missing_candidates: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: number
+          organization: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id?: number
+          organization?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: number
+          organization?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contacts_raw: {
         Row: {
           all_emails: string | null
@@ -167,6 +215,165 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts_raw_dedupe_backup_2025_09_10: {
+        Row: {
+          all_emails: string | null
+          all_opps: number | null
+          areas_of_specialization: string | null
+          category: string | null
+          contact_type: string | null
+          created_at: string | null
+          days_since_last_email: number | null
+          days_since_last_meeting: number | null
+          delta: number | null
+          delta_type: string | null
+          email_address: string | null
+          email_cc: string | null
+          email_from: string | null
+          email_lower: string | null
+          email_subject: string | null
+          email_to: string | null
+          first_name: string | null
+          full_name: string | null
+          id: string | null
+          last_name: string | null
+          latest_contact_email: string | null
+          latest_contact_meeting: string | null
+          lg_focus_area_1: string | null
+          lg_focus_area_2: string | null
+          lg_focus_area_3: string | null
+          lg_focus_area_4: string | null
+          lg_focus_area_5: string | null
+          lg_focus_area_6: string | null
+          lg_focus_area_7: string | null
+          lg_focus_area_8: string | null
+          lg_focus_areas_comprehensive_list: string | null
+          lg_sector: string | null
+          meeting_cc: string | null
+          meeting_from: string | null
+          meeting_title: string | null
+          meeting_to: string | null
+          most_recent_contact: string | null
+          no_of_lg_focus_areas: number | null
+          no_of_opps_sourced: number | null
+          notes: string | null
+          of_emails: number | null
+          of_meetings: number | null
+          organization: string | null
+          outreach_date: string | null
+          phone: string | null
+          rn: number | null
+          title: string | null
+          total_of_contacts: number | null
+          updated_at: string | null
+          url_to_online_bio: string | null
+        }
+        Insert: {
+          all_emails?: string | null
+          all_opps?: number | null
+          areas_of_specialization?: string | null
+          category?: string | null
+          contact_type?: string | null
+          created_at?: string | null
+          days_since_last_email?: number | null
+          days_since_last_meeting?: number | null
+          delta?: number | null
+          delta_type?: string | null
+          email_address?: string | null
+          email_cc?: string | null
+          email_from?: string | null
+          email_lower?: string | null
+          email_subject?: string | null
+          email_to?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          latest_contact_email?: string | null
+          latest_contact_meeting?: string | null
+          lg_focus_area_1?: string | null
+          lg_focus_area_2?: string | null
+          lg_focus_area_3?: string | null
+          lg_focus_area_4?: string | null
+          lg_focus_area_5?: string | null
+          lg_focus_area_6?: string | null
+          lg_focus_area_7?: string | null
+          lg_focus_area_8?: string | null
+          lg_focus_areas_comprehensive_list?: string | null
+          lg_sector?: string | null
+          meeting_cc?: string | null
+          meeting_from?: string | null
+          meeting_title?: string | null
+          meeting_to?: string | null
+          most_recent_contact?: string | null
+          no_of_lg_focus_areas?: number | null
+          no_of_opps_sourced?: number | null
+          notes?: string | null
+          of_emails?: number | null
+          of_meetings?: number | null
+          organization?: string | null
+          outreach_date?: string | null
+          phone?: string | null
+          rn?: number | null
+          title?: string | null
+          total_of_contacts?: number | null
+          updated_at?: string | null
+          url_to_online_bio?: string | null
+        }
+        Update: {
+          all_emails?: string | null
+          all_opps?: number | null
+          areas_of_specialization?: string | null
+          category?: string | null
+          contact_type?: string | null
+          created_at?: string | null
+          days_since_last_email?: number | null
+          days_since_last_meeting?: number | null
+          delta?: number | null
+          delta_type?: string | null
+          email_address?: string | null
+          email_cc?: string | null
+          email_from?: string | null
+          email_lower?: string | null
+          email_subject?: string | null
+          email_to?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          latest_contact_email?: string | null
+          latest_contact_meeting?: string | null
+          lg_focus_area_1?: string | null
+          lg_focus_area_2?: string | null
+          lg_focus_area_3?: string | null
+          lg_focus_area_4?: string | null
+          lg_focus_area_5?: string | null
+          lg_focus_area_6?: string | null
+          lg_focus_area_7?: string | null
+          lg_focus_area_8?: string | null
+          lg_focus_areas_comprehensive_list?: string | null
+          lg_sector?: string | null
+          meeting_cc?: string | null
+          meeting_from?: string | null
+          meeting_title?: string | null
+          meeting_to?: string | null
+          most_recent_contact?: string | null
+          no_of_lg_focus_areas?: number | null
+          no_of_opps_sourced?: number | null
+          notes?: string | null
+          of_emails?: number | null
+          of_meetings?: number | null
+          organization?: string | null
+          outreach_date?: string | null
+          phone?: string | null
+          rn?: number | null
+          title?: string | null
+          total_of_contacts?: number | null
+          updated_at?: string | null
+          url_to_online_bio?: string | null
+        }
+        Relationships: []
+      }
       emails_meetings_raw: {
         Row: {
           all_emails: string | null
@@ -257,6 +464,27 @@ export type Database = {
         }
         Relationships: []
       }
+      lg_focus_area_master: {
+        Row: {
+          created_at: string
+          focus_area: string
+          is_active: boolean
+          sector: string
+        }
+        Insert: {
+          created_at?: string
+          focus_area: string
+          is_active?: boolean
+          sector: string
+        }
+        Update: {
+          created_at?: string
+          focus_area?: string
+          is_active?: boolean
+          sector?: string
+        }
+        Relationships: []
+      }
       lg_leads_directory: {
         Row: {
           email: string
@@ -272,6 +500,47 @@ export type Database = {
           email?: string
           last_name?: string | null
           lead_name?: string
+        }
+        Relationships: []
+      }
+      lookup_focus_areas: {
+        Row: {
+          id: string
+          label: string
+          sector_id: string
+        }
+        Insert: {
+          id: string
+          label: string
+          sector_id: string
+        }
+        Update: {
+          id?: string
+          label?: string
+          sector_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lookup_focus_areas_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "lookup_sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lookup_sectors: {
+        Row: {
+          id: string
+          label: string
+        }
+        Insert: {
+          id: string
+          label: string
+        }
+        Update: {
+          id?: string
+          label?: string
         }
         Relationships: []
       }
@@ -512,6 +781,13 @@ export type Database = {
             foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
             columns: ["opportunity_id"]
             isOneToOne: false
+            referencedRelation: "opportunities_email_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
             referencedRelation: "opportunities_norm"
             referencedColumns: ["id"]
           },
@@ -522,10 +798,28 @@ export type Database = {
             referencedRelation: "opportunities_raw"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opps_date_norm"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
+      contact_inbox_candidates: {
+        Row: {
+          email: string | null
+          interactions_count: number | null
+          last_seen_at: string | null
+          last_subject: string | null
+          name_guess: string | null
+          org_guess: string | null
+        }
+        Relationships: []
+      }
       contacts_ai: {
         Row: {
           areas_of_specialization: string | null
@@ -609,6 +903,13 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts_name_email: {
+        Row: {
+          email_address: string | null
+          full_name: string | null
+        }
+        Relationships: []
+      }
       contacts_norm: {
         Row: {
           areas_of_specialization: string | null
@@ -654,6 +955,13 @@ export type Database = {
           notes?: string | null
           organization?: string | null
           title?: string | null
+        }
+        Relationships: []
+      }
+      focus_area_options_v: {
+        Row: {
+          focus_area: string | null
+          sector_guess: string | null
         }
         Relationships: []
       }
@@ -1076,6 +1384,44 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities_email_payload: {
+        Row: {
+          created_at: string | null
+          date_of_origination: string | null
+          deal_name: string | null
+          deal_source_company: string | null
+          deal_source_individual_1: string | null
+          deal_source_individual_1_email: string | null
+          deal_source_individual_2: string | null
+          deal_source_individual_2_email: string | null
+          dealcloud: boolean | null
+          ebitda: string | null
+          ebitda_in_ms: number | null
+          ebitda_notes: string | null
+          id: string | null
+          investment_professional_point_person_1: string | null
+          investment_professional_point_person_2: string | null
+          lg_focus_area: string | null
+          lg_lead_1_email: string | null
+          lg_lead_1_name: string | null
+          lg_lead_2_email: string | null
+          lg_lead_2_name: string | null
+          lg_leads: string | null
+          lg_leads_emails: string[] | null
+          most_recent_notes: string | null
+          next_steps: string | null
+          ownership: string | null
+          ownership_type: string | null
+          platform_add_on: string | null
+          sector: string | null
+          status: string | null
+          summary_of_opportunity: string | null
+          tier: string | null
+          updated_at: string | null
+          url: string | null
+        }
+        Relationships: []
+      }
       opportunities_norm: {
         Row: {
           date_of_origination: string | null
@@ -1178,6 +1524,13 @@ export type Database = {
             foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
             columns: ["opportunity_id"]
             isOneToOne: false
+            referencedRelation: "opportunities_email_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
             referencedRelation: "opportunities_norm"
             referencedColumns: ["id"]
           },
@@ -1188,7 +1541,36 @@ export type Database = {
             referencedRelation: "opportunities_raw"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opps_date_norm"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      opps_date_norm: {
+        Row: {
+          date_of_origination: string | null
+          id: string | null
+          quarter: number | null
+          year: number | null
+          year_quarter: string | null
+        }
+        Relationships: []
+      }
+      opps_year_quarters: {
+        Row: {
+          year_quarter: string | null
+        }
+        Relationships: []
+      }
+      opps_years: {
+        Row: {
+          year: number | null
+        }
+        Relationships: []
       }
       tom_new_view: {
         Row: {
@@ -1252,6 +1634,22 @@ export type Database = {
           no_of_meetings: number
         }[]
       }
+      approve_contact_candidate: {
+        Args: { p_email: string; p_full_name?: string; p_organization?: string }
+        Returns: string
+      }
+      approve_missing_contact: {
+        Args: { p_email: string }
+        Returns: undefined
+      }
+      dismiss_contact_candidate: {
+        Args: { p_email: string; p_note?: string }
+        Returns: undefined
+      }
+      dismiss_missing_contact: {
+        Args: { p_email: string }
+        Returns: boolean
+      }
       gtrgm_compress: {
         Args: { "": unknown }
         Returns: unknown
@@ -1271,6 +1669,14 @@ export type Database = {
       gtrgm_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      guess_name_from_email: {
+        Args: { p_email: string }
+        Returns: string
+      }
+      guess_org_from_email: {
+        Args: { p_email: string }
+        Returns: string
       }
       interactions_for_email_recent: {
         Args: { p_email: string; p_limit?: number }
@@ -1304,6 +1710,10 @@ export type Database = {
           subject: string
           to_emails: string
         }[]
+      }
+      is_valid_email: {
+        Args: { p: string }
+        Returns: boolean
       }
       kpi_default_meeting_min: {
         Args: Record<PropertyKey, never>
@@ -1432,6 +1842,14 @@ export type Database = {
           status: string
           tier: string
         }[]
+      }
+      refresh_missing_contacts: {
+        Args: { p_exclude_domain?: string }
+        Returns: number
+      }
+      reject_missing_contact: {
+        Args: { p_email: string }
+        Returns: undefined
       }
       set_limit: {
         Args: { "": number }

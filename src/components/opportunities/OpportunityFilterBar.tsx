@@ -12,8 +12,7 @@ import {
   useOpportunityReferralCompanies,
   useOpportunityDatesOfOrigination
 } from '@/hooks/useDistinctOptions';
-import { useQuery } from '@tanstack/react-query';
-import { fetchFocusAreaOptions, fetchSectorOptions } from '@/lib/options';
+import { useSectors, useFocusAreas } from '@/hooks/useLookups';
 
 interface OpportunityFilters {
   focusArea: string[];
@@ -42,22 +41,12 @@ export function OpportunityFilterBar({
   onFiltersChange, 
   onClearFilters 
 }: OpportunityFilterBarProps) {
-  // Use new focus area and sector options
-  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useQuery({
-    queryKey: ['focus-area-options'],
-    queryFn: fetchFocusAreaOptions,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const { data: sectorOptionsData = [], isLoading: sectorsLoading } = useQuery({
-    queryKey: ['sector-options'], 
-    queryFn: fetchSectorOptions,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  // Convert to the format expected by ComboboxMulti
-  const focusAreas = focusAreaOptions.map(opt => ({ value: opt.focus_area, label: opt.focus_area }));
-  const sectors = sectorOptionsData.map(sector => ({ value: sector, label: sector }));
+  // Use canonical lookup options
+  const sectorsQuery = useSectors();
+  const focusAreasQuery = useFocusAreas();
+  
+  const focusAreas = focusAreasQuery.data || [];
+  const sectors = sectorsQuery.data || [];
 
   // Use existing hooks for other options
   const { data: ownershipTypes = [], isLoading: ownershipLoading } = useOpportunityOwnershipTypes();
@@ -104,7 +93,7 @@ export function OpportunityFilterBar({
           values={filters.focusArea}
           onChange={(values) => updateFilter('focusArea', values)}
           searchPlaceholder="Search Focus Areas"
-          loading={focusAreasLoading}
+          loading={focusAreasQuery.isLoading}
         />
 
         <ComboboxMulti
@@ -113,7 +102,7 @@ export function OpportunityFilterBar({
           values={filters.sector}
           onChange={(values) => updateFilter('sector', values)}
           searchPlaceholder="Search Sectors"
-          loading={sectorsLoading}
+          loading={sectorsQuery.isLoading}
         />
 
         <ComboboxMulti

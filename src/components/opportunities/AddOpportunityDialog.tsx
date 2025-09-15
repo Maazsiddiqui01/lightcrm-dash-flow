@@ -17,8 +17,7 @@ import { Plus, Target } from "lucide-react";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
-import { useQuery } from "@tanstack/react-query";
-import { fetchFocusAreaOptions, fetchSectorOptions } from "@/lib/options";
+import { useSectors, useFocusAreasBySector } from "@/hooks/useLookups";
 
 interface AddOpportunityDialogProps {
   open: boolean;

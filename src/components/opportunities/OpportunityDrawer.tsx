@@ -22,8 +22,7 @@ import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
 import { splitTokens, tierOptions, normalizePlatformAddonMapping, normalizeOwnershipTypeMapping } from "@/lib/export/opportunityUtils";
-import { useQuery } from "@tanstack/react-query";
-import { fetchFocusAreaOptions, fetchSectorOptions } from "@/lib/options";
+import { useSectors, useFocusAreasBySector, findMatchingOption } from "@/hooks/useLookups";
 
 interface Opportunity {
   id: string;
@@ -67,19 +66,10 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
   
-  // Fetch focus area options with sector mapping
-  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useQuery({
-    queryKey: ['focus-area-options'],
-    queryFn: fetchFocusAreaOptions,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  // Fetch sector options
-  const { data: sectorOptions = [], isLoading: isLoadingSectors } = useQuery({
-    queryKey: ['sector-options'],
-    queryFn: fetchSectorOptions,
-    staleTime: 10 * 60 * 1000,
-  });
+  // Use canonical lookup options
+  const sectorsQuery = useSectors();
+  const currentSector = editedFields.sector || opportunity?.sector;
+  const focusAreasQuery = useFocusAreasBySector(currentSector || undefined);
   
   const { 
     statusOptions,
@@ -89,7 +79,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     isLoading: isLoadingOptions
   } = useOpportunityOptions();
 
-  const isLoading = isLoadingFocusAreas || isLoadingSectors || isLoadingOptions;
+  const isLoading = focusAreasQuery.isLoading || sectorsQuery.isLoading || isLoadingOptions;
 
   const allStatusOptions = [...statusOptions, ...customStatusOptions];
   
@@ -142,9 +132,12 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     
     // Auto-fill sector if first focus area is selected and sector is currently blank
     if (newFocusAreas.length === 1 && !editedFields.sector) {
-      const selectedOption = focusAreaOptions.find(opt => opt.focus_area === newFocusAreas[0]);
-      if (selectedOption?.sector) {
-        handleFieldChange("sector", selectedOption.sector);
+      const selectedOption = focusAreasQuery.data?.find(opt => opt.value === newFocusAreas[0]);
+      if (selectedOption?.meta?.sector_id) {
+        const sector = sectorsQuery.data?.find(s => s.meta?.id === selectedOption.meta?.sector_id);
+        if (sector) {
+          handleFieldChange("sector", sector.value);
+        }
       }
     }
   };
@@ -333,7 +326,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               {/* Sector - Single-select dropdown */}
               <SingleSelectDropdown
                 label="Sector"
-                options={sectorOptions}
+                options={(sectorsQuery.data || []).map(s => s.value)}
                 value={editedFields.sector || ""}
                 onChange={(value) => handleFieldChange("sector", value)}
                 placeholder="Select sector"

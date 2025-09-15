@@ -2,8 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
-import { useQuery } from "@tanstack/react-query";
-import { fetchFocusAreaOptions, fetchSectorOptions } from "@/lib/options";
+import { useSectors, useFocusAreasBySector } from "@/hooks/useLookups";
 import {
   Dialog,
   DialogContent,
@@ -45,17 +44,9 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
   const { toast } = useToast();
   
   // Fetch focus area and sector options
-  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useQuery({
-    queryKey: ['focus-area-options'],
-    queryFn: fetchFocusAreaOptions,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const { data: sectorOptions = [], isLoading: isLoadingSectors } = useQuery({
-    queryKey: ['sector-options'], 
-    queryFn: fetchSectorOptions,
-    staleTime: 10 * 60 * 1000,
-  });
+  // Use canonical lookup options
+  const sectorsQuery = useSectors();
+  const focusAreasQuery = useFocusAreasBySector(formData.lg_sector || undefined);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -69,9 +60,12 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     
     // Auto-fill sector if first focus area is selected and sector is currently blank
     if (newFocusAreas.length === 1 && !formData.lg_sector) {
-      const selectedOption = focusAreaOptions.find(opt => opt.focus_area === newFocusAreas[0]);
-      if (selectedOption?.sector) {
-        handleInputChange("lg_sector", selectedOption.sector);
+      const selectedOption = focusAreasQuery.data?.find(opt => opt.value === newFocusAreas[0]);
+      if (selectedOption?.meta?.sector_id) {
+        const sector = sectorsQuery.data?.find(s => s.meta?.id === selectedOption.meta?.sector_id);
+        if (sector) {
+          handleInputChange("lg_sector", sector.value);
+        }
       }
     }
   };
@@ -252,7 +246,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           <FocusAreaSelect
             value={selectedFocusAreas}
             onChange={handleFocusAreaChange}
-            disabled={isLoadingFocusAreas}
+            disabled={focusAreasQuery.isLoading}
             label="LG Focus Areas"
           />
           {selectedFocusAreas.length > 0 && !formData.lg_sector && (
@@ -262,13 +256,23 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                   type="button"
                   className="text-primary hover:underline"
                   onClick={() => {
-                    const firstOption = focusAreaOptions.find(opt => opt.focus_area === selectedFocusAreas[0]);
-                    if (firstOption?.sector) {
-                      handleInputChange("lg_sector", firstOption.sector);
+                    const firstOption = focusAreasQuery.data?.find(opt => opt.value === selectedFocusAreas[0]);
+                    if (firstOption?.meta?.sector_id) {
+                      const sector = sectorsQuery.data?.find(s => s.meta?.id === firstOption.meta?.sector_id);
+                      if (sector) {
+                        handleInputChange("lg_sector", sector.value);
+                      }
                     }
                   }}
                 >
-                  Auto-fill sector with "{focusAreaOptions.find(opt => opt.focus_area === selectedFocusAreas[0])?.sector}"
+                  Auto-fill sector with "{(() => {
+                    const firstOption = focusAreasQuery.data?.find(opt => opt.value === selectedFocusAreas[0]);
+                    if (firstOption?.meta?.sector_id) {
+                      const sector = sectorsQuery.data?.find(s => s.meta?.id === firstOption.meta?.sector_id);
+                      return sector?.label;
+                    }
+                    return '';
+                  })()}"
                 </button>
               </p>
             </div>
@@ -295,12 +299,12 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                   <SelectValue placeholder="Select sector" />
                 </SelectTrigger>
                 <SelectContent>
-                  {isLoadingSectors ? (
+                  {sectorsQuery.isLoading ? (
                     <SelectItem value="" disabled>Loading...</SelectItem>
                   ) : (
-                    sectorOptions?.map((sector) => (
-                      <SelectItem key={sector} value={sector}>
-                        {sector}
+                    (sectorsQuery.data || []).map((sector) => (
+                      <SelectItem key={sector.value} value={sector.value}>
+                        {sector.label}
                       </SelectItem>
                     ))
                   )}
