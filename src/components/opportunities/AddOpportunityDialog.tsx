@@ -14,6 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Target } from "lucide-react";
+import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
+import { MultiSelectFocusArea } from "./MultiSelectFocusArea";
+import { SingleSelectDropdown } from "./SingleSelectDropdown";
+import { splitTokens, tierOptions, normalizePlatformAddonMapping, normalizeOwnershipTypeMapping } from "@/lib/export/opportunityUtils";
 
 interface AddOpportunityDialogProps {
   open: boolean;
@@ -43,8 +47,22 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     most_recent_notes: "",
     url: "",
   });
+  const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
+  const [customStatusOptions, setCustomStatusOptions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  
+  const { 
+    focusAreaOptions,
+    sectorOptions,
+    statusOptions,
+    platformAddonOptions,
+    ownershipTypeOptions,
+    lgLeadOptions,
+    isLoading: isLoadingOptions
+  } = useOpportunityOptions();
+
+  const allStatusOptions = [...statusOptions, ...customStatusOptions];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -57,12 +75,20 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     e.preventDefault();
     
     // Validation for required fields
+    if (selectedFocusAreas.length === 0) {
+      toast({
+        title: "Error",
+        description: "At least one LG Focus Area is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const requiredFields = [
-      { field: 'lg_focus_area', name: 'LG Focus Area' },
       { field: 'deal_name', name: 'Deal Name' },
-      { field: 'deal_source_company', name: 'Deal Source Company' },
-      { field: 'deal_source_individual_1', name: 'Deal Source Individual #1' },
-      { field: 'investment_professional_point_person_1', name: 'Investment Professional Point Person #1' }
+      { field: 'sector', name: 'Sector' },
+      { field: 'status', name: 'Status' },
+      { field: 'tier', name: 'Tier' }
     ];
 
     for (const { field, name } of requiredFields) {
@@ -82,18 +108,20 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       const req = (v: string) => v.trim();
       const opt = (v?: string) => (v && v.trim() !== "" ? v.trim() : null);
 
-      const payload = {
-        lg_focus_area: req(formData.lg_focus_area),
+      // Handle focus areas
+      const consolidated = selectedFocusAreas.join(', ');
+
+      const payload: any = {
+        lg_focus_area: consolidated,
         deal_name: req(formData.deal_name),
-        deal_source_company: req(formData.deal_source_company),
-        deal_source_individual_1: req(formData.deal_source_individual_1),
-        investment_professional_point_person_1: req(formData.investment_professional_point_person_1),
+        sector: req(formData.sector),
+        status: req(formData.status),
+        tier: req(formData.tier),
         // Optionals
-        status: opt(formData.status),
-        tier: opt(formData.tier),
-        sector: opt(formData.sector),
         platform_add_on: opt(formData.platform_add_on),
         date_of_origination: opt(formData.date_of_origination),
+        deal_source_company: opt(formData.deal_source_company),
+        deal_source_individual_1: opt(formData.deal_source_individual_1),
         deal_source_individual_2: opt(formData.deal_source_individual_2),
         ownership: opt(formData.ownership),
         ownership_type: opt(formData.ownership_type),
@@ -101,9 +129,17 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         ebitda_notes: opt(formData.ebitda_notes),
         url: opt(formData.url),
         summary_of_opportunity: opt(formData.summary_of_opportunity),
+        investment_professional_point_person_1: opt(formData.investment_professional_point_person_1),
         investment_professional_point_person_2: opt(formData.investment_professional_point_person_2),
         most_recent_notes: opt(formData.most_recent_notes),
       };
+
+      // Handle focus area slots if they exist in the table
+      const focusAreaSlots = ['lg_focus_area_1','lg_focus_area_2','lg_focus_area_3','lg_focus_area_4',
+                             'lg_focus_area_5','lg_focus_area_6','lg_focus_area_7','lg_focus_area_8'];
+      focusAreaSlots.forEach((slot, i) => {
+        payload[slot] = selectedFocusAreas[i] ?? null;
+      });
 
       const { data, error } = await supabase
         .from('opportunities_raw')
@@ -140,6 +176,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         most_recent_notes: "",
         url: "",
       });
+      setSelectedFocusAreas([]);
+      setCustomStatusOptions([]);
 
       onOpportunityAdded();
     } catch (error: any) {
@@ -176,6 +214,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       most_recent_notes: "",
       url: "",
     });
+    setSelectedFocusAreas([]);
+    setCustomStatusOptions([]);
     onClose();
   };
 
@@ -199,16 +239,13 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
           <div className="space-y-4 border-b pb-4">
             <h3 className="text-sm font-medium text-foreground">Required Fields</h3>
             
-            <div className="space-y-2">
-              <Label htmlFor="lg_focus_area">LG Focus Area *</Label>
-              <Input
-                id="lg_focus_area"
-                value={formData.lg_focus_area}
-                onChange={(e) => handleInputChange("lg_focus_area", e.target.value)}
-                placeholder="Enter focus area"
-                required
-              />
-            </div>
+            {/* LG Focus Area - Multi-select */}
+            <MultiSelectFocusArea
+              options={focusAreaOptions}
+              value={selectedFocusAreas}
+              onChange={setSelectedFocusAreas}
+              disabled={isLoadingOptions}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="deal_name">Deal Name *</Label>
@@ -221,72 +258,119 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="deal_source_company">Deal Source Company *</Label>
-              <Input
-                id="deal_source_company"
-                value={formData.deal_source_company}
-                onChange={(e) => handleInputChange("deal_source_company", e.target.value)}
-                placeholder="Enter source company"
-                required
-              />
-            </div>
+            {/* Sector - Single-select dropdown */}
+            <SingleSelectDropdown
+              label="Sector"
+              options={sectorOptions}
+              value={formData.sector}
+              onChange={(value) => handleInputChange("sector", value)}
+              placeholder="Select sector"
+              required
+              disabled={isLoadingOptions}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="deal_source_individual_1">Deal Source Individual #1 *</Label>
-              <Input
-                id="deal_source_individual_1"
-                value={formData.deal_source_individual_1}
-                onChange={(e) => handleInputChange("deal_source_individual_1", e.target.value)}
-                placeholder="Enter individual #1"
-                required
-              />
-            </div>
+            {/* Status - Single-select dropdown with custom option */}
+            <SingleSelectDropdown
+              label="Status"
+              options={allStatusOptions}
+              value={formData.status}
+              onChange={(value) => handleInputChange("status", value)}
+              placeholder="Select status"
+              required
+              allowCustom
+              onAddCustom={(value) => setCustomStatusOptions(prev => [...prev, value])}
+              disabled={isLoadingOptions}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="investment_professional_point_person_1">Investment Professional Point Person #1 *</Label>
-              <Input
-                id="investment_professional_point_person_1"
-                value={formData.investment_professional_point_person_1}
-                onChange={(e) => handleInputChange("investment_professional_point_person_1", e.target.value)}
-                placeholder="Enter point person #1"
-                required
-              />
-            </div>
+            {/* Tier - Hardcoded 1-5 */}
+            <SingleSelectDropdown
+              label="Tier"
+              options={tierOptions}
+              value={formData.tier}
+              onChange={(value) => handleInputChange("tier", value)}
+              placeholder="Select tier"
+              required
+            />
           </div>
 
           {/* Optional Fields */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-foreground">Optional Fields</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Investment Professional Point Person #1 */}
+              <SingleSelectDropdown
+                label="Investment Professional Point Person #1"
+                options={lgLeadOptions}
+                value={formData.investment_professional_point_person_1}
+                onChange={(value) => handleInputChange("investment_professional_point_person_1", value)}
+                placeholder="Select point person #1"
+                disabled={isLoadingOptions}
+              />
+
+              {/* Investment Professional Point Person #2 */}
+              <SingleSelectDropdown
+                label="Investment Professional Point Person #2"
+                options={lgLeadOptions}
+                value={formData.investment_professional_point_person_2}
+                onChange={(value) => handleInputChange("investment_professional_point_person_2", value)}
+                placeholder="Select point person #2"
+                disabled={isLoadingOptions}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Platform Add-On */}
+              <SingleSelectDropdown
+                label="Platform Add-On"
+                options={platformAddonOptions}
+                value={formData.platform_add_on}
+                onChange={(value) => handleInputChange("platform_add_on", normalizePlatformAddonMapping(value))}
+                placeholder="Select platform add-on"
+                disabled={isLoadingOptions}
+              />
+
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="date_of_origination">Date of Origination</Label>
                 <Input
-                  id="status"
-                  value={formData.status}
-                  onChange={(e) => handleInputChange("status", e.target.value)}
-                  placeholder="e.g., Active, Closed"
+                  id="date_of_origination"
+                  value={formData.date_of_origination}
+                  onChange={(e) => handleInputChange("date_of_origination", e.target.value)}
+                  placeholder="e.g., Q1 2024, Jan 2024"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="tier">Tier</Label>
+                <Label htmlFor="deal_source_company">Deal Source Company</Label>
                 <Input
-                  id="tier"
-                  value={formData.tier}
-                  onChange={(e) => handleInputChange("tier", e.target.value)}
-                  placeholder="e.g., Tier 1, Tier 2"
+                  id="deal_source_company"
+                  value={formData.deal_source_company}
+                  onChange={(e) => handleInputChange("deal_source_company", e.target.value)}
+                  placeholder="Enter source company"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="sector">Sector</Label>
+                <Label htmlFor="deal_source_individual_1">Deal Source Individual #1</Label>
                 <Input
-                  id="sector"
-                  value={formData.sector}
-                  onChange={(e) => handleInputChange("sector", e.target.value)}
-                  placeholder="e.g., Healthcare, Technology"
+                  id="deal_source_individual_1"
+                  value={formData.deal_source_individual_1}
+                  onChange={(e) => handleInputChange("deal_source_individual_1", e.target.value)}
+                  placeholder="Enter individual #1"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="deal_source_individual_2">Deal Source Individual #2</Label>
+              <Input
+                id="deal_source_individual_2"
+                value={formData.deal_source_individual_2}
+                onChange={(e) => handleInputChange("deal_source_individual_2", e.target.value)}
+                placeholder="Enter individual #2"
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -330,7 +414,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               />
             </div>
 
-          {/* Ownership */}
+           {/* Ownership */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="ownership">Ownership</Label>
@@ -341,15 +425,16 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                 placeholder="Enter ownership"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="ownership_type">Ownership Type</Label>
-              <Input
-                id="ownership_type"
-                value={formData.ownership_type}
-                onChange={(e) => handleInputChange("ownership_type", e.target.value)}
-                placeholder="e.g., Sponsor Owned, Public"
-              />
-            </div>
+            
+            {/* Ownership Type */}
+            <SingleSelectDropdown
+              label="Ownership Type"
+              options={ownershipTypeOptions}
+              value={formData.ownership_type}
+              onChange={(value) => handleInputChange("ownership_type", normalizeOwnershipTypeMapping(value))}
+              placeholder="Select ownership type"
+              disabled={isLoadingOptions}
+            />
           </div>
 
           {/* Summary */}
