@@ -184,8 +184,12 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       // First apply responsive logic
       const responsiveColumns = getResponsiveColumns(initialColumns, containerWidth, tableType);
       
-      // Then apply user visibility preferences (this overrides responsive logic)
-      const columnsWithUserPreferences = columnVisibilityHook.applyVisibilityToColumns(responsiveColumns);
+      // Then apply user visibility preferences
+      const columnsWithUserPreferences = hideColumnsButton
+        // When external ColumnsMenu is used, respect incoming visibility and do NOT override
+        ? responsiveColumns
+        // Otherwise, use internal persisted preferences
+        : columnVisibilityHook.applyVisibilityToColumns(responsiveColumns);
       
       // Apply adaptive column widths for wide screens
       const columnsWithAdaptiveWidths = columnsWithUserPreferences.map(col => {
@@ -201,7 +205,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       
       setColumns(columnsWithAdaptiveWidths);
     }
-  }, [containerWidth, initialColumns, tableType, responsiveLayout.category, columnVisibilityHook.columnVisibility]);
+  }, [containerWidth, initialColumns, tableType, responsiveLayout.category, columnVisibilityHook.columnVisibility, hideColumnsButton]);
 
   // Sync horizontal scroll between top clone and table body (bottom native)
   useEffect(() => {
