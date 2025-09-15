@@ -52,18 +52,9 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
-  // Fetch focus area and sector options
-  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useQuery({
-    queryKey: ['focus-area-options'],
-    queryFn: fetchFocusAreaOptions,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const { data: sectorOptions = [], isLoading: isLoadingSectors } = useQuery({
-    queryKey: ['sector-options'], 
-    queryFn: fetchSectorOptions,
-    staleTime: 10 * 60 * 1000,
-  });
+  // Use the canonical lookup hooks
+  const { data: sectorOptions = [], isLoading: isLoadingSectors } = useSectors();
+  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useFocusAreasBySector(formData.sector);
   
   const { 
     lgLeadOptions,
@@ -84,9 +75,13 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     
     // Auto-fill sector if first focus area is selected and sector is currently blank
     if (newFocusAreas.length === 1 && !formData.sector) {
-      const selectedOption = focusAreaOptions.find(opt => opt.focus_area === newFocusAreas[0]);
-      if (selectedOption?.sector) {
-        handleInputChange("sector", selectedOption.sector);
+      const selectedOption = focusAreaOptions.find(opt => opt.label === newFocusAreas[0]);
+      if (selectedOption?.meta?.sector_id) {
+        // Find the sector label from the sector options
+        const sectorOption = sectorOptions.find(s => s.meta?.id === selectedOption.meta.sector_id);
+        if (sectorOption) {
+          handleInputChange("sector", sectorOption.label);
+        }
       }
     }
   };
@@ -291,7 +286,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
             {/* Sector - Single-select dropdown */}
             <SingleSelectDropdown
               label="Sector"
-              options={sectorOptions}
+              options={sectorOptions.map(opt => opt.label)}
               value={formData.sector}
               onChange={(value) => handleInputChange("sector", value)}
               placeholder="Select sector"
