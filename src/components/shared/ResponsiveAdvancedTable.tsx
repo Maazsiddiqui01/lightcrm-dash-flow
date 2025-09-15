@@ -20,7 +20,8 @@ import {
   EyeOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getResponsiveColumns } from "@/utils/columnManagement";
+import { getResponsiveColumns, getAdaptiveColumnWidth, getAdaptiveRowHeight } from "@/utils/columnManagement";
+import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useTableLayout } from "@/hooks/useTableLayout";
 import { VirtualizedTable } from "./VirtualizedTable";
 import { TablePagination } from "./TablePagination";
@@ -122,6 +123,9 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
   
+  // Enhanced responsive layout system
+  const responsiveLayout = useResponsiveLayout();
+  
   // Row selection
   const rowSelection = useSelectedRows({ 
     tableId, 
@@ -169,13 +173,26 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     return () => resizeObserver.disconnect();
   }, [layoutContainerRef]);
 
-  // Update columns based on container width
+  // Update columns based on container width with enhanced responsive logic
   useEffect(() => {
     if (containerWidth > 0) {
       const responsiveColumns = getResponsiveColumns(initialColumns, containerWidth, tableType);
-      setColumns(responsiveColumns);
+      
+      // Apply adaptive column widths for wide screens
+      const columnsWithAdaptiveWidths = responsiveColumns.map(col => {
+        if (col.visible && !col.width && !col.sticky) {
+          const adaptiveWidth = getAdaptiveColumnWidth(
+            containerWidth, 
+            responsiveColumns.filter(c => c.visible).length
+          );
+          return { ...col, width: adaptiveWidth };
+        }
+        return col;
+      });
+      
+      setColumns(columnsWithAdaptiveWidths);
     }
-  }, [containerWidth, initialColumns, tableType]);
+  }, [containerWidth, initialColumns, tableType, responsiveLayout.category]);
 
   // Sync horizontal scroll between top clone and table body (bottom native)
   useEffect(() => {
@@ -687,9 +704,19 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         {/* Main table with BOTTOM native scrollbar */}
         <div
           ref={scrollRef}
-          className="overflow-x-auto max-h-[70vh]"
+          className={cn(
+            "overflow-x-auto",
+            responsiveLayout.isUltraWide ? "max-h-[85vh]" : 
+            responsiveLayout.isWideScreen ? "max-h-[80vh]" : "max-h-[70vh]"
+          )}
         >
-          <Table className="w-full" style={{ minWidth: "1200px" }}>
+          <Table 
+            className="w-full" 
+            style={{ 
+              minWidth: responsiveLayout.isWideScreen ? "100%" : "1200px",
+              tableLayout: responsiveLayout.isWideScreen ? "fixed" : "auto"
+            }}
+          >
             <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow className="border-b bg-muted/20">
                 {visibleColumns.map((column, index) => (
@@ -697,6 +724,8 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                     key={column.key}
                     className={cn(
                       "table-cell-compact text-left align-middle font-medium text-muted-foreground select-none bg-card",
+                      responsiveLayout.config.density === 'compact' && "px-2 py-1",
+                      responsiveLayout.config.density === 'comfortable' && "px-6 py-4",
                       index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-card border-r border-border",
                       column.sortable && "cursor-pointer hover:text-foreground transition-colors",
                       column.headerClassName

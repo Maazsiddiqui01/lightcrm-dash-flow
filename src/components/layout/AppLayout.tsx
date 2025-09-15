@@ -8,9 +8,9 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, onFiltersClick }: AppLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden w-full">
+    <div className="min-h-screen flex flex-col w-full">
       <TopNav onFiltersClick={onFiltersClick} />
-      <main className="flex-1 min-w-0 min-h-0 overflow-x-hidden">
+      <main className="flex-1 min-w-0 min-h-0 w-full max-w-none">
         {children}
       </main>
     </div>

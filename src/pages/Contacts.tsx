@@ -7,6 +7,7 @@ import { useState } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { ContactFilterBar } from "@/components/contacts/ContactFilterBar";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 
 
 export function Contacts() {
@@ -29,8 +30,8 @@ export function Contacts() {
   });
 
   return (
-    <div className="min-h-0 flex-1 overflow-x-hidden">
-      <section className="container-fluid flex flex-col gap-6 py-6">
+    <div className="min-h-0 flex-1">
+      <ResponsiveContainer className="flex flex-col gap-6 py-6">
         {/* Header Cards */}
         <div className="space-y-4">
           <div className="flex justify-between items-start">
@@ -85,7 +86,7 @@ export function Contacts() {
             setIsAddDialogOpen(false);
           }} 
         />
-      </section>
+      </ResponsiveContainer>
     </div>
   );
 }

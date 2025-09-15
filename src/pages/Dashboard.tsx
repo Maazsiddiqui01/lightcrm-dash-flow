@@ -9,6 +9,7 @@ import { Users, Target, MessageSquare, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 
 interface Stats {
   totalContacts: number;
@@ -143,7 +144,7 @@ export function Dashboard() {
       <Hero onGetStarted={handleGetStarted} onAskAI={handleAskAI} />
       
       {/* Stats Section */}
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <ResponsiveContainer className="py-8">
         <div className="space-y-8">
           <div className="flex items-center justify-between">
             <div>
@@ -292,7 +293,7 @@ export function Dashboard() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </ResponsiveContainer>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { Plus, Target, TrendingUp, CheckCircle, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { AddOpportunityDialog } from "@/components/opportunities/AddOpportunityDialog";
+import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 
 
 export function Opportunities() {
@@ -49,8 +50,8 @@ export function Opportunities() {
   };
 
   return (
-    <div className="min-h-0 flex-1 overflow-x-hidden">
-      <section className="container-fluid flex flex-col gap-6 py-6">
+    <div className="min-h-0 flex-1">
+      <ResponsiveContainer className="flex flex-col gap-6 py-6">
         {/* Header Cards */}
         <div className="space-y-4">
           <div className="flex justify-between items-start">
@@ -104,7 +105,7 @@ export function Opportunities() {
             setIsAddDialogOpen(false);
           }} 
         />
-      </section>
+      </ResponsiveContainer>
     </div>
   );
 }
