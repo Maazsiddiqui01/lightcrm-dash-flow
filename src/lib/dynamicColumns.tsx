@@ -42,22 +42,31 @@ export const formatCellValue = (value: any, column: TableColumn): string => {
   return String(value);
 };
 
-// Get column visibility from localStorage
+// Get column visibility from localStorage with table-specific keys
 export const getColumnVisibility = (storageKey: string): Record<string, boolean> => {
   try {
-    const saved = localStorage.getItem(storageKey);
+    const saved = localStorage.getItem(`column-visibility-${storageKey}`);
     return saved ? JSON.parse(saved) : {};
   } catch {
     return {};
   }
 };
 
-// Save column visibility to localStorage
+// Save column visibility to localStorage with table-specific keys
 export const saveColumnVisibility = (storageKey: string, visibility: Record<string, boolean>) => {
   try {
-    localStorage.setItem(storageKey, JSON.stringify(visibility));
+    localStorage.setItem(`column-visibility-${storageKey}`, JSON.stringify(visibility));
   } catch (error) {
     console.warn('Failed to save column visibility:', error);
+  }
+};
+
+// Clear column visibility for a specific table
+export const clearColumnVisibility = (storageKey: string) => {
+  try {
+    localStorage.removeItem(`column-visibility-${storageKey}`);
+  } catch (error) {
+    console.warn('Failed to clear column visibility:', error);
   }
 };
 

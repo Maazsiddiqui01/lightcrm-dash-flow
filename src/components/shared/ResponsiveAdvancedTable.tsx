@@ -19,6 +19,7 @@ import {
   Eye,
   EyeOff
 } from "lucide-react";
+import { ColumnPreferencesIndicator } from "./ColumnPreferencesIndicator";
 import { cn } from "@/lib/utils";
 import { getResponsiveColumns, getAdaptiveColumnWidth, getAdaptiveRowHeight } from "@/utils/columnManagement";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
@@ -26,6 +27,7 @@ import { useTableLayout } from "@/hooks/useTableLayout";
 import { VirtualizedTable } from "./VirtualizedTable";
 import { TablePagination } from "./TablePagination";
 import { useSelectedRows } from "@/hooks/useSelectedRows";
+import { useColumnVisibility } from "@/hooks/useColumnVisibility";
 
 export interface ColumnDef<T = any> {
   key: string;
@@ -126,6 +128,9 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   // Enhanced responsive layout system
   const responsiveLayout = useResponsiveLayout();
   
+  // Column visibility persistence with table-specific storage
+  const columnVisibilityHook = useColumnVisibility(`${tableType}-${tableId}`, initialColumns);
+  
   // Row selection
   const rowSelection = useSelectedRows({ 
     tableId, 
@@ -173,17 +178,21 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     return () => resizeObserver.disconnect();
   }, [layoutContainerRef]);
 
-  // Update columns based on container width with enhanced responsive logic
+  // Update columns based on container width with enhanced responsive logic and user preferences
   useEffect(() => {
     if (containerWidth > 0) {
+      // First apply responsive logic
       const responsiveColumns = getResponsiveColumns(initialColumns, containerWidth, tableType);
       
+      // Then apply user visibility preferences (this overrides responsive logic)
+      const columnsWithUserPreferences = columnVisibilityHook.applyVisibilityToColumns(responsiveColumns);
+      
       // Apply adaptive column widths for wide screens
-      const columnsWithAdaptiveWidths = responsiveColumns.map(col => {
+      const columnsWithAdaptiveWidths = columnsWithUserPreferences.map(col => {
         if (col.visible && !col.width && !col.sticky) {
           const adaptiveWidth = getAdaptiveColumnWidth(
             containerWidth, 
-            responsiveColumns.filter(c => c.visible).length
+            columnsWithUserPreferences.filter(c => c.visible).length
           );
           return { ...col, width: adaptiveWidth };
         }
@@ -192,7 +201,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       
       setColumns(columnsWithAdaptiveWidths);
     }
-  }, [containerWidth, initialColumns, tableType, responsiveLayout.category]);
+  }, [containerWidth, initialColumns, tableType, responsiveLayout.category, columnVisibilityHook.columnVisibility]);
 
   // Sync horizontal scroll between top clone and table body (bottom native)
   useEffect(() => {
@@ -313,8 +322,12 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     };
   }, [enableRowSelection, columns, rowSelection, idKey]);
 
-  // Handle column visibility toggle
+  // Handle column visibility toggle with persistence
   const toggleColumnVisibility = (columnKey: string, visible: boolean) => {
+    // Update the hook's state (this will persist to localStorage)
+    columnVisibilityHook.updateColumnVisibility(columnKey, visible);
+    
+    // Also update local columns state for immediate UI update
     setColumns(prev => prev.map(col => 
       col.key === columnKey && col.enableHiding !== false ? { ...col, visible } : col
     ));
@@ -601,6 +614,14 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
             </div>
           )}
         </div>
+        
+        {/* Column Preferences Indicator */}
+        <div className="flex items-center gap-3">
+          <ColumnPreferencesIndicator 
+            visibleColumns={visibleColumns.length}
+            totalColumns={columns.length}
+            tableType={tableType}
+          />
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2">
@@ -621,7 +642,31 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                     Columns
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-56">
+                  {/* Quick Actions */}
+                  <DropdownMenuItem 
+                    onClick={() => columnVisibilityHook.showAllColumns(columns)}
+                    className="text-sm"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Show All Columns
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => columnVisibilityHook.hideAllColumns(columns)}
+                    className="text-sm"
+                  >
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Hide Non-Essential
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => columnVisibilityHook.resetToDefaults(columns)}
+                    className="text-sm"
+                  >
+                    Reset to Defaults
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  
+                  {/* Individual Columns */}
                   {columns.filter(column => column.enableHiding !== false).map((column) => (
                     <DropdownMenuCheckboxItem
                       key={column.key}
@@ -644,6 +689,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                 Export
               </Button>
             )}
+        </div>
         </div>
       </div>
 
