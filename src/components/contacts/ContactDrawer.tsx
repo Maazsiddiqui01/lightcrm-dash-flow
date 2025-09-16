@@ -251,7 +251,9 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     }
   };
 
-  if (!contact) return null;
+  if (!contact) {
+    return null;
+  }
 
   return (
     <Sheet open={open} onOpenChange={onClose}>

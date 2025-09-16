@@ -108,7 +108,9 @@ export function InteractionDrawer({
     }
   };
 
-  if (!interaction) return null;
+  if (!interaction) {
+    return null;
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>

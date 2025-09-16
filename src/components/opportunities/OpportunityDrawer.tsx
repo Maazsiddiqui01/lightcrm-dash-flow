@@ -230,7 +230,9 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     });
   };
 
-  if (!opportunity) return null;
+  if (!opportunity) {
+    return null;
+  }
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
