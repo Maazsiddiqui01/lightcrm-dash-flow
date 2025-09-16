@@ -20,13 +20,6 @@ export function DashboardHero() {
       color: "text-green-500",
     },
     {
-      title: "KPIs",
-      description: "View performance metrics",
-      icon: BarChart3,
-      href: "/kpis",
-      color: "text-purple-500",
-    },
-    {
       title: "AI Agent",
       description: "Custom analytics",
       icon: Wrench,
@@ -47,7 +40,7 @@ export function DashboardHero() {
           </p>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {quickLinks.map((link) => {
             const IconComponent = link.icon;
             return (

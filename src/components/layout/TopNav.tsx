@@ -12,7 +12,6 @@ const navItems = [
   { title: "New Contacts", url: "/missing-contacts" },
   { title: "Opportunities", url: "/opportunities" },
   { title: "Interactions", url: "/interactions" },
-  { title: "KPIs", url: "/kpis" },
   { title: "AI Agent", url: "/make-your-own-view" },
 ];
 

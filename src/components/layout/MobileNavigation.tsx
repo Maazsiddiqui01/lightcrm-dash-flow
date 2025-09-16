@@ -7,7 +7,6 @@ const mobileMenuItems = [
   { title: "Contacts", url: "/contacts", icon: Users },
   { title: "Opportunities", url: "/opportunities", icon: Target },
   { title: "Interactions", url: "/interactions", icon: MessageSquare },
-  { title: "More", url: "/kpis", icon: BarChart3 },
 ];
 
 export function MobileNavigation() {
@@ -18,7 +17,7 @@ export function MobileNavigation() {
 
   return (
     <div className="nav-mobile">
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-4 h-16">
         {mobileMenuItems.map((item) => (
           <NavLink
             key={item.title}
