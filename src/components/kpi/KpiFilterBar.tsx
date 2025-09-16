@@ -31,16 +31,56 @@ export function KpiFilterBar() {
 
   const activeFilterCount = filters.focusAreas.length + filters.sectors.length + filters.ownership.length;
 
+  const removeItem = (items: string[], item: string, setter: (items: string[]) => void) => {
+    setter(items.filter(i => i !== item));
+  };
+
   const toggleItem = (items: string[], item: string, setter: (items: string[]) => void) => {
-    if (items.includes(item)) {
-      setter(items.filter(i => i !== item));
+    if (item === "ALL") {
+      // If "All" is selected and currently all items are selected, clear all
+      // Otherwise, select all items
+      const allItems = item === "ALL" && items.length === focusAreas.length ? [] : focusAreas;
+      setter(allItems);
     } else {
-      setter([...items, item]);
+      if (items.includes(item)) {
+        setter(items.filter(i => i !== item));
+      } else {
+        setter([...items, item]);
+      }
     }
   };
 
-  const removeItem = (items: string[], item: string, setter: (items: string[]) => void) => {
-    setter(items.filter(i => i !== item));
+  const toggleFocusArea = (item: string) => {
+    if (item === "ALL") {
+      const allAreas = localFilters.focusAreas.length === focusAreas.length ? [] : [...focusAreas];
+      setLocalFilters(prev => ({ ...prev, focusAreas: allAreas }));
+    } else {
+      toggleItem(localFilters.focusAreas, item, (items) => 
+        setLocalFilters(prev => ({ ...prev, focusAreas: items }))
+      );
+    }
+  };
+
+  const toggleSector = (item: string) => {
+    if (item === "ALL") {
+      const allSectors = localFilters.sectors.length === sectors.length ? [] : [...sectors];
+      setLocalFilters(prev => ({ ...prev, sectors: allSectors }));
+    } else {
+      toggleItem(localFilters.sectors, item, (items) => 
+        setLocalFilters(prev => ({ ...prev, sectors: items }))
+      );
+    }
+  };
+
+  const toggleOwnership = (item: string) => {
+    if (item === "ALL") {
+      const allTypes = localFilters.ownership.length === ownershipTypes.length ? [] : [...ownershipTypes];
+      setLocalFilters(prev => ({ ...prev, ownership: allTypes }));
+    } else {
+      toggleItem(localFilters.ownership, item, (items) => 
+        setLocalFilters(prev => ({ ...prev, ownership: items }))
+      );
+    }
   };
 
   return (
@@ -114,16 +154,24 @@ export function KpiFilterBar() {
               </div>
             )}
             <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto border rounded-md p-3">
+              {/* All option */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="focus-all"
+                  checked={localFilters.focusAreas.length === focusAreas.length}
+                  onCheckedChange={() => toggleFocusArea("ALL")}
+                />
+                <Label htmlFor="focus-all" className="text-sm font-normal cursor-pointer font-medium">
+                  All
+                </Label>
+              </div>
+              {/* Individual focus areas */}
               {focusAreas.map((area) => (
                 <div key={area} className="flex items-center space-x-2">
                   <Checkbox
                     id={`focus-${area}`}
                     checked={localFilters.focusAreas.includes(area)}
-                    onCheckedChange={() => toggleItem(
-                      localFilters.focusAreas, 
-                      area, 
-                      (items) => setLocalFilters(prev => ({ ...prev, focusAreas: items }))
-                    )}
+                    onCheckedChange={() => toggleFocusArea(area)}
                   />
                   <Label htmlFor={`focus-${area}`} className="text-sm font-normal cursor-pointer">
                     {area}
@@ -156,16 +204,24 @@ export function KpiFilterBar() {
               </div>
             )}
             <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto border rounded-md p-3">
+              {/* All option */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sector-all"
+                  checked={localFilters.sectors.length === sectors.length}
+                  onCheckedChange={() => toggleSector("ALL")}
+                />
+                <Label htmlFor="sector-all" className="text-sm font-normal cursor-pointer font-medium">
+                  All
+                </Label>
+              </div>
+              {/* Individual sectors */}
               {sectors.map((sector) => (
                 <div key={sector} className="flex items-center space-x-2">
                   <Checkbox
                     id={`sector-${sector}`}
                     checked={localFilters.sectors.includes(sector)}
-                    onCheckedChange={() => toggleItem(
-                      localFilters.sectors, 
-                      sector, 
-                      (items) => setLocalFilters(prev => ({ ...prev, sectors: items }))
-                    )}
+                    onCheckedChange={() => toggleSector(sector)}
                   />
                   <Label htmlFor={`sector-${sector}`} className="text-sm font-normal cursor-pointer">
                     {sector}
@@ -198,16 +254,24 @@ export function KpiFilterBar() {
               </div>
             )}
             <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto border rounded-md p-3">
+              {/* All option */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="ownership-all"
+                  checked={localFilters.ownership.length === ownershipTypes.length}
+                  onCheckedChange={() => toggleOwnership("ALL")}
+                />
+                <Label htmlFor="ownership-all" className="text-sm font-normal cursor-pointer font-medium">
+                  All
+                </Label>
+              </div>
+              {/* Individual ownership types */}
               {ownershipTypes.map((type) => (
                 <div key={type} className="flex items-center space-x-2">
                   <Checkbox
                     id={`ownership-${type}`}
                     checked={localFilters.ownership.includes(type)}
-                    onCheckedChange={() => toggleItem(
-                      localFilters.ownership, 
-                      type, 
-                      (items) => setLocalFilters(prev => ({ ...prev, ownership: items }))
-                    )}
+                    onCheckedChange={() => toggleOwnership(type)}
                   />
                   <Label htmlFor={`ownership-${type}`} className="text-sm font-normal cursor-pointer">
                     {type}

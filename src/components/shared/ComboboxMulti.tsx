@@ -43,11 +43,21 @@ export function ComboboxMulti({
       )
     : options;
 
+  // Add "All" option at the top
+  const allOption = { value: "ALL", label: "All" };
+  const optionsWithAll = [allOption, ...filteredOptions.filter(opt => opt.value !== "ALL")];
+
   const handleSelect = (value: string) => {
-    const newValues = values.includes(value)
-      ? values.filter(v => v !== value)
-      : [...values, value];
-    onChange(newValues);
+    if (value === "ALL") {
+      // If "All" is selected, select all available options
+      const allValues = options.filter(opt => opt.value !== "ALL").map(opt => opt.value);
+      onChange(allValues);
+    } else {
+      const newValues = values.includes(value)
+        ? values.filter(v => v !== value)
+        : [...values, value];
+      onChange(newValues);
+    }
   };
 
   const handleClear = () => {
@@ -111,22 +121,28 @@ export function ComboboxMulti({
                 {loading ? "Loading..." : "No options found."}
               </CommandEmpty>
               <CommandGroup>
-                {filteredOptions.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={() => handleSelect(option.value)}
-                    className="cursor-pointer"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        values.includes(option.value) ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {option.label}
-                  </CommandItem>
-                ))}
+                {optionsWithAll.map((option) => {
+                  const isSelected = option.value === "ALL" 
+                    ? values.length === options.filter(opt => opt.value !== "ALL").length
+                    : values.includes(option.value);
+                  
+                  return (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value}
+                      onSelect={() => handleSelect(option.value)}
+                      className="cursor-pointer"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option.label}
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
             </CommandList>
           </Command>
