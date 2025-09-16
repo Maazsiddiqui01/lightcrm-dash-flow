@@ -27,7 +27,7 @@ export function DashboardHero() {
       color: "text-purple-500",
     },
     {
-      title: "Build Your Own View",
+      title: "AI Agent",
       description: "Custom analytics",
       icon: Wrench,
       href: "/make-your-own-view",

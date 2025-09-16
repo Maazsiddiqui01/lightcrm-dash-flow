@@ -59,7 +59,7 @@ export function MakeYourOwnView() {
       {/* Page Header */}
       <div className="p-4 space-y-4">
         <div>
-          <h1 className="text-2xl font-bold">Make Your Own View</h1>
+          <h1 className="text-2xl font-bold">AI Agent</h1>
           <p className="text-muted-foreground">
             Ask questions in natural language and get custom data views from your CRM
           </p>
