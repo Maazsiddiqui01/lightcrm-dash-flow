@@ -13,7 +13,7 @@ const navItems = [
   { title: "Opportunities", url: "/opportunities" },
   { title: "Interactions", url: "/interactions" },
   { title: "KPIs", url: "/kpis" },
-  { title: "Make Your Own View", url: "/make-your-own-view" },
+  { title: "AI Agent", url: "/make-your-own-view" },
 ];
 
 const filterPages = ["/contacts", "/missing-contacts", "/opportunities", "/interactions", "/kpis"];
