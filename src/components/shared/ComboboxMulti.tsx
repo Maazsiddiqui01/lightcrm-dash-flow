@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronsUpDown, X, Eraser } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -43,15 +43,19 @@ export function ComboboxMulti({
       )
     : options;
 
-  // Add "All" option at the top
+  // Add "All" and "Clear All" options at the top
   const allOption = { value: "ALL", label: "All" };
-  const optionsWithAll = [allOption, ...filteredOptions.filter(opt => opt.value !== "ALL")];
+  const clearAllOption = { value: "CLEAR_ALL", label: "Clear All" };
+  const optionsWithControls = [allOption, clearAllOption, ...filteredOptions.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL")];
 
   const handleSelect = (value: string) => {
     if (value === "ALL") {
       // If "All" is selected, select all available options
-      const allValues = options.filter(opt => opt.value !== "ALL").map(opt => opt.value);
+      const allValues = options.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL").map(opt => opt.value);
       onChange(allValues);
+    } else if (value === "CLEAR_ALL") {
+      // If "Clear All" is selected, clear all selections
+      onChange([]);
     } else {
       const newValues = values.includes(value)
         ? values.filter(v => v !== value)
@@ -121,9 +125,11 @@ export function ComboboxMulti({
                 {loading ? "Loading..." : "No options found."}
               </CommandEmpty>
               <CommandGroup>
-                {optionsWithAll.map((option) => {
+                {optionsWithControls.map((option) => {
                   const isSelected = option.value === "ALL" 
-                    ? values.length === options.filter(opt => opt.value !== "ALL").length
+                    ? values.length === options.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL").length
+                    : option.value === "CLEAR_ALL"
+                    ? values.length === 0
                     : values.includes(option.value);
                   
                   return (
@@ -133,12 +139,28 @@ export function ComboboxMulti({
                       onSelect={() => handleSelect(option.value)}
                       className="cursor-pointer"
                     >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          isSelected ? "opacity-100" : "opacity-0"
-                        )}
-                      />
+                      {option.value === "ALL" ? (
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            isSelected ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                      ) : option.value === "CLEAR_ALL" ? (
+                        <Eraser
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            isSelected ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                      ) : (
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            isSelected ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                      )}
                       {option.label}
                     </CommandItem>
                   );

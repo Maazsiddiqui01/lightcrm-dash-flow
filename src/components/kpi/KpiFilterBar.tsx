@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Filter, X } from 'lucide-react';
+import { Filter, X, Eraser } from 'lucide-react';
 import { useKpiFilters, KpiFilters } from '@/state/useKpiFilters';
 import { useDistinctFocusAreas, useDistinctSectors, useDistinctOwnershipTypes } from '@/hooks/useDistinctKpiOptions';
 
@@ -133,7 +133,20 @@ export function KpiFilterBar() {
 
           {/* Focus Areas */}
           <div className="space-y-4">
-            <Label className="text-sm font-medium">Focus Areas</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Focus Areas</Label>
+              {localFilters.focusAreas.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLocalFilters(prev => ({ ...prev, focusAreas: [] }))}
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Eraser className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              )}
+            </div>
             {localFilters.focusAreas.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {localFilters.focusAreas.map((area) => (
@@ -183,7 +196,20 @@ export function KpiFilterBar() {
 
           {/* Sectors */}
           <div className="space-y-4">
-            <Label className="text-sm font-medium">Sectors</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Sectors</Label>
+              {localFilters.sectors.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLocalFilters(prev => ({ ...prev, sectors: [] }))}
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Eraser className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              )}
+            </div>
             {localFilters.sectors.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {localFilters.sectors.map((sector) => (
@@ -233,7 +259,20 @@ export function KpiFilterBar() {
 
           {/* Ownership Type */}
           <div className="space-y-4">
-            <Label className="text-sm font-medium">Ownership Type</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Ownership Type</Label>
+              {localFilters.ownership.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLocalFilters(prev => ({ ...prev, ownership: [] }))}
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Eraser className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              )}
+            </div>
             {localFilters.ownership.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {localFilters.ownership.map((type) => (
