@@ -130,6 +130,21 @@ export function createDynamicColumns<T extends Record<string, any>>(
         const displayValue = formatCellValue(editedValue, tableColumn);
         const isModified = editState.editedRows[rowId]?.[tableColumn.name] !== undefined;
 
+        // Special handling for deal_name with URL linking
+        if (tableColumn.name === 'deal_name' && displayValue && row.url) {
+          return (
+            <a 
+              href={row.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={`text-blue-600 hover:text-blue-800 underline hover:no-underline transition-colors ${isModified ? 'font-medium' : ''}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {displayValue}
+            </a>
+          );
+        }
+
         if (tableColumn.type === 'boolean') {
           return (
             <Badge variant={editedValue ? "default" : "secondary"}>
