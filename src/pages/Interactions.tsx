@@ -1,11 +1,15 @@
 import { InteractionsTable } from "@/components/interactions/InteractionsTable";
+import { InteractionFilterBar } from "@/components/interactions/InteractionFilterBar";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useInteractionStats } from "@/hooks/useInteractionStats";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { MessageSquare, Mail, Calendar, Clock } from "lucide-react";
+import { useState } from "react";
 
 
 export function Interactions() {
   const stats = useInteractionStats();
+  const { filters, updateFilters, clearFilters } = useUrlFilters();
 
   return (
     <div className="min-h-0 flex-1 overflow-x-hidden">
@@ -40,6 +44,13 @@ export function Interactions() {
             />
           </div>
         </div>
+
+        {/* Filter Bar */}
+        <InteractionFilterBar 
+          filters={filters}
+          onFiltersChange={updateFilters}
+          onClearFilters={clearFilters}
+        />
 
         <InteractionsTable />
       </section>

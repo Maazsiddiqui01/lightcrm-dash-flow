@@ -3,7 +3,7 @@ import { MissingContactsTable } from "@/components/missing-contacts/MissingConta
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Download, UserCheck, UserX } from "lucide-react";
+import { RefreshCw, Download, UserCheck, UserX, RotateCcw } from "lucide-react";
 import { useRefreshMissingContacts, useMissingCandidates, useApproveMissing, useDismissMissing } from "@/hooks/useMissingContacts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -164,26 +164,58 @@ export default function MissingContacts() {
     setSelectedRows(new Set());
   };
 
+  const handleClearSearch = () => {
+    setSearch("");
+  };
+
+  const handleClearStatusFilter = () => {
+    setStatusFilter("pending");
+  };
+
   const actions = (
     <div className="flex items-center gap-2 flex-wrap">
       <div className="flex items-center gap-2">
-        <Input
-          placeholder="Search by email, name, or domain..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-64"
-        />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="dismissed">Dismissed</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="relative">
+          <Input
+            placeholder="Search by email, name, or domain..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-64 pr-8"
+          />
+          {search && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent hover:text-destructive"
+              onClick={handleClearSearch}
+            >
+              <RotateCcw className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+        <div className="relative">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="dismissed">Dismissed</SelectItem>
+            </SelectContent>
+          </Select>
+          {statusFilter !== "pending" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute -right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent hover:text-destructive"
+              onClick={handleClearStatusFilter}
+            >
+              <RotateCcw className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
         <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(Number(value))}>
           <SelectTrigger className="w-20">
             <SelectValue />

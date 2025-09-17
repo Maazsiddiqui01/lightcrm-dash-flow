@@ -101,13 +101,17 @@ export function ComboboxMulti({
             </div>
             <div className="flex items-center gap-1 ml-2">
               {values.length > 0 && (
-                <X 
-                  className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-transparent hover:text-destructive"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleClear();
                   }}
-                />
+                >
+                  <X className="h-3 w-3" />
+                </Button>
               )}
               <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
             </div>
