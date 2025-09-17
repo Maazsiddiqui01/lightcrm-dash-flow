@@ -155,14 +155,17 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
     }));
   }, [tableColumns]);
   
+  // Stable key for filters to avoid effect thrashing on referential changes
+  const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
+  
   // Debounced effect to prevent rapid re-fetching
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       fetchOpportunities();
-    }, 100); // Small delay to batch rapid changes
+    }, 200); // Small delay to batch rapid changes
     
     return () => clearTimeout(timeoutId);
-  }, [sortLevels, filters]);
+  }, [sortLevels, filtersKey]);
 
   const fetchOpportunities = async () => {
     // Generate unique request ID to prevent race conditions
