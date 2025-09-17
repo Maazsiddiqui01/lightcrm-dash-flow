@@ -12,7 +12,6 @@ import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 
 export function Opportunities() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const stats = useOpportunityStats();
 
   const { filters: rawFilters, updateFilters: rawUpdateFilters, clearFilters } = useUrlFilters({
     focusArea: [],
@@ -45,6 +44,8 @@ export function Opportunities() {
     dateOfOrigination: (rawFilters.dateOfOrigination as string[]) || []
   };
 
+  const stats = useOpportunityStats(filters);
+
   const updateFilters = (newFilters: any) => {
     rawUpdateFilters(newFilters);
   };
@@ -52,41 +53,16 @@ export function Opportunities() {
   return (
     <div className="min-h-0 flex-1">
       <ResponsiveContainer className="flex flex-col gap-6 py-6">
-        {/* Header Cards */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl font-bold">Opportunities</h1>
-              <p className="text-muted-foreground">Track sales opportunities and business development</p>
-            </div>
-            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Add Opportunity</span>
-            </Button>
+        {/* Header */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold">Opportunities</h1>
+            <p className="text-muted-foreground">Track sales opportunities and business development</p>
           </div>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-            <StatsCard
-              title="Total Opportunities"
-              value={stats.loading ? "..." : stats.totalOpportunities}
-              icon={Target}
-            />
-            <StatsCard
-              title="Active Deals"
-              value={stats.loading ? "..." : stats.activeDeals}
-              icon={TrendingUp}
-            />
-            <StatsCard
-              title="Closed Won"
-              value={stats.loading ? "..." : stats.closedWon}
-              icon={CheckCircle}
-            />
-            <StatsCard
-              title="Pipeline Value"
-              value={stats.loading ? "..." : stats.pipelineValue}
-              icon={DollarSign}
-            />
-          </div>
+          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Add Opportunity</span>
+          </Button>
         </div>
 
         {/* Filter Bar */}
@@ -95,6 +71,30 @@ export function Opportunities() {
           onFiltersChange={updateFilters}
           onClearFilters={clearFilters}
         />
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+          <StatsCard
+            title="Total Opportunities"
+            value={stats.loading ? "..." : stats.totalOpportunities}
+            icon={Target}
+          />
+          <StatsCard
+            title="Active Deals"
+            value={stats.loading ? "..." : stats.activeDeals}
+            icon={TrendingUp}
+          />
+          <StatsCard
+            title="Closed Won"
+            value={stats.loading ? "..." : stats.closedWon}
+            icon={CheckCircle}
+          />
+          <StatsCard
+            title="Pipeline Value"
+            value={stats.loading ? "..." : stats.pipelineValue}
+            icon={DollarSign}
+          />
+        </div>
 
         <OpportunitiesTable filters={filters} />
 
