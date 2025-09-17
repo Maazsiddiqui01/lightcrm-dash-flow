@@ -124,9 +124,9 @@ export function createDynamicColumns<T extends Record<string, any>>(
               error={hasError}
             />
           );
-        }
+         }
 
-        // For non-editable columns or view mode, show formatted value
+        // Get display value and modification state first
         const displayValue = formatCellValue(editedValue, tableColumn);
         const isModified = editState.editedRows[rowId]?.[tableColumn.name] !== undefined;
 
