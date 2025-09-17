@@ -178,7 +178,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
 
         {/* Has Opportunities */}
         <ComboboxMulti
-          label="Has Opportunities"
+          label="Sourced Opportunities"
           options={hasOpportunitiesOptions}
           values={filters.hasOpportunities || []}
           onChange={(values) => handleFilterChange('hasOpportunities', values)}
