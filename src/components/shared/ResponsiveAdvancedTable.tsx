@@ -606,12 +606,12 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           {onSearchChange && (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder="Search all data..."
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10 w-full sm:w-64"
+                className="pl-12 pr-4 py-3 w-full sm:w-80 lg:w-96 text-base font-medium border-2 border-border/50 focus:border-primary shadow-lg bg-background/95 backdrop-blur-sm rounded-xl transition-all duration-200 hover:shadow-xl focus:shadow-xl"
               />
             </div>
           )}
