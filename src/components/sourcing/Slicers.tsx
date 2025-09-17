@@ -131,7 +131,22 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         .select('tier')
         .not('tier', 'is', null);
       if (error) throw error;
-      return [...new Set(data.map(row => row.tier).filter(Boolean))].sort();
+      
+      // Get existing tiers from database
+      const dbTiers = [...new Set(data.map(row => row.tier).filter(Boolean))];
+      
+      // Ensure tiers 1-5 are always available
+      const allTiers = new Set([...dbTiers, '1', '2', '3', '4', '5']);
+      
+      return Array.from(allTiers).sort((a, b) => {
+        // Sort numerically if both are numbers, otherwise alphabetically
+        const numA = parseInt(a);
+        const numB = parseInt(b);
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numA - numB;
+        }
+        return a.localeCompare(b);
+      });
     },
     staleTime: 300_000,
   });
