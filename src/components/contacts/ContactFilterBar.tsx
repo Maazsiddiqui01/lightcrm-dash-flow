@@ -109,7 +109,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
         {/* Focus Areas */}
         <ComboboxMulti
-          label="LG Sector"
+          label="Focus Areas"
           options={focusAreaOptions}
           values={filters.focusAreas || []}
           onChange={(values) => handleFilterChange('focusAreas', values)}
