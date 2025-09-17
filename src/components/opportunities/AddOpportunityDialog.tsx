@@ -149,12 +149,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         most_recent_notes: opt(formData.most_recent_notes),
       };
 
-      // Handle focus area slots if they exist in the table
-      const focusAreaSlots = ['lg_focus_area_1','lg_focus_area_2','lg_focus_area_3','lg_focus_area_4',
-                             'lg_focus_area_5','lg_focus_area_6','lg_focus_area_7','lg_focus_area_8'];
-      focusAreaSlots.forEach((slot, i) => {
-        payload[slot] = selectedFocusAreas[i] ?? null;
-      });
+      // Note: Only lg_focus_area column exists in opportunities_raw table
 
       const { data, error } = await supabase
         .from('opportunities_raw')
