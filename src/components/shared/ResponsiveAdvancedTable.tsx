@@ -412,7 +412,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     }
   };
 
-  // Render cell content with truncation and tooltip
+  // Render cell content with text wrapping and tooltip
   const renderCellContent = (column: ColumnDef<T>, row: T) => {
     const value = row[column.key];
     const content = column.render ? column.render(value, row) : value?.toString() || '';
@@ -422,7 +422,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="truncate block">{content}</span>
+              <span className="text-wrap break-words leading-tight line-clamp-3 block">{content}</span>
             </TooltipTrigger>
             <TooltipContent>
               <p className="max-w-xs">{content}</p>
@@ -430,6 +430,10 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
           </Tooltip>
         </TooltipProvider>
       );
+    }
+    
+    if (typeof content === 'string') {
+      return <span className="text-wrap break-words leading-tight line-clamp-3 block">{content}</span>;
     }
     
     return content;
@@ -797,7 +801,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="truncate">{column.label}</span>
+                        <span className="text-wrap break-words leading-tight line-clamp-3">{column.label}</span>
                         {column.sortable && (
                           <div className="flex flex-col">
                             {sortKey === column.key ? (

@@ -122,7 +122,7 @@ export function VirtualizedTable({ columns, rows, className = "" }: VirtualizedT
                 height: '48px',
               }}
             >
-              <span className="truncate" title={columns[virtualColumn.index]}>
+              <span className="text-wrap break-words leading-tight line-clamp-3" title={columns[virtualColumn.index]}>
                 {columns[virtualColumn.index]}
               </span>
             </div>
@@ -160,7 +160,7 @@ export function VirtualizedTable({ columns, rows, className = "" }: VirtualizedT
                     }}
                   >
                     <div 
-                      className="truncate" 
+                      className="text-wrap break-words leading-tight line-clamp-3" 
                       title={String(cellValue ?? '')}
                       onClick={() => {
                         if (cellValue != null) {

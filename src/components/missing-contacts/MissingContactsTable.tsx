@@ -138,7 +138,7 @@ export function MissingContactsTable({
       width: 200,
       render: (value: string | null, candidate: MissingContact) => {
         const name = dashIfEmpty(candidate.full_name);
-        return <span className="truncate" title={candidate.full_name ?? ""}>{name}</span>;
+        return <span className="text-wrap break-words leading-tight line-clamp-3" title={candidate.full_name ?? ""}>{name}</span>;
       },
     },
     {
@@ -163,7 +163,7 @@ export function MissingContactsTable({
       width: 200,
       render: (value: string | null, candidate: MissingContact) => {
         const org = dashIfEmpty(candidate.organization);
-        return <span className="truncate" title={candidate.organization ?? ""}>{org}</span>;
+        return <span className="text-wrap break-words leading-tight line-clamp-3" title={candidate.organization ?? ""}>{org}</span>;
       },
     },
     {

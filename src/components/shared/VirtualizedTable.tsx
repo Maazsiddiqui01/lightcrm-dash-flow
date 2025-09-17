@@ -93,17 +93,17 @@ export function VirtualizedTable<T extends Record<string, any>>({
           <TableHeader className="sticky top-0 z-20 bg-table-header border-b">
             <TableRow>
               {columns.map((column) => (
-                <TableHead 
-                  key={column.key}
-                  className={cn(
-                    "table-cell-compact bg-table-header",
-                    column.headerClassName,
-                    column.sticky && stickyFirstColumn && "sticky left-0 z-30 bg-table-header"
-                  )}
-                  style={{ width: column.width }}
-                >
-                  {column.label}
-                </TableHead>
+                  <TableHead 
+                    key={column.key}
+                    className={cn(
+                      "table-cell-compact bg-table-header min-h-12 max-h-[4.5rem] overflow-hidden align-top",
+                      column.headerClassName,
+                      column.sticky && stickyFirstColumn && "sticky left-0 z-30 bg-table-header"
+                    )}
+                    style={{ width: column.width }}
+                  >
+                    <span className="text-wrap break-words leading-tight line-clamp-3">{column.label}</span>
+                  </TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -138,13 +138,15 @@ export function VirtualizedTable<T extends Record<string, any>>({
                       <TableCell 
                         key={column.key}
                         className={cn(
-                          "table-cell-compact text-fluid-base",
+                          "table-cell-compact text-fluid-base max-h-[4.5rem] overflow-hidden align-top",
                           column.className,
                           column.sticky && stickyFirstColumn && "sticky left-0 z-10 bg-inherit"
                         )}
                         style={{ width: column.width }}
                       >
-                        {content}
+                        <div className="text-wrap break-words leading-tight line-clamp-3">
+                          {content}
+                        </div>
                       </TableCell>
                     );
                   })}
