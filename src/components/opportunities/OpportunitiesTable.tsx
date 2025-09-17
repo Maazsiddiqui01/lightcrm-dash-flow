@@ -88,6 +88,9 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   
+  // Add request tracking to prevent race conditions
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  
   // Multi-sort state
   const [sortLevels, setSortLevels] = useState<SortLevel[]>([]);
   const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
@@ -152,11 +155,20 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
     }));
   }, [tableColumns]);
   
+  // Debounced effect to prevent rapid re-fetching
   useEffect(() => {
-    fetchOpportunities();
+    const timeoutId = setTimeout(() => {
+      fetchOpportunities();
+    }, 100); // Small delay to batch rapid changes
+    
+    return () => clearTimeout(timeoutId);
   }, [sortLevels, filters]);
 
   const fetchOpportunities = async () => {
+    // Generate unique request ID to prevent race conditions
+    const requestId = Date.now().toString();
+    setCurrentRequestId(requestId);
+    
     try {
       setLoading(true);
       let query = supabase
@@ -248,6 +260,11 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
 
       const { data, error } = await query;
 
+      // Check if this request is still current (prevent race conditions)
+      if (currentRequestId !== requestId) {
+        return; // Ignore outdated requests
+      }
+
       if (error) {
         console.error("Error fetching opportunities:", error);
         toast({
@@ -269,7 +286,11 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      // Only set loading to false if this is still the current request
+      if (currentRequestId === requestId) {
+        setLoading(false);
+        setCurrentRequestId(null);
+      }
     }
   };
 
