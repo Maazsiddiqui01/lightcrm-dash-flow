@@ -1640,7 +1640,7 @@ export type Database = {
       }
       approve_missing_contact: {
         Args: { p_email: string }
-        Returns: undefined
+        Returns: string
       }
       compute_ebitda_range: {
         Args: { p_amount: number; p_notes: string }

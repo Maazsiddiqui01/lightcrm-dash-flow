@@ -122,6 +122,7 @@ export function useApproveMissingContact() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["missing-contacts"] });
+      qc.invalidateQueries({ queryKey: ["contacts"] }); // Refresh contacts table
       toast({ title: 'Contact approved', description: 'Added to Contacts.' });
     },
     onError: (e: any) => {
@@ -140,6 +141,7 @@ export function useApproveMissing() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['missing-contacts'] });
+      qc.invalidateQueries({ queryKey: ["contacts"] }); // Refresh contacts table
     },
     onError: (e: any) => {
       throw e;
