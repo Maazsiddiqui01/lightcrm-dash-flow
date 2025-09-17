@@ -321,6 +321,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
           options={sectors}
           selected={filters.sector}
           onToggle={(value) => toggleArrayFilter('sector', value)}
+          onBatchUpdate={(values) => updateFilter('sector', values)}
         />
 
         <MultiSelectDropdown
@@ -328,6 +329,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
           options={focusAreas}
           selected={filters.focusArea}
           onToggle={(value) => toggleArrayFilter('focusArea', value)}
+          onBatchUpdate={(values) => updateFilter('focusArea', values)}
         />
 
         <MultiSelectDropdown
@@ -335,6 +337,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
           options={lgLeads as string[]}
           selected={filters.lgLead}
           onToggle={(value) => toggleArrayFilter('lgLead', value)}
+          onBatchUpdate={(values) => updateFilter('lgLead', values)}
         />
 
         <MultiSelectDropdown
@@ -342,6 +345,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
           options={tiers}
           selected={filters.tier}
           onToggle={(value) => toggleArrayFilter('tier', value)}
+          onBatchUpdate={(values) => updateFilter('tier', values)}
         />
 
         <MultiSelectDropdown
@@ -349,6 +353,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
           options={statuses}
           selected={filters.status}
           onToggle={(value) => toggleArrayFilter('status', value)}
+          onBatchUpdate={(values) => updateFilter('status', values)}
         />
       </div>
     </div>
@@ -360,25 +365,35 @@ interface MultiSelectDropdownProps {
   options: string[];
   selected: string[];
   onToggle: (value: string) => void;
+  onBatchUpdate?: (values: string[]) => void;
 }
 
-function MultiSelectDropdown({ label, options, selected, onToggle }: MultiSelectDropdownProps) {
+function MultiSelectDropdown({ label, options, selected, onToggle, onBatchUpdate }: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
 
   const handleSelectAll = () => {
-    // If all are selected, clear selection; otherwise select all
-    if (selected.length === options.length) {
-      options.forEach(option => {
-        if (selected.includes(option)) {
-          onToggle(option);
-        }
-      });
+    if (onBatchUpdate) {
+      // If all are selected, clear selection; otherwise select all
+      if (selected.length === options.length) {
+        onBatchUpdate([]);
+      } else {
+        onBatchUpdate([...options]);
+      }
     } else {
-      options.forEach(option => {
-        if (!selected.includes(option)) {
-          onToggle(option);
-        }
-      });
+      // Fallback to individual toggles if no batch update function
+      if (selected.length === options.length) {
+        options.forEach(option => {
+          if (selected.includes(option)) {
+            onToggle(option);
+          }
+        });
+      } else {
+        options.forEach(option => {
+          if (!selected.includes(option)) {
+            onToggle(option);
+          }
+        });
+      }
     }
   };
 
