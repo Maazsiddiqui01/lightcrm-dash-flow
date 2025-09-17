@@ -438,7 +438,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                   id="ebitda"
                   value={formData.ebitda}
                   onChange={(e) => handleInputChange("ebitda", e.target.value)}
-                  placeholder="e.g., $5M, <20"
+                  placeholder="e.g., $5M, <30"
                 />
               </div>
               <div className="space-y-2">

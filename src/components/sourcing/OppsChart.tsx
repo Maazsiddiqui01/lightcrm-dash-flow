@@ -89,11 +89,11 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
     }
 
     if (type === 'ebitda') {
-      const buckets = { '<20': 0, '20-35': 0, '>35': 0 };
+      const buckets = { '<30': 0, '30-35': 0, '>35': 0 };
       data.forEach(opp => {
         const ebitda = Number(opp.ebitda_in_ms) || 0;
-        if (ebitda < 20) buckets['<20']++;
-        else if (ebitda <= 35) buckets['20-35']++;
+        if (ebitda < 30) buckets['<30']++;
+        else if (ebitda <= 35) buckets['30-35']++;
         else buckets['>35']++;
       });
       return Object.entries(buckets).map(([bucket, count]) => ({ bucket, count }));

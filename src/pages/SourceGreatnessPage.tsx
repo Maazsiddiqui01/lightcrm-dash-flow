@@ -216,7 +216,7 @@ export default function SourceGreatnessPage() {
       // Apply EBITDA bucket filter
       if (Array.isArray(filterState.ebitdaBucket) && filterState.ebitdaBucket.length > 0) {
         const ebitda = Number(opp.ebitda_in_ms) || 0;
-        const bucket = ebitda < 20 ? '<20' : ebitda <= 35 ? '20-35' : '>35';
+        const bucket = ebitda < 30 ? '<30' : ebitda <= 35 ? '30-35' : '>35';
         if (!filterState.ebitdaBucket.includes(bucket)) return false;
       }
       return true;

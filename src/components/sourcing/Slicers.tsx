@@ -32,8 +32,8 @@ const OWNERSHIP_OPTIONS = [
 
 const EBITDA_BUCKETS = [
   { label: 'All', value: 'all' },
-  { label: '<20', value: '<20' },
-  { label: '20-35', value: '20-35' },
+  { label: '<30', value: '<30' },
+  { label: '30-35', value: '30-35' },
   { label: '>35', value: '>35' },
 ];
 
