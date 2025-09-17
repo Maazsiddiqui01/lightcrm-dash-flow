@@ -131,6 +131,15 @@ export function createDynamicColumns<T extends Record<string, any>>(
           );
         }
 
+        // Special handling for summary columns - use text wrapping instead of truncation
+        if (tableColumn.name.includes('summary') && displayValue.length > 50) {
+          return (
+            <div className={`text-wrap break-words leading-tight line-clamp-3 ${isModified ? 'font-medium text-primary' : ''}`}>
+              {displayValue}
+            </div>
+          );
+        }
+
         if (displayValue.length > 50) {
           return (
             <TooltipProvider>
@@ -165,7 +174,8 @@ function getColumnWidth(column: TableColumn): number {
   if (column.type === 'timestamp with time zone') return 120;
   if (column.type.includes('integer') || column.type.includes('numeric')) return 100;
   if (column.name.includes('email')) return 200;
-  if (column.name.includes('notes') || column.name.includes('summary')) return 300;
+  if (column.name.includes('summary')) return 200; // Narrower width for summary columns
+  if (column.name.includes('notes')) return 300;
   if (column.name.includes('name') || column.name.includes('title')) return 180;
   
   return 150;
