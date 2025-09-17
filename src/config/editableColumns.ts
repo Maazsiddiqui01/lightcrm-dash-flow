@@ -125,7 +125,12 @@ export const isColumnEditable = (tableName: keyof EditableConfig, columnName: st
   return columnName in editableColumns[tableName];
 };
 
-// Get non-editable columns (system fields)
+// Get non-editable columns (system fields that should be hidden by default)
 export const getNonEditableColumns = (): string[] => {
+  return ['id', 'created_at', 'updated_at'];
+};
+
+// Get columns that should be hidden by default
+export const getHiddenByDefaultColumns = (): string[] => {
   return ['id', 'created_at', 'updated_at'];
 };

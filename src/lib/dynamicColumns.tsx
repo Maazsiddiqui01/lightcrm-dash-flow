@@ -1,7 +1,7 @@
 import React from 'react';
 import { ColumnDef } from '@/components/shared/AdvancedTable';
 import { TableColumn } from '@/lib/supabase/getTableColumns';
-import { editableColumns, EditableFieldConfig, getNonEditableColumns } from '@/config/editableColumns';
+import { editableColumns, EditableFieldConfig, getNonEditableColumns, getHiddenByDefaultColumns } from '@/config/editableColumns';
 import { format, isValid, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EditableCell } from '@/components/shared/EditableCell';
@@ -79,6 +79,7 @@ export function createDynamicColumns<T extends Record<string, any>>(
   columnVisibility: Record<string, boolean> = {}
 ): ColumnDef<T>[] {
   const nonEditableColumns = getNonEditableColumns();
+  const hiddenByDefaultColumns = getHiddenByDefaultColumns();
   const editableConfig = editableColumns[tableName];
 
   return tableColumns.map((tableColumn): ColumnDef<T> => {
@@ -86,11 +87,17 @@ export function createDynamicColumns<T extends Record<string, any>>(
                       !nonEditableColumns.includes(tableColumn.name) &&
                       tableColumn.name in editableConfig;
 
+    // Check if column should be visible - hidden by default columns are false unless explicitly shown
+    const isHiddenByDefault = hiddenByDefaultColumns.includes(tableColumn.name);
+    const isVisible = isHiddenByDefault 
+      ? columnVisibility[tableColumn.name] === true
+      : columnVisibility[tableColumn.name] !== false;
+
     return {
       key: tableColumn.name,
       label: tableColumn.displayName,
-      visible: columnVisibility[tableColumn.name] !== false,
-      enableHiding: !nonEditableColumns.includes(tableColumn.name),
+      visible: isVisible,
+      enableHiding: true, // Allow all columns to be hidden/shown by users
       width: getColumnWidth(tableColumn),
       render: (value: any, row: T) => {
         const rowId = String(row.id);
