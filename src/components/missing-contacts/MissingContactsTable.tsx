@@ -235,14 +235,22 @@ export function MissingContactsTable({
   }
 
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Reset to page 1 when filters or page size change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, pageSize]);
+  
   const totalPages = Math.ceil(filteredData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedData = filteredData.slice(startIndex, endIndex);
 
-  const header = (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+
+  return (
+    <div className="space-y-4">
+      {/* Header with controls and pagination */}
+      <div className="flex items-center justify-between gap-4">
         <div className="text-sm text-muted-foreground">
           {filteredData.length} candidates found
         </div>
@@ -255,49 +263,6 @@ export function MissingContactsTable({
           onPageSizeChange={() => {}} // Controlled by parent
         />
       </div>
-    </div>
-  );
-
-  const table = (
-    <AdvancedTable
-      data={paginatedData}
-      columns={columns}
-      loading={isLoading}
-      tableId="missing-contacts"
-      emptyState={{
-        title: "No candidates found",
-        description: "Click 'Refresh from Interactions' to scan for new contacts.",
-      }}
-      enablePagination={false}
-      enableRowSelection={false}
-    />
-  );
-
-  const footer = (
-    <div className="flex items-center justify-between">
-      <div className="text-sm text-muted-foreground">
-        Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} candidates
-      </div>
-      <TopPagination
-        page={currentPage}
-        pageCount={totalPages}
-        pageSize={pageSize}
-        totalItems={filteredData.length}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={() => {}} // Controlled by parent
-        showPageInfo={false}
-      />
-    </div>
-  );
-
-  return (
-    <div className="space-y-4">
-      {/* Header with controls */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="text-sm text-muted-foreground">
-          {filteredData.length} candidates found
-        </div>
-      </div>
       
       <AdvancedTable
         data={paginatedData}
@@ -308,11 +273,25 @@ export function MissingContactsTable({
           title: "No candidates found",
           description: "Click 'Refresh from Interactions' to scan for new contacts.",
         }}
-        enablePagination={true}
+        enablePagination={false}
         enableRowSelection={false}
-        initialPageSize={pageSize}
-        showTopPagination={true}
       />
+      
+      {/* Footer with pagination */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} candidates
+        </div>
+        <TopPagination
+          page={currentPage}
+          pageCount={totalPages}
+          pageSize={pageSize}
+          totalItems={filteredData.length}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={() => {}} // Controlled by parent
+          showPageInfo={false}
+        />
+      </div>
     </div>
   );
 }

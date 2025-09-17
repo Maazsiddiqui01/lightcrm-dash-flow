@@ -110,7 +110,7 @@ export default function MissingContacts() {
     if (selectedRows.size === 0) return;
     
     const emailsToApprove = allData
-      ?.filter((c: any) => selectedRows.has(c.id))
+      ?.filter((c: any) => selectedRows.has(c.id.toString()))
       .map((c: any) => c.email)
       .filter(Boolean) || [];
 
@@ -139,7 +139,7 @@ export default function MissingContacts() {
     if (selectedRows.size === 0) return;
     
     const emailsToDismiss = allData
-      ?.filter((c: any) => selectedRows.has(c.id))
+      ?.filter((c: any) => selectedRows.has(c.id.toString()))
       .map((c: any) => c.email)
       .filter(Boolean) || [];
 
