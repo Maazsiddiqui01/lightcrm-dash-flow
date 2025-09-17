@@ -30,7 +30,12 @@ const OWNERSHIP_OPTIONS = [
   { label: 'Other', value: 'other' },
 ];
 
-const EBITDA_BUCKETS = ['<20', '20-35', '>35'];
+const EBITDA_BUCKETS = [
+  { label: 'All', value: 'all' },
+  { label: '<20', value: '<20' },
+  { label: '20-35', value: '20-35' },
+  { label: '>35', value: '>35' },
+];
 
 export function Slicers({ filters, onFiltersChange }: SlicersProps) {
   const [searchDebounce, setSearchDebounce] = useState(filters.searchText);
@@ -289,12 +294,22 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
           <div className="flex flex-wrap gap-1">
             {EBITDA_BUCKETS.map(bucket => (
               <Badge
-                key={bucket}
-                variant={filters.ebitdaBucket.includes(bucket) ? 'default' : 'outline'}
+                key={bucket.value}
+                variant={
+                  bucket.value === 'all' 
+                    ? (filters.ebitdaBucket.length === 0 ? 'default' : 'outline')
+                    : (filters.ebitdaBucket.includes(bucket.value) ? 'default' : 'outline')
+                }
                 className="cursor-pointer"
-                onClick={() => toggleArrayFilter('ebitdaBucket', bucket)}
+                onClick={() => {
+                  if (bucket.value === 'all') {
+                    updateFilter('ebitdaBucket', []);
+                  } else {
+                    toggleArrayFilter('ebitdaBucket', bucket.value);
+                  }
+                }}
               >
-                {bucket}
+                {bucket.label}
               </Badge>
             ))}
           </div>
@@ -350,6 +365,25 @@ interface MultiSelectDropdownProps {
 function MultiSelectDropdown({ label, options, selected, onToggle }: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
 
+  const handleSelectAll = () => {
+    // If all are selected, clear selection; otherwise select all
+    if (selected.length === options.length) {
+      options.forEach(option => {
+        if (selected.includes(option)) {
+          onToggle(option);
+        }
+      });
+    } else {
+      options.forEach(option => {
+        if (!selected.includes(option)) {
+          onToggle(option);
+        }
+      });
+    }
+  };
+
+  const isAllSelected = selected.length === options.length;
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
@@ -361,7 +395,12 @@ function MultiSelectDropdown({ label, options, selected, onToggle }: MultiSelect
             aria-expanded={open}
             className="w-full justify-between"
           >
-            {selected.length > 0 ? `${selected.length} selected` : `Select ${label}`}
+            {selected.length === 0 
+              ? `All ${label}` 
+              : selected.length === options.length 
+                ? `All ${label}` 
+                : `${selected.length} selected`
+            }
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -370,6 +409,19 @@ function MultiSelectDropdown({ label, options, selected, onToggle }: MultiSelect
             <CommandInput placeholder={`Search ${label}`} />
             <CommandEmpty>No {label} found.</CommandEmpty>
             <CommandGroup className="max-h-64 overflow-auto">
+              <CommandItem
+                value="select-all"
+                onSelect={handleSelectAll}
+                className="font-medium border-b"
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    isAllSelected ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {isAllSelected ? "Unselect All" : "Select All"}
+              </CommandItem>
               {options.map((option) => (
                 <CommandItem
                   key={option}
