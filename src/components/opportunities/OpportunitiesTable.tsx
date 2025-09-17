@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
 import { OpportunityDrawer } from "./OpportunityDrawer";
@@ -89,7 +89,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const [isExporting, setIsExporting] = useState(false);
   
   // Add request tracking to prevent race conditions
-  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  const requestIdRef = useRef<string | null>(null);
   
   // Multi-sort state
   const [sortLevels, setSortLevels] = useState<SortLevel[]>([]);
@@ -167,7 +167,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const fetchOpportunities = async () => {
     // Generate unique request ID to prevent race conditions
     const requestId = Date.now().toString();
-    setCurrentRequestId(requestId);
+    requestIdRef.current = requestId;
     
     try {
       setLoading(true);
@@ -261,7 +261,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
       const { data, error } = await query;
 
       // Check if this request is still current (prevent race conditions)
-      if (currentRequestId !== requestId) {
+      if (requestIdRef.current !== requestId) {
         return; // Ignore outdated requests
       }
 
@@ -287,9 +287,9 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
       });
     } finally {
       // Only set loading to false if this is still the current request
-      if (currentRequestId === requestId) {
+      if (requestIdRef.current === requestId) {
         setLoading(false);
-        setCurrentRequestId(null);
+        requestIdRef.current = null;
       }
     }
   };
