@@ -1642,6 +1642,10 @@ export type Database = {
         Args: { p_email: string }
         Returns: undefined
       }
+      compute_ebitda_range: {
+        Args: { p_amount: number; p_notes: string }
+        Returns: string
+      }
       dismiss_contact_candidate: {
         Args: { p_email: string; p_note?: string }
         Returns: undefined
