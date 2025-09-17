@@ -248,6 +248,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
             onChange={handleFocusAreaChange}
             disabled={focusAreasQuery.isLoading}
             label="LG Focus Areas"
+            sectorId={formData.lg_sector ? sectorsQuery.data?.find(s => s.label === formData.lg_sector)?.meta?.id : undefined}
           />
           {selectedFocusAreas.length > 0 && !formData.lg_sector && (
             <div className="mt-2">

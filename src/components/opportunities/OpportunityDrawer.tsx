@@ -312,6 +312,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               onChange={handleFocusAreaChange}
               disabled={isLoading}
               label="LG Focus Area"
+              sectorId={currentSector ? sectorsQuery.data?.find(s => s.label === currentSector)?.meta?.id : undefined}
             />
 
             {/* Consolidated Focus Areas (Read-only) */}

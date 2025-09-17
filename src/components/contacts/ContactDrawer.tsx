@@ -411,6 +411,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     onChange={handleFocusAreaChange}
                     disabled={focusAreasQuery.isLoading}
                     label="LG Focus Areas (Comprehensive List)"
+                    sectorId={contactData?.lg_sector ? sectorsQuery.data?.find(s => s.label === contactData.lg_sector)?.meta?.id : undefined}
                   />
                   {selectedFocusAreas.length > 0 && !contactData?.lg_sector && (
                     <div className="mt-2">

@@ -7,15 +7,20 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Filter, X, Eraser } from 'lucide-react';
 import { useKpiFilters, KpiFilters } from '@/state/useKpiFilters';
-import { useDistinctFocusAreas, useDistinctSectors, useDistinctOwnershipTypes } from '@/hooks/useDistinctKpiOptions';
+import { useSectors, useFocusAreas } from '@/hooks/useLookups';
+import { useDistinctOwnershipTypes } from '@/hooks/useDistinctKpiOptions';
 
 export function KpiFilterBar() {
   const filters = useKpiFilters();
   const [open, setOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState<KpiFilters>(filters);
 
-  const { data: focusAreas = [] } = useDistinctFocusAreas();
-  const { data: sectors = [] } = useDistinctSectors();
+  const { data: focusAreaOptions = [] } = useFocusAreas();
+  const { data: sectorOptions = [] } = useSectors();
+  
+  // Transform to the expected format
+  const focusAreas = focusAreaOptions.map(opt => opt.value);
+  const sectors = sectorOptions.map(opt => opt.value);
   const { data: ownershipTypes = [] } = useDistinctOwnershipTypes();
 
   const handleApplyFilters = () => {

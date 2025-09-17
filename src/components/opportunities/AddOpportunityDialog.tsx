@@ -260,6 +260,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               onChange={handleFocusAreaChange}
               disabled={isLoading}
               label="LG Focus Area"
+              sectorId={formData.sector ? sectorOptions.find(s => s.label === formData.sector)?.meta?.id : undefined}
             />
 
             {/* Consolidated Focus Areas (Read-only) */}

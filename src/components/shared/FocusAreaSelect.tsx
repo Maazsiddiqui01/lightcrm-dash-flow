@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { fetchFocusAreaOptions } from "@/lib/options";
+import { useFocusAreas } from "@/hooks/useLookups";
 
 interface FocusAreaSelectProps {
   value: string[];
@@ -17,6 +16,7 @@ interface FocusAreaSelectProps {
   disabled?: boolean;
   single?: boolean;
   label?: string;
+  sectorId?: string; // Optional sector filter
 }
 
 export function FocusAreaSelect({ 
@@ -26,19 +26,17 @@ export function FocusAreaSelect({
   maxTags,
   disabled = false,
   single = false,
-  label = "LG Focus Area"
+  label = "LG Focus Area",
+  sectorId
 }: FocusAreaSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
-  const { data: options = [], isLoading } = useQuery({
-    queryKey: ['focus-area-options'],
-    queryFn: fetchFocusAreaOptions,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
+  // Use the canonical lookup hook
+  const { data: options = [], isLoading } = useFocusAreas({ sectorId });
 
   const filteredOptions = options.filter(option =>
-    option.focus_area.toLowerCase().includes(searchValue.toLowerCase())
+    option.label.toLowerCase().includes(searchValue.toLowerCase())
   );
 
   const handleSelect = (selectedFocusArea: string) => {
@@ -94,23 +92,34 @@ export function FocusAreaSelect({
               />
               <CommandList>
                 <CommandEmpty>No focus areas found.</CommandEmpty>
+                {!single && value.length > 0 && (
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={() => onChange([])}
+                      className="text-destructive"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Clear all ({value.length} selected)
+                    </CommandItem>
+                  </CommandGroup>
+                )}
                 <CommandGroup>
                   {filteredOptions.map((option) => (
                     <CommandItem
-                      key={option.focus_area}
-                      onSelect={() => handleSelect(option.focus_area)}
+                      key={option.value}
+                      onSelect={() => handleSelect(option.value)}
                     >
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4",
-                          value.includes(option.focus_area) ? "opacity-100" : "opacity-0"
+                          value.includes(option.value) ? "opacity-100" : "opacity-0"
                         )}
                       />
                       <div className="flex-1">
-                        <div>{option.focus_area}</div>
-                        {option.sector && (
+                        <div>{option.label}</div>
+                        {option.meta?.sector_label && (
                           <div className="text-xs text-muted-foreground">
-                            Sector: {option.sector}
+                            Sector: {option.meta.sector_label}
                           </div>
                         )}
                       </div>
