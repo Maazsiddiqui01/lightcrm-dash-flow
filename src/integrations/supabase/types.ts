@@ -68,6 +68,7 @@ export type Database = {
           all_opps: number | null
           areas_of_specialization: string | null
           category: string | null
+          city: string | null
           contact_type: string | null
           created_at: string | null
           days_since_last_email: number | null
@@ -108,6 +109,7 @@ export type Database = {
           organization: string | null
           outreach_date: string | null
           phone: string | null
+          state: string | null
           title: string | null
           total_of_contacts: number | null
           updated_at: string | null
@@ -118,6 +120,7 @@ export type Database = {
           all_opps?: number | null
           areas_of_specialization?: string | null
           category?: string | null
+          city?: string | null
           contact_type?: string | null
           created_at?: string | null
           days_since_last_email?: number | null
@@ -158,6 +161,7 @@ export type Database = {
           organization?: string | null
           outreach_date?: string | null
           phone?: string | null
+          state?: string | null
           title?: string | null
           total_of_contacts?: number | null
           updated_at?: string | null
@@ -168,6 +172,7 @@ export type Database = {
           all_opps?: number | null
           areas_of_specialization?: string | null
           category?: string | null
+          city?: string | null
           contact_type?: string | null
           created_at?: string | null
           days_since_last_email?: number | null
@@ -208,6 +213,7 @@ export type Database = {
           organization?: string | null
           outreach_date?: string | null
           phone?: string | null
+          state?: string | null
           title?: string | null
           total_of_contacts?: number | null
           updated_at?: string | null

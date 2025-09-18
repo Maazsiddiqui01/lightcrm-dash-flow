@@ -72,6 +72,8 @@ export const CONTACTS_RAW_COLUMNS: TableColumn[] = [
   { name: 'meeting_to', type: 'text', nullable: true, displayName: 'Meeting To' },
   { name: 'meeting_cc', type: 'text', nullable: true, displayName: 'Meeting CC' },
   { name: 'all_emails', type: 'text', nullable: true, displayName: 'All Emails' },
+  { name: 'city', type: 'text', nullable: true, displayName: 'City' },
+  { name: 'state', type: 'text', nullable: true, displayName: 'State' },
   { name: 'created_at', type: 'timestamp with time zone', nullable: true, displayName: 'Created At' },
   { name: 'updated_at', type: 'timestamp with time zone', nullable: true, displayName: 'Updated At' },
 ];

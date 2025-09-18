@@ -75,6 +75,8 @@ interface ContactRaw {
   meeting_to: string | null;
   meeting_cc: string | null;
   all_emails: string | null;
+  city: string | null;
+  state: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
