@@ -27,6 +27,7 @@ interface OpportunityFilters {
   referralContacts: string[];
   referralCompanies: string[];
   dateOfOrigination: string[];
+  dealcloud?: string[];
   [key: string]: any;
 }
 
@@ -57,6 +58,13 @@ export function OpportunityFilterBar({
   const { data: referralContacts = [], isLoading: referralContactsLoading } = useOpportunityReferralContacts();
   const { data: referralCompanies = [], isLoading: referralCompaniesLoading } = useOpportunityReferralCompanies();
   const { data: dateOrigins = [], isLoading: dateOriginsLoading } = useOpportunityDatesOfOrigination();
+
+  // Dealcloud options (static)
+  const dealcloudOptions = [
+    { value: 'All', label: 'All' },
+    { value: 'Yes', label: 'Yes' },
+    { value: 'No', label: 'No' }
+  ];
 
   const updateFilter = (key: keyof OpportunityFilters, value: any) => {
     onFiltersChange({
@@ -186,6 +194,14 @@ export function OpportunityFilterBar({
           minPlaceholder="Min EBITDA"
           maxPlaceholder="Max EBITDA"
           step={0.1}
+        />
+
+        <ComboboxMulti
+          label="Dealcloud"
+          options={dealcloudOptions}
+          values={filters.dealcloud || []}
+          onChange={(values) => updateFilter('dealcloud', values)}
+          searchPlaceholder="Select Dealcloud"
         />
       </div>
     </div>
