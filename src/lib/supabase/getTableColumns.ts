@@ -100,6 +100,10 @@ export const OPPORTUNITIES_RAW_COLUMNS: TableColumn[] = [
   { name: 'deal_source_individual_2', type: 'text', nullable: true, displayName: 'Deal Source Individual 2' },
   { name: 'date_of_origination', type: 'text', nullable: true, displayName: 'Date Of Origination' },
   { name: 'dealcloud', type: 'boolean', nullable: true, displayName: 'Dealcloud' },
+  { name: 'revenue', type: 'numeric', nullable: true, displayName: 'Revenue' },
+  { name: 'est_deal_size', type: 'numeric', nullable: true, displayName: 'Est. Deal Size' },
+  { name: 'est_lg_equity_invest', type: 'numeric', nullable: true, displayName: 'Est. LG Equity Invest.' },
+  { name: 'last_modified', type: 'timestamp with time zone', nullable: true, displayName: 'Last Modified' },
   { name: 'created_at', type: 'timestamp with time zone', nullable: true, displayName: 'Created At' },
   { name: 'updated_at', type: 'timestamp with time zone', nullable: true, displayName: 'Updated At' },
 ];

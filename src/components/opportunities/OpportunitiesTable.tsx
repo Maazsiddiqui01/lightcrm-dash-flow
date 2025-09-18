@@ -53,6 +53,10 @@ interface OpportunityRaw {
   deal_source_individual_2: string | null;
   date_of_origination: string | null;
   dealcloud: boolean | null;
+  revenue: number | null;
+  est_deal_size: number | null;
+  est_lg_equity_invest: number | null;
+  last_modified: string | null;
   created_at: string | null;
   updated_at: string | null;
 }

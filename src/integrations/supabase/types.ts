@@ -574,15 +574,19 @@ export type Database = {
           ebitda: string | null
           ebitda_in_ms: number | null
           ebitda_notes: string | null
+          est_deal_size: number | null
+          est_lg_equity_invest: number | null
           id: string
           investment_professional_point_person_1: string | null
           investment_professional_point_person_2: string | null
+          last_modified: string | null
           lg_focus_area: string | null
           most_recent_notes: string | null
           next_steps: string | null
           ownership: string | null
           ownership_type: string | null
           platform_add_on: string | null
+          revenue: number | null
           sector: string | null
           status: string | null
           summary_of_opportunity: string | null
@@ -601,15 +605,19 @@ export type Database = {
           ebitda?: string | null
           ebitda_in_ms?: number | null
           ebitda_notes?: string | null
+          est_deal_size?: number | null
+          est_lg_equity_invest?: number | null
           id?: string
           investment_professional_point_person_1?: string | null
           investment_professional_point_person_2?: string | null
+          last_modified?: string | null
           lg_focus_area?: string | null
           most_recent_notes?: string | null
           next_steps?: string | null
           ownership?: string | null
           ownership_type?: string | null
           platform_add_on?: string | null
+          revenue?: number | null
           sector?: string | null
           status?: string | null
           summary_of_opportunity?: string | null
@@ -628,15 +636,19 @@ export type Database = {
           ebitda?: string | null
           ebitda_in_ms?: number | null
           ebitda_notes?: string | null
+          est_deal_size?: number | null
+          est_lg_equity_invest?: number | null
           id?: string
           investment_professional_point_person_1?: string | null
           investment_professional_point_person_2?: string | null
+          last_modified?: string | null
           lg_focus_area?: string | null
           most_recent_notes?: string | null
           next_steps?: string | null
           ownership?: string | null
           ownership_type?: string | null
           platform_add_on?: string | null
+          revenue?: number | null
           sector?: string | null
           status?: string | null
           summary_of_opportunity?: string | null
