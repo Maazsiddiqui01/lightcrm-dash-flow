@@ -10,7 +10,8 @@ import {
   useOpportunityPlatformAddOn,
   useOpportunityReferralContacts,
   useOpportunityReferralCompanies,
-  useOpportunityDatesOfOrigination
+  useOpportunityDatesOfOrigination,
+  useOpportunityHeadquarters
 } from '@/hooks/useDistinctOptions';
 import { useSectors, useFocusAreas } from '@/hooks/useLookups';
 
@@ -28,6 +29,7 @@ interface OpportunityFilters {
   referralCompanies: string[];
   dateOfOrigination: string[];
   dealcloud?: string[];
+  headquarters: string[];
   [key: string]: any;
 }
 
@@ -58,6 +60,7 @@ export function OpportunityFilterBar({
   const { data: referralContacts = [], isLoading: referralContactsLoading } = useOpportunityReferralContacts();
   const { data: referralCompanies = [], isLoading: referralCompaniesLoading } = useOpportunityReferralCompanies();
   const { data: dateOrigins = [], isLoading: dateOriginsLoading } = useOpportunityDatesOfOrigination();
+  const { data: headquarters = [], isLoading: headquartersLoading } = useOpportunityHeadquarters();
 
   // Dealcloud options (static)
   const dealcloudOptions = [
@@ -201,6 +204,15 @@ export function OpportunityFilterBar({
           values={filters.dealcloud || []}
           onChange={(values) => updateFilter('dealcloud', values)}
           searchPlaceholder="Select Dealcloud"
+        />
+
+        <ComboboxMulti
+          label="Headquarters"
+          options={headquarters}
+          values={filters.headquarters}
+          onChange={(values) => updateFilter('headquarters', values)}
+          searchPlaceholder="Search Headquarters"
+          loading={headquartersLoading}
         />
       </div>
     </div>

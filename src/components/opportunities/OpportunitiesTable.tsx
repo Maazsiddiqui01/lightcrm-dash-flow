@@ -53,6 +53,7 @@ interface OpportunityRaw {
   deal_source_individual_2: string | null;
   date_of_origination: string | null;
   dealcloud: boolean | null;
+  headquarters: string | null;
   revenue: number | null;
   est_deal_size: number | null;
   est_lg_equity_invest: number | null;
@@ -74,6 +75,7 @@ interface OpportunityFilters {
   referralContacts: string[];
   referralCompanies: string[];
   dateOfOrigination: string[];
+  headquarters: string[];
 }
 
 interface OpportunitiesTableProps {
@@ -205,6 +207,10 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
 
       if (filters.platformAddOn.length > 0) {
         query = query.in('platform_add_on', filters.platformAddOn);
+      }
+
+      if (filters.headquarters.length > 0) {
+        query = query.in('headquarters', filters.headquarters);
       }
 
       // LG Leads filter

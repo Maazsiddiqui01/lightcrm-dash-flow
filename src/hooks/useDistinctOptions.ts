@@ -408,6 +408,37 @@ export const useOpportunityDatesOfOrigination = (search?: string) => {
   });
 };
 
+export const useOpportunityHeadquarters = (search?: string) => {
+  return useQuery({
+    queryKey: ['opportunity-headquarters', search],
+    queryFn: async () => {
+      let query = supabase
+        .from('opportunities_raw')
+        .select('headquarters', { head: false })
+        .not('headquarters', 'is', null)
+        .neq('headquarters', '');
+      
+      if (search) {
+        query = query.ilike('headquarters', `%${search}%`);
+      }
+      
+      const { data, error } = await query.order('headquarters').limit(1000);
+      if (error) throw error;
+      
+      const uniqueValues = new Set<string>();
+      (data || []).forEach(row => {
+        const value = row.headquarters?.toString().trim();
+        if (value) uniqueValues.add(value);
+      });
+      
+      return Array.from(uniqueValues)
+        .sort()
+        .map(value => ({ value, label: value }));
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
 // Contacts hooks
 export const useContactSectors = (search?: string) => {
   return useQuery({
