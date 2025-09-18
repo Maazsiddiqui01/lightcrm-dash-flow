@@ -12,6 +12,7 @@ import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 
 export function Contacts() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [showOpportunityFilters, setShowOpportunityFilters] = useState(true);
   
   const { filters, updateFilters, clearFilters } = useUrlFilters({
     focusAreas: [],
@@ -57,6 +58,7 @@ export function Contacts() {
           filters={filters}
           onFiltersChange={updateFilters}
           onClearFilters={clearFilters}
+          showOpportunityFilters={showOpportunityFilters}
         />
 
         {/* KPI Cards */}
@@ -84,18 +86,21 @@ export function Contacts() {
           />
         </div>
 
-        <ContactsTable filters={{
-          ...filters,
-          opportunityFilters: {
-            tier: (filters.opportunityTier as string[]) || [],
-            platformAddon: (filters.opportunityPlatformAddon as string[]) || [],
-            ownershipType: (filters.opportunityOwnershipType as string[]) || [],
-            status: (filters.opportunityStatus as string[]) || [],
-            lgLead: (filters.opportunityLgLead as string[]) || [],
-            dateRangeStart: filters.opportunityDateRangeStart as string,
-            dateRangeEnd: filters.opportunityDateRangeEnd as string
-          }
-        }} />
+        <ContactsTable 
+          filters={{
+            ...filters,
+            opportunityFilters: {
+              tier: (filters.opportunityTier as string[]) || [],
+              platformAddon: (filters.opportunityPlatformAddon as string[]) || [],
+              ownershipType: (filters.opportunityOwnershipType as string[]) || [],
+              status: (filters.opportunityStatus as string[]) || [],
+              lgLead: (filters.opportunityLgLead as string[]) || [],
+              dateRangeStart: filters.opportunityDateRangeStart as string,
+              dateRangeEnd: filters.opportunityDateRangeEnd as string
+            }
+          }}
+          onOpportunityColumnVisibilityChange={setShowOpportunityFilters}
+        />
 
         <AddContactDialog 
           open={isAddDialogOpen} 

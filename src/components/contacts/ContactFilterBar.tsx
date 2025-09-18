@@ -45,9 +45,10 @@ interface ContactFilterBarProps {
   };
   onFiltersChange: (filters: any) => void;
   onClearFilters: () => void;
+  showOpportunityFilters?: boolean;
 }
 
-export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: ContactFilterBarProps) {
+export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, showOpportunityFilters = false }: ContactFilterBarProps) {
   const [startDate, setStartDate] = useState<Date | undefined>(
     filters.mostRecentContactStart ? new Date(filters.mostRecentContactStart) : undefined
   );
@@ -293,10 +294,11 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
         />
       </div>
 
-      {/* Opportunity Filters Section */}
-      <div className="border-t pt-4">
-        <h4 className="text-sm font-medium text-foreground mb-3">Opportunity Filters</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+      {/* Opportunity Filters Section - Only show when opportunities column is visible */}
+      {showOpportunityFilters && (
+        <div className="border-t pt-4">
+          <h4 className="text-sm font-medium text-foreground mb-3">Opportunity Filters</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           {/* Tier */}
           <ComboboxMulti
             label="Tier"
@@ -399,8 +401,9 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
               </Popover>
             </div>
           </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

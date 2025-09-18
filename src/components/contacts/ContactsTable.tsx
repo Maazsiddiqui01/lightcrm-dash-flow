@@ -106,9 +106,10 @@ interface ContactsTableProps {
       dateRangeEnd?: string;
     };
   };
+  onOpportunityColumnVisibilityChange?: (visible: boolean) => void;
 }
 
-export function ContactsTable({ filters: externalFilters = {} }: ContactsTableProps) {
+export function ContactsTable({ filters: externalFilters = {}, onOpportunityColumnVisibilityChange }: ContactsTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContact, setSelectedContact] = useState<ContactRaw | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -139,6 +140,12 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
   // Initialize edit mode and column visibility
   const editMode = useEditMode('contacts_raw', contacts, setContacts);
   const columnVisibility = useColumnVisibility('columns:contacts_raw');
+
+  // Track opportunities column visibility and notify parent
+  useEffect(() => {
+    const isOpportunitiesVisible = columnVisibility.columnVisibility['opportunities'] !== false;
+    onOpportunityColumnVisibilityChange?.(isOpportunitiesVisible);
+  }, [columnVisibility.columnVisibility, onOpportunityColumnVisibilityChange]);
   
   // Get table columns metadata and add opportunities column
   const tableColumns = useMemo(() => {
