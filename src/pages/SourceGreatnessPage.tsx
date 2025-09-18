@@ -19,7 +19,8 @@ interface SourcingFilters {
   status: string[];
   platformAddon: 'all' | 'platform' | 'addon';
   ownershipType: 'all' | 'family_founder' | 'other';
-  ebitdaBucket: string[];
+  ebitdaMin?: number;
+  ebitdaMax?: number;
   searchText: string;
   [key: string]: any;
 }
@@ -33,7 +34,8 @@ const defaultFilters: SourcingFilters = {
   status: [],
   platformAddon: 'all',
   ownershipType: 'all',
-  ebitdaBucket: [],
+  ebitdaMin: undefined,
+  ebitdaMax: undefined,
   searchText: '',
 };
 
@@ -91,6 +93,15 @@ export default function SourceGreatnessPage() {
       } else if (filterState.ownershipType === 'other') {
         query = query.not('ownership_type', 'ilike', '%family%').not('ownership_type', 'ilike', '%founder%');
       }
+      
+      // EBITDA range filter
+      if (filterState.ebitdaMin !== null && filterState.ebitdaMin !== undefined) {
+        query = query.gte('ebitda_in_ms', filterState.ebitdaMin);
+      }
+      if (filterState.ebitdaMax !== null && filterState.ebitdaMax !== undefined) {
+        query = query.lte('ebitda_in_ms', filterState.ebitdaMax);
+      }
+      
       if (filterState.searchText) {
         query = query.or(`deal_name.ilike.%${filterState.searchText}%,deal_source_individual_1.ilike.%${filterState.searchText}%,deal_source_individual_2.ilike.%${filterState.searchText}%`);
       }
@@ -212,15 +223,8 @@ export default function SourceGreatnessPage() {
 
   // Compute derived metrics
   const metrics = useMemo(() => {
-    const filtered = opportunities.filter(opp => {
-      // Apply EBITDA bucket filter
-      if (Array.isArray(filterState.ebitdaBucket) && filterState.ebitdaBucket.length > 0) {
-        const ebitda = Number(opp.ebitda_in_ms) || 0;
-        const bucket = ebitda < 30 ? '<30' : ebitda <= 35 ? '30-35' : '>35';
-        if (!filterState.ebitdaBucket.includes(bucket)) return false;
-      }
-      return true;
-    });
+    // Note: EBITDA filtering is now handled at the query level, not client-side
+    const filtered = opportunities;
 
     const platformOpps = filtered.filter(o => o.platform_add_on?.toLowerCase().includes('platform'));
     const addonOpps = filtered.filter(o => o.platform_add_on?.toLowerCase().includes('add'));

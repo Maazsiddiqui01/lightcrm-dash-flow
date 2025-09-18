@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { RangeInput } from '@/components/shared/RangeInput';
 import { cn } from '@/lib/utils';
 
 interface SlicersProps {
@@ -28,13 +29,6 @@ const OWNERSHIP_OPTIONS = [
   { label: 'All', value: 'all' },
   { label: 'Family/Founder', value: 'family_founder' },
   { label: 'Other', value: 'other' },
-];
-
-const EBITDA_BUCKETS = [
-  { label: 'All', value: 'all' },
-  { label: '<30', value: '<30' },
-  { label: '30-35', value: '30-35' },
-  { label: '>35', value: '>35' },
 ];
 
 export function Slicers({ filters, onFiltersChange }: SlicersProps) {
@@ -208,7 +202,8 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
       status: [],
       platformAddon: 'all',
       ownershipType: 'all',
-      ebitdaBucket: [],
+      ebitdaMin: undefined,
+      ebitdaMax: undefined,
       searchText: '',
     });
     setSearchDebounce('');
@@ -288,32 +283,17 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
           />
         </div>
 
-        {/* EBITDA Buckets */}
-        <div className="space-y-2">
-          <Label>EBITDA (Ms)</Label>
-          <div className="flex flex-wrap gap-1">
-            {EBITDA_BUCKETS.map(bucket => (
-              <Badge
-                key={bucket.value}
-                variant={
-                  bucket.value === 'all' 
-                    ? (filters.ebitdaBucket.length === 0 ? 'default' : 'outline')
-                    : (filters.ebitdaBucket.includes(bucket.value) ? 'default' : 'outline')
-                }
-                className="cursor-pointer"
-                onClick={() => {
-                  if (bucket.value === 'all') {
-                    updateFilter('ebitdaBucket', []);
-                  } else {
-                    toggleArrayFilter('ebitdaBucket', bucket.value);
-                  }
-                }}
-              >
-                {bucket.label}
-              </Badge>
-            ))}
-          </div>
-        </div>
+        {/* EBITDA Range */}
+        <RangeInput
+          label="EBITDA (in Ms)"
+          minValue={filters.ebitdaMin}
+          maxValue={filters.ebitdaMax}
+          onMinChange={(value) => updateFilter('ebitdaMin', value)}
+          onMaxChange={(value) => updateFilter('ebitdaMax', value)}
+          minPlaceholder="Min EBITDA"
+          maxPlaceholder="Max EBITDA"
+          step={0.1}
+        />
 
         {/* Multi-select dropdowns */}
         <MultiSelectDropdown
