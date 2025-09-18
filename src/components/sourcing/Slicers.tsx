@@ -305,7 +305,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         />
 
         <MultiSelectDropdown
-          label="Focus Area"
+          label="LG Focus Area"
           options={focusAreas}
           selected={filters.focusArea}
           onToggle={(value) => toggleArrayFilter('focusArea', value)}

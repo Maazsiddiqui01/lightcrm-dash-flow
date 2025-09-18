@@ -107,7 +107,7 @@ export function OpportunityFilterBar({
         />
 
         <ComboboxMulti
-          label="Focus Area"
+          label="LG Focus Area"
           options={focusAreas}
           values={filters.focusArea}
           onChange={(values) => updateFilter('focusArea', values)}
