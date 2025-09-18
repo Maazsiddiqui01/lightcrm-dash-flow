@@ -107,24 +107,24 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-        {/* Focus Areas */}
+        {/* LG Sector */}
         <ComboboxMulti
-          label="Focus Areas"
-          options={focusAreaOptions}
-          values={filters.focusAreas || []}
-          onChange={(values) => handleFilterChange('focusAreas', values)}
-          searchPlaceholder="Search Focus Areas"
-          loading={focusAreasQuery.isLoading}
-        />
-
-        {/* Sectors */}
-        <ComboboxMulti
-          label="Sector"
+          label="LG Sector"
           options={sectorOptions}
           values={filters.sectors || []}
           onChange={(values) => handleFilterChange('sectors', values)}
           searchPlaceholder="Search Sectors"
           loading={sectorsQuery.isLoading}
+        />
+
+        {/* LG Focus Areas */}
+        <ComboboxMulti
+          label="LG Focus Areas"
+          options={focusAreaOptions}
+          values={filters.focusAreas || []}
+          onChange={(values) => handleFilterChange('focusAreas', values)}
+          searchPlaceholder="Search Focus Areas"
+          loading={focusAreasQuery.isLoading}
         />
 
         {/* Areas of Specialization */}
@@ -167,9 +167,9 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           loading={categoriesLoading}
         />
 
-        {/* Delta Type (Outreach Cadence) */}
+        {/* Delta Type (Outreach Type) */}
         <ComboboxMulti
-          label="Outreach Cadence"
+          label="Outreach Type"
           options={deltaTypeOptions}
           values={filters.deltaType || []}
           onChange={(values) => handleFilterChange('deltaType', values)}
@@ -238,9 +238,9 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           </div>
         </div>
 
-        {/* Delta Days Range (Outreach Cadence Days) */}
+        {/* Delta Days Range (Max Lag Days) */}
         <RangeInput
-          label="Outreach Cadence (Days)"
+          label="Max Lag (Days)"
           minValue={filters.deltaMin}
           maxValue={filters.deltaMax}
           onMinChange={(value) => handleFilterChange('deltaMin', value)}
