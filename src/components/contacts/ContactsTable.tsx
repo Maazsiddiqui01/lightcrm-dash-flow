@@ -327,7 +327,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         }}
         enableRowSelection={true}
         idKey="id"
-        initialPageSize={25}
+        initialPageSize={50}
         tableId="contacts-table"
         tableType="contacts"
         hideColumnsButton={true}

@@ -107,7 +107,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   presets = [],
   exportFilename = "export",
   className,
-  initialPageSize = 25,
+  initialPageSize = 50,
   tableType = 'contacts',
   stickyFirstColumn = true,
   enablePagination = true,
@@ -442,8 +442,17 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   };
 
   // Handle page size change
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
+  const handlePageSizeChange = (newPageSize: number | string) => {
+    // Handle "All" option with performance cap
+    if (newPageSize === "All") {
+      const effectiveSize = Math.min(data.length, 1000);
+      setPageSize(effectiveSize);
+      setCurrentPage(1);
+      return;
+    }
+    
+    const size = Number(newPageSize);
+    setPageSize(size);
     setCurrentPage(1);
   };
 
@@ -593,6 +602,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
             totalItems={data.length}
             onPageChange={setCurrentPage}
             onPageSizeChange={handlePageSizeChange}
+            tableType={tableType}
           />
         )}
       </div>
@@ -740,6 +750,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
             onPageSizeChange={handlePageSizeChange}
             position="top"
             className="border-0 bg-transparent p-0"
+            tableType={tableType}
           />
         </div>
       )}
@@ -912,6 +923,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
             onPageSizeChange={handlePageSizeChange}
             position="bottom"
             className="border-0 bg-transparent p-0"
+            tableType={tableType}
           />
         </div>
       )}

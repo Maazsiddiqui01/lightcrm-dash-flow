@@ -261,6 +261,7 @@ export function MissingContactsTable({
           totalItems={filteredData.length}
           onPageChange={setCurrentPage}
           onPageSizeChange={() => {}} // Controlled by parent
+          tableType="missing-contacts"
         />
       </div>
       
@@ -290,6 +291,7 @@ export function MissingContactsTable({
           onPageChange={setCurrentPage}
           onPageSizeChange={() => {}} // Controlled by parent
           showPageInfo={false}
+          tableType="missing-contacts"
         />
       </div>
     </div>

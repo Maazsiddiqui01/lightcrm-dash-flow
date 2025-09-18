@@ -468,7 +468,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         }}
         enableRowSelection={true}
         idKey="id"
-        initialPageSize={25}
+        initialPageSize={50}
         tableId="opportunities-table"
         tableType="opportunities"
         hideColumnsButton={true}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
@@ -10,11 +10,12 @@ interface TablePaginationProps {
   pageSize: number;
   totalItems: number;
   onPageChange: (page: number) => void;
-  onPageSizeChange: (size: number) => void;
+  onPageSizeChange: (size: number | string) => void;
   className?: string;
   showPageSizeSelector?: boolean;
-  pageSizeOptions?: number[];
+  pageSizeOptions?: (number | string)[];
   position?: "top" | "bottom";
+  tableType?: 'contacts' | 'opportunities' | 'interactions' | 'missing-contacts' | 'tom';
 }
 
 export function TablePagination({
@@ -26,9 +27,19 @@ export function TablePagination({
   onPageSizeChange,
   className,
   showPageSizeSelector = true,
-  pageSizeOptions = [25, 50, 100],
-  position = "bottom"
+  pageSizeOptions,
+  position = "bottom",
+  tableType = 'contacts'
 }: TablePaginationProps) {
+  // Define page size options based on table type
+  const defaultPageSizeOptions = useMemo(() => {
+    if (tableType === 'interactions') {
+      return [25, 50, 100];
+    }
+    return [50, 100, 200, 300, "All"];
+  }, [tableType]);
+  
+  const effectivePageSizeOptions = pageSizeOptions || defaultPageSizeOptions;
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
@@ -66,15 +77,15 @@ export function TablePagination({
             <span>Show</span>
             <Select
               value={pageSize.toString()}
-              onValueChange={(value) => onPageSizeChange(Number(value))}
+              onValueChange={(value) => onPageSizeChange(value === "All" ? "All" : Number(value))}
             >
               <SelectTrigger className="w-16 h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {pageSizeOptions.map((size) => (
+                {effectivePageSizeOptions.map((size) => (
                   <SelectItem key={size} value={size.toString()}>
-                    {size}
+                    {size === "All" ? `All (${Math.min(totalItems, 1000)})` : size}
                   </SelectItem>
                 ))}
               </SelectContent>

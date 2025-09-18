@@ -12,7 +12,7 @@ export default function MissingContacts() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(50);
   
   const { toast } = useToast();
   const refreshMutation = useRefreshMissingContacts();
@@ -216,14 +216,16 @@ export default function MissingContacts() {
             </Button>
           )}
         </div>
-        <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(Number(value))}>
+        <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(value === "All" ? Math.min(allData?.length || 1000, 1000) : Number(value))}>
           <SelectTrigger className="w-20">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="25">25</SelectItem>
             <SelectItem value="50">50</SelectItem>
             <SelectItem value="100">100</SelectItem>
+            <SelectItem value="200">200</SelectItem>
+            <SelectItem value="300">300</SelectItem>
+            <SelectItem value="All">All</SelectItem>
           </SelectContent>
         </Select>
       </div>
