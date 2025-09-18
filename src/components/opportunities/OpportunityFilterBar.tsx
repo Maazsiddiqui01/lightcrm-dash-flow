@@ -61,7 +61,6 @@ export function OpportunityFilterBar({
 
   // Dealcloud options (static)
   const dealcloudOptions = [
-    { value: 'All', label: 'All' },
     { value: 'Yes', label: 'Yes' },
     { value: 'No', label: 'No' }
   ];
