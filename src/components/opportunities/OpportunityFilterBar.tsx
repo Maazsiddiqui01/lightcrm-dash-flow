@@ -98,21 +98,21 @@ export function OpportunityFilterBar({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <ComboboxMulti
-          label="Focus Area"
-          options={focusAreas}
-          values={filters.focusArea}
-          onChange={(values) => updateFilter('focusArea', values)}
-          searchPlaceholder="Search Focus Areas"
-          loading={focusAreasQuery.isLoading}
-        />
-
-        <ComboboxMulti
           label="LG Sector"
           options={sectors}
           values={filters.sector}
           onChange={(values) => updateFilter('sector', values)}
           searchPlaceholder="Search Sectors"
           loading={sectorsQuery.isLoading}
+        />
+
+        <ComboboxMulti
+          label="Focus Area"
+          options={focusAreas}
+          values={filters.focusArea}
+          onChange={(values) => updateFilter('focusArea', values)}
+          searchPlaceholder="Search Focus Areas"
+          loading={focusAreasQuery.isLoading}
         />
 
         <ComboboxMulti
