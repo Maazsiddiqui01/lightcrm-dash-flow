@@ -25,7 +25,14 @@ export function Contacts() {
     mostRecentContactStart: null,
     mostRecentContactEnd: null,
     deltaMin: null,
-    deltaMax: null
+    deltaMax: null,
+    opportunityTier: [],
+    opportunityPlatformAddon: [],
+    opportunityOwnershipType: [],
+    opportunityStatus: [],
+    opportunityLgLead: [],
+    opportunityDateRangeStart: null,
+    opportunityDateRangeEnd: null
   });
 
   const stats = useContactStats(filters);
@@ -77,7 +84,18 @@ export function Contacts() {
           />
         </div>
 
-        <ContactsTable filters={filters} />
+        <ContactsTable filters={{
+          ...filters,
+          opportunityFilters: {
+            tier: (filters.opportunityTier as string[]) || [],
+            platformAddon: (filters.opportunityPlatformAddon as string[]) || [],
+            ownershipType: (filters.opportunityOwnershipType as string[]) || [],
+            status: (filters.opportunityStatus as string[]) || [],
+            lgLead: (filters.opportunityLgLead as string[]) || [],
+            dateRangeStart: filters.opportunityDateRangeStart as string,
+            dateRangeEnd: filters.opportunityDateRangeEnd as string
+          }
+        }} />
 
         <AddContactDialog 
           open={isAddDialogOpen} 

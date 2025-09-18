@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
 import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
@@ -16,6 +15,7 @@ import { useEditMode } from "@/hooks/useEditMode";
 import { useColumnVisibility } from "@/hooks/useColumnVisibility";
 import { ColumnsMenu } from "@/components/shared/ColumnsMenu";
 import { EditToolbar } from "@/components/shared/EditToolbar";
+import { useContactsWithOpportunities } from "@/hooks/useContactsWithOpportunities";
 
 // Multi-sort imports
 import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
@@ -79,6 +79,7 @@ interface ContactRaw {
   state: string | null;
   created_at: string | null;
   updated_at: string | null;
+  opportunities: string; // Comma-separated deal names
 }
 
 interface ContactsTableProps {
@@ -95,12 +96,19 @@ interface ContactsTableProps {
     mostRecentContactEnd?: string;
     deltaMin?: number;
     deltaMax?: number;
+    opportunityFilters?: {
+      tier?: string[];
+      platformAddon?: string[];
+      ownershipType?: string[];
+      status?: string[];
+      lgLead?: string[];
+      dateRangeStart?: string;
+      dateRangeEnd?: string;
+    };
   };
 }
 
 export function ContactsTable({ filters: externalFilters = {} }: ContactsTableProps) {
-  const [contacts, setContacts] = useState<ContactRaw[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContact, setSelectedContact] = useState<ContactRaw | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -119,13 +127,30 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
     const savedSort = loadSortState('contacts_raw');
     setSortLevels(savedSort);
   }, []);
+
+  // Use the new hook to get contacts with opportunities
+  const { contacts, loading, refetch } = useContactsWithOpportunities(externalFilters);
+  
+  // Create a setContacts function for compatibility with editMode
+  const setContacts = () => {
+    refetch();
+  };
   
   // Initialize edit mode and column visibility
   const editMode = useEditMode('contacts_raw', contacts, setContacts);
   const columnVisibility = useColumnVisibility('columns:contacts_raw');
   
-  // Get table columns metadata
-  const tableColumns = useMemo(() => getTableColumns('contacts_raw'), []);
+  // Get table columns metadata and add opportunities column
+  const tableColumns = useMemo(() => {
+    const baseColumns = getTableColumns('contacts_raw');
+    const opportunitiesColumn = {
+      name: 'opportunities',
+      type: 'text',
+      nullable: true,
+      displayName: 'Opportunities'
+    };
+    return [...baseColumns, opportunitiesColumn];
+  }, []);
   
   // Create dynamic columns with edit support
   const dynamicColumns = useMemo(() => {
@@ -150,139 +175,7 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
     }));
   }, [tableColumns]);
   
-  useEffect(() => {
-    fetchContacts();
-  }, [sortLevels, externalFilters]);
-
-  const fetchContacts = async () => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from("contacts_raw")
-        .select("*");
-
-      // Apply external filters
-      const {
-        focusAreas = [],
-        sectors = [],
-        areasOfSpecialization = [],
-        organizations = [],
-        titles = [],
-        categories = [],
-        deltaType = [],
-        hasOpportunities = [],
-        mostRecentContactStart,
-        mostRecentContactEnd,
-        deltaMin,
-        deltaMax
-      } = externalFilters;
-
-      // Focus Areas - partial match in comma-separated list
-      if (focusAreas.length > 0) {
-        const focusQuery = focusAreas.map(fa => `lg_focus_areas_comprehensive_list.ilike.%${fa}%`).join(',');
-        query = query.or(focusQuery);
-      }
-
-      // Sectors
-      if (sectors.length > 0) {
-        query = query.in('lg_sector', sectors);
-      }
-
-      // Areas of specialization
-      if (areasOfSpecialization.length > 0) {
-        const areasQuery = areasOfSpecialization.map(area => `areas_of_specialization.ilike.%${area}%`).join(',');
-        query = query.or(areasQuery);
-      }
-
-      // Organizations
-      if (organizations.length > 0) {
-        query = query.in('organization', organizations);
-      }
-
-      // Titles
-      if (titles.length > 0) {
-        query = query.in('title', titles);
-      }
-
-      // Categories
-      if (categories.length > 0) {
-        query = query.in('category', categories);
-      }
-
-      // Delta Type
-      if (deltaType.length > 0) {
-        query = query.in('delta_type', deltaType);
-      }
-
-      // Has Opportunities
-      if (hasOpportunities.length > 0) {
-        if (hasOpportunities.includes('Yes')) {
-          query = query.gt('all_opps', 0);
-        }
-        if (hasOpportunities.includes('No')) {
-          query = query.or('all_opps.is.null,all_opps.eq.0');
-        }
-      }
-
-      // Date range for most recent contact
-      if (mostRecentContactStart) {
-        query = query.gte('most_recent_contact', mostRecentContactStart);
-      }
-      if (mostRecentContactEnd) {
-        query = query.lte('most_recent_contact', mostRecentContactEnd);
-      }
-
-      // Delta range
-      if (deltaMin !== null && deltaMin !== undefined) {
-        query = query.gte('delta', deltaMin);
-      }
-      if (deltaMax !== null && deltaMax !== undefined) {
-        query = query.lte('delta', deltaMax);
-      }
-
-      // Apply multi-sort (server-side for non-custom orders)
-      const serverOrders = buildSupabaseOrder(sortLevels);
-      if (serverOrders.length > 0) {
-        serverOrders.forEach(order => {
-          query = query.order(order.column, { 
-            ascending: order.ascending, 
-            nullsFirst: false 
-          });
-        });
-      } else if (sortLevels.length === 0) {
-        // Fallback to default sort
-        query = query.order('most_recent_contact', { ascending: false, nullsFirst: false });
-      } else {
-        // All levels have custom orders, use default for stable pagination
-        query = query.order('id', { ascending: true });
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error fetching contacts:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch contacts. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Apply client-side sorting for custom orders
-      const sortedData = applyClientSort(data || [], sortLevels);
-      setContacts(sortedData);
-    } catch (error) {
-      console.error("Unexpected error:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // No need for fetchContacts anymore since we're using the hook
 
   const filteredContacts = useMemo(() => {
     return contacts.filter(contact =>
@@ -438,14 +331,14 @@ export function ContactsTable({ filters: externalFilters = {} }: ContactsTablePr
         contact={selectedContact}
         open={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        onContactUpdated={fetchContacts}
+        onContactUpdated={refetch}
       />
 
       <AddContactDialog
         open={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
         onContactAdded={() => {
-          fetchContacts();
+          refetch();
           setIsAddDialogOpen(false);
         }}
       />

@@ -12,7 +12,12 @@ import {
   useContactCategories,
   useContactOrganizations,
   useContactTitles,
-  useContactAreasOfSpecialization
+  useContactAreasOfSpecialization,
+  useOpportunityTiers,
+  useOpportunityPlatformAddOn,
+  useOpportunityOwnershipTypes,
+  useOpportunityStatuses,
+  useOpportunityLeads
 } from '@/hooks/useDistinctOptions';
 import { useSectors, useFocusAreas } from '@/hooks/useLookups';
 
@@ -30,6 +35,13 @@ interface ContactFilterBarProps {
     titles?: string[];
     categories?: string[];
     hasOpportunities?: string[];
+    opportunityTier?: string[];
+    opportunityPlatformAddon?: string[];
+    opportunityOwnershipType?: string[];
+    opportunityStatus?: string[];
+    opportunityLgLead?: string[];
+    opportunityDateRangeStart?: string;
+    opportunityDateRangeEnd?: string;
   };
   onFiltersChange: (filters: any) => void;
   onClearFilters: () => void;
@@ -42,6 +54,12 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
   const [endDate, setEndDate] = useState<Date | undefined>(
     filters.mostRecentContactEnd ? new Date(filters.mostRecentContactEnd) : undefined
   );
+  const [oppStartDate, setOppStartDate] = useState<Date | undefined>(
+    filters.opportunityDateRangeStart ? new Date(filters.opportunityDateRangeStart) : undefined
+  );
+  const [oppEndDate, setOppEndDate] = useState<Date | undefined>(
+    filters.opportunityDateRangeEnd ? new Date(filters.opportunityDateRangeEnd) : undefined
+  );
 
   // Use canonical lookup options
   const sectorsQuery = useSectors();
@@ -50,11 +68,18 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
   const sectorOptions = sectorsQuery.data || [];
   const focusAreaOptions = focusAreasQuery.data || [];
 
-  // Fetch distinct options for other filters
+  // Fetch distinct options for contact filters
   const { data: specializationOptions = [], isLoading: specializationsLoading } = useContactAreasOfSpecialization();
   const { data: organizationOptions = [], isLoading: organizationsLoading } = useContactOrganizations();
   const { data: titleOptions = [], isLoading: titlesLoading } = useContactTitles();
   const { data: categoryOptions = [], isLoading: categoriesLoading } = useContactCategories();
+
+  // Fetch distinct options for opportunity filters
+  const { data: tierOptions = [], isLoading: tiersLoading } = useOpportunityTiers();
+  const { data: platformAddonOptions = [], isLoading: platformAddonsLoading } = useOpportunityPlatformAddOn();
+  const { data: ownershipTypeOptions = [], isLoading: ownershipTypesLoading } = useOpportunityOwnershipTypes();
+  const { data: statusOptions = [], isLoading: statusLoading } = useOpportunityStatuses();
+  const { data: lgLeadOptions = [], isLoading: lgLeadsLoading } = useOpportunityLeads();
 
   // Delta type options (static)
   const deltaTypeOptions = [
@@ -75,6 +100,13 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
     });
   };
 
+  const handleOpportunityFilterChange = (key: string, value: any) => {
+    onFiltersChange({
+      ...filters,
+      [`opportunity${key.charAt(0).toUpperCase() + key.slice(1)}`]: value
+    });
+  };
+
   const handleDateChange = (type: 'start' | 'end', date: Date | undefined) => {
     if (type === 'start') {
       setStartDate(date);
@@ -82,6 +114,16 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
     } else {
       setEndDate(date);
       handleFilterChange('mostRecentContactEnd', date ? date.toISOString() : undefined);
+    }
+  };
+
+  const handleOppDateChange = (type: 'start' | 'end', date: Date | undefined) => {
+    if (type === 'start') {
+      setOppStartDate(date);
+      handleFilterChange('opportunityDateRangeStart', date ? date.toISOString() : undefined);
+    } else {
+      setOppEndDate(date);
+      handleFilterChange('opportunityDateRangeEnd', date ? date.toISOString() : undefined);
     }
   };
 
@@ -249,6 +291,115 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters }: C
           maxPlaceholder="Max days"
           step={1}
         />
+      </div>
+
+      {/* Opportunity Filters Section */}
+      <div className="border-t pt-4">
+        <h4 className="text-sm font-medium text-foreground mb-3">Opportunity Filters</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+          {/* Tier */}
+          <ComboboxMulti
+            label="Tier"
+            options={tierOptions}
+            values={filters.opportunityTier || []}
+            onChange={(values) => handleOpportunityFilterChange('tier', values)}
+            searchPlaceholder="Search Tiers"
+            loading={tiersLoading}
+          />
+
+          {/* Platform Add-on */}
+          <ComboboxMulti
+            label="Platform Add-on"
+            options={platformAddonOptions}
+            values={filters.opportunityPlatformAddon || []}
+            onChange={(values) => handleOpportunityFilterChange('platformAddon', values)}
+            searchPlaceholder="Search Platform Add-ons"
+            loading={platformAddonsLoading}
+          />
+
+          {/* Ownership Type */}
+          <ComboboxMulti
+            label="Ownership Type"
+            options={ownershipTypeOptions}
+            values={filters.opportunityOwnershipType || []}
+            onChange={(values) => handleOpportunityFilterChange('ownershipType', values)}
+            searchPlaceholder="Search Ownership Types"
+            loading={ownershipTypesLoading}
+          />
+
+          {/* Status */}
+          <ComboboxMulti
+            label="Status"
+            options={statusOptions}
+            values={filters.opportunityStatus || []}
+            onChange={(values) => handleOpportunityFilterChange('status', values)}
+            searchPlaceholder="Search Status"
+            loading={statusLoading}
+          />
+
+          {/* LG Lead */}
+          <ComboboxMulti
+            label="LG Lead"
+            options={lgLeadOptions}
+            values={filters.opportunityLgLead || []}
+            onChange={(values) => handleOpportunityFilterChange('lgLead', values)}
+            searchPlaceholder="Search LG Leads"
+            loading={lgLeadsLoading}
+          />
+
+          {/* Opportunity Date Range */}
+          <div className="flex flex-col space-y-2">
+            <label className="text-sm font-medium text-foreground">Opportunity Date Range</label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal",
+                      !oppStartDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {oppStartDate ? format(oppStartDate, "PPP") : "From"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={oppStartDate}
+                    onSelect={(date) => handleOppDateChange('start', date)}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal",
+                      !oppEndDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {oppEndDate ? format(oppEndDate, "PPP") : "To"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={oppEndDate}
+                    onSelect={(date) => handleOppDateChange('end', date)}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
