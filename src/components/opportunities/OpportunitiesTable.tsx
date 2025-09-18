@@ -451,6 +451,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         sortDirection={sortDirection}
         onSort={handleSort}
         onRowClick={handleRowClick}
+        editMode={editMode.editState.editMode} // Pass edit mode state
         emptyState={{
           title: "No opportunities found",
           description: "Try adjusting your search or filters to find opportunities.",

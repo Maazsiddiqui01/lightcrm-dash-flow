@@ -86,6 +86,7 @@ interface ResponsiveAdvancedTableProps<T = any> {
   idKey?: string;
   showTopPagination?: boolean;
   hideColumnsButton?: boolean;
+  editMode?: boolean; // Add edit mode prop
 }
 
 export function ResponsiveAdvancedTable<T extends Record<string, any>>({
@@ -118,7 +119,8 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   selectedRowExportFn,
   idKey = 'id',
   showTopPagination = true,
-  hideColumnsButton = false
+  hideColumnsButton = false,
+  editMode = false, // Add edit mode with default value
 }: ResponsiveAdvancedTableProps<T>) {
   const [columns, setColumns] = useState(initialColumns);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -844,38 +846,50 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                 displayData.map((row, rowIndex) => {
                   const isEven = rowIndex % 2 === 0;
                   return (
-                    <TableRow
-                      key={rowIndex}
-                      className={cn(
-                        "transition-colors",
-                        isEven ? "bg-background" : "bg-table-row-even",
-                        onRowClick && "cursor-pointer hover:bg-table-row-hover"
-                      )}
-                      onClick={(e) => {
-                        // Don't trigger row click if clicking on checkbox
-                        if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
-                          e.stopPropagation();
-                          return;
-                        }
-                        onRowClick?.(row);
-                      }}
-                    >
-                      {visibleColumns.map((column, cellIndex) => (
-                        <TableCell
-                          key={column.key}
-                          className={cn(
-                            "table-cell-compact align-middle text-fluid-base",
-                            cellIndex === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-inherit border-r border-border",
-                            column.className
-                          )}
-                          style={{
-                            width: column.width,
-                            minWidth: column.minWidth || (cellIndex === 0 ? '200px' : '120px'),
-                            maxWidth: column.maxWidth
-                          }}
-                        >
-                          {renderCellContent(column, row)}
-                        </TableCell>
+                     <TableRow
+                       key={rowIndex}
+                       className={cn(
+                         "transition-colors",
+                         isEven ? "bg-background" : "bg-table-row-even",
+                         onRowClick && !editMode && "cursor-pointer hover:bg-table-row-hover"
+                       )}
+                       onClick={(e) => {
+                         // Don't trigger row click if clicking on checkbox
+                         if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
+                           e.stopPropagation();
+                           return;
+                         }
+                         // Don't trigger row click if in edit mode
+                         if (editMode) {
+                           e.stopPropagation();
+                           return;
+                         }
+                         onRowClick?.(row);
+                       }}
+                     >
+                       {visibleColumns.map((column, cellIndex) => (
+                         <TableCell
+                           key={column.key}
+                           className={cn(
+                             "table-cell-compact align-middle text-fluid-base",
+                             cellIndex === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-inherit border-r border-border",
+                             column.className,
+                             editMode && "cursor-default" // Change cursor in edit mode
+                           )}
+                           style={{
+                             width: column.width,
+                             minWidth: column.minWidth || (cellIndex === 0 ? '200px' : '120px'),
+                             maxWidth: column.maxWidth
+                           }}
+                           onClick={(e) => {
+                             // Prevent row click propagation when in edit mode
+                             if (editMode) {
+                               e.stopPropagation();
+                             }
+                           }}
+                         >
+                           {renderCellContent(column, row)}
+                         </TableCell>
                       ))}
                     </TableRow>
                   );
