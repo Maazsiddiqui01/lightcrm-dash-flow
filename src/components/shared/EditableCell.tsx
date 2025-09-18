@@ -140,12 +140,15 @@ export function EditableCell({
 
     case 'select':
       return (
-        <Select value={localValue || ''} onValueChange={setLocalValue}>
+        <Select 
+          value={localValue || '__none__'} 
+          onValueChange={(value) => setLocalValue(value === '__none__' ? '' : value)}
+        >
           <SelectTrigger className={cn(error && "border-destructive")}>
             <SelectValue placeholder="Select..." />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">
+            <SelectItem value="__none__">
               <span className="text-muted-foreground">None</span>
             </SelectItem>
             {config.options?.map((option) => (
