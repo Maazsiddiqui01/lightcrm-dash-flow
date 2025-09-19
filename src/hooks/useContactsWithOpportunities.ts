@@ -63,6 +63,8 @@ interface OpportunityFilters {
   lgLead?: string[];
   dateRangeStart?: string;
   dateRangeEnd?: string;
+  ebitdaMin?: number;
+  ebitdaMax?: number;
 }
 
 interface ContactFilters {
@@ -74,6 +76,7 @@ interface ContactFilters {
   categories?: string[];
   deltaType?: string[];
   hasOpportunities?: string[];
+  lgLead?: string[];
   mostRecentContactStart?: string;
   mostRecentContactEnd?: string;
   deltaMin?: number;
@@ -108,6 +111,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         categories = [],
         deltaType = [],
         hasOpportunities = [],
+        lgLead = [],
         mostRecentContactStart,
         mostRecentContactEnd,
         deltaMin,
@@ -178,6 +182,33 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         contactsQuery = contactsQuery.lte('delta', deltaMax);
       }
 
+      // Filter contacts by LG Lead if specified (contacts that have opportunities with these leads)
+      if (lgLead.length > 0) {
+        // First get opportunities that match the LG Lead criteria
+        const lgLeadOppsQuery = supabase
+          .from("opportunities_raw")
+          .select("deal_source_individual_1, deal_source_individual_2");
+        
+        const leadQuery = lgLead.map(lead => 
+          `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
+        ).join(',');
+        
+        const { data: lgLeadOpps } = await lgLeadOppsQuery.or(leadQuery);
+        
+        if (lgLeadOpps && lgLeadOpps.length > 0) {
+          const sourceNames = new Set();
+          lgLeadOpps.forEach(opp => {
+            if (opp.deal_source_individual_1) sourceNames.add(opp.deal_source_individual_1.toLowerCase().trim());
+            if (opp.deal_source_individual_2) sourceNames.add(opp.deal_source_individual_2.toLowerCase().trim());
+          });
+          
+          if (sourceNames.size > 0) {
+            const nameQueries = Array.from(sourceNames).map(name => `full_name.ilike.${name}`).join(',');
+            contactsQuery = contactsQuery.or(nameQueries);
+          }
+        }
+      }
+
       const { data: contactsData, error: contactsError } = await contactsQuery;
 
       if (contactsError) {
@@ -188,7 +219,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       // Get all opportunities with filters
       let opportunitiesQuery = supabase
         .from("opportunities_raw")
-        .select("deal_name, deal_source_individual_1, deal_source_individual_2, tier, platform_add_on, ownership_type, status, date_of_origination, investment_professional_point_person_1, investment_professional_point_person_2");
+        .select("deal_name, deal_source_individual_1, deal_source_individual_2, tier, platform_add_on, ownership_type, status, date_of_origination, investment_professional_point_person_1, investment_professional_point_person_2, ebitda_in_ms");
 
       // Apply opportunity filters
       const {
@@ -196,9 +227,11 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         platformAddon = [],
         ownershipType = [],
         status = [],
-        lgLead = [],
+        lgLead: oppLgLead = [],
         dateRangeStart,
-        dateRangeEnd
+        dateRangeEnd,
+        ebitdaMin,
+        ebitdaMax
       } = opportunityFilters;
 
       if (tier.length > 0) {
@@ -217,11 +250,19 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         opportunitiesQuery = opportunitiesQuery.in('status', status);
       }
 
-      if (lgLead.length > 0) {
-        const leadQuery = lgLead.map(lead => 
+      if (oppLgLead.length > 0) {
+        const leadQuery = oppLgLead.map(lead => 
           `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
         ).join(',');
         opportunitiesQuery = opportunitiesQuery.or(leadQuery);
+      }
+
+      if (ebitdaMin !== null && ebitdaMin !== undefined) {
+        opportunitiesQuery = opportunitiesQuery.gte('ebitda_in_ms', ebitdaMin);
+      }
+
+      if (ebitdaMax !== null && ebitdaMax !== undefined) {
+        opportunitiesQuery = opportunitiesQuery.lte('ebitda_in_ms', ebitdaMax);
       }
 
       if (dateRangeStart) {

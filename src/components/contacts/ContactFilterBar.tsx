@@ -35,6 +35,7 @@ interface ContactFilterBarProps {
     titles?: string[];
     categories?: string[];
     hasOpportunities?: string[];
+    lgLead?: string[];
     opportunityTier?: string[];
     opportunityPlatformAddon?: string[];
     opportunityOwnershipType?: string[];
@@ -42,6 +43,8 @@ interface ContactFilterBarProps {
     opportunityLgLead?: string[];
     opportunityDateRangeStart?: string;
     opportunityDateRangeEnd?: string;
+    opportunityEbitdaMin?: number;
+    opportunityEbitdaMax?: number;
   };
   onFiltersChange: (filters: any) => void;
   onClearFilters: () => void;
@@ -281,6 +284,16 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
           </div>
         </div>
 
+        {/* LG Lead */}
+        <ComboboxMulti
+          label="LG Lead"
+          options={lgLeadOptions}
+          values={filters.lgLead || []}
+          onChange={(values) => handleFilterChange('lgLead', values)}
+          searchPlaceholder="Search LG Leads"
+          loading={lgLeadsLoading}
+        />
+
         {/* Delta Days Range (Max Lag Days) */}
         <RangeInput
           label="Max Lag (Days)"
@@ -347,6 +360,18 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
             onChange={(values) => handleOpportunityFilterChange('lgLead', values)}
             searchPlaceholder="Search LG Leads"
             loading={lgLeadsLoading}
+          />
+
+          {/* EBITDA Range */}
+          <RangeInput
+            label="EBITDA (M$)"
+            minValue={filters.opportunityEbitdaMin}
+            maxValue={filters.opportunityEbitdaMax}
+            onMinChange={(value) => handleOpportunityFilterChange('ebitdaMin', value)}
+            onMaxChange={(value) => handleOpportunityFilterChange('ebitdaMax', value)}
+            minPlaceholder="Min M$"
+            maxPlaceholder="Max M$"
+            step={0.1}
           />
 
           {/* Opportunity Date Range */}
