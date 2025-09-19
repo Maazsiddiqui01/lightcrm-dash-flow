@@ -4,7 +4,6 @@ import { ComboboxMulti } from '@/components/shared/ComboboxMulti';
 import { RangeInput } from '@/components/shared/RangeInput';
 import {
   useOpportunityOwnershipTypes,
-  useOpportunityTiers,
   useOpportunityStatuses,
   useOpportunityLeads,
   useOpportunityPlatformAddOn,
@@ -14,6 +13,7 @@ import {
   useOpportunityHeadquarters
 } from '@/hooks/useDistinctOptions';
 import { useSectors, useFocusAreas } from '@/hooks/useLookups';
+import { tierOptions } from '@/lib/export/opportunityUtils';
 
 interface OpportunityFilters {
   focusArea: string[];
@@ -53,7 +53,7 @@ export function OpportunityFilterBar({
 
   // Use existing hooks for other options
   const { data: ownershipTypes = [], isLoading: ownershipLoading } = useOpportunityOwnershipTypes();
-  const { data: tiers = [], isLoading: tiersLoading } = useOpportunityTiers();
+  const tiers = tierOptions.map(value => ({ value, label: value }));
   const { data: statuses = [], isLoading: statusesLoading } = useOpportunityStatuses();
   const { data: leads = [], isLoading: leadsLoading } = useOpportunityLeads();
   const { data: platformAddOns = [], isLoading: platformLoading } = useOpportunityPlatformAddOn();
@@ -130,7 +130,6 @@ export function OpportunityFilterBar({
           values={filters.tier}
           onChange={(values) => updateFilter('tier', values)}
           searchPlaceholder="Search Tiers"
-          loading={tiersLoading}
         />
 
         <ComboboxMulti
