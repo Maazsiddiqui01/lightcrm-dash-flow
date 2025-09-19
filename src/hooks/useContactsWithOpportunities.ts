@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ContactWithOpportunities {
@@ -88,18 +88,27 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
   const [contacts, setContacts] = useState<ContactWithOpportunities[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshingSlow, setIsRefreshingSlow] = useState(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     fetchContactsWithOpportunities();
   }, [filters]);
 
   const fetchContactsWithOpportunities = async () => {
+    let reqId = 0;
     try {
       // Only show full loading on initial load, use refreshing for subsequent updates
+      reqId = ++requestIdRef.current;
       if (contacts.length === 0) {
         setLoading(true);
       } else {
         setIsRefreshing(true);
+        // Show a subtle updating indicator only if refresh is slow (>400ms)
+        if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+        setIsRefreshingSlow(false);
+        refreshTimerRef.current = setTimeout(() => setIsRefreshingSlow(true), 400);
       }
 
       // First get all contacts with filters
@@ -345,10 +354,18 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
     } catch (error) {
       console.error("Unexpected error:", error);
     } finally {
-      setLoading(false);
-      setIsRefreshing(false);
+      // Only apply state from the latest request
+      if (requestIdRef.current === reqId) {
+        setLoading(false);
+        setIsRefreshing(false);
+        setIsRefreshingSlow(false);
+        if (refreshTimerRef.current) {
+          clearTimeout(refreshTimerRef.current);
+          refreshTimerRef.current = null;
+        }
+      }
     }
   };
 
-  return { contacts, loading, isRefreshing, refetch: fetchContactsWithOpportunities };
+  return { contacts, loading, isRefreshing, isRefreshingSlow, refetch: fetchContactsWithOpportunities };
 }

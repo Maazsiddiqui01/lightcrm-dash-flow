@@ -132,7 +132,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   }, []);
 
   // Use the new hook to get contacts with opportunities
-  const { contacts, loading, isRefreshing, refetch } = useContactsWithOpportunities(externalFilters);
+  const { contacts, loading, isRefreshingSlow, refetch } = useContactsWithOpportunities(externalFilters);
   
   // Create a setContacts function for compatibility with editMode
   const setContacts = () => {
@@ -273,8 +273,8 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             {filteredContacts.length} Contact{filteredContacts.length !== 1 ? 's' : ''}
-            {isRefreshing && (
-              <div className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-xs text-muted-foreground">
+            {isRefreshingSlow && (
+              <div className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-xs text-muted-foreground animate-fade-in">
                 <div className="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full" />
                 Updating...
               </div>
@@ -330,8 +330,8 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         onRowClick={handleRowClick}
         editMode={editMode.editState.editMode} // Pass edit mode state
         emptyState={{
-          title: isRefreshing ? "Updating contacts..." : "No contacts found",
-          description: isRefreshing ? "Please wait while we update the contacts list." : "Try adjusting your search or filters to find contacts.",
+          title: isRefreshingSlow ? "Updating contacts..." : "No contacts found",
+          description: isRefreshingSlow ? "Please wait while we update the contacts list." : "Try adjusting your search or filters to find contacts.",
         }}
         enableRowSelection={true}
         idKey="id"
