@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ContactWithOpportunities {
@@ -87,26 +87,19 @@ interface ContactFilters {
 export function useContactsWithOpportunities(filters: ContactFilters = {}) {
   const [contacts, setContacts] = useState<ContactWithOpportunities[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isRefreshingSlow, setIsRefreshingSlow] = useState(false);
-  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const requestIdRef = useRef(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     fetchContactsWithOpportunities();
   }, [filters]);
 
   const fetchContactsWithOpportunities = async () => {
-    let reqId = 0;
     try {
       // Only show full loading on initial load, use refreshing for subsequent updates
-      reqId = ++requestIdRef.current;
       if (contacts.length === 0) {
         setLoading(true);
       } else {
-        // Show a subtle updating indicator only if refresh is slow (>400ms)
-        if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-        setIsRefreshingSlow(false);
-        refreshTimerRef.current = setTimeout(() => setIsRefreshingSlow(true), 400);
+        setIsRefreshing(true);
       }
 
       // First get all contacts with filters
@@ -349,24 +342,13 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       }) || [];
 
       setContacts(contactsWithOpportunities);
-      console.log("Contacts loaded:", contactsWithOpportunities.length, "contacts");
     } catch (error) {
       console.error("Unexpected error:", error);
     } finally {
-      // Only apply state from the latest request
-      if (requestIdRef.current === reqId) {
-        console.log("Setting loading to false, reqId:", reqId);
-        setLoading(false);
-        setIsRefreshingSlow(false);
-        if (refreshTimerRef.current) {
-          clearTimeout(refreshTimerRef.current);
-          refreshTimerRef.current = null;
-        }
-      } else {
-        console.log("Skipping state update, request outdated. Current:", requestIdRef.current, "This req:", reqId);
-      }
+      setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  return { contacts, loading, isRefreshingSlow, refetch: fetchContactsWithOpportunities };
+  return { contacts, loading, isRefreshing, refetch: fetchContactsWithOpportunities };
 }
