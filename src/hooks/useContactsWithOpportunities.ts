@@ -87,6 +87,7 @@ interface ContactFilters {
 export function useContactsWithOpportunities(filters: ContactFilters = {}) {
   const [contacts, setContacts] = useState<ContactWithOpportunities[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     fetchContactsWithOpportunities();
@@ -94,7 +95,12 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
   const fetchContactsWithOpportunities = async () => {
     try {
-      setLoading(true);
+      // Only show full loading on initial load, use refreshing for subsequent updates
+      if (contacts.length === 0) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
 
       // First get all contacts with filters
       let contactsQuery = supabase
@@ -340,8 +346,9 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       console.error("Unexpected error:", error);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  return { contacts, loading, refetch: fetchContactsWithOpportunities };
+  return { contacts, loading, isRefreshing, refetch: fetchContactsWithOpportunities };
 }
