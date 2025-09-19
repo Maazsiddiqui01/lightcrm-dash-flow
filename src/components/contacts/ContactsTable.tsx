@@ -158,7 +158,12 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       nullable: true,
       displayName: 'Opportunities'
     };
-    return [...baseColumns, opportunitiesColumn];
+    // Insert opportunities column after "Profession" (category) and before "Preferred Contact Method" (contact_type)
+    const professionIndex = baseColumns.findIndex(col => col.name === 'category');
+    const insertIndex = professionIndex + 1;
+    const newColumns = [...baseColumns];
+    newColumns.splice(insertIndex, 0, opportunitiesColumn);
+    return newColumns;
   }, []);
   
   // Create dynamic columns with edit support
