@@ -574,6 +574,7 @@ export type Database = {
           date_of_origination: string | null
           deal_name: string | null
           deal_source_company: string | null
+          deal_source_contacts: string | null
           deal_source_individual_1: string | null
           deal_source_individual_2: string | null
           dealcloud: boolean | null
@@ -588,6 +589,7 @@ export type Database = {
           investment_professional_point_person_2: string | null
           last_modified: string | null
           lg_focus_area: string | null
+          lg_team: string | null
           most_recent_notes: string | null
           next_steps: string | null
           ownership: string | null
@@ -606,6 +608,7 @@ export type Database = {
           date_of_origination?: string | null
           deal_name?: string | null
           deal_source_company?: string | null
+          deal_source_contacts?: string | null
           deal_source_individual_1?: string | null
           deal_source_individual_2?: string | null
           dealcloud?: boolean | null
@@ -620,6 +623,7 @@ export type Database = {
           investment_professional_point_person_2?: string | null
           last_modified?: string | null
           lg_focus_area?: string | null
+          lg_team?: string | null
           most_recent_notes?: string | null
           next_steps?: string | null
           ownership?: string | null
@@ -638,6 +642,7 @@ export type Database = {
           date_of_origination?: string | null
           deal_name?: string | null
           deal_source_company?: string | null
+          deal_source_contacts?: string | null
           deal_source_individual_1?: string | null
           deal_source_individual_2?: string | null
           dealcloud?: boolean | null
@@ -652,6 +657,7 @@ export type Database = {
           investment_professional_point_person_2?: string | null
           last_modified?: string | null
           lg_focus_area?: string | null
+          lg_team?: string | null
           most_recent_notes?: string | null
           next_steps?: string | null
           ownership?: string | null

@@ -109,4 +109,6 @@ export const OPPORTUNITIES_RAW_COLUMNS: TableColumn[] = [
   { name: 'last_modified', type: 'timestamp with time zone', nullable: true, displayName: 'Last Modified' },
   { name: 'created_at', type: 'timestamp with time zone', nullable: true, displayName: 'Created At' },
   { name: 'updated_at', type: 'timestamp with time zone', nullable: true, displayName: 'Last Modified' },
+  { name: 'lg_team', type: 'text', nullable: true, displayName: 'LG Team' },
+  { name: 'deal_source_contacts', type: 'text', nullable: true, displayName: 'Deal Source Contacts' },
 ];
