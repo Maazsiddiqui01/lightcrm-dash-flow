@@ -104,6 +104,8 @@ interface ContactsTableProps {
       lgLead?: string[];
       dateRangeStart?: string;
       dateRangeEnd?: string;
+      ebitdaMin?: number;
+      ebitdaMax?: number;
     };
   };
   onOpportunityColumnVisibilityChange?: (visible: boolean) => void;

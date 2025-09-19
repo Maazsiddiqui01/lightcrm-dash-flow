@@ -9,6 +9,18 @@ interface ContactStats {
   loading: boolean;
 }
 
+interface OpportunityFilters {
+  tier?: string[];
+  platformAddon?: string[];
+  ownershipType?: string[];
+  status?: string[];
+  lgLead?: string[];
+  dateRangeStart?: string;
+  dateRangeEnd?: string;
+  ebitdaMin?: number;
+  ebitdaMax?: number;
+}
+
 interface ContactFilters {
   focusAreas?: string[];
   sectors?: string[];
@@ -22,6 +34,8 @@ interface ContactFilters {
   titles?: string[];
   categories?: string[];
   hasOpportunities?: string[];
+  lgLead?: string[];
+  opportunityFilters?: OpportunityFilters;
 }
 
 export function useContactStats(filters?: ContactFilters): ContactStats {
@@ -122,29 +136,131 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
 
   const fetchStats = async () => {
     try {
-      // Total contacts with filters
+      // Check if opportunity filters are applied
+      const opportunityFilters = filters?.opportunityFilters || {};
+      const hasOpportunityFilters = opportunityFilters.tier?.length > 0 || 
+        opportunityFilters.platformAddon?.length > 0 || 
+        opportunityFilters.ownershipType?.length > 0 || 
+        opportunityFilters.status?.length > 0 || 
+        opportunityFilters.lgLead?.length > 0 || 
+        opportunityFilters.dateRangeStart || 
+        opportunityFilters.dateRangeEnd ||
+        (opportunityFilters.ebitdaMin !== null && opportunityFilters.ebitdaMin !== undefined) ||
+        (opportunityFilters.ebitdaMax !== null && opportunityFilters.ebitdaMax !== undefined);
+
+      let filteredContactIds: string[] | null = null;
+
+      // If opportunity filters are applied, get matching contact IDs first
+      if (hasOpportunityFilters) {
+        let oppQuery = supabase
+          .from("opportunities_raw")
+          .select("deal_source_individual_1, deal_source_individual_2");
+
+        // Apply opportunity filters
+        if (opportunityFilters.tier?.length > 0) {
+          oppQuery = oppQuery.in('tier', opportunityFilters.tier);
+        }
+        if (opportunityFilters.platformAddon?.length > 0) {
+          oppQuery = oppQuery.in('platform_add_on', opportunityFilters.platformAddon);
+        }
+        if (opportunityFilters.ownershipType?.length > 0) {
+          oppQuery = oppQuery.in('ownership_type', opportunityFilters.ownershipType);
+        }
+        if (opportunityFilters.status?.length > 0) {
+          oppQuery = oppQuery.in('status', opportunityFilters.status);
+        }
+        if (opportunityFilters.lgLead?.length > 0) {
+          const leadQuery = opportunityFilters.lgLead.map(lead => 
+            `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
+          ).join(',');
+          oppQuery = oppQuery.or(leadQuery);
+        }
+        if (opportunityFilters.ebitdaMin !== null && opportunityFilters.ebitdaMin !== undefined) {
+          oppQuery = oppQuery.gte('ebitda_in_ms', opportunityFilters.ebitdaMin);
+        }
+        if (opportunityFilters.ebitdaMax !== null && opportunityFilters.ebitdaMax !== undefined) {
+          oppQuery = oppQuery.lte('ebitda_in_ms', opportunityFilters.ebitdaMax);
+        }
+        if (opportunityFilters.dateRangeStart) {
+          oppQuery = oppQuery.gte('date_of_origination', opportunityFilters.dateRangeStart);
+        }
+        if (opportunityFilters.dateRangeEnd) {
+          oppQuery = oppQuery.lte('date_of_origination', opportunityFilters.dateRangeEnd);
+        }
+
+        const { data: opportunities } = await oppQuery;
+        
+        if (opportunities && opportunities.length > 0) {
+          const contactNames = new Set<string>();
+          opportunities.forEach(opp => {
+            if (opp.deal_source_individual_1) {
+              contactNames.add(opp.deal_source_individual_1.toLowerCase().trim());
+            }
+            if (opp.deal_source_individual_2) {
+              contactNames.add(opp.deal_source_individual_2.toLowerCase().trim());
+            }
+          });
+
+          // Get contact IDs for these names
+          if (contactNames.size > 0) {
+            const nameQueries = Array.from(contactNames).map(name => `full_name.ilike.${name}`).join(',');
+            const { data: matchingContacts } = await supabase
+              .from("contacts_raw")
+              .select("id")
+              .or(nameQueries);
+            
+            filteredContactIds = matchingContacts?.map(c => c.id) || [];
+          } else {
+            filteredContactIds = [];
+          }
+        } else {
+          filteredContactIds = [];
+        }
+      }
+
+      // Build base queries with contact filters
       let totalQuery = supabase
         .from("contacts_app")
         .select("*", { count: "exact", head: true });
       totalQuery = applyFilters(totalQuery);
-      const { count: totalContacts } = await totalQuery;
 
-      // Active contacts (last 90 days) with filters
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-      
       let activeQuery = supabase
         .from("contacts_app")
-        .select("*", { count: "exact", head: true })
-        .gte("most_recent_contact", ninetyDaysAgo.toISOString());
+        .select("*", { count: "exact", head: true });
       activeQuery = applyFilters(activeQuery);
-      const { count: activeContacts } = await activeQuery;
 
-      // Total emails and meetings from contacts with filters
       let statsQuery = supabase
         .from("contacts_app")
         .select("of_emails, of_meetings");
       statsQuery = applyFilters(statsQuery);
+
+      // Apply opportunity-based contact filtering if needed
+      if (filteredContactIds !== null) {
+        if (filteredContactIds.length > 0) {
+          totalQuery = totalQuery.in('id', filteredContactIds);
+          activeQuery = activeQuery.in('id', filteredContactIds);
+          statsQuery = statsQuery.in('id', filteredContactIds);
+        } else {
+          // No contacts match opportunity filters, return zero stats
+          setStats({
+            totalContacts: 0,
+            activeContacts: 0,
+            totalEmails: 0,
+            totalMeetings: 0,
+            loading: false,
+          });
+          return;
+        }
+      }
+
+      // Apply active contacts date filter
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      activeQuery = activeQuery.gte("most_recent_contact", ninetyDaysAgo.toISOString());
+
+      // Execute queries
+      const { count: totalContacts } = await totalQuery;
+      const { count: activeContacts } = await activeQuery;
       const { data: contactsWithStats } = await statsQuery;
 
       const totalEmails = contactsWithStats?.reduce((sum, contact) => 

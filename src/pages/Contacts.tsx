@@ -33,10 +33,35 @@ export function Contacts() {
     opportunityStatus: [],
     opportunityLgLead: [],
     opportunityDateRangeStart: null,
-    opportunityDateRangeEnd: null
+    opportunityDateRangeEnd: null,
+    opportunityEbitdaMin: null,
+    opportunityEbitdaMax: null
   });
 
-  const stats = useContactStats(filters);
+  // Helper function to extract numeric value from filter
+  const getNumericValue = (filterValue: any): number | undefined => {
+    if (!filterValue) return undefined;
+    if (typeof filterValue === 'number') return filterValue;
+    if (typeof filterValue === 'object' && 'value' in filterValue) {
+      return filterValue.value;
+    }
+    return undefined;
+  };
+
+  const stats = useContactStats({
+    ...filters,
+    opportunityFilters: {
+      tier: (filters.opportunityTier as string[]) || [],
+      platformAddon: (filters.opportunityPlatformAddon as string[]) || [],
+      ownershipType: (filters.opportunityOwnershipType as string[]) || [],
+      status: (filters.opportunityStatus as string[]) || [],
+      lgLead: (filters.opportunityLgLead as string[]) || [],
+      dateRangeStart: filters.opportunityDateRangeStart as string,
+      dateRangeEnd: filters.opportunityDateRangeEnd as string,
+      ebitdaMin: getNumericValue(filters.opportunityEbitdaMin),
+      ebitdaMax: getNumericValue(filters.opportunityEbitdaMax)
+    }
+  });
 
   return (
     <div className="min-h-0 flex-1">
@@ -96,7 +121,9 @@ export function Contacts() {
               status: (filters.opportunityStatus as string[]) || [],
               lgLead: (filters.opportunityLgLead as string[]) || [],
               dateRangeStart: filters.opportunityDateRangeStart as string,
-              dateRangeEnd: filters.opportunityDateRangeEnd as string
+              dateRangeEnd: filters.opportunityDateRangeEnd as string,
+              ebitdaMin: getNumericValue(filters.opportunityEbitdaMin),
+              ebitdaMax: getNumericValue(filters.opportunityEbitdaMax)
             }
           }}
           onOpportunityColumnVisibilityChange={setShowOpportunityFilters}
