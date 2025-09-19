@@ -35,7 +35,10 @@ export function ComboboxMulti({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const selectedOptions = options.filter(option => values.includes(option.value));
+  // Ensure values is always an array to prevent runtime errors
+  const safeValues = Array.isArray(values) ? values : [];
+  
+  const selectedOptions = options.filter(option => safeValues.includes(option.value));
   const filteredOptions = search 
     ? options.filter(option => 
         option.label.toLowerCase().includes(search.toLowerCase()) ||
@@ -57,9 +60,9 @@ export function ComboboxMulti({
       // If "Clear All" is selected, clear all selections
       onChange([]);
     } else {
-      const newValues = values.includes(value)
-        ? values.filter(v => v !== value)
-        : [...values, value];
+      const newValues = safeValues.includes(value)
+        ? safeValues.filter(v => v !== value)
+        : [...safeValues, value];
       onChange(newValues);
     }
   };
@@ -100,7 +103,7 @@ export function ComboboxMulti({
               )}
             </div>
             <div className="flex items-center gap-1 ml-2">
-              {values.length > 0 && (
+              {safeValues.length > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -131,10 +134,10 @@ export function ComboboxMulti({
               <CommandGroup>
                 {optionsWithControls.map((option) => {
                   const isSelected = option.value === "ALL" 
-                    ? values.length === options.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL").length
+                    ? safeValues.length === options.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL").length
                     : option.value === "CLEAR_ALL"
-                    ? values.length === 0
-                    : values.includes(option.value);
+                    ? safeValues.length === 0
+                    : safeValues.includes(option.value);
                   
                   return (
                     <CommandItem
