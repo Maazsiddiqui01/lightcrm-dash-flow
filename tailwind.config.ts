@@ -30,6 +30,10 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'calibri': ['Calibri', 'sans-serif'],
+				'calibri-light': ['Calibri', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -81,7 +85,10 @@ export default {
 					DEFAULT: 'hsl(var(--navbar))',
 					foreground: 'hsl(var(--navbar-foreground))'
 				},
+				'table-header-main': 'hsl(var(--table-header-main))',
+				'table-header-main-foreground': 'hsl(var(--table-header-main-foreground))',
 				'table-header': 'hsl(var(--table-header))',
+				'table-header-foreground': 'hsl(var(--table-header-foreground))',
 				'table-row-hover': 'hsl(var(--table-row-hover))',
 				'table-row-even': 'hsl(var(--table-row-even))',
 				sidebar: {

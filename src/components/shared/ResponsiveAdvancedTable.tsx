@@ -784,17 +784,17 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
               tableLayout: responsiveLayout.isWideScreen ? "fixed" : "auto"
             }}
           >
-            <TableHeader className="sticky top-0 z-10 bg-card">
+            <TableHeader className="sticky top-0 z-10 bg-table-header">
               <TableRow className="border-b bg-muted/20">
                 {visibleColumns.map((column, index) => (
                   <TableHead
                     key={column.key}
                     className={cn(
-                      "table-cell-compact text-left align-middle font-medium text-muted-foreground select-none bg-card",
+                      "table-cell-compact text-left align-middle font-calibri-light font-normal text-table-header-foreground select-none bg-table-header",
                       responsiveLayout.config.density === 'compact' && "px-2 py-1",
                       responsiveLayout.config.density === 'comfortable' && "px-6 py-4",
-                      index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-card border-r border-border",
-                      column.sortable && "cursor-pointer hover:text-foreground transition-colors",
+                      index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-table-header border-r border-table-header",
+                      column.sortable && "cursor-pointer hover:text-table-header-foreground/80 transition-colors",
                       column.headerClassName
                     )}
                     style={{

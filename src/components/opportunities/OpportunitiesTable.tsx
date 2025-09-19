@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { TableHeader } from "@/components/shared/TableHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
 import { OpportunityDrawer } from "./OpportunityDrawer";
