@@ -40,7 +40,7 @@ interface Opportunity {
   ownership_type: string;
   summary_of_opportunity: string;
   ebitda_in_ms: number;
-  ebitda: string;
+  
   ebitda_notes: string;
   investment_professional_point_person_1: string;
   investment_professional_point_person_2: string;
@@ -113,7 +113,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         ownership: opportunity.ownership || "",
         ownership_type: opportunity.ownership_type || "",
         url: opportunity.url || "",
-        ebitda: opportunity.ebitda || "",
+        
         investment_professional_point_person_1: opportunity.investment_professional_point_person_1 || "",
         investment_professional_point_person_2: opportunity.investment_professional_point_person_2 || "",
       });
@@ -381,16 +381,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="ebitda">EBITDA</Label>
-                <Input
-                  id="ebitda"
-                  value={editedFields.ebitda || ""}
-                  onChange={(e) => handleFieldChange("ebitda", e.target.value)}
-                  placeholder="Enter EBITDA"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>EBITDA (in Ms)</Label>
+                <Label>EBITDA</Label>
                 <p className="text-sm text-muted-foreground p-2 bg-muted rounded">
                   {opportunity.ebitda_in_ms ? `$${opportunity.ebitda_in_ms}M` : "—"}
                 </p>

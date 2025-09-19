@@ -88,7 +88,7 @@ export const OPPORTUNITIES_RAW_COLUMNS: TableColumn[] = [
   { name: 'headquarters', type: 'text', nullable: true, displayName: 'HQ' },
   { name: 'platform_add_on', type: 'text', nullable: true, displayName: 'Platform / Add-On' },
   { name: 'revenue', type: 'numeric', nullable: true, displayName: 'Revenue' },
-  { name: 'ebitda', type: 'text', nullable: true, displayName: 'EBITDA' },
+  { name: 'ebitda_in_ms', type: 'numeric', nullable: true, displayName: 'EBITDA' },
   { name: 'ebitda_notes', type: 'text', nullable: true, displayName: 'EBITDA Notes' },
   { name: 'est_deal_size', type: 'numeric', nullable: true, displayName: 'Est. Deal Size' },
   { name: 'est_lg_equity_invest', type: 'numeric', nullable: true, displayName: 'Est. LG Equity Invest.' },
@@ -109,6 +109,6 @@ export const OPPORTUNITIES_RAW_COLUMNS: TableColumn[] = [
   { name: 'deal_source_individual_1', type: 'text', nullable: true, displayName: 'Deal Source Contact #1' },
   { name: 'deal_source_individual_2', type: 'text', nullable: true, displayName: 'Deal Source Contact #2' },
   { name: 'created_at', type: 'timestamp with time zone', nullable: true, displayName: 'Created At' },
-  { name: 'ebitda_in_ms', type: 'numeric', nullable: true, displayName: 'EBITDA (M$)' },
+  
   { name: 'last_modified', type: 'timestamp with time zone', nullable: true, displayName: 'Last Modified Date' },
 ];

@@ -42,7 +42,7 @@ interface OpportunityRaw {
   summary_of_opportunity: string | null;
   next_steps: string | null;
   most_recent_notes: string | null;
-  ebitda: string | null;
+  
   ebitda_in_ms: number | null;
   ebitda_notes: string | null;
   ownership: string | null;

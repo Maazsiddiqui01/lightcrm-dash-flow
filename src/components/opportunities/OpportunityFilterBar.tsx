@@ -188,7 +188,7 @@ export function OpportunityFilterBar({
         />
 
         <RangeInput
-          label="EBITDA (in Ms)"
+          label="EBITDA"
           minValue={filters.ebitdaMin}
           maxValue={filters.ebitdaMax}
           onMinChange={(value) => updateFilter('ebitdaMin', value)}

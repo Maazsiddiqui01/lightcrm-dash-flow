@@ -40,7 +40,6 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     ownership: "",
     ownership_type: "",
     summary_of_opportunity: "",
-    ebitda: "",
     ebitda_notes: "",
     investment_professional_point_person_1: "",
     investment_professional_point_person_2: "",
@@ -140,7 +139,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         deal_source_individual_2: opt(formData.deal_source_individual_2),
         ownership: opt(formData.ownership),
         ownership_type: opt(formData.ownership_type),
-        ebitda: opt(formData.ebitda),
+        
         ebitda_notes: opt(formData.ebitda_notes),
         url: opt(formData.url),
         summary_of_opportunity: opt(formData.summary_of_opportunity),
@@ -179,7 +178,6 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         ownership: "",
         ownership_type: "",
         summary_of_opportunity: "",
-        ebitda: "",
         ebitda_notes: "",
         investment_professional_point_person_1: "",
         investment_professional_point_person_2: "",
@@ -217,7 +215,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       ownership: "",
       ownership_type: "",
       summary_of_opportunity: "",
-      ebitda: "",
+      
       ebitda_notes: "",
       investment_professional_point_person_1: "",
       investment_professional_point_person_2: "",
@@ -432,15 +430,6 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
 
             {/* Financial & Additional Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ebitda">EBITDA</Label>
-                <Input
-                  id="ebitda"
-                  value={formData.ebitda}
-                  onChange={(e) => handleInputChange("ebitda", e.target.value)}
-                  placeholder="e.g., $5M, <30"
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="url">URL</Label>
                 <Input

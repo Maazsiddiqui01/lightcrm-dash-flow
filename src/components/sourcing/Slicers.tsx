@@ -285,7 +285,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
 
         {/* EBITDA Range */}
         <RangeInput
-          label="EBITDA (in Ms)"
+          label="EBITDA"
           minValue={filters.ebitdaMin}
           maxValue={filters.ebitdaMax}
           onMinChange={(value) => updateFilter('ebitdaMin', value)}

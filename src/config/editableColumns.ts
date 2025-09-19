@@ -97,7 +97,7 @@ export const editableColumns: EditableConfig = {
     summary_of_opportunity: { type: 'textarea' },
     next_steps: { type: 'textarea' },
     most_recent_notes: { type: 'textarea' },
-    ebitda: { type: 'text' },
+    
     ebitda_in_ms: { type: 'number', validation: validateNumber },
     ebitda_notes: { type: 'textarea' },
     ownership: { type: 'text' },
