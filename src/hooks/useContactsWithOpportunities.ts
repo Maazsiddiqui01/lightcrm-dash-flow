@@ -367,5 +367,5 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
     }
   };
 
-  return { contacts, loading, isRefreshing, isRefreshingSlow, refetch: fetchContactsWithOpportunities };
+  return { contacts, loading, isRefreshingSlow, refetch: fetchContactsWithOpportunities };
 }
