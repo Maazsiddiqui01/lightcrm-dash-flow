@@ -39,7 +39,7 @@ interface Opportunity {
   ownership: string;
   ownership_type: string;
   summary_of_opportunity: string;
-  ebitda_in_ms: number;
+  ebitda_in_ms: number | null;
   
   ebitda_notes: string;
   investment_professional_point_person_1: string;
@@ -113,6 +113,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         ownership: opportunity.ownership || "",
         ownership_type: opportunity.ownership_type || "",
         url: opportunity.url || "",
+        ebitda_in_ms: opportunity.ebitda_in_ms || null,
         
         investment_professional_point_person_1: opportunity.investment_professional_point_person_1 || "",
         investment_professional_point_person_2: opportunity.investment_professional_point_person_2 || "",
@@ -381,10 +382,15 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>EBITDA</Label>
-                <p className="text-sm text-muted-foreground p-2 bg-muted rounded">
-                  {opportunity.ebitda_in_ms ? `$${opportunity.ebitda_in_ms}M` : "—"}
-                </p>
+                <Label htmlFor="ebitda_in_ms">EBITDA (in M$)</Label>
+                <Input
+                  id="ebitda_in_ms"
+                  type="number"
+                  step="0.1"
+                  value={editedFields.ebitda_in_ms?.toString() || ""}
+                  onChange={(e) => handleFieldChange("ebitda_in_ms", e.target.value ? parseFloat(e.target.value) : null)}
+                  placeholder="Enter EBITDA in millions"
+                />
               </div>
             </div>
 
