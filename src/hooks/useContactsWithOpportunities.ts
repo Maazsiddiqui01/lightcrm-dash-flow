@@ -87,7 +87,6 @@ interface ContactFilters {
 export function useContactsWithOpportunities(filters: ContactFilters = {}) {
   const [contacts, setContacts] = useState<ContactWithOpportunities[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRefreshingSlow, setIsRefreshingSlow] = useState(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
@@ -104,7 +103,6 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       if (contacts.length === 0) {
         setLoading(true);
       } else {
-        setIsRefreshing(true);
         // Show a subtle updating indicator only if refresh is slow (>400ms)
         if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
         setIsRefreshingSlow(false);
@@ -351,18 +349,21 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       }) || [];
 
       setContacts(contactsWithOpportunities);
+      console.log("Contacts loaded:", contactsWithOpportunities.length, "contacts");
     } catch (error) {
       console.error("Unexpected error:", error);
     } finally {
       // Only apply state from the latest request
       if (requestIdRef.current === reqId) {
+        console.log("Setting loading to false, reqId:", reqId);
         setLoading(false);
-        setIsRefreshing(false);
         setIsRefreshingSlow(false);
         if (refreshTimerRef.current) {
           clearTimeout(refreshTimerRef.current);
           refreshTimerRef.current = null;
         }
+      } else {
+        console.log("Skipping state update, request outdated. Current:", requestIdRef.current, "This req:", reqId);
       }
     }
   };
