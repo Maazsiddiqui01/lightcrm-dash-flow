@@ -234,6 +234,11 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         ebitdaMax
       } = opportunityFilters;
 
+      // Check if any opportunity filters are applied
+      const hasOpportunityFilters = tier.length > 0 || platformAddon.length > 0 || ownershipType.length > 0 || 
+        status.length > 0 || oppLgLead.length > 0 || dateRangeStart || dateRangeEnd || 
+        (ebitdaMin !== null && ebitdaMin !== undefined) || (ebitdaMax !== null && ebitdaMax !== undefined);
+
       if (tier.length > 0) {
         opportunitiesQuery = opportunitiesQuery.in('tier', tier);
       }
@@ -280,8 +285,34 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         return;
       }
 
+      // If opportunity filters are applied, filter contacts to only those with matching opportunities
+      let finalContactsData = contactsData;
+      
+      if (hasOpportunityFilters && opportunitiesData && opportunitiesData.length > 0) {
+        // Get unique contact names from filtered opportunities
+        const contactNamesWithOpps = new Set<string>();
+        opportunitiesData.forEach(opp => {
+          if (opp.deal_source_individual_1) {
+            contactNamesWithOpps.add(opp.deal_source_individual_1.toLowerCase().trim());
+          }
+          if (opp.deal_source_individual_2) {
+            contactNamesWithOpps.add(opp.deal_source_individual_2.toLowerCase().trim());
+          }
+        });
+
+        // Filter contacts to only include those who sourced the filtered opportunities
+        finalContactsData = contactsData?.filter(contact => {
+          if (!contact.full_name) return false;
+          const normalizedContactName = contact.full_name.toLowerCase().trim();
+          return contactNamesWithOpps.has(normalizedContactName);
+        }) || [];
+      } else if (hasOpportunityFilters && (!opportunitiesData || opportunitiesData.length === 0)) {
+        // If opportunity filters are applied but no opportunities match, show no contacts
+        finalContactsData = [];
+      }
+
       // Join contacts with their opportunities
-      const contactsWithOpportunities = contactsData?.map(contact => {
+      const contactsWithOpportunities = finalContactsData?.map(contact => {
         const matchingOpportunities = opportunitiesData?.filter(opp => {
           if (!contact.full_name) return false;
           
