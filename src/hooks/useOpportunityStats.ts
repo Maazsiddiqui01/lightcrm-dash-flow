@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 interface OpportunityStats {
   totalOpportunities: number;
   activeDeals: number;
-  closedWon: number;
-  pipelineValue: string;
+  familyFounderPercentage: string;
+  averageEbitda: string;
   loading: boolean;
 }
 
@@ -28,8 +28,8 @@ export function useOpportunityStats(filters?: OpportunityFilters): OpportunitySt
   const [stats, setStats] = useState<OpportunityStats>({
     totalOpportunities: 0,
     activeDeals: 0,
-    closedWon: 0,
-    pipelineValue: "$0",
+    familyFounderPercentage: "0%",
+    averageEbitda: "$0M",
     loading: true,
   });
 
@@ -128,34 +128,46 @@ export function useOpportunityStats(filters?: OpportunityFilters): OpportunitySt
       activeQuery = applyFilters(activeQuery);
       const { count: activeDeals } = await activeQuery;
 
-      // Closed won deals with filters
-      let closedWonQuery = supabase
+      // Family/founder owned percentage with filters
+      let familyFounderQuery = supabase
         .from("opportunities_raw")
-        .select("*", { count: "exact", head: true })
-        .or("status.ilike.%won%,status.ilike.%closed won%");
-      closedWonQuery = applyFilters(closedWonQuery);
-      const { count: closedWon } = await closedWonQuery;
+        .select("ownership_type");
+      familyFounderQuery = applyFilters(familyFounderQuery);
+      const { data: allOpps } = await familyFounderQuery;
 
-      // Pipeline value calculation (sum of EBITDA for active deals) with filters
-      let pipelineQuery = supabase
+      const familyFounderCount = allOpps?.filter(opp => 
+        opp.ownership_type && (
+          opp.ownership_type.toLowerCase().includes('family') || 
+          opp.ownership_type.toLowerCase().includes('founder')
+        )
+      ).length || 0;
+      
+      const familyFounderPercentage = allOpps && allOpps.length > 0 
+        ? `${Math.round((familyFounderCount / allOpps.length) * 100)}%`
+        : "0%";
+
+      // Average EBITDA calculation with filters
+      let ebitdaQuery = supabase
         .from("opportunities_raw")
         .select("ebitda_in_ms")
-        .not("status", "ilike", "%closed%")
-        .not("status", "ilike", "%won%")
-        .not("status", "ilike", "%lost%");
-      pipelineQuery = applyFilters(pipelineQuery);
-      const { data: activeOpportunities } = await pipelineQuery;
+        .not("ebitda_in_ms", "is", null);
+      ebitdaQuery = applyFilters(ebitdaQuery);
+      const { data: ebitdaOpps } = await ebitdaQuery;
 
-      const pipelineValueNum = activeOpportunities?.reduce((sum, opp) => 
-        sum + (opp.ebitda_in_ms || 0), 0) || 0;
+      const totalEbitda = ebitdaOpps?.reduce((sum, opp) => sum + (opp.ebitda_in_ms || 0), 0) || 0;
+      const averageEbitdaNum = ebitdaOpps && ebitdaOpps.length > 0 
+        ? totalEbitda / ebitdaOpps.length 
+        : 0;
       
-      const pipelineValue = `$${(pipelineValueNum).toLocaleString()}M`;
+      const averageEbitda = averageEbitdaNum > 0 
+        ? `$${averageEbitdaNum.toFixed(1)}M`
+        : "$0M";
 
       setStats({
         totalOpportunities: totalOpportunities || 0,
         activeDeals: activeDeals || 0,
-        closedWon: closedWon || 0,
-        pipelineValue,
+        familyFounderPercentage,
+        averageEbitda,
         loading: false,
       });
     } catch (error) {

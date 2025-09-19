@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useOpportunityStats } from "@/hooks/useOpportunityStats";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { Plus, Target, TrendingUp, CheckCircle, DollarSign } from "lucide-react";
+import { Plus, Target, TrendingUp, Users, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { AddOpportunityDialog } from "@/components/opportunities/AddOpportunityDialog";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
@@ -89,13 +89,13 @@ export function Opportunities() {
             icon={TrendingUp}
           />
           <StatsCard
-            title="Closed Won"
-            value={stats.loading ? "..." : stats.closedWon}
-            icon={CheckCircle}
+            title="% Family/Founder Owned"
+            value={stats.loading ? "..." : stats.familyFounderPercentage}
+            icon={Users}
           />
           <StatsCard
-            title="Pipeline Value"
-            value={stats.loading ? "..." : stats.pipelineValue}
+            title="Average EBITDA"
+            value={stats.loading ? "..." : stats.averageEbitda}
             icon={DollarSign}
           />
         </div>
