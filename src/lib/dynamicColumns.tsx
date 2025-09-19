@@ -145,6 +145,21 @@ export function createDynamicColumns<T extends Record<string, any>>(
           );
         }
 
+        // Special handling for full_name with URL to online bio linking
+        if (tableColumn.name === 'full_name' && displayValue && row.url_to_online_bio) {
+          return (
+            <a 
+              href={row.url_to_online_bio} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={`text-blue-600 hover:text-blue-800 underline hover:no-underline transition-colors ${isModified ? 'font-medium' : ''}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {displayValue}
+            </a>
+          );
+        }
+
         if (tableColumn.type === 'boolean') {
           return (
             <Badge variant={editedValue ? "default" : "secondary"}>
