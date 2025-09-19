@@ -52,7 +52,7 @@ export const CONTACTS_RAW_COLUMNS: TableColumn[] = [
   { name: 'url_to_online_bio', type: 'text', nullable: true, displayName: 'URL To Online Bio' },
   { name: 'most_recent_contact', type: 'timestamp with time zone', nullable: true, displayName: 'Most Recent Contact' },
   { name: 'latest_contact_email', type: 'timestamp with time zone', nullable: true, displayName: 'Most Recent Email (Sent/Received)' },
-  { name: 'latest_contact_meeting', type: 'timestamp with time zone', nullable: true, displayName: 'Latest Contact Meeting' },
+  { name: 'latest_contact_meeting', type: 'timestamp with time zone', nullable: true, displayName: 'Most Recent Meeting' },
   { name: 'outreach_date', type: 'timestamp with time zone', nullable: true, displayName: 'Next Planned Outreach (date)' },
   { name: 'email_subject', type: 'text', nullable: true, displayName: 'Email Subject' },
   { name: 'meeting_title', type: 'text', nullable: true, displayName: 'Meeting Title' },
