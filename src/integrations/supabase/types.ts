@@ -1641,6 +1641,12 @@ export type Database = {
         }
         Relationships: []
       }
+      ui_distinct_focus_areas_v: {
+        Row: {
+          focus_area: string | null
+        }
+        Relationships: []
+      }
       ui_distinct_lg_sectors: {
         Row: {
           lg_sector: string | null
@@ -1690,6 +1696,10 @@ export type Database = {
           avg_minutes_per_week: number
           lead_name: string
         }[]
+      }
+      canonical_focus_area: {
+        Args: { input_text: string }
+        Returns: string
       }
       compute_ebitda_range: {
         Args: { p_amount: number; p_notes: string }
@@ -1863,6 +1873,10 @@ export type Database = {
       }
       map_lg_lead_name: {
         Args: { input: string }
+        Returns: string
+      }
+      normalize_focus_area: {
+        Args: { input_text: string }
         Returns: string
       }
       normalize_name: {

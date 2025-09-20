@@ -19,7 +19,8 @@ import {
   useOpportunityStatuses,
   useOpportunityLeads
 } from '@/hooks/useDistinctOptions';
-import { useSectors, useFocusAreas } from '@/hooks/useLookups';
+import { useSectors } from '@/hooks/useLookups';
+import { useDistinctFocusAreas } from '@/hooks/useDistinctFocusAreas';
 
 interface ContactFilterBarProps {
   filters: {
@@ -67,10 +68,13 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
 
   // Use canonical lookup options
   const sectorsQuery = useSectors();
-  const focusAreasQuery = useFocusAreas();
+  const focusAreasQuery = useDistinctFocusAreas();
 
   const sectorOptions = sectorsQuery.data || [];
-  const focusAreaOptions = focusAreasQuery.data || [];
+  const focusAreaOptions = (focusAreasQuery.data || []).map(area => ({ 
+    value: area, 
+    label: area 
+  }));
 
   // Fetch distinct options for contact filters
   const { data: specializationOptions = [], isLoading: specializationsLoading } = useContactAreasOfSpecialization();

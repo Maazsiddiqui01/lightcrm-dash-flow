@@ -128,17 +128,25 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
       // Focus Areas - check both individual columns and comprehensive list with fuzzy matching
       if (focusAreas.length > 0) {
-        const focusAreaConditions = focusAreas.flatMap(area => [
-          `lg_focus_area_1.ilike.%${area}%`,
-          `lg_focus_area_2.ilike.%${area}%`,
-          `lg_focus_area_3.ilike.%${area}%`,
-          `lg_focus_area_4.ilike.%${area}%`,
-          `lg_focus_area_5.ilike.%${area}%`,
-          `lg_focus_area_6.ilike.%${area}%`,
-          `lg_focus_area_7.ilike.%${area}%`,
-          `lg_focus_area_8.ilike.%${area}%`,
-          `lg_focus_areas_comprehensive_list.ilike.%${area}%`
-        ]);
+        const focusAreaConditions: string[] = [];
+        
+        focusAreas.forEach(area => {
+          // Create conditions that check all focus area fields with fuzzy matching
+          const areaConditions = [
+            `lg_focus_area_1.ilike.%${area}%`,
+            `lg_focus_area_2.ilike.%${area}%`,
+            `lg_focus_area_3.ilike.%${area}%`,
+            `lg_focus_area_4.ilike.%${area}%`,
+            `lg_focus_area_5.ilike.%${area}%`,
+            `lg_focus_area_6.ilike.%${area}%`,
+            `lg_focus_area_7.ilike.%${area}%`,
+            `lg_focus_area_8.ilike.%${area}%`,
+            `lg_focus_areas_comprehensive_list.ilike.%${area}%`
+          ];
+          
+          focusAreaConditions.push(`(${areaConditions.join(',')})`);
+        });
+        
         contactsQuery = contactsQuery.or(focusAreaConditions.join(','));
       }
 
