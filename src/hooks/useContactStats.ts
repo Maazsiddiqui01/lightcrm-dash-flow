@@ -68,14 +68,15 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
       
       const focusAreaConditions = expandedFocusAreas.map(area => {
         return [
-          `lg_focus_area_1.eq.${area}`,
-          `lg_focus_area_2.eq.${area}`,
-          `lg_focus_area_3.eq.${area}`,
-          `lg_focus_area_4.eq.${area}`,
-          `lg_focus_area_5.eq.${area}`,
-          `lg_focus_area_6.eq.${area}`,
-          `lg_focus_area_7.eq.${area}`,
-          `lg_focus_area_8.eq.${area}`
+          `lg_focus_area_1.ilike.%${area}%`,
+          `lg_focus_area_2.ilike.%${area}%`,
+          `lg_focus_area_3.ilike.%${area}%`,
+          `lg_focus_area_4.ilike.%${area}%`,
+          `lg_focus_area_5.ilike.%${area}%`,
+          `lg_focus_area_6.ilike.%${area}%`,
+          `lg_focus_area_7.ilike.%${area}%`,
+          `lg_focus_area_8.ilike.%${area}%`,
+          `lg_focus_areas_comprehensive_list.ilike.%${area}%`
         ].join(',');
       });
       query = query.or(focusAreaConditions.join(','));
@@ -234,9 +235,14 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
         .select("*", { count: "exact", head: true });
       totalQuery = await applyFilters(totalQuery);
 
+      // Prepare 90-day window for active contacts
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
       let activeQuery = supabase
         .from("contacts_app")
-        .select("*", { count: "exact", head: true });
+        .select("*", { count: "exact", head: true })
+        .gte("most_recent_contact", ninetyDaysAgo.toISOString());
       activeQuery = await applyFilters(activeQuery);
 
       let statsQuery = supabase
@@ -263,10 +269,7 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
         }
       }
 
-      // Apply active contacts date filter
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-      activeQuery = activeQuery.gte("most_recent_contact", ninetyDaysAgo.toISOString());
+      // Active contacts date filter applied earlier when building activeQuery
 
       // Execute queries
       const { count: totalContacts } = await totalQuery;
