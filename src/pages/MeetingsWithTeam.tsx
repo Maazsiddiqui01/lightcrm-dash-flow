@@ -144,8 +144,8 @@ export function MeetingsWithTeam() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-left font-semibold">Full Name</TableHead>
-                      <TableHead className="text-left font-semibold">Average Time per Week (minutes)</TableHead>
+                      <TableHead className="text-left font-semibold text-white">Full Name</TableHead>
+                      <TableHead className="text-left font-semibold text-white">Average Time per Week (minutes)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
