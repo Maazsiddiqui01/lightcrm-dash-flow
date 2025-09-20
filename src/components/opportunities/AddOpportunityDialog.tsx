@@ -18,6 +18,7 @@ import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
 import { useSectors, useFocusAreasBySector } from "@/hooks/useLookups";
+import { calculateLgTeam } from "@/utils/opportunityHelpers";
 
 interface AddOpportunityDialogProps {
   open: boolean;
@@ -44,6 +45,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     ebitda_notes: "",
     investment_professional_point_person_1: "",
     investment_professional_point_person_2: "",
+    investment_professional_point_person_3: "",
+    investment_professional_point_person_4: "",
     most_recent_notes: "",
     url: "",
   });
@@ -147,6 +150,14 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         summary_of_opportunity: opt(formData.summary_of_opportunity),
         investment_professional_point_person_1: opt(formData.investment_professional_point_person_1),
         investment_professional_point_person_2: opt(formData.investment_professional_point_person_2),
+        investment_professional_point_person_3: opt(formData.investment_professional_point_person_3),
+        investment_professional_point_person_4: opt(formData.investment_professional_point_person_4),
+        lg_team: calculateLgTeam(
+          formData.investment_professional_point_person_1,
+          formData.investment_professional_point_person_2,
+          formData.investment_professional_point_person_3,
+          formData.investment_professional_point_person_4
+        ),
         most_recent_notes: opt(formData.most_recent_notes),
       };
 
@@ -184,6 +195,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         ebitda_notes: "",
         investment_professional_point_person_1: "",
         investment_professional_point_person_2: "",
+        investment_professional_point_person_3: "",
+        investment_professional_point_person_4: "",
         most_recent_notes: "",
         url: "",
       });
@@ -218,11 +231,12 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       ownership: "",
       ownership_type: "",
       summary_of_opportunity: "",
-      
       ebitda_in_ms: "",
       ebitda_notes: "",
       investment_professional_point_person_1: "",
       investment_professional_point_person_2: "",
+      investment_professional_point_person_3: "",
+      investment_professional_point_person_4: "",
       most_recent_notes: "",
       url: "",
     });
@@ -339,6 +353,26 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                 value={formData.investment_professional_point_person_2}
                 onChange={(value) => handleInputChange("investment_professional_point_person_2", value)}
                 placeholder="Select point person #2"
+                disabled={isLoading}
+              />
+
+              {/* Investment Professional Point Person #3 */}
+              <SingleSelectDropdown
+                label="Investment Professional Point Person #3"
+                options={lgLeadOptions}
+                value={formData.investment_professional_point_person_3}
+                onChange={(value) => handleInputChange("investment_professional_point_person_3", value)}
+                placeholder="Select point person #3"
+                disabled={isLoading}
+              />
+
+              {/* Investment Professional Point Person #4 */}
+              <SingleSelectDropdown
+                label="Investment Professional Point Person #4"
+                options={lgLeadOptions}
+                value={formData.investment_professional_point_person_4}
+                onChange={(value) => handleInputChange("investment_professional_point_person_4", value)}
+                placeholder="Select point person #4"
                 disabled={isLoading}
               />
             </div>

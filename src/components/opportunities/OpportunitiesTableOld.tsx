@@ -31,6 +31,8 @@ interface Opportunity {
   ebitda_notes: string;
   investment_professional_point_person_1: string;
   investment_professional_point_person_2: string;
+  investment_professional_point_person_3: string;
+  investment_professional_point_person_4: string;
   next_steps: string;
   most_recent_notes: string;
   url: string;

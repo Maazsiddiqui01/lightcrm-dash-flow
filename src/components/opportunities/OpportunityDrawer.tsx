@@ -23,6 +23,7 @@ import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
 import { splitTokens, tierOptions, normalizePlatformAddonMapping, normalizeOwnershipTypeMapping } from "@/lib/export/opportunityUtils";
 import { useSectors, useFocusAreasBySector, findMatchingOption } from "@/hooks/useLookups";
+import { calculateLgTeam } from "@/utils/opportunityHelpers";
 
 interface Opportunity {
   id: string;
@@ -40,10 +41,11 @@ interface Opportunity {
   ownership_type: string;
   summary_of_opportunity: string;
   ebitda_in_ms: number | null;
-  
   ebitda_notes: string;
   investment_professional_point_person_1: string;
   investment_professional_point_person_2: string;
+  investment_professional_point_person_3: string;
+  investment_professional_point_person_4: string;
   next_steps: string;
   most_recent_notes: string;
   url: string;
@@ -117,6 +119,8 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         
         investment_professional_point_person_1: opportunity.investment_professional_point_person_1 || "",
         investment_professional_point_person_2: opportunity.investment_professional_point_person_2 || "",
+        investment_professional_point_person_3: opportunity.investment_professional_point_person_3 || "",
+        investment_professional_point_person_4: opportunity.investment_professional_point_person_4 || "",
       });
     }
   }, [opportunity]);
@@ -155,6 +159,12 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
       const updatePayload: any = {
         ...editedFields,
         lg_focus_area: consolidated,
+        lg_team: calculateLgTeam(
+          editedFields.investment_professional_point_person_1,
+          editedFields.investment_professional_point_person_2,
+          editedFields.investment_professional_point_person_3,
+          editedFields.investment_professional_point_person_4
+        ),
         updated_at: new Date().toISOString()
       };
 
@@ -462,6 +472,26 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 value={editedFields.investment_professional_point_person_2 || ""}
                 onChange={(value) => handleFieldChange("investment_professional_point_person_2", value)}
                 placeholder="Select point person #2"
+                disabled={isLoading}
+              />
+
+              {/* Investment Professional Point Person #3 */}
+              <SingleSelectDropdown
+                label="Investment Professional Point Person #3"
+                options={lgLeadOptions}
+                value={editedFields.investment_professional_point_person_3 || ""}
+                onChange={(value) => handleFieldChange("investment_professional_point_person_3", value)}
+                placeholder="Select point person #3"
+                disabled={isLoading}
+              />
+
+              {/* Investment Professional Point Person #4 */}
+              <SingleSelectDropdown
+                label="Investment Professional Point Person #4"
+                options={lgLeadOptions}
+                value={editedFields.investment_professional_point_person_4 || ""}
+                onChange={(value) => handleFieldChange("investment_professional_point_person_4", value)}
+                placeholder="Select point person #4"
                 disabled={isLoading}
               />
             </div>

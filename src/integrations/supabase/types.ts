@@ -587,6 +587,8 @@ export type Database = {
           id: string
           investment_professional_point_person_1: string | null
           investment_professional_point_person_2: string | null
+          investment_professional_point_person_3: string | null
+          investment_professional_point_person_4: string | null
           last_modified: string | null
           lg_focus_area: string | null
           lg_team: string | null
@@ -621,6 +623,8 @@ export type Database = {
           id?: string
           investment_professional_point_person_1?: string | null
           investment_professional_point_person_2?: string | null
+          investment_professional_point_person_3?: string | null
+          investment_professional_point_person_4?: string | null
           last_modified?: string | null
           lg_focus_area?: string | null
           lg_team?: string | null
@@ -655,6 +659,8 @@ export type Database = {
           id?: string
           investment_professional_point_person_1?: string | null
           investment_professional_point_person_2?: string | null
+          investment_professional_point_person_3?: string | null
+          investment_professional_point_person_4?: string | null
           last_modified?: string | null
           lg_focus_area?: string | null
           lg_team?: string | null
