@@ -216,7 +216,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   // No need for fetchContacts anymore since we're using the hook
 
   const filteredContacts = useMemo(() => {
-    return contactsWithComputedSectors.filter(contact =>
+    const filtered = contactsWithComputedSectors.filter(contact =>
       searchTerm === "" ||
       contact.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.email_address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -225,7 +225,10 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       contact.lg_sector?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.mapped_sectors?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [contactsWithComputedSectors, searchTerm]);
+
+    // Apply client-side sorting for proper numeric and date handling
+    return applyClientSort(filtered, sortLevels);
+  }, [contactsWithComputedSectors, searchTerm, sortLevels]);
 
   const handleRowClick = (contact: ContactRaw) => {
     setSelectedContact(contact);

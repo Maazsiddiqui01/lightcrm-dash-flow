@@ -14,9 +14,26 @@ export function parseNumber(value: any): number {
 export function getComparableValue(value: any, columnKey: string): any {
   if (value === null || value === undefined) return null;
   
-  // Handle numeric columns stored as text
+  // Handle date columns - convert to timestamp for proper sorting
+  if (columnKey.includes('date') || columnKey.includes('_at') || 
+      columnKey.includes('contact') || columnKey === 'outreach_date' ||
+      columnKey === 'most_recent_contact' || columnKey === 'latest_contact_email' ||
+      columnKey === 'latest_contact_meeting' || columnKey === 'occurred_at' ||
+      columnKey === 'created_at' || columnKey === 'updated_at') {
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? 0 : date.getTime();
+  }
+  
+  // Handle numeric columns - more comprehensive detection
   if (columnKey.includes('ebitda') || columnKey.includes('delta') || 
-      columnKey.includes('count') || columnKey.includes('number')) {
+      columnKey.includes('count') || columnKey.includes('number') ||
+      columnKey.includes('days_') || columnKey.includes('of_') ||
+      columnKey.includes('no_') || columnKey.includes('all_') ||
+      columnKey === 'total_of_contacts' || columnKey === 'revenue' ||
+      columnKey === 'est_deal_size' || columnKey === 'est_lg_equity_invest' ||
+      columnKey === 'minutes' || columnKey.endsWith('_count') ||
+      columnKey.endsWith('_size') || columnKey.endsWith('_amount') ||
+      columnKey === 'days_over_under_max_lag') {
     return parseNumber(value);
   }
   
@@ -24,9 +41,6 @@ export function getComparableValue(value: any, columnKey: string): any {
   if (typeof value === 'boolean') {
     return value ? 1 : 0;
   }
-  
-  // Handle dates - keep as string for lexicographic comparison
-  // Could add smart date parsing here if needed
   
   // Default to string comparison (case insensitive)
   return String(value).toLowerCase();
@@ -96,13 +110,9 @@ export function createMultiSortComparator<T>(sortLevels: SortLevel[]) {
   };
 }
 
-// Apply client-side sorting (for custom orders and refinement)
+// Apply client-side sorting (always apply for proper type handling)
 export function applyClientSort<T>(data: T[], sortLevels: SortLevel[]): T[] {
   if (sortLevels.length === 0) return data;
-  
-  // Only apply client sort if we have custom orders
-  const hasCustomOrders = sortLevels.some(level => level.custom && level.custom.length > 0);
-  if (!hasCustomOrders) return data;
   
   const comparator = createMultiSortComparator(sortLevels);
   return [...data].sort(comparator);
