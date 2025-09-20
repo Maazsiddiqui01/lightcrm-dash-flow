@@ -18,6 +18,7 @@ import { EditToolbar } from "@/components/shared/EditToolbar";
 import { useContactsWithOpportunities } from "@/hooks/useContactsWithOpportunities";
 import { useFocusAreaSectorMapping } from "@/hooks/useFocusAreaSectorMapping";
 import { mapFocusAreasToSectors, getAllFocusAreas } from "@/utils/sectorMapping";
+import { calculateDaysOverUnderMaxLag } from "@/utils/contactCalculations";
 
 // Multi-sort imports
 import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
@@ -83,6 +84,7 @@ interface ContactRaw {
   updated_at: string | null;
   opportunities: string; // Comma-separated deal names
   mapped_sectors?: string; // Computed field for sectors mapped from focus areas
+  days_over_under_max_lag?: number | null; // Computed field for days over/under max lag
 }
 
 interface ContactsTableProps {
@@ -153,7 +155,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     onOpportunityColumnVisibilityChange?.(isOpportunitiesVisible);
   }, [columnVisibility.columnVisibility, onOpportunityColumnVisibilityChange]);
   
-  // Add computed sectors to contacts data
+  // Add computed sectors and days over/under max lag to contacts data
   const contactsWithComputedSectors = useMemo(() => {
     if (!sectorMapping) return contacts;
     
@@ -163,6 +165,10 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         getAllFocusAreas(contact),
         sectorMapping,
         contact.lg_sector
+      ),
+      days_over_under_max_lag: calculateDaysOverUnderMaxLag(
+        contact.most_recent_contact,
+        contact.delta
       )
     }));
   }, [contacts, sectorMapping]);

@@ -6,6 +6,7 @@ import { format, isValid, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EditableCell } from '@/components/shared/EditableCell';
 import { Badge } from '@/components/ui/badge';
+import { formatDaysOverUnder, getDaysOverUnderColorClass } from '@/utils/contactCalculations';
 
 export interface EditState {
   editMode: boolean;
@@ -162,6 +163,28 @@ export function createDynamicColumns<T extends Record<string, any>>(
             >
               {displayValue}
             </a>
+          );
+        }
+
+        // Special handling for days_over_under_max_lag with color coding
+        if (tableColumn.name === 'days_over_under_max_lag') {
+          const formattedValue = formatDaysOverUnder(editedValue);
+          const colorClass = getDaysOverUnderColorClass(editedValue);
+          return (
+            <div className={`${colorClass} ${isModified ? 'font-medium' : ''}`}>
+              {formattedValue}
+            </div>
+          );
+        }
+
+        // Special handling for days_over_under_max_lag with color coding
+        if (tableColumn.name === 'days_over_under_max_lag') {
+          const formattedValue = formatDaysOverUnder(editedValue);
+          const colorClass = getDaysOverUnderColorClass(editedValue);
+          return (
+            <div className={`${colorClass} ${isModified ? 'font-medium' : ''}`}>
+              {formattedValue}
+            </div>
           );
         }
 

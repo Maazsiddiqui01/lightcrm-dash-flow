@@ -47,6 +47,7 @@ export const CONTACTS_RAW_COLUMNS: TableColumn[] = [
   { name: 'of_emails', type: 'integer', nullable: true, displayName: '# Of Emails' },
   { name: 'of_meetings', type: 'integer', nullable: true, displayName: '# Of Meetings' },
   { name: 'delta', type: 'integer', nullable: true, displayName: 'Max Lag (Days)' },
+  { name: 'days_over_under_max_lag', type: 'computed', nullable: true, displayName: '# of Days over/under Max Lag' },
   { name: 'days_since_last_email', type: 'numeric', nullable: true, displayName: 'Days Since Last Email' },
   { name: 'days_since_last_meeting', type: 'numeric', nullable: true, displayName: 'Days Since Last Meeting' },
   { name: 'no_of_lg_focus_areas', type: 'integer', nullable: true, displayName: 'No Of LG Focus Areas' },
