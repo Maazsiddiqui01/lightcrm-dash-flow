@@ -166,6 +166,19 @@ export function createDynamicColumns<T extends Record<string, any>>(
           );
         }
 
+        // Special handling for email_address with mailto link
+        if (tableColumn.name === 'email_address' && displayValue) {
+          return (
+            <a 
+              href={`mailto:${displayValue}`}
+              className={`text-blue-600 hover:text-blue-800 underline hover:no-underline transition-colors ${isModified ? 'font-medium' : ''}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {displayValue}
+            </a>
+          );
+        }
+
         // Special handling for days_over_under_max_lag with color coding
         if (tableColumn.name === 'days_over_under_max_lag') {
           const formattedValue = formatDaysOverUnder(editedValue);
