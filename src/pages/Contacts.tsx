@@ -37,6 +37,8 @@ export function Contacts() {
     opportunityEbitdaMin: null,
     opportunityEbitdaMax: null
   });
+  
+  console.log('🏠 Contacts page filters:', filters);
 
   // Helper function to extract numeric value from filter
   const getNumericValue = (filterValue: any): number | undefined => {

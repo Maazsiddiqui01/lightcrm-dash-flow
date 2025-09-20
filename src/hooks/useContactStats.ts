@@ -56,6 +56,7 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
 
     // Focus areas filter - check both individual columns and comprehensive list with fuzzy matching
     if (filters.focusAreas && filters.focusAreas.length > 0) {
+      console.log('📈 Stats applying focus areas filter:', filters.focusAreas);
       const focusAreaConditions = filters.focusAreas.flatMap(area => [
         `lg_focus_area_1.ilike.%${area}%`,
         `lg_focus_area_2.ilike.%${area}%`,
@@ -67,6 +68,7 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
         `lg_focus_area_8.ilike.%${area}%`,
         `lg_focus_areas_comprehensive_list.ilike.%${area}%`
       ]);
+      console.log('📈 Stats focus area conditions:', focusAreaConditions.join(','));
       query = query.or(focusAreaConditions.join(','));
     }
 
