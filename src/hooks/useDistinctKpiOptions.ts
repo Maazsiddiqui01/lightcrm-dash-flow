@@ -5,24 +5,16 @@ export const useDistinctFocusAreas = () => {
   return useQuery({
     queryKey: ['kpi-distinct-focus-areas'],
     queryFn: async () => {
+      // Use the master table for active focus areas
       const { data, error } = await supabase
-        .from('contacts_app')
-        .select('lg_focus_areas_comprehensive_list');
+        .from('lg_focus_area_master')
+        .select('focus_area')
+        .eq('is_active', true)
+        .order('focus_area');
       
       if (error) throw error;
       
-      const allAreas = new Set<string>();
-      data?.forEach(row => {
-        if (row.lg_focus_areas_comprehensive_list) {
-          const areas = row.lg_focus_areas_comprehensive_list
-            .split(',')
-            .map(area => area.trim())
-            .filter(area => area.length > 0);
-          areas.forEach(area => allAreas.add(area));
-        }
-      });
-      
-      return Array.from(allAreas).sort();
+      return data?.map(row => row.focus_area) || [];
     },
     staleTime: 60_000,
   });
