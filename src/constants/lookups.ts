@@ -12,7 +12,7 @@ export const FOCUS_AREAS = [
   // Healthcare
   { id: 'hc-payor-employer', label: 'HC: Payor & Employer Services', sector_id: 'healthcare' },
   { id: 'hc-rcm', label: 'HC: Revenue Cycle Management', sector_id: 'healthcare' },
-  { id: 'hc-nonclinical', label: 'HC: Non-Clinical Services', sector_id: 'healthcare' },
+  { id: 'hc-nonclinical', label: 'HC: Services (Non-Clinical)', sector_id: 'healthcare' },
   { id: 'hc-clinical', label: 'HC: Clinical Services', sector_id: 'healthcare' },
   { id: 'hc-tech-enablement', label: 'HC: Tech Enablement', sector_id: 'healthcare' },
   { id: 'hc-pharma-biotech', label: 'HC: Pharma & Biotech Services', sector_id: 'healthcare' },
@@ -36,10 +36,11 @@ export const FOCUS_AREAS = [
   { id: 'real-estate-facilities', label: 'Real Estate & Facilities', sector_id: 'services' },
   
   // General
+  { id: 'distribution', label: 'Distribution', sector_id: 'general' },
   { id: 'consumer-retail', label: 'Consumer & Retail', sector_id: 'general' },
   { id: 'food-beverage', label: 'Food & Beverage', sector_id: 'general' },
   { id: 'telecommunications', label: 'Telecommunications', sector_id: 'general' },
-  { id: 'government-public', label: 'Government & Public Sector', sector_id: 'general' },
+  { id: 'government-public', label: 'Government Services', sector_id: 'general' },
   { id: 'non-profit', label: 'Non-Profit', sector_id: 'general' },
   { id: 'other', label: 'Other', sector_id: 'general' }
 ];
