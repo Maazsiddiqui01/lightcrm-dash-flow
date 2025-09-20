@@ -17,7 +17,9 @@ import {
   ArrowUp,
   ArrowDown,
   Eye,
-  EyeOff
+  EyeOff,
+  WrapText,
+  GripVertical
 } from "lucide-react";
 import { ColumnPreferencesIndicator } from "./ColumnPreferencesIndicator";
 import { cn } from "@/lib/utils";
@@ -28,6 +30,7 @@ import { VirtualizedTable } from "./VirtualizedTable";
 import { TablePagination } from "./TablePagination";
 import { useSelectedRows } from "@/hooks/useSelectedRows";
 import { useColumnVisibility } from "@/hooks/useColumnVisibility";
+import { useColumnResizing } from "@/hooks/useColumnResizing";
 
 export interface ColumnDef<T = any> {
   key: string;
@@ -87,6 +90,8 @@ interface ResponsiveAdvancedTableProps<T = any> {
   showTopPagination?: boolean;
   hideColumnsButton?: boolean;
   editMode?: boolean; // Add edit mode prop
+  enableResizing?: boolean;
+  persistKey?: string;
 }
 
 export function ResponsiveAdvancedTable<T extends Record<string, any>>({
@@ -121,6 +126,8 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   showTopPagination = true,
   hideColumnsButton = false,
   editMode = false, // Add edit mode with default value
+  enableResizing = false,
+  persistKey = 'default',
 }: ResponsiveAdvancedTableProps<T>) {
   const [columns, setColumns] = useState(initialColumns);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -138,6 +145,15 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     tableId, 
     data, 
     idKey 
+  });
+
+  // Column resizing
+  const resizing = useColumnResizing({
+    persistKey,
+    defaultWidths: initialColumns.reduce((acc, col) => {
+      if (col.width) acc[col.key] = col.width;
+      return acc;
+    }, {} as Record<string, number>),
   });
   
   // Notify parent when selection changes
@@ -202,12 +218,16 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
           );
           return { ...col, width: adaptiveWidth };
         }
+        // Apply resized width if resizing is enabled
+        if (enableResizing && resizing.columnWidths[col.key]) {
+          return { ...col, width: resizing.columnWidths[col.key] };
+        }
         return col;
       });
       
       setColumns(columnsWithAdaptiveWidths);
     }
-  }, [containerWidth, initialColumns, tableType, responsiveLayout.category, columnVisibilityHook.columnVisibility, hideColumnsButton]);
+  }, [containerWidth, initialColumns, tableType, responsiveLayout.category, columnVisibilityHook.columnVisibility, hideColumnsButton, enableResizing, resizing.columnWidths]);
 
   // Sync horizontal scroll between top clone and table body (bottom native)
   useEffect(() => {
@@ -424,7 +444,10 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="text-wrap break-words leading-tight line-clamp-3 block">{content}</span>
+              <span className={cn(
+                "block leading-tight",
+                resizing.textWrap ? "whitespace-normal break-words" : "truncate"
+              )}>{content}</span>
             </TooltipTrigger>
             <TooltipContent>
               <p className="max-w-xs">{content}</p>
@@ -435,7 +458,10 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     }
     
     if (typeof content === 'string') {
-      return <span className="text-wrap break-words leading-tight line-clamp-3 block">{content}</span>;
+      return <span className={cn(
+        "block leading-tight",
+        resizing.textWrap ? "whitespace-normal break-words" : "truncate"
+      )}>{content}</span>;
     }
     
     return content;
@@ -702,6 +728,19 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
               </DropdownMenu>
             )}
 
+            {/* Text Wrap Toggle */}
+            {enableResizing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resizing.toggleTextWrap}
+                className="hidden sm:flex"
+              >
+                <WrapText className="h-4 w-4 mr-2" />
+                {resizing.textWrap ? 'Unwrap' : 'Wrap Text'}
+              </Button>
+            )}
+
             {/* Export */}
             {!hideExportButton && (
               <Button variant="outline" size="sm" onClick={exportToCSV}>
@@ -790,7 +829,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                   <TableHead
                     key={column.key}
                     className={cn(
-                      "table-cell-compact text-left align-middle font-calibri-light font-normal text-table-header-foreground select-none bg-table-header",
+                      "table-cell-compact text-left align-middle font-calibri-light font-normal text-table-header-foreground select-none bg-table-header relative group",
                       responsiveLayout.config.density === 'compact' && "px-2 py-1",
                       responsiveLayout.config.density === 'comfortable' && "px-6 py-4",
                       index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-table-header border-r border-table-header",
@@ -830,6 +869,36 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                             )}
                           </div>
                         )}
+                      </div>
+                    )}
+                    
+                    {/* Resize Handle */}
+                    {enableResizing && column.resizable !== false && column.key !== 'select' && (
+                      <div
+                        className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-primary/20 group-hover:bg-primary/10 flex items-center justify-center"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          resizing.handleResizeStart(column.key);
+                          const startX = e.pageX;
+                          const startWidth = column.width || 150;
+
+                          const handleMouseMove = (e: MouseEvent) => {
+                            const newWidth = startWidth + (e.pageX - startX);
+                            resizing.updateColumnWidth(column.key, newWidth);
+                          };
+
+                          const handleMouseUp = () => {
+                            resizing.handleResizeEnd();
+                            document.removeEventListener('mousemove', handleMouseMove);
+                            document.removeEventListener('mouseup', handleMouseUp);
+                          };
+
+                          document.addEventListener('mousemove', handleMouseMove);
+                          document.addEventListener('mouseup', handleMouseUp);
+                        }}
+                      >
+                        <GripVertical className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
                       </div>
                     )}
                   </TableHead>

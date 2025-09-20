@@ -98,6 +98,7 @@ export function createDynamicColumns<T extends Record<string, any>>(
       label: tableColumn.displayName,
       visible: isVisible,
       enableHiding: true, // Allow all columns to be hidden/shown by users
+      resizable: true,
       width: getColumnWidth(tableColumn),
       render: (value: any, row: T) => {
         const rowId = String(row.id);

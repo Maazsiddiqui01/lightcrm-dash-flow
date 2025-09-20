@@ -475,6 +475,8 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         tableId="opportunities-table"
         tableType="opportunities"
         hideColumnsButton={true}
+        enableResizing={true}
+        persistKey="opportunities"
       />
 
       {/* Drawers and Dialogs */}

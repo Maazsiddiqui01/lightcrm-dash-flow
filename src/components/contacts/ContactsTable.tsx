@@ -344,6 +344,8 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         tableId="contacts-table"
         tableType="contacts"
         hideColumnsButton={true}
+        enableResizing={true}
+        persistKey="contacts"
       />
 
       {/* Drawers and Dialogs */}
