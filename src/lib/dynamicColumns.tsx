@@ -39,6 +39,10 @@ export const formatCellValue = (value: any, column: TableColumn): string => {
     return value ? 'Yes' : 'No';
   }
   
+  if (column.type === 'computed') {
+    return String(value);
+  }
+  
   return String(value);
 };
 

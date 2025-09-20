@@ -16,6 +16,8 @@ import { useColumnVisibility } from "@/hooks/useColumnVisibility";
 import { ColumnsMenu } from "@/components/shared/ColumnsMenu";
 import { EditToolbar } from "@/components/shared/EditToolbar";
 import { useContactsWithOpportunities } from "@/hooks/useContactsWithOpportunities";
+import { useFocusAreaSectorMapping } from "@/hooks/useFocusAreaSectorMapping";
+import { mapFocusAreasToSectors, getAllFocusAreas } from "@/utils/sectorMapping";
 
 // Multi-sort imports
 import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
@@ -80,6 +82,7 @@ interface ContactRaw {
   created_at: string | null;
   updated_at: string | null;
   opportunities: string; // Comma-separated deal names
+  mapped_sectors?: string; // Computed field for sectors mapped from focus areas
 }
 
 interface ContactsTableProps {
@@ -133,6 +136,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
 
   // Use the new hook to get contacts with opportunities
   const { contacts, loading, isRefreshing, refetch } = useContactsWithOpportunities(externalFilters);
+  const { data: sectorMapping } = useFocusAreaSectorMapping();
   
   // Create a setContacts function for compatibility with editMode
   const setContacts = () => {
@@ -149,6 +153,20 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     onOpportunityColumnVisibilityChange?.(isOpportunitiesVisible);
   }, [columnVisibility.columnVisibility, onOpportunityColumnVisibilityChange]);
   
+  // Add computed sectors to contacts data
+  const contactsWithComputedSectors = useMemo(() => {
+    if (!sectorMapping) return contacts;
+    
+    return contacts.map(contact => ({
+      ...contact,
+      mapped_sectors: mapFocusAreasToSectors(
+        getAllFocusAreas(contact),
+        sectorMapping,
+        contact.lg_sector
+      )
+    }));
+  }, [contacts, sectorMapping]);
+
   // Get table columns metadata and add opportunities column
   const tableColumns = useMemo(() => {
     const baseColumns = getTableColumns('contacts_raw');
@@ -192,14 +210,16 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   // No need for fetchContacts anymore since we're using the hook
 
   const filteredContacts = useMemo(() => {
-    return contacts.filter(contact =>
+    return contactsWithComputedSectors.filter(contact =>
       searchTerm === "" ||
       contact.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.email_address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.organization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.title?.toLowerCase().includes(searchTerm.toLowerCase())
+      contact.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.lg_sector?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.mapped_sectors?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [contacts, searchTerm]);
+  }, [contactsWithComputedSectors, searchTerm]);
 
   const handleRowClick = (contact: ContactRaw) => {
     setSelectedContact(contact);

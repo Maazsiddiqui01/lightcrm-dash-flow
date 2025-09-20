@@ -53,6 +53,7 @@ interface ContactWithOpportunities {
   created_at: string | null;
   updated_at: string | null;
   opportunities: string; // Comma-separated deal names or empty string
+  mapped_sectors?: string; // Computed field for sectors mapped from focus areas
 }
 
 interface OpportunityFilters {
