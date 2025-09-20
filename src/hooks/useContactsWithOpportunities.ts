@@ -126,10 +126,20 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         opportunityFilters = {}
       } = filters;
 
-      // Focus Areas - partial match in comma-separated list
+      // Focus Areas - check both individual columns and comprehensive list with fuzzy matching
       if (focusAreas.length > 0) {
-        const focusQuery = focusAreas.map(fa => `lg_focus_areas_comprehensive_list.ilike.%${fa}%`).join(',');
-        contactsQuery = contactsQuery.or(focusQuery);
+        const focusAreaConditions = focusAreas.flatMap(area => [
+          `lg_focus_area_1.ilike.%${area}%`,
+          `lg_focus_area_2.ilike.%${area}%`,
+          `lg_focus_area_3.ilike.%${area}%`,
+          `lg_focus_area_4.ilike.%${area}%`,
+          `lg_focus_area_5.ilike.%${area}%`,
+          `lg_focus_area_6.ilike.%${area}%`,
+          `lg_focus_area_7.ilike.%${area}%`,
+          `lg_focus_area_8.ilike.%${area}%`,
+          `lg_focus_areas_comprehensive_list.ilike.%${area}%`
+        ]);
+        contactsQuery = contactsQuery.or(focusAreaConditions.join(','));
       }
 
       // Sectors

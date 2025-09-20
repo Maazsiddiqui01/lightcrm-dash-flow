@@ -54,20 +54,19 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
   const applyFilters = (query: any) => {
     if (!filters) return query;
 
-    // Focus areas filter - need to check multiple focus area columns
+    // Focus areas filter - check both individual columns and comprehensive list with fuzzy matching
     if (filters.focusAreas && filters.focusAreas.length > 0) {
-      const focusAreaConditions = filters.focusAreas.map(area => {
-        return [
-          `lg_focus_area_1.eq.${area}`,
-          `lg_focus_area_2.eq.${area}`,
-          `lg_focus_area_3.eq.${area}`,
-          `lg_focus_area_4.eq.${area}`,
-          `lg_focus_area_5.eq.${area}`,
-          `lg_focus_area_6.eq.${area}`,
-          `lg_focus_area_7.eq.${area}`,
-          `lg_focus_area_8.eq.${area}`
-        ].join(',');
-      });
+      const focusAreaConditions = filters.focusAreas.flatMap(area => [
+        `lg_focus_area_1.ilike.%${area}%`,
+        `lg_focus_area_2.ilike.%${area}%`,
+        `lg_focus_area_3.ilike.%${area}%`,
+        `lg_focus_area_4.ilike.%${area}%`,
+        `lg_focus_area_5.ilike.%${area}%`,
+        `lg_focus_area_6.ilike.%${area}%`,
+        `lg_focus_area_7.ilike.%${area}%`,
+        `lg_focus_area_8.ilike.%${area}%`,
+        `lg_focus_areas_comprehensive_list.ilike.%${area}%`
+      ]);
       query = query.or(focusAreaConditions.join(','));
     }
 
@@ -218,19 +217,19 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
         }
       }
 
-      // Build base queries with contact filters
+      // Build base queries with contact filters - use contacts_raw for consistency
       let totalQuery = supabase
-        .from("contacts_app")
+        .from("contacts_raw")
         .select("*", { count: "exact", head: true });
       totalQuery = applyFilters(totalQuery);
 
       let activeQuery = supabase
-        .from("contacts_app")
+        .from("contacts_raw")
         .select("*", { count: "exact", head: true });
       activeQuery = applyFilters(activeQuery);
 
       let statsQuery = supabase
-        .from("contacts_app")
+        .from("contacts_raw")
         .select("of_emails, of_meetings");
       statsQuery = applyFilters(statsQuery);
 
