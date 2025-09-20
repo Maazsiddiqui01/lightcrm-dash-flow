@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,20 +18,20 @@ interface MeetingData {
 }
 
 export function MeetingsWithTeam() {
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [data, setData] = useState<MeetingData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [startDate, setStartDate] = React.useState<string>("");
+  const [endDate, setEndDate] = React.useState<string>("");
+  const [data, setData] = React.useState<MeetingData[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     
     try {
       const { data: result, error: rpcError } = await supabase.rpc(
-        'avg_minutes_per_week_by_lead' as any,
+        'avg_minutes_per_week_by_lead',
         { 
           start_date: startDate || null, 
           end_date: endDate || null 
@@ -39,13 +39,15 @@ export function MeetingsWithTeam() {
       );
 
       if (rpcError) {
+        console.error('RPC Error:', rpcError);
         throw rpcError;
       }
 
       setData((result as MeetingData[]) || []);
     } catch (err) {
       console.error('Error fetching meeting data:', err);
-      setError('Could not load meeting data');
+      const errorMessage = err instanceof Error ? err.message : 'Could not load meeting data';
+      setError(errorMessage);
       toast({
         title: "Error",
         description: "Could not load meeting data. Please try again.",
@@ -54,11 +56,11 @@ export function MeetingsWithTeam() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate, toast]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchData();
-  }, [startDate, endDate]);
+  }, [fetchData]);
 
   const formatMinutes = (minutes: number) => {
     if (minutes === 0) return "0";

@@ -1276,6 +1276,15 @@ export type Database = {
         }
         Relationships: []
       }
+      one_on_one_meetings: {
+        Row: {
+          lead_email: string | null
+          lead_name: string | null
+          minutes: number | null
+          occurred_at: string | null
+        }
+        Relationships: []
+      }
       opportunities_ai: {
         Row: {
           date_of_origination_text: string | null
@@ -1674,6 +1683,13 @@ export type Database = {
       approve_missing_contact: {
         Args: { p_email: string }
         Returns: string
+      }
+      avg_minutes_per_week_by_lead: {
+        Args: { end_date?: string; start_date?: string }
+        Returns: {
+          avg_minutes_per_week: number
+          lead_name: string
+        }[]
       }
       compute_ebitda_range: {
         Args: { p_amount: number; p_notes: string }
