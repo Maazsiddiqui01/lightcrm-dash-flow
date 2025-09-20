@@ -42,11 +42,11 @@ export function useColumnResizing({ persistKey, defaultWidths = {} }: UseColumnR
     });
   }, [persistKey]);
 
-  const handleResizeStart = useCallback((columnKey: string) => {
+  const startResize = useCallback((columnKey: string) => {
     setIsResizing(columnKey);
   }, []);
 
-  const handleResizeEnd = useCallback(() => {
+  const endResize = useCallback(() => {
     setIsResizing(null);
   }, []);
 
@@ -67,8 +67,8 @@ export function useColumnResizing({ persistKey, defaultWidths = {} }: UseColumnR
     columnWidths,
     updateColumnWidth,
     isResizing,
-    handleResizeStart,
-    handleResizeEnd,
+    handleResizeStart: startResize,
+    handleResizeEnd: endResize,
     textWrap,
     toggleTextWrap,
     resetColumnWidths,

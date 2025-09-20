@@ -209,8 +209,14 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
         // Otherwise, use internal persisted preferences
         : columnVisibilityHook.applyVisibilityToColumns(responsiveColumns);
       
-      // Apply adaptive column widths for wide screens
+      // Apply adaptive column widths for wide screens and resized widths
       const columnsWithAdaptiveWidths = columnsWithUserPreferences.map(col => {
+        // If resizing is enabled and we have a custom width, use it
+        if (enableResizing && resizing.columnWidths[col.key]) {
+          return { ...col, width: resizing.columnWidths[col.key] };
+        }
+        
+        // Otherwise use adaptive width for visible columns without explicit width
         if (col.visible && !col.width && !col.sticky) {
           const adaptiveWidth = getAdaptiveColumnWidth(
             containerWidth, 
@@ -218,10 +224,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
           );
           return { ...col, width: adaptiveWidth };
         }
-        // Apply resized width if resizing is enabled
-        if (enableResizing && resizing.columnWidths[col.key]) {
-          return { ...col, width: resizing.columnWidths[col.key] };
-        }
+        
         return col;
       });
       
@@ -825,24 +828,25 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
           >
             <TableHeader className="sticky top-0 z-10 bg-table-header">
               <TableRow className="border-b bg-muted/20">
-                {visibleColumns.map((column, index) => (
-                  <TableHead
-                    key={column.key}
-                    className={cn(
-                      "table-cell-compact text-left align-middle font-calibri-light font-normal text-table-header-foreground select-none bg-table-header relative group",
-                      responsiveLayout.config.density === 'compact' && "px-2 py-1",
-                      responsiveLayout.config.density === 'comfortable' && "px-6 py-4",
-                      index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-table-header border-r border-table-header",
-                      column.sortable && "cursor-pointer hover:text-table-header-foreground/80 transition-colors",
-                      column.headerClassName
-                    )}
-                    style={{
-                      width: column.width,
-                      minWidth: column.minWidth || (index === 0 ? '200px' : '120px'),
-                      maxWidth: column.maxWidth
-                    }}
-                    onClick={() => column.sortable && handleSort(column.key)}
-                  >
+                 {visibleColumns.map((column, index) => (
+                   <TableHead
+                     key={column.key}
+                     className={cn(
+                       "table-cell-compact text-left align-middle font-calibri-light font-normal text-table-header-foreground select-none bg-table-header relative group border-r",
+                       responsiveLayout.config.density === 'compact' && "px-2 py-1",
+                       responsiveLayout.config.density === 'comfortable' && "px-6 py-4",
+                       index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-table-header border-r border-table-header",
+                       column.sortable && "cursor-pointer hover:text-table-header-foreground/80 transition-colors",
+                       column.headerClassName,
+                       resizing.textWrap ? "whitespace-normal" : "whitespace-nowrap"
+                     )}
+                     style={{
+                       width: column.width,
+                       minWidth: column.width,
+                       maxWidth: column.width
+                     }}
+                     onClick={() => column.sortable && handleSort(column.key)}
+                   >
                     {column.key === 'select' ? (
                       <div className="flex items-center justify-center">
                         <Checkbox
@@ -872,35 +876,61 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                       </div>
                     )}
                     
-                    {/* Resize Handle */}
-                    {enableResizing && column.resizable !== false && column.key !== 'select' && (
-                      <div
-                        className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-primary/20 group-hover:bg-primary/10 flex items-center justify-center"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          resizing.handleResizeStart(column.key);
-                          const startX = e.pageX;
-                          const startWidth = column.width || 150;
+                     {/* Resize Handle */}
+                     {enableResizing && column.resizable !== false && column.key !== 'select' && (
+                       <div
+                         className={cn(
+                           "absolute right-0 top-0 h-full w-1 cursor-col-resize transition-all duration-200 flex items-center justify-center",
+                           "hover:w-2 hover:bg-primary/30",
+                           "after:absolute after:right-0 after:top-1/2 after:-translate-y-1/2 after:w-0.5 after:h-6 after:bg-border after:rounded-full",
+                           "hover:after:bg-primary",
+                           resizing.isResizing === column.key && "w-2 bg-primary/40"
+                         )}
+                         onMouseDown={(e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           resizing.handleResizeStart(column.key);
+                           const startX = e.pageX;
+                           const startWidth = column.width || 150;
 
-                          const handleMouseMove = (e: MouseEvent) => {
-                            const newWidth = startWidth + (e.pageX - startX);
-                            resizing.updateColumnWidth(column.key, newWidth);
-                          };
+                           // Add visual feedback
+                           document.body.style.cursor = 'col-resize';
+                           document.body.style.userSelect = 'none';
 
-                          const handleMouseUp = () => {
-                            resizing.handleResizeEnd();
-                            document.removeEventListener('mousemove', handleMouseMove);
-                            document.removeEventListener('mouseup', handleMouseUp);
-                          };
+                           const handleMouseMove = (e: MouseEvent) => {
+                             const newWidth = Math.max(80, Math.min(500, startWidth + (e.pageX - startX)));
+                             
+                             // Update column width immediately for real-time feedback
+                             setColumns(prevColumns => 
+                               prevColumns.map(col => 
+                                 col.key === column.key 
+                                   ? { ...col, width: newWidth }
+                                   : col
+                               )
+                             );
+                             
+                             resizing.updateColumnWidth(column.key, newWidth);
+                           };
 
-                          document.addEventListener('mousemove', handleMouseMove);
-                          document.addEventListener('mouseup', handleMouseUp);
-                        }}
-                      >
-                        <GripVertical className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
-                      </div>
-                    )}
+                           const handleMouseUp = () => {
+                             resizing.handleResizeEnd();
+                             document.body.style.cursor = '';
+                             document.body.style.userSelect = '';
+                             document.removeEventListener('mousemove', handleMouseMove);
+                             document.removeEventListener('mouseup', handleMouseUp);
+                           };
+
+                           document.addEventListener('mousemove', handleMouseMove);
+                           document.addEventListener('mouseup', handleMouseUp);
+                         }}
+                       >
+                         <GripVertical className={cn(
+                           "h-3 w-3 transition-opacity duration-200",
+                           "opacity-0 group-hover:opacity-60",
+                           resizing.isResizing === column.key && "opacity-100"
+                         )} />
+                       </div>
+                     )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -947,29 +977,34 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                          onRowClick?.(row);
                        }}
                      >
-                       {visibleColumns.map((column, cellIndex) => (
-                         <TableCell
-                           key={column.key}
-                           className={cn(
-                             "table-cell-compact align-middle text-fluid-base",
-                             cellIndex === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-inherit border-r border-border",
-                             column.className,
-                             editMode && "cursor-default" // Change cursor in edit mode
-                           )}
-                           style={{
-                             width: column.width,
-                             minWidth: column.minWidth || (cellIndex === 0 ? '200px' : '120px'),
-                             maxWidth: column.maxWidth
-                           }}
-                           onClick={(e) => {
-                             // Prevent row click propagation when in edit mode
-                             if (editMode) {
-                               e.stopPropagation();
-                             }
-                           }}
-                         >
-                           {renderCellContent(column, row)}
-                         </TableCell>
+                        {visibleColumns.map((column, cellIndex) => (
+                          <TableCell
+                            key={column.key}
+                            className={cn(
+                              "table-cell-compact align-middle text-fluid-base border-r",
+                              cellIndex === 0 && stickyFirstColumn && "sticky left-0 z-10 bg-inherit border-r border-border",
+                              column.className,
+                              editMode && "cursor-default", // Change cursor in edit mode
+                              resizing.textWrap ? "whitespace-normal py-3" : "whitespace-nowrap"
+                            )}
+                            style={{
+                              width: column.width,
+                              minWidth: column.width,
+                              maxWidth: column.width
+                            }}
+                            onClick={(e) => {
+                              // Prevent row click propagation when in edit mode
+                              if (editMode) {
+                                e.stopPropagation();
+                              }
+                            }}
+                          >
+                            <div className={cn(
+                              resizing.textWrap ? "break-words" : "truncate"
+                            )}>
+                              {renderCellContent(column, row)}
+                            </div>
+                          </TableCell>
                       ))}
                     </TableRow>
                   );
