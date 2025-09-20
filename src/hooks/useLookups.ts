@@ -80,20 +80,18 @@ export const useFocusAreas = ({ sectorId }: { sectorId?: string } = {}) => {
   return useQuery({
     queryKey: ['lookup-focus-areas', sectorId],
     queryFn: async (): Promise<LookupOption[]> => {
-      // Use the master table for active focus areas
       let query = supabase
-        .from('lg_focus_area_master')
-        .select('focus_area, sector')
-        .eq('is_active', true);
+        .from('lookup_focus_areas')
+        .select('id, label, sector_id, lookup_sectors!inner(label)');
 
       if (sectorId) {
-        query = query.eq('sector', sectorId);
+        query = query.eq('sector_id', sectorId);
       }
 
-      const { data, error } = await query.order('focus_area');
+      const { data, error } = await query.order('label');
 
       if (error) {
-        console.warn('Failed to fetch focus areas from master table, using fallback:', error);
+        console.warn('Failed to fetch focus areas from lookup table, using fallback:', error);
         // Fallback to constants if database fails
         let fallbackAreas = FOCUS_AREAS;
         
@@ -114,12 +112,12 @@ export const useFocusAreas = ({ sectorId }: { sectorId?: string } = {}) => {
       }
 
       return (data || []).map(focusArea => ({
-        value: focusArea.focus_area,
-        label: focusArea.focus_area,
+        value: focusArea.label,
+        label: focusArea.label,
         meta: { 
-          id: focusArea.focus_area, 
-          sector_id: focusArea.sector,
-          sector_label: focusArea.sector
+          id: focusArea.id, 
+          sector_id: focusArea.sector_id,
+          sector_label: (focusArea.lookup_sectors as any)?.label
         }
       }));
     },

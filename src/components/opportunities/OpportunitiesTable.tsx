@@ -18,7 +18,6 @@ import { useEditMode } from "@/hooks/useEditMode";
 import { useColumnVisibility } from "@/hooks/useColumnVisibility";
 import { ColumnsMenu } from "@/components/shared/ColumnsMenu";
 import { EditToolbar } from "@/components/shared/EditToolbar";
-import { expandHcAllForQuery } from "@/utils/focusAreaUtils";
 
 // Multi-sort imports
 import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
@@ -188,13 +187,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
 
       // Apply filters
       if (filters.focusArea.length > 0) {
-        const { data: allFocusAreas = [] } = await supabase
-          .from('lg_focus_area_master')
-          .select('focus_area')
-          .eq('is_active', true);
-        const allList = (allFocusAreas || []).map((f: any) => f.focus_area);
-        const expanded = expandHcAllForQuery(filters.focusArea, allList);
-        query = query.in('lg_focus_area', expanded);
+        query = query.in('lg_focus_area', filters.focusArea);
       }
 
       if (filters.sector.length > 0) {

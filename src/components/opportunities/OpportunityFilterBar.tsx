@@ -12,8 +12,7 @@ import {
   useOpportunityDatesOfOrigination,
   useOpportunityHeadquarters
 } from '@/hooks/useDistinctOptions';
-import { useSectors } from '@/hooks/useLookups';
-import { useEnhancedFocusAreas } from '@/hooks/useEnhancedFocusAreas';
+import { useSectors, useFocusAreas } from '@/hooks/useLookups';
 import { tierOptions } from '@/lib/export/opportunityUtils';
 
 interface OpportunityFilters {
@@ -47,9 +46,9 @@ export function OpportunityFilterBar({
 }: OpportunityFilterBarProps) {
   // Use canonical lookup options
   const sectorsQuery = useSectors();
-  const focusAreasQuery = useEnhancedFocusAreas();
+  const focusAreasQuery = useFocusAreas();
   
-  const focusAreas = (focusAreasQuery.data || []).map(item => ({ value: item.id, label: item.label }));
+  const focusAreas = focusAreasQuery.data || [];
   const sectors = sectorsQuery.data || [];
 
   // Use existing hooks for other options

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { expandHcAllForQuery } from '@/utils/focusAreaUtils';
 
 interface FilterValues {
   focus_areas: string[];
@@ -87,16 +86,11 @@ export function useKpiData() {
 
   const fetchSummary = useCallback(async (params: KpiFilters) => {
     try {
-      // Expand HC: (All) to actual HC focus areas for database query
-      const expandedFocusAreas = data.filterValues 
-        ? expandHcAllForQuery(params.focus_areas, data.filterValues.focus_areas)
-        : params.focus_areas;
-      
       // If multiple leads selected, aggregate; if none selected, pass null
       const lgLeadParam = params.lg_leads.length === 1 ? params.lg_leads[0] : null;
-      const focusAreaParam = expandedFocusAreas.length === 1 ? expandedFocusAreas[0] : null;
+      const focusAreaParam = params.focus_areas.length === 1 ? params.focus_areas[0] : null;
 
-      const { data: summaryData, error } = await supabase.rpc('kpi_summary', {
+      const { data, error } = await supabase.rpc('kpi_summary', {
         p_start: params.start,
         p_end: params.end,
         p_focus_area: focusAreaParam,
@@ -106,24 +100,19 @@ export function useKpiData() {
       });
 
       if (error) throw error;
-      return summaryData?.[0] || { total_contacts: 0, meetings_count: 0, notable_opportunities: 0 };
+      return data?.[0] || { total_contacts: 0, meetings_count: 0, notable_opportunities: 0 };
     } catch (error) {
       console.error('Error fetching summary:', error);
       return { total_contacts: 0, meetings_count: 0, notable_opportunities: 0 };
     }
-  }, [data.filterValues]);
+  }, []);
 
   const fetchMonthlyMeetings = useCallback(async (params: KpiFilters) => {
     try {
-      // Expand HC: (All) to actual HC focus areas for database query
-      const expandedFocusAreas = data.filterValues 
-        ? expandHcAllForQuery(params.focus_areas, data.filterValues.focus_areas)
-        : params.focus_areas;
-      
       const lgLeadParam = params.lg_leads.length === 1 ? params.lg_leads[0] : null;
-      const focusAreaParam = expandedFocusAreas.length === 1 ? expandedFocusAreas[0] : null;
+      const focusAreaParam = params.focus_areas.length === 1 ? params.focus_areas[0] : null;
 
-      const { data: meetingsData, error } = await supabase.rpc('kpi_meetings_monthly', {
+      const { data, error } = await supabase.rpc('kpi_meetings_monthly', {
         p_start: params.start,
         p_end: params.end,
         p_focus_area: focusAreaParam,
@@ -131,12 +120,12 @@ export function useKpiData() {
       });
 
       if (error) throw error;
-      return meetingsData || [];
+      return data || [];
     } catch (error) {
       console.error('Error fetching monthly meetings:', error);
       return [];
     }
-  }, [data.filterValues]);
+  }, []);
 
   const fetchLgLeads = useCallback(async (params: KpiFilters) => {
     try {

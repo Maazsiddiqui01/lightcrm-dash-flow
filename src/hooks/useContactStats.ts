@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { expandHcAllFocusAreas } from '@/hooks/useEnhancedFocusAreas';
 
 interface ContactStats {
   totalContacts: number;
@@ -52,38 +51,24 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
     fetchStats();
   }, [filters]);
 
-  const applyFilters = async (query: any) => {
+  const applyFilters = (query: any) => {
     if (!filters) return query;
 
     // Focus areas filter - need to check multiple focus area columns
     if (filters.focusAreas && filters.focusAreas.length > 0) {
-      // First expand HC: (All) to actual HC focus areas if needed
-      const { data: allFocusAreas = [] } = await supabase
-        .from('lg_focus_area_master')
-        .select('focus_area')
-        .eq('is_active', true);
-      
-      const allFocusAreasList = allFocusAreas.map(fa => fa.focus_area);
-      const expandedFocusAreas = expandHcAllFocusAreas(filters.focusAreas, allFocusAreasList.map(fa => ({ id: fa, label: fa })));
-      
-      // Build OR conditions for each focus area across all columns
-      const allFocusConditions: string[] = [];
-      expandedFocusAreas.forEach(area => {
-        const escapedArea = area.replace(/[()]/g, '\\$&');
-        allFocusConditions.push(`lg_focus_area_1.eq.${area}`);
-        allFocusConditions.push(`lg_focus_area_2.eq.${area}`);
-        allFocusConditions.push(`lg_focus_area_3.eq.${area}`);
-        allFocusConditions.push(`lg_focus_area_4.eq.${area}`);
-        allFocusConditions.push(`lg_focus_area_5.eq.${area}`);
-        allFocusConditions.push(`lg_focus_area_6.eq.${area}`);
-        allFocusConditions.push(`lg_focus_area_7.eq.${area}`);
-        allFocusConditions.push(`lg_focus_area_8.eq.${area}`);
-        allFocusConditions.push(`lg_focus_areas_comprehensive_list.cs.{${area}}`);
+      const focusAreaConditions = filters.focusAreas.map(area => {
+        return [
+          `lg_focus_area_1.eq.${area}`,
+          `lg_focus_area_2.eq.${area}`,
+          `lg_focus_area_3.eq.${area}`,
+          `lg_focus_area_4.eq.${area}`,
+          `lg_focus_area_5.eq.${area}`,
+          `lg_focus_area_6.eq.${area}`,
+          `lg_focus_area_7.eq.${area}`,
+          `lg_focus_area_8.eq.${area}`
+        ].join(',');
       });
-      
-      if (allFocusConditions.length > 0) {
-        query = query.or(allFocusConditions.join(','));
-      }
+      query = query.or(focusAreaConditions.join(','));
     }
 
     // Sectors filter
@@ -237,22 +222,17 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
       let totalQuery = supabase
         .from("contacts_app")
         .select("*", { count: "exact", head: true });
-      totalQuery = await applyFilters(totalQuery);
-
-      // Prepare 90-day window for active contacts
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      totalQuery = applyFilters(totalQuery);
 
       let activeQuery = supabase
         .from("contacts_app")
-        .select("*", { count: "exact", head: true })
-        .gte("most_recent_contact", ninetyDaysAgo.toISOString());
-      activeQuery = await applyFilters(activeQuery);
+        .select("*", { count: "exact", head: true });
+      activeQuery = applyFilters(activeQuery);
 
       let statsQuery = supabase
         .from("contacts_app")
         .select("of_emails, of_meetings");
-      statsQuery = await applyFilters(statsQuery);
+      statsQuery = applyFilters(statsQuery);
 
       // Apply opportunity-based contact filtering if needed
       if (filteredContactIds !== null) {
@@ -273,7 +253,10 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
         }
       }
 
-      // Active contacts date filter applied earlier when building activeQuery
+      // Apply active contacts date filter
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      activeQuery = activeQuery.gte("most_recent_contact", ninetyDaysAgo.toISOString());
 
       // Execute queries
       const { count: totalContacts } = await totalQuery;

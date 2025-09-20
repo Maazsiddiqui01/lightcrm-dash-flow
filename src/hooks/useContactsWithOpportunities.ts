@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { expandHcAllFocusAreas } from '@/hooks/useEnhancedFocusAreas';
 
 interface ContactWithOpportunities {
   id: string;
@@ -126,34 +125,10 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         opportunityFilters = {}
       } = filters;
 
-      // Focus Areas - match across individual columns and comprehensive list
+      // Focus Areas - partial match in comma-separated list
       if (focusAreas.length > 0) {
-        // First expand HC: (All) to actual HC focus areas if needed
-        const { data: allFocusAreas = [] } = await supabase
-          .from('lg_focus_area_master')
-          .select('focus_area')
-          .eq('is_active', true);
-        
-        const allFocusAreasList = allFocusAreas.map(fa => fa.focus_area);
-        const expandedFocusAreas = expandHcAllFocusAreas(
-          focusAreas,
-          allFocusAreasList.map(fa => ({ id: fa, label: fa }))
-        );
-
-        // Build OR conditions for all selected areas across all focus area columns and comprehensive list
-        const perAreaConditions = expandedFocusAreas.map(area => [
-          `lg_focus_area_1.ilike.%${area}%`,
-          `lg_focus_area_2.ilike.%${area}%`,
-          `lg_focus_area_3.ilike.%${area}%`,
-          `lg_focus_area_4.ilike.%${area}%`,
-          `lg_focus_area_5.ilike.%${area}%`,
-          `lg_focus_area_6.ilike.%${area}%`,
-          `lg_focus_area_7.ilike.%${area}%`,
-          `lg_focus_area_8.ilike.%${area}%`,
-          `lg_focus_areas_comprehensive_list.ilike.%${area}%`
-        ].join(','));
-
-        contactsQuery = contactsQuery.or(perAreaConditions.join(','));
+        const focusQuery = focusAreas.map(fa => `lg_focus_areas_comprehensive_list.ilike.%${fa}%`).join(',');
+        contactsQuery = contactsQuery.or(focusQuery);
       }
 
       // Sectors
