@@ -2,18 +2,18 @@ import { format, addDays, differenceInDays, parseISO } from 'date-fns';
 
 /**
  * Calculate days over/under max lag for a contact
- * Formula: Today - (Most Recent Contact + Max Lag Days)
+ * Formula: (Most Recent Contact + Max Lag Days) - Today
  * 
  * @param mostRecentContact - The most recent contact date (ISO string)
  * @param maxLagDays - Maximum lag days (delta field)
- * @returns Number of days over (positive) or under (negative) max lag, or null if data is missing
+ * @returns Number of days remaining (positive) or overdue (negative), or null if data is missing
  */
 export function calculateDaysOverUnderMaxLag(
   mostRecentContact: string | null,
   maxLagDays: number | null
 ): number | null {
-  // Return null if either required field is missing
-  if (!mostRecentContact || !maxLagDays) {
+  // Return null if either required field is missing or zero
+  if (!mostRecentContact || !maxLagDays || maxLagDays === 0) {
     return null;
   }
 
@@ -22,8 +22,9 @@ export function calculateDaysOverUnderMaxLag(
     const contactDate = parseISO(mostRecentContact);
     const nextContactDue = addDays(contactDate, maxLagDays);
     
-    // Calculate difference: positive means overdue, negative means still have time
-    return differenceInDays(today, nextContactDue);
+    // Calculate difference: (outreach date) - today
+    // Positive means still have time, negative means overdue
+    return differenceInDays(nextContactDue, today);
   } catch (error) {
     console.warn('Error calculating days over/under max lag:', error);
     return null;
@@ -41,6 +42,7 @@ export function formatDaysOverUnder(days: number | null): string {
 
 /**
  * Get color class for days over/under value
+ * Positive = still have time (green), Negative = overdue (red)
  */
 export function getDaysOverUnderColorClass(days: number | null): string {
   if (days === null || days === 0) return '';
