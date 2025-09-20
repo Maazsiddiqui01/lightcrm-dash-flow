@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { expandHcAllFocusAreas } from '@/hooks/useEnhancedFocusAreas';
 
 interface ContactStats {
   totalContacts: number;
@@ -51,12 +52,21 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
     fetchStats();
   }, [filters]);
 
-  const applyFilters = (query: any) => {
+  const applyFilters = async (query: any) => {
     if (!filters) return query;
 
     // Focus areas filter - need to check multiple focus area columns
     if (filters.focusAreas && filters.focusAreas.length > 0) {
-      const focusAreaConditions = filters.focusAreas.map(area => {
+      // First expand HC: (All) to actual HC focus areas if needed
+      const { data: allFocusAreas = [] } = await supabase
+        .from('lg_focus_area_master')
+        .select('focus_area')
+        .eq('is_active', true);
+      
+      const allFocusAreasList = allFocusAreas.map(fa => fa.focus_area);
+      const expandedFocusAreas = expandHcAllFocusAreas(filters.focusAreas, allFocusAreasList.map(fa => ({ id: fa, label: fa })));
+      
+      const focusAreaConditions = expandedFocusAreas.map(area => {
         return [
           `lg_focus_area_1.eq.${area}`,
           `lg_focus_area_2.eq.${area}`,
@@ -222,17 +232,17 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
       let totalQuery = supabase
         .from("contacts_app")
         .select("*", { count: "exact", head: true });
-      totalQuery = applyFilters(totalQuery);
+      totalQuery = await applyFilters(totalQuery);
 
       let activeQuery = supabase
         .from("contacts_app")
         .select("*", { count: "exact", head: true });
-      activeQuery = applyFilters(activeQuery);
+      activeQuery = await applyFilters(activeQuery);
 
       let statsQuery = supabase
         .from("contacts_app")
         .select("of_emails, of_meetings");
-      statsQuery = applyFilters(statsQuery);
+      statsQuery = await applyFilters(statsQuery);
 
       // Apply opportunity-based contact filtering if needed
       if (filteredContactIds !== null) {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { expandHcAllFocusAreas } from '@/hooks/useEnhancedFocusAreas';
 
 interface ContactWithOpportunities {
   id: string;
@@ -127,7 +128,16 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
       // Focus Areas - partial match in comma-separated list
       if (focusAreas.length > 0) {
-        const focusQuery = focusAreas.map(fa => `lg_focus_areas_comprehensive_list.ilike.%${fa}%`).join(',');
+        // First expand HC: (All) to actual HC focus areas if needed
+        const { data: allFocusAreas = [] } = await supabase
+          .from('lg_focus_area_master')
+          .select('focus_area')
+          .eq('is_active', true);
+        
+        const allFocusAreasList = allFocusAreas.map(fa => fa.focus_area);
+        const expandedFocusAreas = expandHcAllFocusAreas(focusAreas, allFocusAreasList.map(fa => ({ id: fa, label: fa })));
+        
+        const focusQuery = expandedFocusAreas.map(fa => `lg_focus_areas_comprehensive_list.ilike.%${fa}%`).join(',');
         contactsQuery = contactsQuery.or(focusQuery);
       }
 
