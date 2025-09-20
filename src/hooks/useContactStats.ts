@@ -66,20 +66,24 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
       const allFocusAreasList = allFocusAreas.map(fa => fa.focus_area);
       const expandedFocusAreas = expandHcAllFocusAreas(filters.focusAreas, allFocusAreasList.map(fa => ({ id: fa, label: fa })));
       
-      const focusAreaConditions = expandedFocusAreas.map(area => {
-        return [
-          `lg_focus_area_1.ilike.%${area}%`,
-          `lg_focus_area_2.ilike.%${area}%`,
-          `lg_focus_area_3.ilike.%${area}%`,
-          `lg_focus_area_4.ilike.%${area}%`,
-          `lg_focus_area_5.ilike.%${area}%`,
-          `lg_focus_area_6.ilike.%${area}%`,
-          `lg_focus_area_7.ilike.%${area}%`,
-          `lg_focus_area_8.ilike.%${area}%`,
-          `lg_focus_areas_comprehensive_list.ilike.%${area}%`
-        ].join(',');
+      // Build OR conditions for each focus area across all columns
+      const allFocusConditions: string[] = [];
+      expandedFocusAreas.forEach(area => {
+        const escapedArea = area.replace(/[()]/g, '\\$&');
+        allFocusConditions.push(`lg_focus_area_1.eq.${area}`);
+        allFocusConditions.push(`lg_focus_area_2.eq.${area}`);
+        allFocusConditions.push(`lg_focus_area_3.eq.${area}`);
+        allFocusConditions.push(`lg_focus_area_4.eq.${area}`);
+        allFocusConditions.push(`lg_focus_area_5.eq.${area}`);
+        allFocusConditions.push(`lg_focus_area_6.eq.${area}`);
+        allFocusConditions.push(`lg_focus_area_7.eq.${area}`);
+        allFocusConditions.push(`lg_focus_area_8.eq.${area}`);
+        allFocusConditions.push(`lg_focus_areas_comprehensive_list.cs.{${area}}`);
       });
-      query = query.or(focusAreaConditions.join(','));
+      
+      if (allFocusConditions.length > 0) {
+        query = query.or(allFocusConditions.join(','));
+      }
     }
 
     // Sectors filter
