@@ -446,6 +446,51 @@ export type Database = {
         }
         Relationships: []
       }
+      interactions_n8n: {
+        Row: {
+          all_emails: string | null
+          all_names: string | null
+          cc_emails: string | null
+          cc_names: string | null
+          created_at: string
+          from_email: string | null
+          from_name: string | null
+          occured_at: string | null
+          source: string | null
+          subject: string | null
+          to_emails: string | null
+          to_names: string | null
+        }
+        Insert: {
+          all_emails?: string | null
+          all_names?: string | null
+          cc_emails?: string | null
+          cc_names?: string | null
+          created_at?: string
+          from_email?: string | null
+          from_name?: string | null
+          occured_at?: string | null
+          source?: string | null
+          subject?: string | null
+          to_emails?: string | null
+          to_names?: string | null
+        }
+        Update: {
+          all_emails?: string | null
+          all_names?: string | null
+          cc_emails?: string | null
+          cc_names?: string | null
+          created_at?: string
+          from_email?: string | null
+          from_name?: string | null
+          occured_at?: string | null
+          source?: string | null
+          subject?: string | null
+          to_emails?: string | null
+          to_names?: string | null
+        }
+        Relationships: []
+      }
       kpi_filter_values: {
         Row: {
           created_at: string | null
