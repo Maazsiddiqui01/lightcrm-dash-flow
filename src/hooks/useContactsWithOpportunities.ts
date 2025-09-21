@@ -130,6 +130,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
       // Focus Areas - check both individual columns and comprehensive list with fuzzy matching
       if (focusAreas.length > 0) {
+        console.log('Filtering contacts with focus areas:', focusAreas);
         const focusAreaConditions = focusAreas.flatMap(area => [
           `lg_focus_area_1.ilike.%${area}%`,
           `lg_focus_area_2.ilike.%${area}%`,
@@ -141,6 +142,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           `lg_focus_area_8.ilike.%${area}%`,
           `lg_focus_areas_comprehensive_list.ilike.%${area}%`
         ]);
+        console.log('Focus area query conditions:', focusAreaConditions);
         contactsQuery = contactsQuery.or(focusAreaConditions.join(','));
       }
 

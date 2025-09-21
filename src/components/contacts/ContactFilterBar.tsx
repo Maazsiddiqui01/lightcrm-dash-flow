@@ -102,6 +102,10 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
   ];
 
   const handleFilterChange = (key: string, value: any) => {
+    // Debug logging for focus areas
+    if (key === 'focusAreas') {
+      console.log('Focus Areas filter changed:', value);
+    }
     onFiltersChange({
       ...filters,
       [key]: value
