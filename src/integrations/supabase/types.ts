@@ -86,6 +86,7 @@ export type Database = {
           last_name: string | null
           latest_contact_email: string | null
           latest_contact_meeting: string | null
+          lg_assistant: string | null
           lg_focus_area_1: string | null
           lg_focus_area_2: string | null
           lg_focus_area_3: string | null
@@ -95,6 +96,7 @@ export type Database = {
           lg_focus_area_7: string | null
           lg_focus_area_8: string | null
           lg_focus_areas_comprehensive_list: string | null
+          lg_lead: string | null
           lg_sector: string | null
           meeting_cc: string | null
           meeting_from: string | null
@@ -138,6 +140,7 @@ export type Database = {
           last_name?: string | null
           latest_contact_email?: string | null
           latest_contact_meeting?: string | null
+          lg_assistant?: string | null
           lg_focus_area_1?: string | null
           lg_focus_area_2?: string | null
           lg_focus_area_3?: string | null
@@ -147,6 +150,7 @@ export type Database = {
           lg_focus_area_7?: string | null
           lg_focus_area_8?: string | null
           lg_focus_areas_comprehensive_list?: string | null
+          lg_lead?: string | null
           lg_sector?: string | null
           meeting_cc?: string | null
           meeting_from?: string | null
@@ -190,6 +194,7 @@ export type Database = {
           last_name?: string | null
           latest_contact_email?: string | null
           latest_contact_meeting?: string | null
+          lg_assistant?: string | null
           lg_focus_area_1?: string | null
           lg_focus_area_2?: string | null
           lg_focus_area_3?: string | null
@@ -199,6 +204,7 @@ export type Database = {
           lg_focus_area_7?: string | null
           lg_focus_area_8?: string | null
           lg_focus_areas_comprehensive_list?: string | null
+          lg_lead?: string | null
           lg_sector?: string | null
           meeting_cc?: string | null
           meeting_from?: string | null
@@ -512,6 +518,36 @@ export type Database = {
           id?: string
           lg_leads?: string[] | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      lg_focus_area_directory: {
+        Row: {
+          assistant_email: string | null
+          assistant_name: string | null
+          focus_area: string
+          lead1_email: string | null
+          lead1_name: string | null
+          lead2_email: string | null
+          lead2_name: string | null
+        }
+        Insert: {
+          assistant_email?: string | null
+          assistant_name?: string | null
+          focus_area: string
+          lead1_email?: string | null
+          lead1_name?: string | null
+          lead2_email?: string | null
+          lead2_name?: string | null
+        }
+        Update: {
+          assistant_email?: string | null
+          assistant_name?: string | null
+          focus_area?: string
+          lead1_email?: string | null
+          lead1_name?: string | null
+          lead2_email?: string | null
+          lead2_name?: string | null
         }
         Relationships: []
       }
