@@ -58,6 +58,22 @@ export const editableColumns: EditableConfig = {
       type: 'select',
       options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
     },
+    lg_focus_area_5: { 
+      type: 'select',
+      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+    },
+    lg_focus_area_6: { 
+      type: 'select',
+      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+    },
+    lg_focus_area_7: { 
+      type: 'select',
+      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+    },
+    lg_focus_area_8: { 
+      type: 'select',
+      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+    },
     category: { type: 'text' },
     contact_type: { 
       type: 'select',
@@ -70,6 +86,10 @@ export const editableColumns: EditableConfig = {
     notes: { type: 'textarea' },
     url_to_online_bio: { type: 'text' },
     outreach_date: { type: 'date' },
+    lg_lead: { type: 'text' },
+    lg_assistant: { type: 'text' },
+    city: { type: 'text' },
+    state: { type: 'text' },
   },
   opportunities_raw: {
     deal_name: { type: 'text', required: true },
@@ -99,6 +119,7 @@ export const editableColumns: EditableConfig = {
     most_recent_notes: { type: 'textarea' },
     
     ebitda_in_ms: { type: 'number', validation: validateNumber },
+    ebitda: { type: 'text' },
     ebitda_notes: { type: 'textarea' },
     ownership: { type: 'text' },
     ownership_type: { 
@@ -107,11 +128,20 @@ export const editableColumns: EditableConfig = {
     },
     investment_professional_point_person_1: { type: 'text' },
     investment_professional_point_person_2: { type: 'text' },
+    investment_professional_point_person_3: { type: 'text' },
+    investment_professional_point_person_4: { type: 'text' },
     deal_source_company: { type: 'text' },
     deal_source_individual_1: { type: 'text' },
     deal_source_individual_2: { type: 'text' },
+    deal_source_contacts: { type: 'textarea' },
     date_of_origination: { type: 'text' },
     dealcloud: { type: 'boolean' },
+    headquarters: { type: 'text' },
+    revenue: { type: 'number', validation: validateNumber },
+    est_deal_size: { type: 'number', validation: validateNumber },
+    est_lg_equity_invest: { type: 'number', validation: validateNumber },
+    lg_team: { type: 'text' },
+    last_modified: { type: 'date' },
   }
 };
 
