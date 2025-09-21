@@ -17,10 +17,10 @@ import {
   useOpportunityPlatformAddOn,
   useOpportunityOwnershipTypes,
   useOpportunityStatuses,
-  useOpportunityLeads
+  useOpportunityLeads,
+  useDistinctOptions
 } from '@/hooks/useDistinctOptions';
 import { useSectors } from '@/hooks/useLookups';
-import { useDistinctFocusAreas } from '@/hooks/useDistinctFocusAreas';
 
 interface ContactFilterBarProps {
   filters: {
@@ -68,13 +68,13 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
 
   // Use canonical lookup options
   const sectorsQuery = useSectors();
-  const focusAreasQuery = useDistinctFocusAreas();
+  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useDistinctOptions(
+    'contacts_raw', 
+    'lg_focus_areas_comprehensive_list', 
+    { isCommaSeparated: true }
+  );
 
   const sectorOptions = sectorsQuery.data || [];
-  const focusAreaOptions = (focusAreasQuery.data || []).map(area => ({ 
-    value: area, 
-    label: area 
-  }));
 
   // Fetch distinct options for contact filters
   const { data: specializationOptions = [], isLoading: specializationsLoading } = useContactAreasOfSpecialization();
@@ -178,7 +178,7 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
           values={filters.focusAreas || []}
           onChange={(values) => handleFilterChange('focusAreas', values)}
           searchPlaceholder="Search Focus Areas"
-          loading={focusAreasQuery.isLoading}
+          loading={focusAreasLoading}
         />
 
         {/* Areas of Specialization */}
