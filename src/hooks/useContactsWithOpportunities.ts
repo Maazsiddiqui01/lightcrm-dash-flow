@@ -96,8 +96,6 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
   const fetchContactsWithOpportunities = async () => {
     try {
-      console.log('🔍 Starting to fetch contacts with filters:', filters);
-      
       // Only show full loading on initial load, use refreshing for subsequent updates
       if (contacts.length === 0) {
         setLoading(true);
@@ -130,7 +128,6 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
       // Focus Areas - check both individual columns and comprehensive list with fuzzy matching
       if (focusAreas.length > 0) {
-        console.log('🎯 Applying focus areas filter:', focusAreas);
         const focusAreaConditions = focusAreas.flatMap(area => [
           `lg_focus_area_1.ilike.%${area}%`,
           `lg_focus_area_2.ilike.%${area}%`,
@@ -142,13 +139,11 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           `lg_focus_area_8.ilike.%${area}%`,
           `lg_focus_areas_comprehensive_list.ilike.%${area}%`
         ]);
-        console.log('🎯 Focus area conditions:', focusAreaConditions.join(','));
         contactsQuery = contactsQuery.or(focusAreaConditions.join(','));
       }
 
       // Sectors
       if (sectors.length > 0) {
-        console.log('🏢 Applying sectors filter:', sectors);
         contactsQuery = contactsQuery.in('lg_sector', sectors);
       }
 
@@ -232,12 +227,6 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       }
 
       const { data: contactsData, error: contactsError } = await contactsQuery;
-
-      console.log('📊 Contacts query result:', { 
-        totalContacts: contactsData?.length || 0, 
-        error: contactsError,
-        sampleContact: contactsData?.[0] 
-      });
 
       if (contactsError) {
         console.error("Error fetching contacts:", contactsError);
