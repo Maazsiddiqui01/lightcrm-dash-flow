@@ -46,6 +46,8 @@ interface ContactRaw {
   category: string | null;
   phone: string | null;
   url_to_online_bio: string | null;
+  lg_lead: string | null; // Added new column
+  lg_assistant: string | null; // Added new column
 }
 
 interface ContactApp {
@@ -384,6 +386,24 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     id="url_to_online_bio"
                     value={contactData.url_to_online_bio || ""}
                     onChange={(e) => updateField("url_to_online_bio", e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="lg_lead">LG Lead</Label>
+                  <Input
+                    id="lg_lead"
+                    value={contactData.lg_lead || ""}
+                    onChange={(e) => updateField("lg_lead", e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="lg_assistant">LG Assistant</Label>
+                  <Input
+                    id="lg_assistant"
+                    value={contactData.lg_assistant || ""}
+                    onChange={(e) => updateField("lg_assistant", e.target.value)}
                   />
                 </div>
               </div>

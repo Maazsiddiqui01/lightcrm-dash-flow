@@ -38,6 +38,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     category: "",
     phone: "",
     url_to_online_bio: "",
+    lg_lead: "",
+    lg_assistant: "",
   });
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,6 +125,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
         category: opt(formData.category),
         phone: opt(formData.phone),
         url_to_online_bio: opt(formData.url_to_online_bio),
+        lg_lead: opt(formData.lg_lead),
+        lg_assistant: opt(formData.lg_assistant),
       };
 
       // Insert into contacts_raw table
@@ -153,6 +157,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
         category: "",
         phone: "",
         url_to_online_bio: "",
+        lg_lead: "",
+        lg_assistant: "",
       });
       setSelectedFocusAreas([]);
 
@@ -185,6 +191,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
       category: "",
       phone: "",
       url_to_online_bio: "",
+      lg_lead: "",
+      lg_assistant: "",
     });
     setSelectedFocusAreas([]);
     onClose();
@@ -332,6 +340,27 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                 value={formData.phone}
                 onChange={(e) => handleInputChange("phone", e.target.value)}
                 placeholder="Enter phone number"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="lg_lead">LG Lead</Label>
+              <Input
+                id="lg_lead"
+                value={formData.lg_lead}
+                onChange={(e) => handleInputChange("lg_lead", e.target.value)}
+                placeholder="Enter LG Lead"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lg_assistant">LG Assistant</Label>
+              <Input
+                id="lg_assistant"
+                value={formData.lg_assistant}
+                onChange={(e) => handleInputChange("lg_assistant", e.target.value)}
+                placeholder="Enter LG Assistant"
               />
             </div>
           </div>

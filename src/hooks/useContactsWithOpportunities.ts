@@ -52,6 +52,8 @@ interface ContactWithOpportunities {
   state: string | null;
   created_at: string | null;
   updated_at: string | null;
+  lg_lead: string | null; // Added new column
+  lg_assistant: string | null; // Added new column
   opportunities: string; // Comma-separated deal names or empty string
   mapped_sectors?: string; // Computed field for sectors mapped from focus areas
 }
