@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateDaysOverUnderMaxLag } from "@/utils/contactCalculations";
 
 interface ContactStats {
   totalContacts: number;
   activeContacts: number;
   totalEmails: number;
   totalMeetings: number;
+  contactsWithCadenceData: number;
+  overdueContacts: number;
+  overdueRate: number;
   loading: boolean;
 }
 
@@ -44,6 +48,9 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
     activeContacts: 0,
     totalEmails: 0,
     totalMeetings: 0,
+    contactsWithCadenceData: 0,
+    overdueContacts: 0,
+    overdueRate: 0,
     loading: true,
   });
 
@@ -220,7 +227,7 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
 
       let statsQuery = supabase
         .from("contacts_raw")
-        .select("of_emails, of_meetings");
+        .select("of_emails, of_meetings, most_recent_contact, delta");
       statsQuery = applyFilters(statsQuery);
 
       // Apply opportunity-based contact filtering if needed
@@ -236,6 +243,9 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
             activeContacts: 0,
             totalEmails: 0,
             totalMeetings: 0,
+            contactsWithCadenceData: 0,
+            overdueContacts: 0,
+            overdueRate: 0,
             loading: false,
           });
           return;
@@ -258,16 +268,49 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
       const totalMeetings = contactsWithStats?.reduce((sum, contact) => 
         sum + ((contact as any).of_meetings || 0), 0) || 0;
 
+      // Calculate cadence metrics
+      let contactsWithCadenceData = 0;
+      let overdueContacts = 0;
+
+      if (contactsWithStats) {
+        contactsWithStats.forEach((contact: any) => {
+          const daysOverUnder = calculateDaysOverUnderMaxLag(
+            contact.most_recent_contact,
+            contact.delta
+          );
+          
+          if (daysOverUnder !== null) {
+            contactsWithCadenceData++;
+            if (daysOverUnder < 0) {
+              overdueContacts++;
+            }
+          }
+        });
+      }
+
+      const overdueRate = contactsWithCadenceData > 0 
+        ? (overdueContacts / contactsWithCadenceData) * 100 
+        : 0;
+
       setStats({
         totalContacts: totalContacts || 0,
         activeContacts: activeContacts || 0,
         totalEmails,
         totalMeetings,
+        contactsWithCadenceData,
+        overdueContacts,
+        overdueRate,
         loading: false,
       });
     } catch (error) {
       console.error("Error fetching contact stats:", error);
-      setStats(prev => ({ ...prev, loading: false }));
+      setStats(prev => ({ 
+        ...prev, 
+        contactsWithCadenceData: 0,
+        overdueContacts: 0,
+        overdueRate: 0,
+        loading: false 
+      }));
     }
   };
 
