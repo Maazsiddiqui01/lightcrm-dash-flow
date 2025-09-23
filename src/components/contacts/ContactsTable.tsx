@@ -240,12 +240,6 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
                 <FileText className="mr-2 h-4 w-4" />
                 Add Note
               </DropdownMenuItem>
-              {editMode.editState && (
-                <DropdownMenuItem onClick={() => editMode.startEdit(contact.id)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
