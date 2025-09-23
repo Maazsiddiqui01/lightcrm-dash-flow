@@ -33,6 +33,7 @@ interface Opportunity {
   sector: string;
   lg_focus_area: string;
   platform_add_on: string;
+  process_timeline?: string;
   date_of_origination: string;
   deal_source_company: string;
   deal_source_individual_1: string;
@@ -112,6 +113,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         sector: opportunity.sector || "",
         lg_focus_area: opportunity.lg_focus_area || "",
         platform_add_on: opportunity.platform_add_on || "",
+        process_timeline: opportunity.process_timeline || "",
         ownership: opportunity.ownership || "",
         ownership_type: opportunity.ownership_type || "",
         url: opportunity.url || "",
@@ -376,6 +378,16 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 value={editedFields.platform_add_on || ""}
                 onChange={(value) => handleFieldChange("platform_add_on", value)}
                 placeholder="Select platform/add-on"
+                disabled={isLoading}
+              />
+
+              {/* Process Timeline */}
+              <SingleSelectDropdown
+                label="Process Timeline"
+                options={['1-90 days', '91-180 days', '181-270 days', '271-365 days', '365+ days']}
+                value={editedFields.process_timeline || ""}
+                onChange={(value) => handleFieldChange("process_timeline", value)}
+                placeholder="Select process timeline"
                 disabled={isLoading}
               />
             </div>

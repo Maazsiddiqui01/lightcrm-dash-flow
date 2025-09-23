@@ -27,7 +27,8 @@ export function Opportunities() {
     referralCompanies: [],
     dateOfOrigination: [],
     dealcloud: [],
-    headquarters: []
+    headquarters: [],
+    processTimeline: []
   });
 
   // Type-safe filter conversion
@@ -45,7 +46,8 @@ export function Opportunities() {
     referralCompanies: (rawFilters.referralCompanies as string[]) || [],
     dateOfOrigination: (rawFilters.dateOfOrigination as string[]) || [],
     dealcloud: (rawFilters.dealcloud as string[]) || [],
-    headquarters: (rawFilters.headquarters as string[]) || []
+    headquarters: (rawFilters.headquarters as string[]) || [],
+    processTimeline: (rawFilters.processTimeline as string[]) || []
   };
 
   const stats = useOpportunityStats(filters);

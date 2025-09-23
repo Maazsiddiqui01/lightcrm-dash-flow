@@ -30,6 +30,7 @@ interface OpportunityFilters {
   dateOfOrigination: string[];
   dealcloud?: string[];
   headquarters: string[];
+  processTimeline: string[];
   [key: string]: any;
 }
 
@@ -74,6 +75,15 @@ export function OpportunityFilterBar({
   const dealcloudOptions = [
     { value: 'Yes', label: 'Yes' },
     { value: 'No', label: 'No' }
+  ];
+
+  // Process Timeline options (static)
+  const processTimelineOptions = [
+    { value: '1-90 days', label: '1-90 days' },
+    { value: '91-180 days', label: '91-180 days' },
+    { value: '181-270 days', label: '181-270 days' },
+    { value: '271-365 days', label: '271-365 days' },
+    { value: '365+ days', label: '365+ days' }
   ];
 
   const updateFilter = (key: keyof OpportunityFilters, value: any) => {
@@ -220,6 +230,14 @@ export function OpportunityFilterBar({
           onChange={(values) => updateFilter('headquarters', values)}
           searchPlaceholder="Search Headquarters"
           loading={headquartersLoading}
+        />
+
+        <ComboboxMulti
+          label="Process Timeline"
+          options={processTimelineOptions}
+          values={filters.processTimeline || []}
+          onChange={(values) => updateFilter('processTimeline', values)}
+          searchPlaceholder="Select Process Timeline"
         />
       </div>
     </div>

@@ -36,6 +36,7 @@ interface Opportunity {
   next_steps: string;
   most_recent_notes: string;
   url: string;
+  process_timeline?: string;
   created_at: string;
   updated_at: string;
   dealcloud: boolean;

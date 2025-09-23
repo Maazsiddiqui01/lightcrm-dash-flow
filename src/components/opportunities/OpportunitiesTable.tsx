@@ -56,6 +56,7 @@ interface OpportunityRaw {
   deal_source_individual_1: string | null;
   deal_source_individual_2: string | null;
   date_of_origination: string | null;
+  process_timeline: string | null;
   dealcloud: boolean | null;
   headquarters: string | null;
   revenue: number | null;
@@ -80,6 +81,7 @@ interface OpportunityFilters {
   referralCompanies: string[];
   dateOfOrigination: string[];
   headquarters: string[];
+  processTimeline: string[];
 }
 
 interface OpportunitiesTableProps {
@@ -217,6 +219,11 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         query = query.in('headquarters', filters.headquarters);
       }
 
+      // Process Timeline filter
+      if (filters.processTimeline.length > 0) {
+        query = query.in('process_timeline', filters.processTimeline);
+      }
+
       // LG Leads filter
       if (filters.leads.length > 0) {
         const lgLeadQuery = filters.leads.map(lead => 
@@ -294,7 +301,14 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
 
       // Apply client-side sorting for custom orders
       const sortedData = applyClientSort(data || [], sortLevels);
-      setOpportunities(sortedData);
+      
+      // Ensure process_timeline field exists on all records for type safety
+      const processedData = sortedData.map(opportunity => ({
+        ...opportunity,
+        process_timeline: opportunity.process_timeline || null
+      }));
+      
+      setOpportunities(processedData);
     } catch (error) {
       console.error("Unexpected error:", error);
       toast({
