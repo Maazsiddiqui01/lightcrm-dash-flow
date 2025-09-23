@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { editableColumns } from '@/config/editableColumns';
 import { EditState } from '@/lib/dynamicColumns';
 import { toast } from '@/hooks/use-toast';
+import { calculateDerivedFields } from '@/utils/opportunityHelpers';
 
 
 export interface UseEditModeReturn {
@@ -74,6 +75,20 @@ export function useEditMode<T extends { id: string }>(
       }
       newEditedRows[rowId][columnKey] = value;
 
+      // Calculate derived fields (e.g., lg_team from investment professional fields)
+      const currentRowData = data.find(row => row.id === rowId);
+      if (currentRowData) {
+        const derivedFields = calculateDerivedFields(
+          tableName,
+          columnKey,
+          currentRowData,
+          newEditedRows[rowId]
+        );
+
+        // Add derived fields to the edited row
+        Object.assign(newEditedRows[rowId], derivedFields);
+      }
+
       // Update errors
       if (!newCellErrors[rowId]) {
         newCellErrors[rowId] = {};
@@ -95,7 +110,7 @@ export function useEditMode<T extends { id: string }>(
         editingCell: null,
       };
     });
-  }, [validateValue]);
+  }, [validateValue, data, tableName]);
 
   const cancelEdit = useCallback(() => {
     setEditState(prev => ({
