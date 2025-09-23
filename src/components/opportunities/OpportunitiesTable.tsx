@@ -51,6 +51,7 @@ interface OpportunityRaw {
   investment_professional_point_person_2: string | null;
   investment_professional_point_person_3: string | null;
   investment_professional_point_person_4: string | null;
+  lg_team: string | null;
   deal_source_company: string | null;
   deal_source_individual_1: string | null;
   deal_source_individual_2: string | null;
