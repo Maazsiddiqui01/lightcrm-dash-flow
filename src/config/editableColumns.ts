@@ -103,11 +103,11 @@ export const editableColumns: EditableConfig = {
     },
     platform_add_on: { 
       type: 'select',
-      options: ['Platform', 'Add-on', 'Both']
+      options: ['Platform', 'Add-on', 'Add-on: Aspire Bakeries', 'Add-on: Creation Technologies', 'Add-on: GSF', 'Add-on: Kleinfelder', 'Add-on: Lightwave', 'Add-on: MMS', 'Both']
     },
     tier: { 
       type: 'select',
-      options: ['Tier 1', 'Tier 2', 'Tier 3']
+      options: ['1', '2', '3', '4', '5']
     },
     status: { 
       type: 'select',
