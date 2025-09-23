@@ -56,7 +56,7 @@ interface OpportunityRaw {
   deal_source_individual_1: string | null;
   deal_source_individual_2: string | null;
   date_of_origination: string | null;
-  process_timeline: string | null;
+  process_timeline?: string | null;
   dealcloud: boolean | null;
   headquarters: string | null;
   revenue: number | null;
@@ -219,10 +219,9 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         query = query.in('headquarters', filters.headquarters);
       }
 
-      // Process Timeline filter
-      if (filters.processTimeline.length > 0) {
-        query = query.in('process_timeline', filters.processTimeline);
-      }
+      // Process Timeline filter - applied client-side to avoid TS inference issues
+      // Server-side filtering commented out due to TypeScript compilation issues
+      // Will be applied on retrieved data instead
 
       // LG Leads filter
       if (filters.leads.length > 0) {
@@ -300,15 +299,17 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
       }
 
       // Apply client-side sorting for custom orders
-      const sortedData = applyClientSort(data || [], sortLevels);
+      let sortedData = applyClientSort(data || [], sortLevels);
       
-      // Ensure process_timeline field exists on all records for type safety
-      const processedData = sortedData.map(opportunity => ({
-        ...opportunity,
-        process_timeline: opportunity.process_timeline || null
-      }));
+      // Apply Process Timeline filter on client side to avoid TS inference issues
+      if (filters.processTimeline?.length > 0) {
+        sortedData = sortedData.filter(opportunity => {
+          const processTimeline = (opportunity as any).process_timeline;
+          return filters.processTimeline.includes(processTimeline || '');
+        });
+      }
       
-      setOpportunities(processedData);
+      setOpportunities(sortedData as OpportunityRaw[]);
     } catch (error) {
       console.error("Unexpected error:", error);
       toast({
