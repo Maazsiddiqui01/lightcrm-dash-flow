@@ -199,8 +199,8 @@ export function createDynamicColumns<T extends Record<string, any>>(
           );
         }
 
-        // Special handling for summary columns - use text wrapping instead of truncation
-        if (tableColumn.name.includes('summary') && displayValue.length > 50) {
+        // Special handling for summary columns (except summary_of_opportunity which should use tooltip)
+        if (tableColumn.name.includes('summary') && tableColumn.name !== 'summary_of_opportunity' && displayValue.length > 50) {
           return (
             <div className={`text-wrap break-words leading-tight line-clamp-3 ${isModified ? 'font-medium text-primary' : ''}`}>
               {displayValue}
