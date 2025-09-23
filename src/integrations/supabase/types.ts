@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      contact_note_events: {
+        Row: {
+          contact_id: string
+          content: string
+          created_at: string
+          created_by: string | null
+          field: string
+          id: string
+        }
+        Insert: {
+          contact_id: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          field?: string
+          id?: string
+        }
+        Update: {
+          contact_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          field?: string
+          id?: string
+        }
+        Relationships: []
+      }
       contacts_dismissed_emails: {
         Row: {
           dismissed_at: string | null
@@ -937,6 +964,30 @@ export type Database = {
           last_subject: string | null
           name_guess: string | null
           org_guess: string | null
+        }
+        Relationships: []
+      }
+      contact_notes_timeline: {
+        Row: {
+          contact_id: string | null
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          field: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          field?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          field?: string | null
         }
         Relationships: []
       }
