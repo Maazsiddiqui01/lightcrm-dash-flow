@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Target, MessageSquare, Table, Bot, LogOut, Eye, BarChart3 } from "lucide-react";
+import { Home, Users, Target, MessageSquare, Table, Bot, LogOut, Eye, BarChart3, FileText } from "lucide-react";
 
 const menuItems = [
   { title: "Sourcing Greatness", url: "/sourcing-greatness", icon: BarChart3 },
@@ -20,6 +20,7 @@ const menuItems = [
   { title: "Missing Contacts", url: "/missing-contacts", icon: Users },
   { title: "Opportunities", url: "/opportunities", icon: Target },
   { title: "Interactions", url: "/interactions", icon: MessageSquare },
+  { title: "Articles", url: "/articles", icon: FileText },
   { title: "KPIs", url: "/kpis", icon: BarChart3 },
   { title: "Tom New View", url: "/tom-new-view", icon: Eye },
   { title: "Make Your Own View", url: "/make-your-own-view", icon: Table },

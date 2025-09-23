@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      articles: {
+        Row: {
+          added_date: string
+          article_date: string | null
+          article_link: string
+          created_at: string
+          focus_area: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          added_date?: string
+          article_date?: string | null
+          article_link: string
+          created_at?: string
+          focus_area: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          added_date?: string
+          article_date?: string | null
+          article_link?: string
+          created_at?: string
+          focus_area?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_note_events: {
         Row: {
           contact_id: string
@@ -1854,6 +1884,10 @@ export type Database = {
       dismiss_missing_contact: {
         Args: { p_email: string }
         Returns: boolean
+      }
+      get_article_age_in_days: {
+        Args: { added_date: string }
+        Returns: number
       }
       gtrgm_compress: {
         Args: { "": unknown }
