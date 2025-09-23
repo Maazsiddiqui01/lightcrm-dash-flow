@@ -39,11 +39,13 @@ export function QuickAddModal({
     if (!content.trim()) return;
 
     const saveFunction = isNextSteps ? saveNextSteps : saveMostRecentNotes;
-    saveFunction({ opportunityId, content: content.trim() });
-    
-    // Close modal and reset content
-    setContent('');
-    onOpenChange(false);
+    saveFunction({ opportunityId, content: content.trim() }, {
+      onSuccess: () => {
+        // Close modal and reset content only on successful save
+        setContent('');
+        onOpenChange(false);
+      }
+    });
   };
 
   const handleCancel = () => {
