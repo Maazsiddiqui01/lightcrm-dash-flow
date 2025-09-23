@@ -195,7 +195,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
       ),
     };
 
-    return [...baseColumns, actionsColumn];
+    return [actionsColumn, ...baseColumns];
   }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility]);
   
   // Create column options for sort dialog
