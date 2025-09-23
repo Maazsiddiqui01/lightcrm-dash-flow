@@ -4,11 +4,12 @@ import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
 import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { sendContactEmail } from "@/features/contacts/sendEmail";
 
 // Dynamic column imports
 import { CONTACTS_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -210,28 +211,56 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     );
   }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility]);
 
+  // Handle send email
+  const handleSendContactEmail = async (contactId: string) => {
+    try {
+      await sendContactEmail(contactId);
+      toast({
+        title: "Success",
+        description: "Contact email sent successfully",
+      });
+    } catch (error) {
+      console.error('Error sending contact email:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send contact email",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Add actions column
   const columns = useMemo(() => {
     const actionsColumn = {
-      id: "actions",
+      id: "actions", 
+      key: "actions",
+      label: "Actions",
       header: "Actions",
+      hideable: false,
       cell: ({ row }) => {
         const contact = row.original;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+              <Button size="sm" variant="outline" className="h-8">
+                <Mail className="mr-2 h-4 w-4" />
+                Actions
+                <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleRowClick(contact)}>
-                <Eye className="mr-2 h-4 w-4" />
-                View Details
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSendContactEmail(contact.id);
+                }}
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                Send Email
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setNoteContactId(contact.id);
                   setNoteContactName(contact.full_name || contact.email_address || 'Unknown');
                   setIsAddNoteModalOpen(true);
@@ -247,7 +276,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     };
 
     return [actionsColumn, ...dynamicColumns];
-  }, [dynamicColumns, editMode.editState, editMode.startEdit]);
+  }, [dynamicColumns, toast]);
   
   // Create column options for sort dialog
   const columnOptions: ColumnOption[] = useMemo(() => {
@@ -398,7 +427,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       {/* Dynamic Table */}
       <ResponsiveAdvancedTable
         data={filteredContacts}
-        columns={dynamicColumns}
+        columns={columns}
         loading={loading} // Only show full skeleton on initial load
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
@@ -436,6 +465,14 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
           refetch();
           setIsAddDialogOpen(false);
         }}
+      />
+
+      {/* Add Note Modal */}
+      <QuickAddContactNoteModal
+        open={isAddNoteModalOpen}
+        onOpenChange={setIsAddNoteModalOpen}
+        contactId={noteContactId || ''}
+        contactName={noteContactName}
       />
 
       {/* Multi-Sort Dialog */}
