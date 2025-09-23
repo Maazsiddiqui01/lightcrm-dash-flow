@@ -1793,6 +1793,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_contact_note: {
+        Args: { p_contact_id: string; p_content: string; p_field: string }
+        Returns: undefined
+      }
       add_opportunity_note: {
         Args: { p_content: string; p_field: string; p_opportunity_id: string }
         Returns: undefined
