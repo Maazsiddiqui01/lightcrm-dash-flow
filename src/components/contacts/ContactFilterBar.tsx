@@ -20,6 +20,8 @@ import {
   useOpportunityLeads,
   useDistinctOptions
 } from '@/hooks/useDistinctOptions';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useSectors } from '@/hooks/useLookups';
 
 interface ContactFilterBarProps {
@@ -68,11 +70,21 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
 
   // Use canonical lookup options
   const sectorsQuery = useSectors();
-  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useDistinctOptions(
-    'contacts_raw', 
-    'lg_focus_areas_comprehensive_list', 
-    { isCommaSeparated: true }
-  );
+  const { data: focusAreaOptions = [], isLoading: focusAreasLoading } = useQuery({
+    queryKey: ['contacts-focus-areas'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ui_distinct_focus_areas_v')
+        .select('focus_area')
+        .order('focus_area');
+      if (error) throw error;
+      return data?.map(item => ({ 
+        value: item.focus_area, 
+        label: item.focus_area 
+      })) || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const sectorOptions = sectorsQuery.data || [];
 
