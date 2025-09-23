@@ -127,8 +127,8 @@ export function OpportunityFilterBar({
         <ComboboxMulti
           label="LG Focus Area"
           options={focusAreas}
-          values={filters.focusArea}
-          onChange={(values) => updateFilter('focusArea', values)}
+          values={filters.focusArea.filter(fa => fa !== 'HC: (All)')} // Filter out virtual option from display
+          onChange={(values) => updateFilter('focusArea', values.filter(v => v !== 'HC: (All)'))} // Filter out virtual option from actual filters
           searchPlaceholder="Search Focus Areas"
           loading={focusAreasQuery.isLoading}
         />

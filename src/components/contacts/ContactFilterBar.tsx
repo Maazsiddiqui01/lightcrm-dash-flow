@@ -187,8 +187,8 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
         <ComboboxMulti
           label="LG Focus Areas"
           options={focusAreaOptions}
-          values={filters.focusAreas || []}
-          onChange={(values) => handleFilterChange('focusAreas', values)}
+          values={filters.focusAreas?.filter(fa => fa !== 'HC: (All)') || []} // Filter out virtual option from display
+          onChange={(values) => handleFilterChange('focusAreas', values.filter(v => v !== 'HC: (All)'))} // Filter out virtual option from actual filters
           searchPlaceholder="Search Focus Areas"
           loading={focusAreasLoading}
         />

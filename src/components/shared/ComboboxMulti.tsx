@@ -46,19 +46,43 @@ export function ComboboxMulti({
       )
     : options;
 
-  // Add "All" and "Clear All" options at the top
+  // Add "All" and "Clear All" options at the top, plus "HC: (All)" if there are HC options
   const allOption = { value: "ALL", label: "All" };
   const clearAllOption = { value: "CLEAR_ALL", label: "Clear All" };
-  const optionsWithControls = [allOption, clearAllOption, ...filteredOptions.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL")];
+  const hasHcOptions = options.some(opt => opt.value.startsWith("HC:") && opt.value !== "HC: (All)");
+  const hcAllOption = hasHcOptions ? { value: "HC: (All)", label: "HC: (All)" } : null;
+  
+  const controlOptions = [allOption, clearAllOption];
+  if (hcAllOption) controlOptions.push(hcAllOption);
+  
+  const optionsWithControls = [
+    ...controlOptions, 
+    ...filteredOptions.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL" && opt.value !== "HC: (All)")
+  ];
 
   const handleSelect = (value: string) => {
     if (value === "ALL") {
       // If "All" is selected, select all available options
-      const allValues = options.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL").map(opt => opt.value);
+      const allValues = options.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL" && opt.value !== "HC: (All)").map(opt => opt.value);
       onChange(allValues);
     } else if (value === "CLEAR_ALL") {
       // If "Clear All" is selected, clear all selections
       onChange([]);
+    } else if (value === "HC: (All)") {
+      // If "HC: (All)" is selected, select all HC focus areas
+      const hcValues = options.filter(opt => opt.value.startsWith("HC:") && opt.value !== "HC: (All)").map(opt => opt.value);
+      const currentNonHcValues = safeValues.filter(v => !v.startsWith("HC:"));
+      
+      // Check if all HC values are already selected
+      const allHcSelected = hcValues.every(hcValue => safeValues.includes(hcValue));
+      
+      if (allHcSelected) {
+        // If all HC values are selected, deselect them
+        onChange(currentNonHcValues);
+      } else {
+        // Otherwise, select all HC values (keeping non-HC selections)
+        onChange([...currentNonHcValues, ...hcValues]);
+      }
     } else {
       const newValues = safeValues.includes(value)
         ? safeValues.filter(v => v !== value)
@@ -134,9 +158,14 @@ export function ComboboxMulti({
               <CommandGroup>
                 {optionsWithControls.map((option) => {
                   const isSelected = option.value === "ALL" 
-                    ? safeValues.length === options.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL").length
+                    ? safeValues.length === options.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL" && opt.value !== "HC: (All)").length
                     : option.value === "CLEAR_ALL"
                     ? safeValues.length === 0
+                    : option.value === "HC: (All)"
+                    ? (() => {
+                        const hcOptions = options.filter(opt => opt.value.startsWith("HC:") && opt.value !== "HC: (All)");
+                        return hcOptions.length > 0 && hcOptions.every(hcOpt => safeValues.includes(hcOpt.value));
+                      })()
                     : safeValues.includes(option.value);
                   
                   return (

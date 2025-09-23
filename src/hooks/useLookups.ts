@@ -100,7 +100,7 @@ export const useFocusAreas = ({ sectorId }: { sectorId?: string } = {}) => {
           fallbackAreas = FOCUS_AREAS.filter(area => area.sector_id === sectorId);
         }
         
-        return fallbackAreas.map(area => ({
+        const result = fallbackAreas.map(area => ({
           value: area.label,
           label: area.label,
           meta: { 
@@ -109,9 +109,25 @@ export const useFocusAreas = ({ sectorId }: { sectorId?: string } = {}) => {
             sector_label: SECTORS.find(s => s.id === area.sector_id)?.label
           }
         }));
+
+        // Add HC: (All) as a virtual option for group selection if there are HC focus areas
+        const hasHcOptions = result.some(fa => fa.value.startsWith('HC:'));
+        if (hasHcOptions) {
+          // Insert HC: (All) after the first HC option for logical grouping
+          const hcIndex = result.findIndex(fa => fa.value.startsWith('HC:'));
+          if (hcIndex >= 0) {
+            result.splice(hcIndex, 0, { 
+              value: 'HC: (All)', 
+              label: 'HC: (All)', 
+              meta: { id: 'hc-all-virtual', sector_id: '', sector_label: '' } 
+            });
+          }
+        }
+        
+        return result;
       }
 
-      return (data || []).map(focusArea => ({
+      const result = (data || []).map(focusArea => ({
         value: focusArea.label,
         label: focusArea.label,
         meta: { 
@@ -120,6 +136,22 @@ export const useFocusAreas = ({ sectorId }: { sectorId?: string } = {}) => {
           sector_label: (focusArea.lookup_sectors as any)?.label
         }
       }));
+
+      // Add HC: (All) as a virtual option for group selection if there are HC focus areas
+      const hasHcOptions = result.some(fa => fa.value.startsWith('HC:'));
+      if (hasHcOptions) {
+        // Insert HC: (All) after the first HC option for logical grouping
+        const hcIndex = result.findIndex(fa => fa.value.startsWith('HC:'));
+        if (hcIndex >= 0) {
+          result.splice(hcIndex, 0, { 
+            value: 'HC: (All)', 
+            label: 'HC: (All)', 
+            meta: { id: 'hc-all-virtual', sector_id: '', sector_label: '' } 
+          });
+        }
+      }
+
+      return result;
     },
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 24, // 24 hours

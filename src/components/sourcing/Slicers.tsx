@@ -117,7 +117,20 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         .select('lg_focus_area')
         .not('lg_focus_area', 'is', null);
       if (error) throw error;
-      return [...new Set(data.map(row => row.lg_focus_area).filter(Boolean))].sort();
+      
+      const areas = [...new Set(data.map(row => row.lg_focus_area).filter(Boolean))].sort();
+      
+      // Add HC: (All) as a virtual option for group selection if there are HC focus areas
+      const hasHcOptions = areas.some(area => area.startsWith('HC:'));
+      if (hasHcOptions) {
+        // Insert HC: (All) after the first HC option for logical grouping
+        const hcIndex = areas.findIndex(area => area.startsWith('HC:'));
+        if (hcIndex >= 0) {
+          areas.splice(hcIndex, 0, 'HC: (All)');
+        }
+      }
+      
+      return areas;
     },
     staleTime: 300_000,
   });
@@ -186,10 +199,28 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
 
   const toggleArrayFilter = (key: string, value: string) => {
     const current = filters[key] as string[];
-    const updated = current.includes(value)
-      ? current.filter(v => v !== value)
-      : [...current, value];
-    updateFilter(key, updated);
+    
+    if (value === "HC: (All)") {
+      // Handle HC: (All) group selection
+      const hcOptions = focusAreas.filter(area => area.startsWith('HC:') && area !== 'HC: (All)');
+      const currentNonHcValues = current.filter(v => !v.startsWith('HC:'));
+      
+      // Check if all HC values are already selected
+      const allHcSelected = hcOptions.every(hcValue => current.includes(hcValue));
+      
+      if (allHcSelected) {
+        // If all HC values are selected, deselect them
+        updateFilter(key, currentNonHcValues);
+      } else {
+        // Otherwise, select all HC values (keeping non-HC selections)
+        updateFilter(key, [...currentNonHcValues, ...hcOptions]);
+      }
+    } else {
+      const updated = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+      updateFilter(key, updated);
+    }
   };
 
   const clearAllFilters = () => {
@@ -353,22 +384,25 @@ function MultiSelectDropdown({ label, options, selected, onToggle, onBatchUpdate
 
   const handleSelectAll = () => {
     if (onBatchUpdate) {
-      // If all are selected, clear selection; otherwise select all
-      if (selected.length === options.length) {
+      // Filter out virtual options like "HC: (All)" for batch operations
+      const realOptions = options.filter(opt => opt !== "HC: (All)");
+      // If all real options are selected, clear selection; otherwise select all real options
+      if (selected.length === realOptions.length) {
         onBatchUpdate([]);
       } else {
-        onBatchUpdate([...options]);
+        onBatchUpdate([...realOptions]);
       }
     } else {
       // Fallback to individual toggles if no batch update function
-      if (selected.length === options.length) {
-        options.forEach(option => {
+      const realOptions = options.filter(opt => opt !== "HC: (All)");
+      if (selected.length === realOptions.length) {
+        realOptions.forEach(option => {
           if (selected.includes(option)) {
             onToggle(option);
           }
         });
       } else {
-        options.forEach(option => {
+        realOptions.forEach(option => {
           if (!selected.includes(option)) {
             onToggle(option);
           }
@@ -377,7 +411,8 @@ function MultiSelectDropdown({ label, options, selected, onToggle, onBatchUpdate
     }
   };
 
-  const isAllSelected = selected.length === options.length;
+  const realOptions = options.filter(opt => opt !== "HC: (All)");
+  const isAllSelected = selected.length === realOptions.length;
 
   return (
     <div className="space-y-2">
@@ -417,21 +452,29 @@ function MultiSelectDropdown({ label, options, selected, onToggle, onBatchUpdate
                 />
                 {isAllSelected ? "Unselect All" : "Select All"}
               </CommandItem>
-              {options.map((option) => (
-                <CommandItem
-                  key={option}
-                  value={option}
-                  onSelect={() => onToggle(option)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selected.includes(option) ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option}
-                </CommandItem>
-              ))}
+              {options.map((option) => {
+                const isHcGroupSelector = option === "HC: (All)";
+                const isHcGroupSelected = isHcGroupSelector && (() => {
+                  const hcOptions = options.filter(opt => opt.startsWith('HC:') && opt !== 'HC: (All)');
+                  return hcOptions.length > 0 && hcOptions.every(hcOpt => selected.includes(hcOpt));
+                })();
+                
+                return (
+                  <CommandItem
+                    key={option}
+                    value={option}
+                    onSelect={() => onToggle(option)}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        (isHcGroupSelector ? isHcGroupSelected : selected.includes(option)) ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </Command>
         </PopoverContent>
