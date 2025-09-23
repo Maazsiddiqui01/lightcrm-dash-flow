@@ -232,13 +232,11 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   // Add actions column
   const columns = useMemo(() => {
     const actionsColumn = {
-      id: "actions", 
       key: "actions",
       label: "Actions",
-      header: "Actions",
-      hideable: false,
-      cell: ({ row }) => {
-        const contact = row.original;
+      width: 120,
+      enableHiding: false,
+      render: (value: any, row: ContactRaw) => {
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -252,7 +250,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
               <DropdownMenuItem 
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSendContactEmail(contact.id);
+                  handleSendContactEmail(row.id);
                 }}
               >
                 <Mail className="mr-2 h-4 w-4" />
@@ -261,8 +259,8 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
               <DropdownMenuItem 
                 onClick={(e) => {
                   e.stopPropagation();
-                  setNoteContactId(contact.id);
-                  setNoteContactName(contact.full_name || contact.email_address || 'Unknown');
+                  setNoteContactId(row.id);
+                  setNoteContactName(row.full_name || row.email_address || 'Unknown');
                   setIsAddNoteModalOpen(true);
                 }}
               >
