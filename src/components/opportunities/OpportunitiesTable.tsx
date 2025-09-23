@@ -5,11 +5,18 @@ import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedT
 import { OpportunityDrawer } from "./OpportunityDrawer";
 import { AddOpportunityDialog } from "./AddOpportunityDialog";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Briefcase, Mail, ArrowUpDown } from "lucide-react";
+import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
 import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { QuickAddModal } from "./QuickAddModal";
 
 // Dynamic column imports
 import { OPPORTUNITIES_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -97,6 +104,8 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string>("created_at");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
+  const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
+  const [quickAddType, setQuickAddType] = useState<'next_steps' | 'most_recent_notes'>('next_steps');
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   
@@ -134,29 +143,59 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
       columnVisibility.columnVisibility
     );
 
-    // Add the Send Email action column at the end
-    const emailColumn = {
+    // Add the Actions dropdown column at the end
+    const actionsColumn = {
       key: 'actions',
       label: 'Actions',
       width: 120,
       enableHiding: false,
       render: (value: any, row: OpportunityRaw) => (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleSendEmail(row);
-          }}
-          className="h-8"
-        >
-          <Mail className="h-3 w-3 mr-1" />
-          Send Email
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="h-8">
+              <Mail className="h-3 w-3 mr-1" />
+              Actions
+              <ChevronDown className="h-3 w-3 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSendEmail(row);
+              }}
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Send Email
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedOpportunity(row);
+                setQuickAddType('next_steps');
+                setIsQuickAddModalOpen(true);
+              }}
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add New Next Step
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedOpportunity(row);
+                setQuickAddType('most_recent_notes');
+                setIsQuickAddModalOpen(true);
+              }}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Add New Note
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ),
     };
 
-    return [...baseColumns, emailColumn];
+    return [...baseColumns, actionsColumn];
   }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility]);
   
   // Create column options for sort dialog
@@ -519,6 +558,15 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         columns={columnOptions}
         sortLevels={sortLevels}
         onApply={handleSortChange}
+      />
+
+      {/* Quick Add Modal */}
+      <QuickAddModal
+        open={isQuickAddModalOpen}
+        onOpenChange={setIsQuickAddModalOpen}
+        opportunityId={selectedOpportunity?.id || ''}
+        type={quickAddType}
+        opportunityName={selectedOpportunity?.deal_name || ''}
       />
     </div>
   );
