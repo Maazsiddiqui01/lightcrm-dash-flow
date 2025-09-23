@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useContactNotes } from "@/hooks/useContactNotes";
+import { ContactNotesSection } from "./ContactNotesSection";
 import {
   Sheet,
   SheetContent,
@@ -88,6 +90,16 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   const [saving, setSaving] = useState(false);
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const { toast } = useToast();
+  
+  // Contact notes hook
+  const {
+    currentNotes,
+    timeline,
+    isLoadingCurrent,
+    isLoadingTimeline,
+    saveNotes,
+    isSavingNotes,
+  } = useContactNotes(contact?.id);
 
   // Use canonical lookup options
   const sectorsQuery = useSectors();
@@ -548,21 +560,17 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
 
             <Separator />
 
-            {/* Notes */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Notes</h3>
-              
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={contactData.notes || ""}
-                  onChange={(e) => updateField("notes", e.target.value)}
-                  rows={4}
-                  placeholder="Add notes about this contact..."
-                />
-              </div>
-            </div>
+            {/* Notes Section - Using new ContactNotesSection */}
+            <ContactNotesSection
+              title="Notes"
+              field="notes"
+              currentValue={currentNotes?.notes || null}
+              timeline={timeline}
+              onSave={saveNotes}
+              isLoadingCurrent={isLoadingCurrent}
+              isLoadingTimeline={isLoadingTimeline}
+              isSaving={isSavingNotes}
+            />
 
             <Separator />
 

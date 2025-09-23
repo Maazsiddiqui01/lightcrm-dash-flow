@@ -2,11 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
 import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
+import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, User, ArrowUpDown } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Dynamic column imports
 import { CONTACTS_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -125,12 +127,13 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string>("most_recent_contact");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
-  const { toast } = useToast();
-  const [isExporting, setIsExporting] = useState(false);
-  
-  // Multi-sort state
   const [sortLevels, setSortLevels] = useState<SortLevel[]>([]);
   const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
+  const [noteContactId, setNoteContactId] = useState<string | null>(null);
+  const [noteContactName, setNoteContactName] = useState<string>('');
+  const { toast } = useToast();
   
   // Load sort state on mount
   useEffect(() => {
@@ -206,6 +209,51 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       columnVisibility.columnVisibility
     );
   }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility]);
+
+  // Add actions column
+  const columns = useMemo(() => {
+    const actionsColumn = {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const contact = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleRowClick(contact)}>
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setNoteContactId(contact.id);
+                  setNoteContactName(contact.full_name || contact.email_address || 'Unknown');
+                  setIsAddNoteModalOpen(true);
+                }}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Add Note
+              </DropdownMenuItem>
+              {editMode.editState && (
+                <DropdownMenuItem onClick={() => editMode.startEdit(contact.id)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    };
+
+    return [actionsColumn, ...dynamicColumns];
+  }, [dynamicColumns, editMode.editState, editMode.startEdit]);
   
   // Create column options for sort dialog
   const columnOptions: ColumnOption[] = useMemo(() => {
