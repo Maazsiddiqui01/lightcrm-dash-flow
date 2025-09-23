@@ -53,7 +53,15 @@ export function OpportunityFilterBar({
 
   // Use existing hooks for other options
   const { data: ownershipTypes = [], isLoading: ownershipLoading } = useOpportunityOwnershipTypes();
-  const tiers = tierOptions.map(value => ({ value, label: value }));
+  
+  // Tier options with definitions for display, but values remain as numbers
+  const tiers = [
+    { value: '1', label: '1-Active' },
+    { value: '2', label: '2-Longer Term' },
+    { value: '3', label: '3-For Review' },
+    { value: '4', label: '4-Likely Pass' },
+    { value: '5', label: '5-Passed' }
+  ];
   const { data: statuses = [], isLoading: statusesLoading } = useOpportunityStatuses();
   const { data: leads = [], isLoading: leadsLoading } = useOpportunityLeads();
   const { data: platformAddOns = [], isLoading: platformLoading } = useOpportunityPlatformAddOn();
