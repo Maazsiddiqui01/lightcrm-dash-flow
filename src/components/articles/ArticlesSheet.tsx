@@ -12,11 +12,13 @@ interface ArticleInput {
   focus_area: string;
   article_link: string;
   article_date: string;
+  last_date_to_use: string;
 }
 
 interface GeneralArticleInput {
   article_link: string;
   article_date: string;
+  last_date_to_use: string;
 }
 
 export function ArticlesSheet() {
@@ -24,7 +26,7 @@ export function ArticlesSheet() {
   const queryClient = useQueryClient();
   const [articleInputs, setArticleInputs] = useState<Record<string, ArticleInput>>({});
   const [generalArticles, setGeneralArticles] = useState<GeneralArticleInput[]>(
-    Array.from({ length: 5 }, () => ({ article_link: '', article_date: '' }))
+    Array.from({ length: 5 }, () => ({ article_link: '', article_date: '', last_date_to_use: '' }))
   );
 
   // Fetch focus areas
@@ -48,6 +50,7 @@ export function ArticlesSheet() {
         focus_area: article.focus_area,
         article_link: article.article_link,
         article_date: article.article_date ? new Date(article.article_date).toISOString() : null,
+        last_date_to_use: article.last_date_to_use ? new Date(article.last_date_to_use).toISOString().split('T')[0] : null,
       }));
 
       const { error } = await supabase
@@ -62,7 +65,7 @@ export function ArticlesSheet() {
         description: "Your articles have been added to the repository.",
       });
       setArticleInputs({});
-      setGeneralArticles(Array.from({ length: 5 }, () => ({ article_link: '', article_date: '' })));
+      setGeneralArticles(Array.from({ length: 5 }, () => ({ article_link: '', article_date: '', last_date_to_use: '' })));
       queryClient.invalidateQueries({ queryKey: ['articles'] });
     },
     onError: (error) => {
@@ -104,6 +107,7 @@ export function ArticlesSheet() {
         focus_area: 'General',
         article_link: article.article_link,
         article_date: article.article_date,
+        last_date_to_use: article.last_date_to_use,
       }));
 
     const allArticles = [...focusAreaArticles, ...generalArticlesToSave];
@@ -156,14 +160,15 @@ export function ArticlesSheet() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-medium text-sm text-muted-foreground border-b pb-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-medium text-sm text-muted-foreground border-b pb-2">
               <div>Article Link</div>
               <div>Article Date (Optional)</div>
+              <div>Last Date to Use (Optional)</div>
             </div>
             
             <div className="space-y-3">
               {generalArticles.map((article, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center py-2 border-b border-border/50">
+                <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center py-2 border-b border-border/50">
                   <div>
                     <Input
                       id={`general-link-${index}`}
@@ -184,6 +189,16 @@ export function ArticlesSheet() {
                       className="w-full"
                     />
                   </div>
+
+                  <div>
+                    <Input
+                      type="date"
+                      placeholder="Last date to use"
+                      value={article.last_date_to_use}
+                      onChange={(e) => handleGeneralArticleChange(index, 'last_date_to_use', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -200,15 +215,16 @@ export function ArticlesSheet() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-medium text-sm text-muted-foreground border-b pb-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 font-medium text-sm text-muted-foreground border-b pb-2">
               <div>Focus Area</div>
               <div>Article Link</div>
               <div>Article Date (Optional)</div>
+              <div>Last Date to Use (Optional)</div>
             </div>
             
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {focusAreas?.map((focusArea) => (
-                <div key={focusArea} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center py-2 border-b border-border/50">
+                <div key={focusArea} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center py-2 border-b border-border/50">
                   <div className="flex items-center">
                     <Label htmlFor={`link-${focusArea}`} className="text-sm font-medium">
                       {focusArea}
@@ -232,6 +248,16 @@ export function ArticlesSheet() {
                       value={articleInputs[focusArea]?.article_date || ''}
                       onChange={(e) => handleInputChange(focusArea, 'article_date', e.target.value)}
                       max={getCurrentDate()}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <Input
+                      type="date"
+                      placeholder="Last date to use"
+                      value={articleInputs[focusArea]?.last_date_to_use || ''}
+                      onChange={(e) => handleInputChange(focusArea, 'last_date_to_use', e.target.value)}
                       className="w-full"
                     />
                   </div>

@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           focus_area: string
           id: string
+          last_date_to_use: string | null
           updated_at: string
         }
         Insert: {
@@ -31,6 +32,7 @@ export type Database = {
           created_at?: string
           focus_area: string
           id?: string
+          last_date_to_use?: string | null
           updated_at?: string
         }
         Update: {
@@ -40,6 +42,7 @@ export type Database = {
           created_at?: string
           focus_area?: string
           id?: string
+          last_date_to_use?: string | null
           updated_at?: string
         }
         Relationships: []
