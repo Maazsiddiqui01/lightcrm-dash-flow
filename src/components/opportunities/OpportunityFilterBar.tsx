@@ -31,6 +31,7 @@ interface OpportunityFilters {
   dealcloud?: string[];
   headquarters: string[];
   processTimeline: string[];
+  funds: string[];
   [key: string]: any;
 }
 
@@ -238,6 +239,17 @@ export function OpportunityFilterBar({
           values={filters.processTimeline || []}
           onChange={(values) => updateFilter('processTimeline', values)}
           searchPlaceholder="Select Process Timeline"
+        />
+
+        <ComboboxMulti
+          label="Funds"
+          options={[
+            { value: 'LG Fund VI', label: 'LG Fund VI' },
+            { value: 'LG Horizons', label: 'LG Horizons' }
+          ]}
+          values={filters.funds || []}
+          onChange={(values) => updateFilter('funds', values)}
+          searchPlaceholder="Select Funds"
         />
       </div>
     </div>

@@ -72,6 +72,7 @@ interface OpportunityRaw {
   last_modified: string | null;
   created_at: string | null;
   updated_at: string | null;
+  funds: string | null;
 }
 
 interface OpportunityFilters {
@@ -89,6 +90,7 @@ interface OpportunityFilters {
   dateOfOrigination: string[];
   headquarters: string[];
   processTimeline: string[];
+  funds: string[];
 }
 
 interface OpportunitiesTableProps {
@@ -254,8 +256,14 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         query = query.in('platform_add_on', filters.platformAddOn);
       }
 
+      // Headquarters filter
       if (filters.headquarters.length > 0) {
         query = query.in('headquarters', filters.headquarters);
+      }
+
+      // Funds filter
+      if (filters.funds.length > 0) {
+        query = query.in('funds', filters.funds);
       }
 
       // Process Timeline filter - applied client-side to avoid TS inference issues

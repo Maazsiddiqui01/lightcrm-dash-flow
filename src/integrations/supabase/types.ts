@@ -721,6 +721,7 @@ export type Database = {
           ebitda_notes: string | null
           est_deal_size: number | null
           est_lg_equity_invest: number | null
+          funds: string | null
           headquarters: string | null
           id: string
           investment_professional_point_person_1: string | null
@@ -760,6 +761,7 @@ export type Database = {
           ebitda_notes?: string | null
           est_deal_size?: number | null
           est_lg_equity_invest?: number | null
+          funds?: string | null
           headquarters?: string | null
           id?: string
           investment_professional_point_person_1?: string | null
@@ -799,6 +801,7 @@ export type Database = {
           ebitda_notes?: string | null
           est_deal_size?: number | null
           est_lg_equity_invest?: number | null
+          funds?: string | null
           headquarters?: string | null
           id?: string
           investment_professional_point_person_1?: string | null

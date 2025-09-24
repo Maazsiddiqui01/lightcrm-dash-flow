@@ -40,6 +40,7 @@ interface Opportunity {
   created_at: string;
   updated_at: string;
   dealcloud: boolean;
+  funds: string;
 }
 
 interface OpportunityFilters {

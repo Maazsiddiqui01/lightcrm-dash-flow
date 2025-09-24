@@ -28,7 +28,8 @@ export function Opportunities() {
     dateOfOrigination: [],
     dealcloud: [],
     headquarters: [],
-    processTimeline: []
+    processTimeline: [],
+    funds: []
   });
 
   // Type-safe filter conversion
@@ -47,7 +48,8 @@ export function Opportunities() {
     dateOfOrigination: (rawFilters.dateOfOrigination as string[]) || [],
     dealcloud: (rawFilters.dealcloud as string[]) || [],
     headquarters: (rawFilters.headquarters as string[]) || [],
-    processTimeline: (rawFilters.processTimeline as string[]) || []
+    processTimeline: (rawFilters.processTimeline as string[]) || [],
+    funds: (rawFilters.funds as string[]) || []
   };
 
   const stats = useOpportunityStats(filters);

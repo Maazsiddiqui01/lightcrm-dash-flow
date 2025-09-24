@@ -53,6 +53,7 @@ interface Opportunity {
   created_at: string;
   updated_at: string;
   dealcloud: boolean;
+  funds: string;
 }
 
 interface OpportunityDrawerProps {
@@ -118,6 +119,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         ownership_type: opportunity.ownership_type || "",
         url: opportunity.url || "",
         ebitda_in_ms: opportunity.ebitda_in_ms || null,
+        funds: opportunity.funds || "",
         
         investment_professional_point_person_1: opportunity.investment_professional_point_person_1 || "",
         investment_professional_point_person_2: opportunity.investment_professional_point_person_2 || "",
@@ -388,6 +390,16 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 value={editedFields.process_timeline || ""}
                 onChange={(value) => handleFieldChange("process_timeline", value)}
                 placeholder="Select process timeline"
+                disabled={isLoading}
+              />
+
+              {/* Funds */}
+              <SingleSelectDropdown
+                label="Funds"
+                options={['LG Fund VI', 'LG Horizons']}
+                value={editedFields.funds || ""}
+                onChange={(value) => handleFieldChange("funds", value)}
+                placeholder="Select funds"
                 disabled={isLoading}
               />
             </div>
