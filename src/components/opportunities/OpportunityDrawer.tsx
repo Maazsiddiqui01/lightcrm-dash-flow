@@ -96,7 +96,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     saveMostRecentNotes,
     isSavingNextSteps,
     isSavingNotes,
-  } = useOpportunityNotes(opportunity?.id);
+  } = useOpportunityNotes(opportunity?.id, opportunity?.deal_name);
 
   useEffect(() => {
     if (opportunity) {

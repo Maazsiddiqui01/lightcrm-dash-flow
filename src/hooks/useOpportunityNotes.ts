@@ -20,7 +20,7 @@ export interface OpportunityCurrentNotes {
   updated_at: string;
 }
 
-export function useOpportunityNotes(opportunityId: string | undefined) {
+export function useOpportunityNotes(opportunityId: string | undefined, opportunityName?: string) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -71,12 +71,34 @@ export function useOpportunityNotes(opportunityId: string | undefined) {
       });
 
       if (error) throw error;
+      
+      return { content, dueDate };
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       toast({
         title: "Success",
         description: "Next steps saved successfully",
       });
+      
+      // Sync with Microsoft To Do via n8n webhook
+      if (opportunityName && data.content) {
+        try {
+          await fetch('https://inverisllc.app.n8n.cloud/webhook/Get-To-do', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              opportunityName: opportunityName,
+              nextSteps: data.content,
+              dueDate: data.dueDate || null,
+            }),
+          });
+        } catch (error) {
+          console.error('Failed to sync with Microsoft To Do:', error);
+          // Don't show error to user as the main save was successful
+        }
+      }
       
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ queryKey: ['opportunity-current-notes', opportunityId] });

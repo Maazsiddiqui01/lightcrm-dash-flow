@@ -33,7 +33,7 @@ export function QuickAddModal({
 }: QuickAddModalProps) {
   const [content, setContent] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>();
-  const { saveNextSteps, saveMostRecentNotes, isSavingNextSteps, isSavingNotes } = useOpportunityNotes(opportunityId);
+  const { saveNextSteps, saveMostRecentNotes, isSavingNextSteps, isSavingNotes } = useOpportunityNotes(opportunityId, opportunityName);
 
   const isNextSteps = type === 'next_steps';
   const title = isNextSteps ? 'Add New Next Step' : 'Add New Note';
