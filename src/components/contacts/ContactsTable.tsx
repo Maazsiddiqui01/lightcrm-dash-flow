@@ -254,7 +254,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
                 }}
               >
                 <Mail className="mr-2 h-4 w-4" />
-                Send Email
+                Draft Email
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={(e) => {

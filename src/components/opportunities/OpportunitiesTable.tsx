@@ -166,7 +166,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
               }}
             >
               <Mail className="h-4 w-4 mr-2" />
-              Send Email
+               Draft Email
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
