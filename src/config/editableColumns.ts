@@ -353,6 +353,7 @@ export const editableColumns: EditableConfig = {
     outreach_date: { type: 'date' },
     lg_lead: { type: 'text' },
     lg_assistant: { type: 'text' },
+    group_contact: { type: 'text' },
     city: { type: 'text' },
     state: { type: 'text' },
   },

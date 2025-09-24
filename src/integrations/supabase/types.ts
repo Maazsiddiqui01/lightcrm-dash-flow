@@ -139,6 +139,7 @@ export type Database = {
           email_to: string | null
           first_name: string | null
           full_name: string | null
+          group_contact: string | null
           id: string
           last_name: string | null
           latest_contact_email: string | null
@@ -193,6 +194,7 @@ export type Database = {
           email_to?: string | null
           first_name?: string | null
           full_name?: string | null
+          group_contact?: string | null
           id?: string
           last_name?: string | null
           latest_contact_email?: string | null
@@ -247,6 +249,7 @@ export type Database = {
           email_to?: string | null
           first_name?: string | null
           full_name?: string | null
+          group_contact?: string | null
           id?: string
           last_name?: string | null
           latest_contact_email?: string | null

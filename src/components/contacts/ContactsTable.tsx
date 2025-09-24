@@ -85,8 +85,9 @@ interface ContactRaw {
   state: string | null;
   created_at: string | null;
   updated_at: string | null;
-  lg_lead: string | null; // Added new column
-  lg_assistant: string | null; // Added new column
+  lg_lead: string | null;
+  lg_assistant: string | null;
+  group_contact: string | null; // Added group contact field
   opportunities: string; // Comma-separated deal names
   mapped_sectors?: string; // Computed field for sectors mapped from focus areas
   days_over_under_max_lag?: number | null; // Computed field for days over/under max lag

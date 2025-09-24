@@ -23,6 +23,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSectors } from '@/hooks/useLookups';
+import { useGroupContacts } from '@/hooks/useGroupContacts';
 
 interface ContactFilterBarProps {
   filters: {
@@ -39,6 +40,7 @@ interface ContactFilterBarProps {
     categories?: string[];
     hasOpportunities?: string[];
     lgLead?: string[];
+    groupContacts?: string[];
     opportunityTier?: string[];
     opportunityPlatformAddon?: string[];
     opportunityOwnershipType?: string[];
@@ -93,6 +95,9 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
   const { data: organizationOptions = [], isLoading: organizationsLoading } = useContactOrganizations();
   const { data: titleOptions = [], isLoading: titlesLoading } = useContactTitles();
   const { data: categoryOptions = [], isLoading: categoriesLoading } = useContactCategories();
+  
+  // Fetch group contacts
+  const { data: groupContactOptions = [], isLoading: groupContactsLoading } = useGroupContacts();
 
   // Fetch distinct options for opportunity filters
   const { data: tierOptions = [], isLoading: tiersLoading } = useOpportunityTiers();
@@ -312,6 +317,16 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
           onChange={(values) => handleFilterChange('lgLead', values)}
           searchPlaceholder="Search LG Leads"
           loading={lgLeadsLoading}
+        />
+
+        {/* Group Contact */}
+        <ComboboxMulti
+          label="Group Contact"
+          options={groupContactOptions}
+          values={filters.groupContacts || []}
+          onChange={(values) => handleFilterChange('groupContacts', values)}
+          searchPlaceholder="Search Groups"
+          loading={groupContactsLoading}
         />
 
         {/* Delta Days Range (Max Lag Days) */}

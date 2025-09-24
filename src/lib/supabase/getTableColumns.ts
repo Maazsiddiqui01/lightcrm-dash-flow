@@ -65,6 +65,7 @@ export const CONTACTS_RAW_COLUMNS: TableColumn[] = [
   { name: 'lg_focus_area_8', type: 'text', nullable: true, displayName: 'LG Focus Area 8' },
   { name: 'lg_lead', type: 'text', nullable: true, displayName: 'LG Lead' },
   { name: 'lg_assistant', type: 'text', nullable: true, displayName: 'LG Assistant' },
+  { name: 'group_contact', type: 'text', nullable: true, displayName: 'Group Contact' },
   { name: 'delta_type', type: 'text', nullable: true, displayName: 'Delta Type' },
   { name: 'url_to_online_bio', type: 'text', nullable: true, displayName: 'URL To Online Bio' },
   { name: 'email_subject', type: 'text', nullable: true, displayName: 'Email Subject' },

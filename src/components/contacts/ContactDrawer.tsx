@@ -48,8 +48,9 @@ interface ContactRaw {
   category: string | null;
   phone: string | null;
   url_to_online_bio: string | null;
-  lg_lead: string | null; // Added new column
-  lg_assistant: string | null; // Added new column
+  lg_lead: string | null;
+  lg_assistant: string | null;
+  group_contact: string | null; // Added group contact field
 }
 
 interface ContactApp {
@@ -416,6 +417,16 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     id="lg_assistant"
                     value={contactData.lg_assistant || ""}
                     onChange={(e) => updateField("lg_assistant", e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="group_contact">Group Contact</Label>
+                  <Input
+                    id="group_contact"
+                    value={contactData.group_contact || ""}
+                    onChange={(e) => updateField("group_contact", e.target.value)}
+                    placeholder="Enter group name (optional)"
                   />
                 </div>
               </div>

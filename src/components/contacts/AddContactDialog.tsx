@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, User } from "lucide-react";
+import { Plus, User, Users, X } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface AddContactDialogProps {
   open: boolean;
@@ -24,72 +25,122 @@ interface AddContactDialogProps {
   onContactAdded: () => void;
 }
 
+interface IndividualContactForm {
+  full_name: string;
+  email_address: string;
+  organization: string;
+  title: string;
+  areas_of_specialization: string;
+  notes: string;
+  delta_type: string;
+  delta: string;
+  lg_sector: string;
+  category: string;
+  phone: string;
+  url_to_online_bio: string;
+  lg_lead: string;
+  lg_assistant: string;
+  lg_focus_areas: string[];
+}
+
+const emptyContactForm: IndividualContactForm = {
+  full_name: "",
+  email_address: "",
+  organization: "",
+  title: "",
+  areas_of_specialization: "",
+  notes: "",
+  delta_type: "",
+  delta: "",
+  lg_sector: "",
+  category: "",
+  phone: "",
+  url_to_online_bio: "",
+  lg_lead: "",
+  lg_assistant: "",
+  lg_focus_areas: [],
+};
+
 export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDialogProps) {
-  const [formData, setFormData] = useState({
-    full_name: "",
-    email_address: "",
-    organization: "",
-    title: "",
-    areas_of_specialization: "",
-    notes: "",
-    delta_type: "",
-    delta: "",
-    lg_sector: "",
-    category: "",
-    phone: "",
-    url_to_online_bio: "",
-    lg_lead: "",
-    lg_assistant: "",
-  });
-  const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
+  const [contactType, setContactType] = useState<"individual" | "group">("individual");
+  const [groupName, setGroupName] = useState("");
+  const [contacts, setContacts] = useState<IndividualContactForm[]>([emptyContactForm]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
   // Fetch focus area and sector options
-  // Use canonical lookup options
   const sectorsQuery = useSectors();
-  const focusAreasQuery = useFocusAreasBySector(formData.lg_sector || undefined);
+  const focusAreasQuery = useFocusAreasBySector(undefined);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const addContact = () => {
+    setContacts([...contacts, { ...emptyContactForm }]);
   };
 
-  const handleFocusAreaChange = (newFocusAreas: string[]) => {
-    setSelectedFocusAreas(newFocusAreas);
+  const removeContact = (index: number) => {
+    if (contacts.length > 1) {
+      setContacts(contacts.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateContact = (index: number, field: string, value: string | string[]) => {
+    const updatedContacts = [...contacts];
+    updatedContacts[index] = {
+      ...updatedContacts[index],
+      [field]: value
+    };
+    setContacts(updatedContacts);
+  };
+
+  const handleFocusAreaChange = (index: number, newFocusAreas: string[]) => {
+    updateContact(index, 'lg_focus_areas', newFocusAreas);
     
     // Auto-fill sector if first focus area is selected and sector is currently blank
-    if (newFocusAreas.length === 1 && !formData.lg_sector) {
+    if (newFocusAreas.length === 1 && !contacts[index].lg_sector) {
       const selectedOption = focusAreasQuery.data?.find(opt => opt.value === newFocusAreas[0]);
       if (selectedOption?.meta?.sector_id) {
         const sector = sectorsQuery.data?.find(s => s.meta?.id === selectedOption.meta?.sector_id);
         if (sector) {
-          handleInputChange("lg_sector", sector.value);
+          updateContact(index, 'lg_sector', sector.value);
         }
       }
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.full_name.trim() || !formData.email_address.trim() || !formData.organization.trim() || selectedFocusAreas.length === 0) {
-      toast({
-        title: "Error",
-        description: "Full name, email, organization, and at least one focus area are required",
-        variant: "destructive",
-      });
-      return;
+  const validateContact = (contact: IndividualContactForm) => {
+    if (!contact.full_name.trim() || !contact.email_address.trim() || !contact.organization.trim() || contact.lg_focus_areas.length === 0) {
+      return "Full name, email, organization, and at least one focus area are required";
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email_address.trim())) {
+    if (!emailRegex.test(contact.email_address.trim())) {
+      return "Please enter a valid email address";
+    }
+
+    return null;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate contacts
+    for (let i = 0; i < contacts.length; i++) {
+      const validationError = validateContact(contacts[i]);
+      if (validationError) {
+        toast({
+          title: "Error",
+          description: `Contact ${i + 1}: ${validationError}`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Validate group name if group type
+    if (contactType === "group" && !groupName.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a valid email address",
+        description: "Group name is required for group contacts",
         variant: "destructive",
       });
       return;
@@ -98,78 +149,70 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     try {
       setIsSubmitting(true);
 
-      // Helper functions
-      const opt = (v?: string) => (v && v.trim() !== "" ? v.trim() : null);
-      const numOrNull = (v?: string | number) =>
-        v === undefined || v === null || String(v).trim() === "" ? null : Number(v);
+      const contactsToInsert = contacts.map(contact => {
+        // Helper functions
+        const opt = (v?: string) => (v && v.trim() !== "" ? v.trim() : null);
+        const numOrNull = (v?: string | number) =>
+          v === undefined || v === null || String(v).trim() === "" ? null : Number(v);
 
-      // Create consolidated focus areas list and individual slots
-      const consolidatedList = selectedFocusAreas.join(', ');
-      const focusAreaSlots: any = {};
-      for (let i = 1; i <= 8; i++) {
-        focusAreaSlots[`lg_focus_area_${i}`] = selectedFocusAreas[i - 1] || null;
-      }
+        // Create consolidated focus areas list and individual slots
+        const consolidatedList = contact.lg_focus_areas.join(', ');
+        const focusAreaSlots: any = {};
+        for (let i = 1; i <= 8; i++) {
+          focusAreaSlots[`lg_focus_area_${i}`] = contact.lg_focus_areas[i - 1] || null;
+        }
 
-      const payload = {
-        full_name: formData.full_name.trim(),
-        organization: formData.organization.trim(),
-        email_address: formData.email_address.trim().toLowerCase(),
-        lg_focus_areas_comprehensive_list: consolidatedList,
-        ...focusAreaSlots,
-        title: opt(formData.title),
-        areas_of_specialization: opt(formData.areas_of_specialization),
-        notes: opt(formData.notes),
-        delta_type: opt(formData.delta_type),
-        delta: numOrNull(formData.delta),
-        lg_sector: opt(formData.lg_sector),
-        category: opt(formData.category),
-        phone: opt(formData.phone),
-        url_to_online_bio: opt(formData.url_to_online_bio),
-        lg_lead: opt(formData.lg_lead),
-        lg_assistant: opt(formData.lg_assistant),
-      };
+        return {
+          full_name: contact.full_name.trim(),
+          organization: contact.organization.trim(),
+          email_address: contact.email_address.trim().toLowerCase(),
+          lg_focus_areas_comprehensive_list: consolidatedList,
+          ...focusAreaSlots,
+          title: opt(contact.title),
+          areas_of_specialization: opt(contact.areas_of_specialization),
+          notes: opt(contact.notes),
+          delta_type: opt(contact.delta_type),
+          delta: numOrNull(contact.delta),
+          lg_sector: opt(contact.lg_sector),
+          category: opt(contact.category),
+          phone: opt(contact.phone),
+          url_to_online_bio: opt(contact.url_to_online_bio),
+          lg_lead: opt(contact.lg_lead),
+          lg_assistant: opt(contact.lg_assistant),
+          group_contact: contactType === "group" ? groupName.trim() : null,
+        };
+      });
 
-      // Insert into contacts_raw table
+      // Insert all contacts into contacts_raw table
       const { data, error } = await supabase
         .from('contacts_raw')
-        .insert([payload])
-        .select()
-        .single();
+        .insert(contactsToInsert)
+        .select();
 
       if (error) throw error;
 
+      const successMessage = contactType === "group" 
+        ? `${contacts.length} contacts added to group "${groupName}"`
+        : "Contact added successfully";
+
       toast({
         title: "Success",
-        description: "Contact added successfully",
+        description: successMessage,
       });
 
       // Reset form
-      setFormData({
-        full_name: "",
-        email_address: "",
-        organization: "",
-        title: "",
-        areas_of_specialization: "",
-        notes: "",
-        delta_type: "",
-        delta: "",
-        lg_sector: "",
-        category: "",
-        phone: "",
-        url_to_online_bio: "",
-        lg_lead: "",
-        lg_assistant: "",
-      });
-      setSelectedFocusAreas([]);
+      setContactType("individual");
+      setGroupName("");
+      setContacts([emptyContactForm]);
 
       onContactAdded();
     } catch (error: any) {
-      console.error("Error adding contact:", error);
+      console.error("Error adding contact(s):", error);
       toast({
         title: "Error",
-        description: error.message === 'duplicate key value violates unique constraint "contacts_raw_email_address_key"' 
-          ? "A contact with this email already exists"
-          : "Failed to add contact",
+        description: error.message?.includes('duplicate key value violates unique constraint') 
+          ? "A contact with one of these emails already exists"
+          : "Failed to add contact(s)",
         variant: "destructive",
       });
     } finally {
@@ -178,29 +221,15 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
   };
 
   const handleClose = () => {
-    setFormData({
-      full_name: "",
-      email_address: "",
-      organization: "",
-      title: "",
-      areas_of_specialization: "",
-      notes: "",
-      delta_type: "",
-      delta: "",
-      lg_sector: "",
-      category: "",
-      phone: "",
-      url_to_online_bio: "",
-      lg_lead: "",
-      lg_assistant: "",
-    });
-    setSelectedFocusAreas([]);
+    setContactType("individual");
+    setGroupName("");
+    setContacts([emptyContactForm]);
     onClose();
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-full bg-primary-light flex items-center justify-center">
@@ -209,220 +238,226 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
             <span>Add New Contact</span>
           </DialogTitle>
           <DialogDescription>
-            Add a new contact to your CRM. Required fields are marked with *.
+            Add individual contacts or create a group of contacts. Required fields are marked with *.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-1">
-          <form onSubmit={handleSubmit} className="space-y-4 py-4">
-            {/* Required Fields */}
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Full Name *</Label>
-              <Input
-                id="full_name"
-                value={formData.full_name}
-                onChange={(e) => handleInputChange("full_name", e.target.value)}
-                placeholder="Enter full name"
-                required
-              />
+          <form onSubmit={handleSubmit} className="space-y-6 py-4">
+            {/* Contact Type Selection */}
+            <div className="space-y-3">
+              <Label>Contact Type</Label>
+              <RadioGroup 
+                value={contactType} 
+                onValueChange={(value: "individual" | "group") => setContactType(value)}
+                className="flex space-x-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="individual" id="individual" />
+                  <Label htmlFor="individual" className="flex items-center cursor-pointer">
+                    <User className="h-4 w-4 mr-2" />
+                    Individual Contact
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="group" id="group" />
+                  <Label htmlFor="group" className="flex items-center cursor-pointer">
+                    <Users className="h-4 w-4 mr-2" />
+                    Group Contact
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email_address">Email *</Label>
-            <Input
-              id="email_address"
-              type="email"
-              value={formData.email_address}
-              onChange={(e) => handleInputChange("email_address", e.target.value)}
-              placeholder="Enter email address"
-              required
-            />
-          </div>
+            {/* Group Name - Only show if group type */}
+            {contactType === "group" && (
+              <div className="space-y-2">
+                <Label htmlFor="group_name">Group Name *</Label>
+                <Input
+                  id="group_name"
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  placeholder="Enter group name"
+                  required
+                />
+              </div>
+            )}
 
-          <div className="space-y-2">
-            <Label htmlFor="organization">Organization *</Label>
-            <Input
-              id="organization"
-              value={formData.organization}
-              onChange={(e) => handleInputChange("organization", e.target.value)}
-              placeholder="Enter organization"
-              required
-            />
-          </div>
+            {/* Contacts */}
+            <div className="space-y-4">
+              {contacts.map((contact, index) => (
+                <div key={index} className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-medium">
+                      {contactType === "group" ? `Contact ${index + 1}` : "Contact Information"}
+                    </Label>
+                    {contactType === "group" && contacts.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeContact(index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
 
-          {/* Focus Areas - Multi-select */}
-          <FocusAreaSelect
-            value={selectedFocusAreas}
-            onChange={handleFocusAreaChange}
-            disabled={focusAreasQuery.isLoading}
-            label="LG Focus Areas"
-            sectorId={formData.lg_sector ? sectorsQuery.data?.find(s => s.label === formData.lg_sector)?.meta?.id : undefined}
-          />
-          {selectedFocusAreas.length > 0 && !formData.lg_sector && (
-            <div className="mt-2">
-              <p className="text-xs text-muted-foreground">
-                💡 <button 
+                  {/* Required Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor={`full_name_${index}`}>Full Name *</Label>
+                      <Input
+                        id={`full_name_${index}`}
+                        value={contact.full_name}
+                        onChange={(e) => updateContact(index, "full_name", e.target.value)}
+                        placeholder="Enter full name"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`email_address_${index}`}>Email *</Label>
+                      <Input
+                        id={`email_address_${index}`}
+                        type="email"
+                        value={contact.email_address}
+                        onChange={(e) => updateContact(index, "email_address", e.target.value)}
+                        placeholder="Enter email address"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`organization_${index}`}>Organization *</Label>
+                      <Input
+                        id={`organization_${index}`}
+                        value={contact.organization}
+                        onChange={(e) => updateContact(index, "organization", e.target.value)}
+                        placeholder="Enter organization"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`title_${index}`}>Title</Label>
+                      <Input
+                        id={`title_${index}`}
+                        value={contact.title}
+                        onChange={(e) => updateContact(index, "title", e.target.value)}
+                        placeholder="Enter job title"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Focus Areas */}
+                  <FocusAreaSelect
+                    value={contact.lg_focus_areas}
+                    onChange={(newFocusAreas) => handleFocusAreaChange(index, newFocusAreas)}
+                    disabled={focusAreasQuery.isLoading}
+                    label="LG Focus Areas *"
+                    sectorId={contact.lg_sector ? sectorsQuery.data?.find(s => s.label === contact.lg_sector)?.meta?.id : undefined}
+                  />
+
+                  {/* Optional Fields - Collapsible */}
+                  <details className="space-y-4">
+                    <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+                      Additional Information (Optional)
+                    </summary>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor={`lg_sector_${index}`}>LG Sector</Label>
+                        <Select
+                          value={contact.lg_sector}
+                          onValueChange={(value) => updateContact(index, "lg_sector", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select sector" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sectorsQuery.isLoading ? (
+                              <SelectItem value="" disabled>Loading...</SelectItem>
+                            ) : (
+                              (sectorsQuery.data || []).map((sector) => (
+                                <SelectItem key={sector.value} value={sector.value}>
+                                  {sector.label}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`phone_${index}`}>Phone</Label>
+                        <Input
+                          id={`phone_${index}`}
+                          type="tel"
+                          value={contact.phone}
+                          onChange={(e) => updateContact(index, "phone", e.target.value)}
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`lg_lead_${index}`}>LG Lead</Label>
+                        <Input
+                          id={`lg_lead_${index}`}
+                          value={contact.lg_lead}
+                          onChange={(e) => updateContact(index, "lg_lead", e.target.value)}
+                          placeholder="Enter LG Lead"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`lg_assistant_${index}`}>LG Assistant</Label>
+                        <Input
+                          id={`lg_assistant_${index}`}
+                          value={contact.lg_assistant}
+                          onChange={(e) => updateContact(index, "lg_assistant", e.target.value)}
+                          placeholder="Enter LG Assistant"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`areas_of_specialization_${index}`}>Areas of Specialization</Label>
+                      <Input
+                        id={`areas_of_specialization_${index}`}
+                        value={contact.areas_of_specialization}
+                        onChange={(e) => updateContact(index, "areas_of_specialization", e.target.value)}
+                        placeholder="Enter specializations (comma-separated)"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`notes_${index}`}>Notes</Label>
+                      <Textarea
+                        id={`notes_${index}`}
+                        value={contact.notes}
+                        onChange={(e) => updateContact(index, "notes", e.target.value)}
+                        placeholder="Add any notes about this contact..."
+                        className="min-h-[80px] resize-none"
+                      />
+                    </div>
+                  </details>
+                </div>
+              ))}
+
+              {/* Add Another Contact Button - Only show for group type */}
+              {contactType === "group" && (
+                <Button
                   type="button"
-                  className="text-primary hover:underline"
-                  onClick={() => {
-                    const firstOption = focusAreasQuery.data?.find(opt => opt.value === selectedFocusAreas[0]);
-                    if (firstOption?.meta?.sector_id) {
-                      const sector = sectorsQuery.data?.find(s => s.meta?.id === firstOption.meta?.sector_id);
-                      if (sector) {
-                        handleInputChange("lg_sector", sector.value);
-                      }
-                    }
-                  }}
+                  variant="outline"
+                  onClick={addContact}
+                  className="w-full"
                 >
-                  Auto-fill sector with "{(() => {
-                    const firstOption = focusAreasQuery.data?.find(opt => opt.value === selectedFocusAreas[0]);
-                    if (firstOption?.meta?.sector_id) {
-                      const sector = sectorsQuery.data?.find(s => s.meta?.id === firstOption.meta?.sector_id);
-                      return sector?.label;
-                    }
-                    return '';
-                  })()}"
-                </button>
-              </p>
-            </div>
-          )}
-
-          {/* Optional Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange("title", e.target.value)}
-                placeholder="Enter job title"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lg_sector">LG Sector</Label>
-              <Select
-                value={formData.lg_sector}
-                onValueChange={(value) => handleInputChange("lg_sector", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select sector" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sectorsQuery.isLoading ? (
-                    <SelectItem value="" disabled>Loading...</SelectItem>
-                  ) : (
-                    (sectorsQuery.data || []).map((sector) => (
-                      <SelectItem key={sector.value} value={sector.value}>
-                        {sector.label}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                value={formData.category}
-                onChange={(e) => handleInputChange("category", e.target.value)}
-                placeholder="Enter category"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="Enter phone number"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="lg_lead">LG Lead</Label>
-              <Input
-                id="lg_lead"
-                value={formData.lg_lead}
-                onChange={(e) => handleInputChange("lg_lead", e.target.value)}
-                placeholder="Enter LG Lead"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lg_assistant">LG Assistant</Label>
-              <Input
-                id="lg_assistant"
-                value={formData.lg_assistant}
-                onChange={(e) => handleInputChange("lg_assistant", e.target.value)}
-                placeholder="Enter LG Assistant"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="delta_type">Outreach Cadence</Label>
-              <Select
-                value={formData.delta_type}
-                onValueChange={(value) => handleInputChange("delta_type", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select outreach type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Meeting">Meeting</SelectItem>
-                  <SelectItem value="Email">Email</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="delta">Outreach Cadence (Days)</Label>
-              <Input
-                id="delta"
-                type="number"
-                value={formData.delta}
-                onChange={(e) => handleInputChange("delta", e.target.value)}
-                placeholder="Enter number of days"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="url_to_online_bio">Online Bio URL</Label>
-            <Input
-              id="url_to_online_bio"
-              type="url"
-              value={formData.url_to_online_bio}
-              onChange={(e) => handleInputChange("url_to_online_bio", e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="areas_of_specialization">Areas of Specialization</Label>
-            <Input
-              id="areas_of_specialization"
-              value={formData.areas_of_specialization}
-              onChange={(e) => handleInputChange("areas_of_specialization", e.target.value)}
-              placeholder="Enter specializations (comma-separated)"
-            />
-          </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleInputChange("notes", e.target.value)}
-                placeholder="Add any notes about this contact..."
-                className="min-h-[80px] resize-none"
-              />
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Another Contact
+                </Button>
+              )}
             </div>
           </form>
         </div>
@@ -432,7 +467,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting} onClick={handleSubmit}>
-            {isSubmitting ? "Adding..." : "Add Contact"}
+            {isSubmitting ? "Adding..." : `Add ${contactType === "group" ? "Group" : "Contact"}`}
           </Button>
         </DialogFooter>
       </DialogContent>
