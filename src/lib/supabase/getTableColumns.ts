@@ -85,6 +85,7 @@ export const OPPORTUNITIES_RAW_COLUMNS: TableColumn[] = [
   { name: 'tier', type: 'text', nullable: true, displayName: 'Tier' },
   { name: 'sector', type: 'text', nullable: true, displayName: 'LG Sector' },
   { name: 'lg_focus_area', type: 'text', nullable: true, displayName: 'LG Focus Area' },
+  { name: 'funds', type: 'text', nullable: true, displayName: 'Funds' },
   { name: 'deal_name', type: 'text', nullable: true, displayName: 'Deal Name' },
   { name: 'summary_of_opportunity', type: 'text', nullable: true, displayName: 'Description' },
   { name: 'next_steps', type: 'text', nullable: true, displayName: 'Next Steps' },
