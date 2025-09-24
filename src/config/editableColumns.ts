@@ -40,39 +40,295 @@ export const editableColumns: EditableConfig = {
     areas_of_specialization: { type: 'textarea' },
     lg_sector: { 
       type: 'select',
-      options: ['Technology', 'Healthcare', 'Financial Services', 'Consumer', 'Energy', 'Industrial', 'Real Estate']
+      options: ['Services', 'Industrials', 'Healthcare', 'General']
     },
     lg_focus_area_1: { 
       type: 'select',
-      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+      options: [
+        // Healthcare
+        'HC: Payor & Employer Services',
+        'HC: Revenue Cycle Management', 
+        'HC: Services (Non-Clinical)',
+        'HC: Clinical Services',
+        'HC: Tech Enablement',
+        'HC: Pharma & Biotech Services',
+        // Industrials
+        'Capital Goods / Equipment',
+        'Aerospace & Defense',
+        'Automotive & Transportation', 
+        'Chemicals & Materials',
+        'Energy & Utilities',
+        'Construction & Infrastructure',
+        // Services
+        'Waste & Environmental Services',
+        'Business Services',
+        'Financial Services',
+        'Technology Services', 
+        'Education & Training',
+        'Media & Marketing',
+        'Logistics & Supply Chain',
+        'Real Estate & Facilities',
+        // General
+        'Distribution',
+        'Consumer & Retail',
+        'Food & Beverage',
+        'Telecommunications',
+        'Government Services',
+        'Non-Profit',
+        'Other'
+      ]
     },
     lg_focus_area_2: { 
       type: 'select',
-      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+      options: [
+        // Healthcare
+        'HC: Payor & Employer Services',
+        'HC: Revenue Cycle Management', 
+        'HC: Services (Non-Clinical)',
+        'HC: Clinical Services',
+        'HC: Tech Enablement',
+        'HC: Pharma & Biotech Services',
+        // Industrials
+        'Capital Goods / Equipment',
+        'Aerospace & Defense',
+        'Automotive & Transportation', 
+        'Chemicals & Materials',
+        'Energy & Utilities',
+        'Construction & Infrastructure',
+        // Services
+        'Waste & Environmental Services',
+        'Business Services',
+        'Financial Services',
+        'Technology Services', 
+        'Education & Training',
+        'Media & Marketing',
+        'Logistics & Supply Chain',
+        'Real Estate & Facilities',
+        // General
+        'Distribution',
+        'Consumer & Retail',
+        'Food & Beverage',
+        'Telecommunications',
+        'Government Services',
+        'Non-Profit',
+        'Other'
+      ]
     },
     lg_focus_area_3: { 
       type: 'select',
-      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+      options: [
+        // Healthcare
+        'HC: Payor & Employer Services',
+        'HC: Revenue Cycle Management', 
+        'HC: Services (Non-Clinical)',
+        'HC: Clinical Services',
+        'HC: Tech Enablement',
+        'HC: Pharma & Biotech Services',
+        // Industrials
+        'Capital Goods / Equipment',
+        'Aerospace & Defense',
+        'Automotive & Transportation', 
+        'Chemicals & Materials',
+        'Energy & Utilities',
+        'Construction & Infrastructure',
+        // Services
+        'Waste & Environmental Services',
+        'Business Services',
+        'Financial Services',
+        'Technology Services', 
+        'Education & Training',
+        'Media & Marketing',
+        'Logistics & Supply Chain',
+        'Real Estate & Facilities',
+        // General
+        'Distribution',
+        'Consumer & Retail',
+        'Food & Beverage',
+        'Telecommunications',
+        'Government Services',
+        'Non-Profit',
+        'Other'
+      ]
     },
     lg_focus_area_4: { 
       type: 'select',
-      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+      options: [
+        // Healthcare
+        'HC: Payor & Employer Services',
+        'HC: Revenue Cycle Management', 
+        'HC: Services (Non-Clinical)',
+        'HC: Clinical Services',
+        'HC: Tech Enablement',
+        'HC: Pharma & Biotech Services',
+        // Industrials
+        'Capital Goods / Equipment',
+        'Aerospace & Defense',
+        'Automotive & Transportation', 
+        'Chemicals & Materials',
+        'Energy & Utilities',
+        'Construction & Infrastructure',
+        // Services
+        'Waste & Environmental Services',
+        'Business Services',
+        'Financial Services',
+        'Technology Services', 
+        'Education & Training',
+        'Media & Marketing',
+        'Logistics & Supply Chain',
+        'Real Estate & Facilities',
+        // General
+        'Distribution',
+        'Consumer & Retail',
+        'Food & Beverage',
+        'Telecommunications',
+        'Government Services',
+        'Non-Profit',
+        'Other'
+      ]
     },
     lg_focus_area_5: { 
       type: 'select',
-      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+      options: [
+        // Healthcare
+        'HC: Payor & Employer Services',
+        'HC: Revenue Cycle Management', 
+        'HC: Services (Non-Clinical)',
+        'HC: Clinical Services',
+        'HC: Tech Enablement',
+        'HC: Pharma & Biotech Services',
+        // Industrials
+        'Capital Goods / Equipment',
+        'Aerospace & Defense',
+        'Automotive & Transportation', 
+        'Chemicals & Materials',
+        'Energy & Utilities',
+        'Construction & Infrastructure',
+        // Services
+        'Waste & Environmental Services',
+        'Business Services',
+        'Financial Services',
+        'Technology Services', 
+        'Education & Training',
+        'Media & Marketing',
+        'Logistics & Supply Chain',
+        'Real Estate & Facilities',
+        // General
+        'Distribution',
+        'Consumer & Retail',
+        'Food & Beverage',
+        'Telecommunications',
+        'Government Services',
+        'Non-Profit',
+        'Other'
+      ]
     },
     lg_focus_area_6: { 
       type: 'select',
-      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+      options: [
+        // Healthcare
+        'HC: Payor & Employer Services',
+        'HC: Revenue Cycle Management', 
+        'HC: Services (Non-Clinical)',
+        'HC: Clinical Services',
+        'HC: Tech Enablement',
+        'HC: Pharma & Biotech Services',
+        // Industrials
+        'Capital Goods / Equipment',
+        'Aerospace & Defense',
+        'Automotive & Transportation', 
+        'Chemicals & Materials',
+        'Energy & Utilities',
+        'Construction & Infrastructure',
+        // Services
+        'Waste & Environmental Services',
+        'Business Services',
+        'Financial Services',
+        'Technology Services', 
+        'Education & Training',
+        'Media & Marketing',
+        'Logistics & Supply Chain',
+        'Real Estate & Facilities',
+        // General
+        'Distribution',
+        'Consumer & Retail',
+        'Food & Beverage',
+        'Telecommunications',
+        'Government Services',
+        'Non-Profit',
+        'Other'
+      ]
     },
     lg_focus_area_7: { 
       type: 'select',
-      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+      options: [
+        // Healthcare
+        'HC: Payor & Employer Services',
+        'HC: Revenue Cycle Management', 
+        'HC: Services (Non-Clinical)',
+        'HC: Clinical Services',
+        'HC: Tech Enablement',
+        'HC: Pharma & Biotech Services',
+        // Industrials
+        'Capital Goods / Equipment',
+        'Aerospace & Defense',
+        'Automotive & Transportation', 
+        'Chemicals & Materials',
+        'Energy & Utilities',
+        'Construction & Infrastructure',
+        // Services
+        'Waste & Environmental Services',
+        'Business Services',
+        'Financial Services',
+        'Technology Services', 
+        'Education & Training',
+        'Media & Marketing',
+        'Logistics & Supply Chain',
+        'Real Estate & Facilities',
+        // General
+        'Distribution',
+        'Consumer & Retail',
+        'Food & Beverage',
+        'Telecommunications',
+        'Government Services',
+        'Non-Profit',
+        'Other'
+      ]
     },
     lg_focus_area_8: { 
       type: 'select',
-      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+      options: [
+        // Healthcare
+        'HC: Payor & Employer Services',
+        'HC: Revenue Cycle Management', 
+        'HC: Services (Non-Clinical)',
+        'HC: Clinical Services',
+        'HC: Tech Enablement',
+        'HC: Pharma & Biotech Services',
+        // Industrials
+        'Capital Goods / Equipment',
+        'Aerospace & Defense',
+        'Automotive & Transportation', 
+        'Chemicals & Materials',
+        'Energy & Utilities',
+        'Construction & Infrastructure',
+        // Services
+        'Waste & Environmental Services',
+        'Business Services',
+        'Financial Services',
+        'Technology Services', 
+        'Education & Training',
+        'Media & Marketing',
+        'Logistics & Supply Chain',
+        'Real Estate & Facilities',
+        // General
+        'Distribution',
+        'Consumer & Retail',
+        'Food & Beverage',
+        'Telecommunications',
+        'Government Services',
+        'Non-Profit',
+        'Other'
+      ]
     },
     category: { type: 'text' },
     contact_type: { 
