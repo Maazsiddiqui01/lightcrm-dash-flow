@@ -95,11 +95,47 @@ export const editableColumns: EditableConfig = {
     deal_name: { type: 'text', required: true },
     lg_focus_area: { 
       type: 'select',
-      options: ['Software', 'Hardware', 'Services', 'Biotech', 'Medtech', 'Pharma']
+      options: [
+        // Healthcare
+        'HC: Payor & Employer Services',
+        'HC: Revenue Cycle Management', 
+        'HC: Services (Non-Clinical)',
+        'HC: Clinical Services',
+        'HC: Tech Enablement',
+        'HC: Pharma & Biotech Services',
+        // Industrials
+        'Capital Goods / Equipment',
+        'Aerospace & Defense',
+        'Automotive & Transportation', 
+        'Chemicals & Materials',
+        'Energy & Utilities',
+        'Construction & Infrastructure',
+        // Services
+        'Waste & Environmental Services',
+        'Business Services',
+        'Financial Services',
+        'Technology Services', 
+        'Education & Training',
+        'Media & Marketing',
+        'Logistics & Supply Chain',
+        'Real Estate & Facilities',
+        // General
+        'Distribution',
+        'Consumer & Retail',
+        'Food & Beverage',
+        'Telecommunications',
+        'Government Services',
+        'Non-Profit',
+        'Other'
+      ]
     },
     sector: { 
       type: 'select',
-      options: ['Technology', 'Healthcare', 'Financial Services', 'Consumer', 'Energy', 'Industrial', 'Real Estate']
+      options: ['Services', 'Industrials', 'Healthcare', 'General']
+    },
+    funds: {
+      type: 'select',
+      options: ['LG Fund VI', 'LG Horizons']
     },
     platform_add_on: { 
       type: 'select',
