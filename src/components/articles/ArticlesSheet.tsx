@@ -139,7 +139,7 @@ export function ArticlesSheet() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            <CardTitle>Add Articles by Focus Area</CardTitle>
+            <CardTitle>General Articles</CardTitle>
           </div>
           <Button 
             onClick={handleSave}
@@ -153,6 +153,50 @@ export function ArticlesSheet() {
             )}
             Save All Articles
           </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-medium text-sm text-muted-foreground border-b pb-2">
+              <div>Article Link</div>
+              <div>Article Date (Optional)</div>
+            </div>
+            
+            <div className="space-y-3">
+              {generalArticles.map((article, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center py-2 border-b border-border/50">
+                  <div>
+                    <Input
+                      id={`general-link-${index}`}
+                      type="url"
+                      placeholder="https://example.com/article"
+                      value={article.article_link}
+                      onChange={(e) => handleGeneralArticleChange(index, 'article_link', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Input
+                      type="date"
+                      value={article.article_date}
+                      onChange={(e) => handleGeneralArticleChange(index, 'article_date', e.target.value)}
+                      max={getCurrentDate()}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            <CardTitle>Add Articles by Focus Area</CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -187,50 +231,6 @@ export function ArticlesSheet() {
                       type="date"
                       value={articleInputs[focusArea]?.article_date || ''}
                       onChange={(e) => handleInputChange(focusArea, 'article_date', e.target.value)}
-                      max={getCurrentDate()}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            <CardTitle>General Articles</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-medium text-sm text-muted-foreground border-b pb-2">
-              <div>Article Link</div>
-              <div>Article Date (Optional)</div>
-            </div>
-            
-            <div className="space-y-3">
-              {generalArticles.map((article, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center py-2 border-b border-border/50">
-                  <div>
-                    <Input
-                      id={`general-link-${index}`}
-                      type="url"
-                      placeholder="https://example.com/article"
-                      value={article.article_link}
-                      onChange={(e) => handleGeneralArticleChange(index, 'article_link', e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Input
-                      type="date"
-                      value={article.article_date}
-                      onChange={(e) => handleGeneralArticleChange(index, 'article_date', e.target.value)}
                       max={getCurrentDate()}
                       className="w-full"
                     />
