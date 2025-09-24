@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
 import { ComboboxMulti } from '@/components/shared/ComboboxMulti';
 import { RangeInput } from '@/components/shared/RangeInput';
+import { DateRangeInput } from '@/components/shared/DateRangeInput';
 import {
   useOpportunityOwnershipTypes,
   useOpportunityStatuses,
@@ -32,6 +33,8 @@ interface OpportunityFilters {
   headquarters: string[];
   processTimeline: string[];
   funds: string[];
+  acquisitionDateStart?: Date;
+  acquisitionDateEnd?: Date;
   [key: string]: any;
 }
 
@@ -250,6 +253,14 @@ export function OpportunityFilterBar({
           values={filters.funds || []}
           onChange={(values) => updateFilter('funds', values)}
           searchPlaceholder="Select Funds"
+        />
+
+        <DateRangeInput
+          label="Acquisition Date"
+          startDate={filters.acquisitionDateStart}
+          endDate={filters.acquisitionDateEnd}
+          onStartDateChange={(date) => updateFilter('acquisitionDateStart', date)}
+          onEndDateChange={(date) => updateFilter('acquisitionDateEnd', date)}
         />
       </div>
     </div>

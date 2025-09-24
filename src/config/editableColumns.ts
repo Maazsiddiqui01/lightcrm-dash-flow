@@ -434,9 +434,12 @@ export const editableColumns: EditableConfig = {
     est_lg_equity_invest: { type: 'number', validation: validateNumber },
     lg_team: { type: 'text' },
     last_modified: { type: 'date' },
-    process_timeline: { 
+    process_timeline: {
       type: 'select',
       options: ['1-90 days', '91-180 days', '181-270 days', '271-365 days', '365+ days']
+    },
+    acquisition_date: {
+      type: 'date'
     },
   }
 };

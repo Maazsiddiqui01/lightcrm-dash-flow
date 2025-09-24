@@ -41,6 +41,7 @@ interface Opportunity {
   updated_at: string;
   dealcloud: boolean;
   funds: string;
+  acquisition_date: string | null;
 }
 
 interface OpportunityFilters {

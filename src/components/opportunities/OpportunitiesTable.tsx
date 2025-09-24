@@ -59,6 +59,7 @@ interface OpportunityRaw {
   investment_professional_point_person_3: string | null;
   investment_professional_point_person_4: string | null;
   lg_team: string | null;
+  acquisition_date: string | null;
   deal_source_company: string | null;
   deal_source_individual_1: string | null;
   deal_source_individual_2: string | null;
@@ -91,6 +92,8 @@ interface OpportunityFilters {
   headquarters: string[];
   processTimeline: string[];
   funds: string[];
+  acquisitionDateStart?: Date;
+  acquisitionDateEnd?: Date;
 }
 
 interface OpportunitiesTableProps {
@@ -264,6 +267,14 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
       // Funds filter
       if (filters.funds.length > 0) {
         query = query.in('funds', filters.funds);
+      }
+
+      // Acquisition date filter
+      if (filters.acquisitionDateStart) {
+        query = query.gte('acquisition_date', filters.acquisitionDateStart.toISOString().split('T')[0]);
+      }
+      if (filters.acquisitionDateEnd) {
+        query = query.lte('acquisition_date', filters.acquisitionDateEnd.toISOString().split('T')[0]);
       }
 
       // Process Timeline filter - applied client-side to avoid TS inference issues

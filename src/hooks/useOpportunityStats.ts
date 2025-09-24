@@ -22,6 +22,8 @@ interface OpportunityFilters {
   referralContacts?: string[];
   referralCompanies?: string[];
   dateOfOrigination?: string[];
+  acquisitionDateStart?: Date;
+  acquisitionDateEnd?: Date;
 }
 
 export function useOpportunityStats(filters?: OpportunityFilters): OpportunityStats {
@@ -104,6 +106,14 @@ export function useOpportunityStats(filters?: OpportunityFilters): OpportunitySt
         return `date_of_origination.gte.${start}`;
       });
       query = query.or(dateQueries.join(','));
+    }
+
+    // Acquisition date filter
+    if (filters.acquisitionDateStart) {
+      query = query.gte('acquisition_date', filters.acquisitionDateStart.toISOString().split('T')[0]);
+    }
+    if (filters.acquisitionDateEnd) {
+      query = query.lte('acquisition_date', filters.acquisitionDateEnd.toISOString().split('T')[0]);
     }
 
     return query;

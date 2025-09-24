@@ -708,6 +708,7 @@ export type Database = {
       }
       opportunities_raw: {
         Row: {
+          acquisition_date: string | null
           created_at: string | null
           date_of_origination: string | null
           deal_name: string | null
@@ -748,6 +749,7 @@ export type Database = {
           url: string | null
         }
         Insert: {
+          acquisition_date?: string | null
           created_at?: string | null
           date_of_origination?: string | null
           deal_name?: string | null
@@ -788,6 +790,7 @@ export type Database = {
           url?: string | null
         }
         Update: {
+          acquisition_date?: string | null
           created_at?: string | null
           date_of_origination?: string | null
           deal_name?: string | null

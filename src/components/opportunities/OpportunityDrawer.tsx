@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Save, ExternalLink, Target, DollarSign, Calendar, Building, Mail } from "lucide-react";
+import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail } from "lucide-react";
 import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
 import { OpportunityNotesSection } from "./OpportunityNotesSection";
 import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
@@ -24,6 +24,10 @@ import { SingleSelectDropdown } from "./SingleSelectDropdown";
 import { splitTokens, tierOptions, normalizePlatformAddonMapping, normalizeOwnershipTypeMapping } from "@/lib/export/opportunityUtils";
 import { useSectors, useFocusAreasBySector, findMatchingOption } from "@/hooks/useLookups";
 import { calculateLgTeam } from "@/utils/opportunityHelpers";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Opportunity {
   id: string;
@@ -54,6 +58,7 @@ interface Opportunity {
   updated_at: string;
   dealcloud: boolean;
   funds: string;
+  acquisition_date: string | null;
 }
 
 interface OpportunityDrawerProps {
@@ -125,6 +130,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         investment_professional_point_person_2: opportunity.investment_professional_point_person_2 || "",
         investment_professional_point_person_3: opportunity.investment_professional_point_person_3 || "",
         investment_professional_point_person_4: opportunity.investment_professional_point_person_4 || "",
+        acquisition_date: opportunity.acquisition_date || null,
       });
     }
   }, [opportunity]);
@@ -402,6 +408,45 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 placeholder="Select funds"
                 disabled={isLoading}
               />
+
+              {/* Acquisition Date */}
+              <div className="space-y-2">
+                <Label>Acquisition Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !editedFields.acquisition_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editedFields.acquisition_date 
+                        ? format(new Date(editedFields.acquisition_date), "MMM yyyy")
+                        : "Select acquisition date"
+                      }
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editedFields.acquisition_date ? new Date(editedFields.acquisition_date) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          // Set to first day of the month
+                          const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+                          handleFieldChange("acquisition_date", firstDay.toISOString().split('T')[0]);
+                        } else {
+                          handleFieldChange("acquisition_date", null);
+                        }
+                      }}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </div>
 
