@@ -1697,6 +1697,7 @@ export type Database = {
           content: string | null
           created_at: string | null
           created_by: string | null
+          due_date: string | null
           field: string | null
           id: string | null
           opportunity_id: string | null
@@ -1705,6 +1706,7 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           created_by?: string | null
+          due_date?: string | null
           field?: string | null
           id?: string | null
           opportunity_id?: string | null
@@ -1713,6 +1715,7 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           created_by?: string | null
+          due_date?: string | null
           field?: string | null
           id?: string | null
           opportunity_id?: string | null
