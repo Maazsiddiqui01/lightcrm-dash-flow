@@ -14,10 +14,18 @@ interface ArticleInput {
   article_date: string;
 }
 
+interface GeneralArticleInput {
+  article_link: string;
+  article_date: string;
+}
+
 export function ArticlesSheet() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [articleInputs, setArticleInputs] = useState<Record<string, ArticleInput>>({});
+  const [generalArticles, setGeneralArticles] = useState<GeneralArticleInput[]>(
+    Array.from({ length: 5 }, () => ({ article_link: '', article_date: '' }))
+  );
 
   // Fetch focus areas
   const { data: focusAreas, isLoading: focusAreasLoading } = useQuery({
@@ -54,6 +62,7 @@ export function ArticlesSheet() {
         description: "Your articles have been added to the repository.",
       });
       setArticleInputs({});
+      setGeneralArticles(Array.from({ length: 5 }, () => ({ article_link: '', article_date: '' })));
       queryClient.invalidateQueries({ queryKey: ['articles'] });
     },
     onError: (error) => {
@@ -76,12 +85,30 @@ export function ArticlesSheet() {
     }));
   };
 
+  const handleGeneralArticleChange = (index: number, field: keyof GeneralArticleInput, value: string) => {
+    setGeneralArticles(prev => 
+      prev.map((article, i) => 
+        i === index ? { ...article, [field]: value } : article
+      )
+    );
+  };
+
   const handleSave = () => {
-    const articlesToSave = Object.values(articleInputs).filter(
+    const focusAreaArticles = Object.values(articleInputs).filter(
       article => article.article_link && article.article_link.trim()
     );
 
-    if (articlesToSave.length === 0) {
+    const generalArticlesToSave = generalArticles
+      .filter(article => article.article_link && article.article_link.trim())
+      .map(article => ({
+        focus_area: 'General',
+        article_link: article.article_link,
+        article_date: article.article_date,
+      }));
+
+    const allArticles = [...focusAreaArticles, ...generalArticlesToSave];
+
+    if (allArticles.length === 0) {
       toast({
         title: "No articles to save",
         description: "Please add at least one article link before saving.",
@@ -90,7 +117,7 @@ export function ArticlesSheet() {
       return;
     }
 
-    saveArticlesMutation.mutate(articlesToSave);
+    saveArticlesMutation.mutate(allArticles);
   };
 
   const getCurrentDate = () => {
@@ -124,7 +151,7 @@ export function ArticlesSheet() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            Save Articles
+            Save All Articles
           </Button>
         </CardHeader>
         <CardContent>
@@ -160,6 +187,50 @@ export function ArticlesSheet() {
                       type="date"
                       value={articleInputs[focusArea]?.article_date || ''}
                       onChange={(e) => handleInputChange(focusArea, 'article_date', e.target.value)}
+                      max={getCurrentDate()}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            <CardTitle>General Articles</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-medium text-sm text-muted-foreground border-b pb-2">
+              <div>Article Link</div>
+              <div>Article Date (Optional)</div>
+            </div>
+            
+            <div className="space-y-3">
+              {generalArticles.map((article, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center py-2 border-b border-border/50">
+                  <div>
+                    <Input
+                      id={`general-link-${index}`}
+                      type="url"
+                      placeholder="https://example.com/article"
+                      value={article.article_link}
+                      onChange={(e) => handleGeneralArticleChange(index, 'article_link', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Input
+                      type="date"
+                      value={article.article_date}
+                      onChange={(e) => handleGeneralArticleChange(index, 'article_date', e.target.value)}
                       max={getCurrentDate()}
                       className="w-full"
                     />
