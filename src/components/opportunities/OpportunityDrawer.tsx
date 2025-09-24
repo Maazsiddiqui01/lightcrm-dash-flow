@@ -553,8 +553,9 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             title="Next Steps"
             field="next_steps"
             currentValue={currentNotes?.next_steps || null}
+            currentDueDate={currentNotes?.next_steps_due_date || null}
             timeline={timeline}
-            onSave={(content) => saveNextSteps({ opportunityId: opportunity.id, content })}
+            onSave={(content, dueDate) => saveNextSteps(content, dueDate)}
             isSaving={isSavingNextSteps}
             isLoadingCurrent={isLoadingCurrent}
             isLoadingTimeline={isLoadingTimeline}
@@ -568,7 +569,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             field="most_recent_notes"
             currentValue={currentNotes?.most_recent_notes || null}
             timeline={timeline}
-            onSave={(content) => saveMostRecentNotes({ opportunityId: opportunity.id, content })}
+            onSave={(content) => saveMostRecentNotes(content)}
             isSaving={isSavingNotes}
             isLoadingCurrent={isLoadingCurrent}
             isLoadingTimeline={isLoadingTimeline}

@@ -732,6 +732,7 @@ export type Database = {
           lg_team: string | null
           most_recent_notes: string | null
           next_steps: string | null
+          next_steps_due_date: string | null
           ownership: string | null
           ownership_type: string | null
           platform_add_on: string | null
@@ -770,6 +771,7 @@ export type Database = {
           lg_team?: string | null
           most_recent_notes?: string | null
           next_steps?: string | null
+          next_steps_due_date?: string | null
           ownership?: string | null
           ownership_type?: string | null
           platform_add_on?: string | null
@@ -808,6 +810,7 @@ export type Database = {
           lg_team?: string | null
           most_recent_notes?: string | null
           next_steps?: string | null
+          next_steps_due_date?: string | null
           ownership?: string | null
           ownership_type?: string | null
           platform_add_on?: string | null
@@ -912,6 +915,7 @@ export type Database = {
           content: string
           created_at: string
           created_by: string | null
+          due_date: string | null
           field: string
           id: string
           opportunity_id: string
@@ -920,6 +924,7 @@ export type Database = {
           content: string
           created_at?: string
           created_by?: string | null
+          due_date?: string | null
           field: string
           id?: string
           opportunity_id: string
@@ -928,6 +933,7 @@ export type Database = {
           content?: string
           created_at?: string
           created_by?: string | null
+          due_date?: string | null
           field?: string
           id?: string
           opportunity_id?: string
@@ -1831,7 +1837,14 @@ export type Database = {
         Returns: undefined
       }
       add_opportunity_note: {
-        Args: { p_content: string; p_field: string; p_opportunity_id: string }
+        Args:
+          | {
+              p_content: string
+              p_due_date?: string
+              p_field: string
+              p_opportunity_id: string
+            }
+          | { p_content: string; p_field: string; p_opportunity_id: string }
         Returns: undefined
       }
       adjust_weekend: {

@@ -1,21 +1,33 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Save, Clock, ChevronDown, ChevronUp, Copy } from 'lucide-react';
-import { format } from 'date-fns';
+import { ChevronDown, ChevronUp, Copy, CalendarIcon, Clock } from 'lucide-react';
+import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import type { OpportunityNote } from '@/hooks/useOpportunityNotes';
+
+interface OpportunityNote {
+  id: string;
+  opportunity_id: string;
+  field: string;
+  content: string;
+  due_date: string | null;
+  created_at: string;
+  created_by: string | null;
+}
 
 interface OpportunityNotesSectionProps {
   title: string;
-  field: 'next_steps' | 'most_recent_notes';
+  field: string;
   currentValue: string | null;
+  currentDueDate?: string | null;
   timeline: OpportunityNote[];
-  onSave: (content: string) => void;
+  onSave: (content: string, dueDate?: string) => void;
   isSaving: boolean;
   isLoadingCurrent: boolean;
   isLoadingTimeline: boolean;
@@ -25,6 +37,7 @@ export function OpportunityNotesSection({
   title,
   field,
   currentValue,
+  currentDueDate,
   timeline,
   onSave,
   isSaving,
@@ -32,19 +45,35 @@ export function OpportunityNotesSection({
   isLoadingTimeline,
 }: OpportunityNotesSectionProps) {
   const [draft, setDraft] = useState('');
+  const [dueDate, setDueDate] = useState<Date | undefined>();
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
-  // Update draft when currentValue changes
+  const isNextSteps = field === 'next_steps';
+
+  // Sync draft state with current value
   useEffect(() => {
     setDraft(currentValue || '');
   }, [currentValue]);
 
+  // Sync due date state with current due date
+  useEffect(() => {
+    if (currentDueDate) {
+      setDueDate(new Date(currentDueDate));
+    } else {
+      setDueDate(undefined);
+    }
+  }, [currentDueDate]);
+
   const handleSave = () => {
-    if (draft.trim() && draft !== (currentValue || '')) {
-      onSave(draft.trim());
+    if (draft.trim() !== (currentValue || '').trim() || (isNextSteps && dueDate !== (currentDueDate ? new Date(currentDueDate) : undefined))) {
+      const dueDateString = dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined;
+      onSave(draft.trim(), dueDateString);
     }
   };
+
+  const canSave = draft.trim() !== (currentValue || '').trim() || 
+    (isNextSteps && dueDate?.toDateString() !== (currentDueDate ? new Date(currentDueDate).toDateString() : undefined));
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -63,6 +92,26 @@ export function OpportunityNotesSection({
     setExpandedEntries(newExpanded);
   };
 
+  // Calculate days left for due dates
+  const calculateDaysLeft = (dueDateString: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDateString);
+    due.setHours(0, 0, 0, 0);
+    return differenceInDays(due, today);
+  };
+
+  const getDaysLeftDisplay = (dueDateString: string) => {
+    const daysLeft = calculateDaysLeft(dueDateString);
+    if (daysLeft < 0) {
+      return { text: `${Math.abs(daysLeft)} days overdue`, className: 'text-destructive' };
+    } else if (daysLeft === 0) {
+      return { text: 'Due today', className: 'text-warning' };
+    } else {
+      return { text: `${daysLeft} days left`, className: 'text-muted-foreground' };
+    }
+  };
+
   const copyToClipboard = async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
@@ -74,9 +123,6 @@ export function OpportunityNotesSection({
       console.error('Failed to copy:', err);
     }
   };
-
-  const isChanged = draft !== (currentValue || '');
-  const canSave = draft.trim() && isChanged && !isSaving;
 
   // Filter timeline to only show entries for this field
   const fieldTimeline = timeline.filter(entry => entry.field === field);
@@ -90,51 +136,86 @@ export function OpportunityNotesSection({
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-4">
           {/* Current Value Editor */}
-          <div className="space-y-2">
-            <Label htmlFor={field}>Current {title}</Label>
-            {isLoadingCurrent ? (
-              <Skeleton className="h-20 w-full" />
-            ) : (
-              <div className="space-y-2">
-                <Textarea
-                  id={field}
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={`Enter ${title.toLowerCase()}...`}
-                  className="min-h-[80px] resize-none"
-                  rows={3}
-                />
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">
-                    {draft.length} characters • Press Ctrl+Enter to save
-                  </span>
-                  <Button
-                    onClick={handleSave}
-                    disabled={!canSave}
-                    size="sm"
-                    className="h-8"
-                  >
-                    <Save className="h-3 w-3 mr-1" />
-                    {isSaving ? 'Saving...' : 'Save'}
-                  </Button>
+          {isLoadingCurrent ? (
+            <div className="space-y-2">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-9 w-24" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={`Enter ${title.toLowerCase()}...`}
+                rows={3}
+                className="min-h-[80px] resize-none"
+              />
+              
+              {/* Due Date Section - Only for Next Steps */}
+              {isNextSteps && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Due Date (Optional)</label>
+                    {currentDueDate && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-3 w-3" />
+                        <span className={getDaysLeftDisplay(currentDueDate).className}>
+                          {getDaysLeftDisplay(currentDueDate).text}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !dueDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dueDate ? format(dueDate, "PPP") : <span>Select due date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dueDate}
+                        onSelect={setDueDate}
+                        initialFocus
+                        disabled={(date) => date < new Date()}
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+              
+              <Button 
+                onClick={handleSave} 
+                disabled={!canSave || isSaving}
+                size="sm"
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          )}
 
           {/* Timeline */}
           <div className="space-y-3">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              <Label className="text-sm font-medium">Timeline</Label>
+              <span className="text-sm font-medium">Timeline</span>
             </div>
             
             {isLoadingTimeline ? (
@@ -158,46 +239,48 @@ export function OpportunityNotesSection({
                       key={entry.id}
                       className="border rounded-lg p-3 bg-card hover:bg-accent/50 transition-colors"
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(entry.created_at), 'MMM d, yyyy • h:mm a')}
-                        </div>
-                        <div className="flex items-center space-x-1">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                        <span>{formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}</span>
+                        <div className="flex items-center gap-2">
+                          {entry.due_date && (
+                            <Badge variant="outline" className="text-xs">
+                              <CalendarIcon className="w-3 h-3 mr-1" />
+                              Due: {format(new Date(entry.due_date), 'MMM d, yyyy')}
+                            </Badge>
+                          )}
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
+                            size="sm"
                             onClick={() => copyToClipboard(entry.content)}
+                            className="h-auto p-1"
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
-                          {needsExpansion && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => toggleExpanded(entry.id)}
-                            >
-                              {isExpanded ? (
-                                <ChevronUp className="h-3 w-3" />
-                              ) : (
-                                <ChevronDown className="h-3 w-3" />
-                              )}
-                            </Button>
-                          )}
                         </div>
                       </div>
+                      
                       <div className="text-sm whitespace-pre-wrap">
                         {formatContent(entry.content, isExpanded)}
                       </div>
-                      {needsExpansion && !isExpanded && (
+                      
+                      {needsExpansion && (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-6 mt-1 p-0 text-xs text-muted-foreground"
                           onClick={() => toggleExpanded(entry.id)}
                         >
-                          Show more
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp className="h-3 w-3 mr-1" />
+                              Show less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-3 w-3 mr-1" />
+                              Show more
+                            </>
+                          )}
                         </Button>
                       )}
                     </div>
@@ -206,8 +289,8 @@ export function OpportunityNotesSection({
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

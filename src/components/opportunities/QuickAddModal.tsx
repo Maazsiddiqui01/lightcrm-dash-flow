@@ -9,6 +9,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { useOpportunityNotes } from '@/hooks/useOpportunityNotes';
 
 interface QuickAddModalProps {
@@ -27,6 +32,7 @@ export function QuickAddModal({
   opportunityName,
 }: QuickAddModalProps) {
   const [content, setContent] = useState('');
+  const [dueDate, setDueDate] = useState<Date | undefined>();
   const { saveNextSteps, saveMostRecentNotes, isSavingNextSteps, isSavingNotes } = useOpportunityNotes(opportunityId);
 
   const isNextSteps = type === 'next_steps';
@@ -38,18 +44,22 @@ export function QuickAddModal({
   const handleSave = () => {
     if (!content.trim()) return;
 
-    const saveFunction = isNextSteps ? saveNextSteps : saveMostRecentNotes;
-    saveFunction({ opportunityId, content: content.trim() }, {
-      onSuccess: () => {
-        // Close modal and reset content only on successful save
-        setContent('');
-        onOpenChange(false);
-      }
-    });
+    if (isNextSteps) {
+      const dueDateString = dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined;
+      saveNextSteps(content.trim(), dueDateString);
+    } else {
+      saveMostRecentNotes(content.trim());
+    }
+    
+    // Close modal and reset content after save is initiated
+    setContent('');
+    setDueDate(undefined);
+    onOpenChange(false);
   };
 
   const handleCancel = () => {
     setContent('');
+    setDueDate(undefined);
     onOpenChange(false);
   };
 
@@ -61,7 +71,7 @@ export function QuickAddModal({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         
-        <div className="py-4">
+        <div className="space-y-4 py-4">
           <Textarea
             placeholder={placeholder}
             value={content}
@@ -69,6 +79,36 @@ export function QuickAddModal({
             rows={4}
             className="w-full"
           />
+          
+          {isNextSteps && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Due Date (Optional)</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dueDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, "PPP") : <span>Select due date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={setDueDate}
+                    initialFocus
+                    disabled={(date) => date < new Date()}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
