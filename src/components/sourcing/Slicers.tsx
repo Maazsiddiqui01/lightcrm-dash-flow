@@ -11,6 +11,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { RangeInput } from '@/components/shared/RangeInput';
 import { cn } from '@/lib/utils';
+import { getTierDisplayValue, getTierDatabaseValue } from '@/lib/export/opportunityUtils';
 
 interface SlicersProps {
   filters: any;
@@ -150,6 +151,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
       // Ensure tiers 1-5 are always available
       const allTiers = new Set([...dbTiers, '1', '2', '3', '4', '5']);
       
+      // Convert to display values and sort
       return Array.from(allTiers).sort((a, b) => {
         // Sort numerically if both are numbers, otherwise alphabetically
         const numA = parseInt(a);
@@ -158,7 +160,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
           return numA - numB;
         }
         return a.localeCompare(b);
-      });
+      }).map(tier => getTierDisplayValue(tier));
     },
     staleTime: 300_000,
   });
@@ -216,9 +218,12 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         updateFilter(key, [...currentNonHcValues, ...hcOptions]);
       }
     } else {
-      const updated = current.includes(value)
-        ? current.filter(v => v !== value)
-        : [...current, value];
+      // For tier filters, convert display values to database values
+      const actualValue = key === 'tier' && value.includes('-') ? getTierDatabaseValue(value) : value;
+      
+      const updated = current.includes(actualValue)
+        ? current.filter(v => v !== actualValue)
+        : [...current, actualValue];
       updateFilter(key, updated);
     }
   };
@@ -482,19 +487,29 @@ function MultiSelectDropdown({ label, options, selected, onToggle, onBatchUpdate
       
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {selected.map(item => (
-            <Badge key={item} variant="secondary" className="text-xs">
-              {item}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto p-0 ml-1"
-                onClick={() => onToggle(item)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          ))}
+          {selected.map(item => {
+            // For tier badges, show display value but handle removal with database value
+            const displayItem = label === 'Tier' && ['1', '2', '3', '4', '5'].includes(item) 
+              ? getTierDisplayValue(item) 
+              : item;
+            const removeValue = label === 'Tier' && displayItem.includes('-') 
+              ? getTierDatabaseValue(displayItem) 
+              : item;
+              
+            return (
+              <Badge key={item} variant="secondary" className="text-xs">
+                {displayItem}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-0 ml-1"
+                  onClick={() => onToggle(removeValue)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            );
+          })}
         </div>
       )}
     </div>

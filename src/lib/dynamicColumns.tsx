@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { EditableCell } from '@/components/shared/EditableCell';
 import { Badge } from '@/components/ui/badge';
 import { formatDaysOverUnder, getDaysOverUnderColorClass } from '@/utils/contactCalculations';
+import { getTierDisplayValue } from '@/lib/export/opportunityUtils';
 
 export interface EditState {
   editMode: boolean;
@@ -133,7 +134,13 @@ export function createDynamicColumns<T extends Record<string, any>>(
          }
 
         // Get display value and modification state first
-        const displayValue = formatCellValue(editedValue, tableColumn);
+        let displayValue = formatCellValue(editedValue, tableColumn);
+        
+        // Special handling for tier column to show descriptive labels
+        if (tableColumn.name === 'tier') {
+          displayValue = getTierDisplayValue(editedValue);
+        }
+        
         const isModified = editState.editedRows[rowId]?.[tableColumn.name] !== undefined;
 
         // Special handling for deal_name with URL linking

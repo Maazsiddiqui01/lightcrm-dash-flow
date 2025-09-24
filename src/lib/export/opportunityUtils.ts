@@ -51,3 +51,37 @@ export const tierOptions = ['1', '2', '3', '4', '5'];
 
 export const defaultOwnershipTypes = ['Family/Founder', 'Sponsor Owned', 'Public', 'Other'];
 export const defaultPlatformAddons = ['Platform', 'Add-On', 'Both'];
+
+// Tier mapping utilities
+export const tierDisplayMapping: Record<string, string> = {
+  '1': '1-Active',
+  '2': '2-Longer Term', 
+  '3': '3-For Review',
+  '4': '4-Likely Pass',
+  '5': '5-Passed'
+};
+
+export const tierValueMapping: Record<string, string> = {
+  '1-Active': '1',
+  '2-Longer Term': '2',
+  '3-For Review': '3', 
+  '4-Likely Pass': '4',
+  '5-Passed': '5'
+};
+
+export const getTierDisplayValue = (value: string | null | undefined): string => {
+  if (!value) return '';
+  return tierDisplayMapping[value] || value;
+};
+
+export const getTierDatabaseValue = (displayValue: string): string => {
+  return tierValueMapping[displayValue] || displayValue;
+};
+
+export const tierDisplayOptions = [
+  '1-Active',
+  '2-Longer Term',
+  '3-For Review', 
+  '4-Likely Pass',
+  '5-Passed'
+];

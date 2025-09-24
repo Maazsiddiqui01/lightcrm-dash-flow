@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EditableFieldConfig } from '@/config/editableColumns';
 import { cn } from '@/lib/utils';
+import { getTierDatabaseValue, getTierDisplayValue } from '@/lib/export/opportunityUtils';
 
 interface EditableCellProps {
   value: any;
@@ -71,7 +72,15 @@ export function EditableCell({
     onCancel();
   };
 
-  const displayValue = value === null || value === undefined ? '' : String(value);
+  const displayValue = (() => {
+    if (value === null || value === undefined) return '';
+    const stringValue = String(value);
+    // If this is a tier field with display options, show the display value
+    if (config.options?.includes('1-Active') && ['1', '2', '3', '4', '5'].includes(stringValue)) {
+      return getTierDisplayValue(stringValue);
+    }
+    return stringValue;
+  })();
 
   if (!editing) {
     const cellContent = (
@@ -142,7 +151,15 @@ export function EditableCell({
       return (
         <Select 
           value={localValue || '__none__'} 
-          onValueChange={(value) => setLocalValue(value === '__none__' ? '' : value)}
+          onValueChange={(value) => {
+            const finalValue = value === '__none__' ? '' : value;
+            // If this is a tier field and we're receiving a display value, convert it to database value
+            if (config.options?.includes('1-Active') && finalValue && !['1', '2', '3', '4', '5'].includes(finalValue)) {
+              setLocalValue(getTierDatabaseValue(finalValue));
+            } else {
+              setLocalValue(finalValue);
+            }
+          }}
         >
           <SelectTrigger className={cn(error && "border-destructive")}>
             <SelectValue placeholder="Select..." />

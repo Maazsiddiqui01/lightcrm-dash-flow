@@ -28,6 +28,15 @@ const validateNumber = (value: any): string | null => {
   return null;
 };
 
+// Import tier display options
+const tierDisplayOptions = [
+  '1-Active',
+  '2-Longer Term',
+  '3-For Review', 
+  '4-Likely Pass',
+  '5-Passed'
+];
+
 export const editableColumns: EditableConfig = {
   contacts_raw: {
     full_name: { type: 'text' },
@@ -399,7 +408,7 @@ export const editableColumns: EditableConfig = {
     },
     tier: { 
       type: 'select',
-      options: ['1', '2', '3', '4', '5']
+      options: tierDisplayOptions
     },
     status: { 
       type: 'select',
