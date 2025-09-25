@@ -37,18 +37,6 @@ export function useDraftGenerator() {
       const result = await response.json();
       console.log('N8N Webhook response:', result);
       
-      // Handle the actual N8N response format
-      if (result.message === "Workflow was started") {
-        // For now, return a placeholder until we can get the actual result
-        // This needs to be updated when we have proper async handling
-        return {
-          subject: "Draft Generation Started",
-          body: "The draft generation workflow has been started. Please check back in a moment for the completed draft.",
-          send: false,
-          skip_reason: "Workflow in progress"
-        };
-      }
-      
       return result as DraftResult;
     },
     onError: (error: any) => {

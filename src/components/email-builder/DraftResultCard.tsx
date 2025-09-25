@@ -3,12 +3,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { FileText, AlertCircle } from "lucide-react";
 import { DraftResult } from "@/hooks/useDraftGenerator";
+import { DraftLoadingState } from "./DraftLoadingState";
 
 interface DraftResultCardProps {
   result: DraftResult | null;
+  isLoading?: boolean;
 }
 
-export function DraftResultCard({ result }: DraftResultCardProps) {
+export function DraftResultCard({ result, isLoading = false }: DraftResultCardProps) {
   const formatDraftContent = (result: DraftResult) => {
     const ccList = result.cc && Array.isArray(result.cc) ? result.cc.join(', ') : 'None';
     
@@ -30,7 +32,9 @@ ${result.skip_reason ? `Skip Reason: ${result.skip_reason}` : ''}`;
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {result ? (
+        {isLoading ? (
+          <DraftLoadingState />
+        ) : result ? (
           <div className="space-y-3">
             {result.skip_reason && (
               <div className="flex items-center gap-2 p-2 bg-warning-light rounded text-warning-foreground">

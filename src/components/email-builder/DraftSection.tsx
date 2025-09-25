@@ -227,7 +227,10 @@ export function DraftSection() {
               extraCC={derivedVariables.extraCC}
             />
             <OpportunitiesCard opportunities={enrichedContact.opps} />
-            <DraftResultCard result={draftResult} />
+            <DraftResultCard 
+              result={draftResult} 
+              isLoading={draftMutation.isPending} 
+            />
           </div>
 
           {/* Send Status and Generate Button */}
