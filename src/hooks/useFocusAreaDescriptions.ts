@@ -24,15 +24,8 @@ export function useFocusAreaDescriptions(focusAreas: string[]) {
         .from('focus_area_description')
         .select('*');
 
-      if (hasGeneralBD) {
-        // For General BD, return all rows for any matching focus area
-        query = query.in('LG Focus Area', focusAreas);
-      } else {
-        // For other focus areas, only return "New Platform" records
-        query = query
-          .in('LG Focus Area', focusAreas)
-          .eq('Platform / Add-On', 'New Platform');
-      }
+      // Return all rows for any matching focus area (removed restrictive Platform filter)
+      query = query.in('LG Focus Area', focusAreas);
 
       const { data, error } = await query;
       
