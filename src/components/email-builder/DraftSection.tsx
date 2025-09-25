@@ -60,10 +60,23 @@ export function DraftSection() {
       const result = await routerMutation.mutateAsync(routerInput);
       setRouterResult(result);
       
-      // Find template matching the case_id or use first template
-      return templates.find(t => t.fa_bucket === result.case_id) || templates[0];
+      // Map case_id to correct template name
+      const caseTemplateMap: { [key: number]: string } = {
+        1: "Case 1 — GB + 1 FA — No Opps",
+        2: "Case 2 — GB + ≥3 FAs — No Opps", 
+        3: "Case 3 — No GB — 1 FA — No Opps",
+        4: "Case 4 — No GB — ≥2 FAs — No Opps",
+        5: "Case 5 — GB + (1–2) FAs — Has Opps",
+        6: "Case 6 — GB + ≥3 FAs — Has Opps",
+        7: "Case 7 — No GB — (1–2) FAs — Has Opps",
+        8: "Case 8 — No GB — ≥3 FAs — Has Opps"
+      };
+      
+      const expectedTemplateName = caseTemplateMap[result.case_id];
+      return templates.find(t => t.name === expectedTemplateName) || templates[0];
     } catch (error) {
       console.error('RouterLLM failed, using fallback:', error);
+      setRouterResult(null); // Clear previous router result when failing
       // Fallback to simple logic
       if (contact.has_opps && contact.focusAreas.length >= 3) {
         return templates.find(t => t.has_opps && t.fa_bucket && t.fa_bucket >= 3);
