@@ -10,7 +10,7 @@ export interface DraftPayload {
 export interface DraftResult {
   subject: string;
   body: string;
-  cc: string[];
+  cc?: string[];
   send: boolean;
   skip_reason?: string;
 }

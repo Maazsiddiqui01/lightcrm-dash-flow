@@ -10,12 +10,14 @@ interface DraftResultCardProps {
 
 export function DraftResultCard({ result }: DraftResultCardProps) {
   const formatDraftContent = (result: DraftResult) => {
+    const ccList = result.cc && Array.isArray(result.cc) ? result.cc.join(', ') : 'None';
+    
     return `Subject: ${result.subject}
 
 ${result.body}
 
 ---
-CC: ${result.cc.join(', ') || 'None'}
+CC: ${ccList}
 ${result.skip_reason ? `Skip Reason: ${result.skip_reason}` : ''}`;
   };
 
