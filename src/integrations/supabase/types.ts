@@ -449,6 +449,60 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          created_at: string | null
+          custom_insertion: string | null
+          custom_instructions: string | null
+          delta_type: string | null
+          description: string | null
+          fa_bucket: number | null
+          gb_present: boolean | null
+          has_opps: boolean | null
+          hs_present: boolean | null
+          id: string
+          is_preset: boolean
+          ls_present: boolean | null
+          max_opps: number | null
+          name: string
+          subject_mode: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_insertion?: string | null
+          custom_instructions?: string | null
+          delta_type?: string | null
+          description?: string | null
+          fa_bucket?: number | null
+          gb_present?: boolean | null
+          has_opps?: boolean | null
+          hs_present?: boolean | null
+          id?: string
+          is_preset?: boolean
+          ls_present?: boolean | null
+          max_opps?: number | null
+          name: string
+          subject_mode?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_insertion?: string | null
+          custom_instructions?: string | null
+          delta_type?: string | null
+          description?: string | null
+          fa_bucket?: number | null
+          gb_present?: boolean | null
+          has_opps?: boolean | null
+          hs_present?: boolean | null
+          id?: string
+          is_preset?: boolean
+          ls_present?: boolean | null
+          max_opps?: number | null
+          name?: string
+          subject_mode?: string | null
+        }
+        Relationships: []
+      }
       emails_meetings_raw: {
         Row: {
           all_emails: string | null
@@ -512,6 +566,60 @@ export type Database = {
           to_names?: string | null
           updated_at?: string | null
           year_text?: string | null
+        }
+        Relationships: []
+      }
+      focus_area_description: {
+        Row: {
+          Description: string | null
+          "Existing Platform (for Add-Ons)": string | null
+          "LG Focus Area": string | null
+          "LG Sector": string | null
+          "Platform / Add-On": string | null
+        }
+        Insert: {
+          Description?: string | null
+          "Existing Platform (for Add-Ons)"?: string | null
+          "LG Focus Area"?: string | null
+          "LG Sector"?: string | null
+          "Platform / Add-On"?: string | null
+        }
+        Update: {
+          Description?: string | null
+          "Existing Platform (for Add-Ons)"?: string | null
+          "LG Focus Area"?: string | null
+          "LG Sector"?: string | null
+          "Platform / Add-On"?: string | null
+        }
+        Relationships: []
+      }
+      focus_area_descriptions: {
+        Row: {
+          created_at: string
+          Description: string | null
+          "Existing Platform (for Add-Ons)": string | null
+          id: number
+          "LG Focus Area": string | null
+          "LG Sector": string | null
+          "Platform / Add-On": string | null
+        }
+        Insert: {
+          created_at?: string
+          Description?: string | null
+          "Existing Platform (for Add-Ons)"?: string | null
+          id?: number
+          "LG Focus Area"?: string | null
+          "LG Sector"?: string | null
+          "Platform / Add-On"?: string | null
+        }
+        Update: {
+          created_at?: string
+          Description?: string | null
+          "Existing Platform (for Add-Ons)"?: string | null
+          id?: number
+          "LG Focus Area"?: string | null
+          "LG Sector"?: string | null
+          "Platform / Add-On"?: string | null
         }
         Relationships: []
       }
@@ -1919,6 +2027,30 @@ export type Database = {
       get_article_age_in_days: {
         Args: { added_date: string }
         Returns: number
+      }
+      get_contact_enriched: {
+        Args: { contact_id: string; opp_limit?: number }
+        Returns: Json
+      }
+      get_focus_meta: {
+        Args: { focus_areas: string[] }
+        Returns: {
+          assistant_email: string
+          assistant_name: string
+          description: string
+          focus_area: string
+          lead1_email: string
+          lead1_name: string
+          lead2_email: string
+          lead2_name: string
+          sector_id: string
+        }[]
+      }
+      get_opps_for_contact: {
+        Args: { full_name: string; limit_n?: number }
+        Returns: {
+          deal_name: string
+        }[]
       }
       gtrgm_compress: {
         Args: { "": unknown }
