@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, Building, Mail } from "lucide-react";
+import { User, Building, Mail, FileText } from "lucide-react";
 import { EnrichedContact } from "@/hooks/useContactEnriched";
 
 interface ContactSummaryCardProps {
@@ -44,6 +44,28 @@ export function ContactSummaryCard({ contact }: ContactSummaryCardProps) {
                 <Badge key={index} variant="secondary" className="text-xs">
                   {area}
                 </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {contact.focusAreaDescriptions.length > 0 && (
+          <div className="space-y-3">
+            <div className="text-sm font-medium flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Focus Area Details:
+            </div>
+            <div className="space-y-2">
+              {contact.focusAreaDescriptions.map((desc, index) => (
+                <div key={index} className="p-2 bg-muted rounded-sm">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium">{desc.focus_area}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {desc.platform_type}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{desc.description}</p>
+                </div>
               ))}
             </div>
           </div>

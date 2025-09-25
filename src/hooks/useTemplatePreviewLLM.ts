@@ -7,6 +7,12 @@ export interface TemplatePreviewInput {
   organization: string;
   focusAreas: string[];
   descriptions: Record<string, string>;
+  focusAreaDescriptions: Array<{
+    focus_area: string;
+    description: string;
+    platform_type: string;
+    sector: string;
+  }>;
   delta_type: string;
   hs_present: boolean;
   ls_present: boolean;

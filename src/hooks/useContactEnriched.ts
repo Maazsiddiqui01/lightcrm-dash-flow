@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useFocusAreaDescriptions } from './useFocusAreaDescriptions';
 
 export interface EnrichedContact {
   contact: {
@@ -26,10 +27,16 @@ export interface EnrichedContact {
     assistant_name: string;
     assistant_email: string;
   }>;
+  focusAreaDescriptions: Array<{
+    focus_area: string;
+    description: string;
+    platform_type: string;
+    sector: string;
+  }>;
 }
 
 export function useContactEnriched(contactId: string | null, oppLimit: number = 3) {
-  return useQuery({
+  const baseQuery = useQuery({
     queryKey: ['contact_enriched', contactId, oppLimit],
     queryFn: async () => {
       if (!contactId) return null;
@@ -44,4 +51,17 @@ export function useContactEnriched(contactId: string | null, oppLimit: number = 
     },
     enabled: !!contactId,
   });
+
+  // Get focus areas from the base query to fetch descriptions
+  const focusAreas = baseQuery.data?.focusAreas || [];
+  const descriptionsQuery = useFocusAreaDescriptions(focusAreas);
+
+  return {
+    ...baseQuery,
+    data: baseQuery.data ? {
+      ...baseQuery.data,
+      focusAreaDescriptions: descriptionsQuery.data || []
+    } : null,
+    isLoading: baseQuery.isLoading || descriptionsQuery.isLoading,
+  };
 }

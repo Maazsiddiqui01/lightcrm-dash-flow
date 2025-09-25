@@ -35,6 +35,14 @@ export function PreviewModal({ template, open, onClose }: PreviewModalProps) {
         organization: "SampleCo", 
         focusAreas: ["Healthcare Services"],
         descriptions: { "Healthcare Services": "businesses that serve hospitals and health systems as key end markets." },
+        focusAreaDescriptions: [
+          {
+            focus_area: "Healthcare Services",
+            description: "businesses that serve hospitals and health systems as key end markets.",
+            platform_type: "New Platform",
+            sector: "Healthcare"
+          }
+        ],
         delta_type: template.delta_type || "Email",
         hs_present: template.hs_present || false,
         ls_present: template.ls_present || false,
