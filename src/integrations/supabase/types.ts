@@ -573,23 +573,29 @@ export type Database = {
         Row: {
           Description: string | null
           "Existing Platform (for Add-Ons)": string | null
+          id: string | null
           "LG Focus Area": string | null
           "LG Sector": string | null
           "Platform / Add-On": string | null
+          Unique_ID: number
         }
         Insert: {
           Description?: string | null
           "Existing Platform (for Add-Ons)"?: string | null
+          id?: string | null
           "LG Focus Area"?: string | null
           "LG Sector"?: string | null
           "Platform / Add-On"?: string | null
+          Unique_ID?: number
         }
         Update: {
           Description?: string | null
           "Existing Platform (for Add-Ons)"?: string | null
+          id?: string | null
           "LG Focus Area"?: string | null
           "LG Sector"?: string | null
           "Platform / Add-On"?: string | null
+          Unique_ID?: number
         }
         Relationships: []
       }
