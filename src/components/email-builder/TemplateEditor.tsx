@@ -133,6 +133,14 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
           sector: "Healthcare"
         }
       ],
+      articles: [
+        {
+          focus_area: "Healthcare Services",
+          article_link: "https://example.com/article",
+          article_date: "2024-01-15",
+          last_date_to_use: "2024-12-31"
+        }
+      ],
       delta_type: template.delta_type || "Email",
       hs_present: template.hs_present || false,
       ls_present: template.ls_present || false,

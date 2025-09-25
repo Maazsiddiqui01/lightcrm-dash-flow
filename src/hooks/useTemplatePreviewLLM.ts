@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { FocusAreaArticle } from './useArticlesByFocusAreas';
 
 export interface TemplatePreviewInput {
   firstName: string;
@@ -13,6 +14,7 @@ export interface TemplatePreviewInput {
     platform_type: string;
     sector: string;
   }>;
+  articles: FocusAreaArticle[];
   delta_type: string;
   hs_present: boolean;
   ls_present: boolean;

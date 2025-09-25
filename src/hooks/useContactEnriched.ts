@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFocusAreaDescriptions } from './useFocusAreaDescriptions';
+import { useArticlesByFocusAreas, type FocusAreaArticle } from './useArticlesByFocusAreas';
 
 export interface EnrichedContact {
   contact: {
@@ -33,6 +34,7 @@ export interface EnrichedContact {
     platform_type: string;
     sector: string;
   }>;
+  articles: FocusAreaArticle[];
 }
 
 export function useContactEnriched(contactId: string | null, oppLimit: number = 3) {
@@ -52,16 +54,18 @@ export function useContactEnriched(contactId: string | null, oppLimit: number = 
     enabled: !!contactId,
   });
 
-  // Get focus areas from the base query to fetch descriptions
+  // Get focus areas from the base query to fetch descriptions and articles
   const focusAreas = baseQuery.data?.focusAreas || [];
   const descriptionsQuery = useFocusAreaDescriptions(focusAreas);
+  const articlesQuery = useArticlesByFocusAreas(focusAreas);
 
   return {
     ...baseQuery,
     data: baseQuery.data ? {
       ...baseQuery.data,
-      focusAreaDescriptions: descriptionsQuery.data || []
+      focusAreaDescriptions: descriptionsQuery.data || [],
+      articles: articlesQuery.data || []
     } : null,
-    isLoading: baseQuery.isLoading || descriptionsQuery.isLoading,
+    isLoading: baseQuery.isLoading || descriptionsQuery.isLoading || articlesQuery.isLoading,
   };
 }
