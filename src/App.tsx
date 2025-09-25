@@ -16,6 +16,7 @@ import { DataTableTest } from "@/pages/DataTableTest";
 import MissingContacts from "@/pages/MissingContacts";
 import { MeetingsWithTeam } from "@/pages/MeetingsWithTeam";
 import Articles from "@/pages/Articles";
+import { EmailBuilder } from "@/pages/EmailBuilder";
 import { Auth } from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
@@ -57,6 +58,7 @@ function App() {
                       <Route path="/opportunities" element={<Opportunities />} />
                       <Route path="/interactions" element={<Interactions />} />
                       <Route path="/articles" element={<Articles />} />
+                      <Route path="/email-builder" element={<EmailBuilder />} />
                       <Route path="/kpis" element={<KPIs />} />
                       <Route path="/meetings-with-team" element={<MeetingsWithTeam />} />
                       <Route path="/tom-new-view" element={<TomNewView />} />
