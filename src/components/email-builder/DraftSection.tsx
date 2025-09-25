@@ -110,7 +110,7 @@ export function DraftSection() {
         setAutoRoutedTemplate(template);
       });
     }
-  }, [enrichedContact, templates, variables.gb_present, variables.hs_present, variables.ls_present]);
+  }, [enrichedContact, templates]);
 
   const handleGenerateDraft = async () => {
     if (!selectedContact || !enrichedContact) return;
