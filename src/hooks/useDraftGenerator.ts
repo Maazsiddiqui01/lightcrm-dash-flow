@@ -22,6 +22,8 @@ export function useDraftGenerator() {
 
   return useMutation({
     mutationFn: async (payload: DraftPayload): Promise<DraftResult> => {
+      console.log('Making request to N8N webhook:', N8N_WEBHOOK_URL, payload);
+      
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
         headers: {
@@ -30,16 +32,29 @@ export function useDraftGenerator() {
         body: JSON.stringify(payload),
       });
 
+      console.log('N8N webhook response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('N8N webhook error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('N8N Webhook response:', result);
+      console.log('N8N Webhook response data:', result);
       
       return result as DraftResult;
     },
+    onSuccess: (data) => {
+      console.log('Draft generation successful:', data);
+      toast({
+        title: "Draft Generated",
+        description: "Email draft has been generated successfully",
+        variant: "default",
+      });
+    },
     onError: (error: any) => {
+      console.error('Draft generation error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to generate draft",

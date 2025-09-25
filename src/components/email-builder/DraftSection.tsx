@@ -118,17 +118,30 @@ export function DraftSection() {
     const selectedTemplateData = templates.find(t => t.id === selectedTemplate) || autoRoutedTemplate;
     if (!selectedTemplateData) return;
 
+    // Clear previous result
+    setDraftResult(null);
+
     const payload = {
       contact: enrichedContact,
       template: selectedTemplateData,
       variables: derivedVariables,
     };
 
+    console.log('Sending draft generation request to N8N webhook:', payload);
+
     try {
       const result = await draftMutation.mutateAsync(payload);
+      console.log('Draft generation result received:', result);
       setDraftResult(result);
     } catch (error) {
       console.error('Failed to generate draft:', error);
+      // Set error result to display in UI
+      setDraftResult({
+        subject: 'Error',
+        body: `Failed to generate draft: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        send: false,
+        skip_reason: 'Generation failed'
+      });
     }
   };
 
