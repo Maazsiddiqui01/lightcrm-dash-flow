@@ -1,1 +1,7 @@
 project_id = "wjghdqkxwuyptxzdidtf"
+
+[functions.router_llm]
+verify_jwt = false
+
+[functions.template_preview_llm]
+verify_jwt = false

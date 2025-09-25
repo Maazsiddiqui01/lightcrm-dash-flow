@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ContactPicker } from "./ContactPicker";
 import { VariablesModal } from "./VariablesModal";
 import { ContactSummaryCard } from "./ContactSummaryCard";
@@ -9,11 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings, Send } from "lucide-react";
+import { Settings, Send, Zap } from "lucide-react";
 import { ContactSearchResult } from "@/hooks/useContactSearch";
 import { useContactEnriched, EnrichedContact } from "@/hooks/useContactEnriched";
 import { useEmailTemplatesQuery } from "@/hooks/useEmailTemplates";
 import { useDraftGenerator, DraftResult } from "@/hooks/useDraftGenerator";
+import { useRouterLLM, RouterLLMInput, RouterLLMResult } from "@/hooks/useRouterLLM";
 
 export function DraftSection() {
   const [selectedContact, setSelectedContact] = useState<ContactSearchResult | null>(null);
@@ -21,12 +22,12 @@ export function DraftSection() {
   const [showVariablesModal, setShowVariablesModal] = useState(false);
   const [variables, setVariables] = useState({
     focusAreas: [],
-    gbPresent: false,
-    faCount: 1,
-    hasOpps: false,
-    deltaType: 'Email',
-    hsPresent: false,
-    lsPresent: false,
+    gb_present: false,
+    fa_count: 1,
+    has_opps: false,
+    delta_type: 'Email',
+    hs_present: false,
+    ls_present: false,
     subjectMode: 'lg_first',
     maxOpps: 3,
     extraCC: '',
@@ -34,24 +35,42 @@ export function DraftSection() {
     customPosition: 'before_closing',
   });
   const [draftResult, setDraftResult] = useState<DraftResult | null>(null);
+  const [routerResult, setRouterResult] = useState<RouterLLMResult | null>(null);
 
   const { data: enrichedContact } = useContactEnriched(selectedContact?.id || null);
   const { data: templates = [] } = useEmailTemplatesQuery();
   const draftMutation = useDraftGenerator();
+  const routerMutation = useRouterLLM();
 
-  // Auto-route template based on contact data (mock implementation)
-  const getAutoRoutedTemplate = (contact: EnrichedContact | null) => {
+  // Auto-route template using RouterLLM
+  const getAutoRoutedTemplate = async (contact: EnrichedContact | null) => {
     if (!contact || templates.length === 0) return null;
     
-    // Simple routing logic based on contact properties
-    if (contact.has_opps && contact.focusAreas.length >= 3) {
-      return templates.find(t => t.has_opps && t.fa_bucket && t.fa_bucket >= 3);
-    }
-    
-    return templates.find(t => !t.is_preset) || templates[0];
-  };
+    try {
+      const routerInput: RouterLLMInput = {
+        gb_present: variables.gb_present,
+        fa_count: Math.max(1, contact.focusAreas.length),
+        has_opps: contact.has_opps,
+        delta_type: contact.delta_type || 'Email',
+        hs_present: variables.hs_present,
+        ls_present: variables.ls_present,
+        summary_sector_list: contact.focusMeta?.map(fm => fm.sector_id) || []
+      };
 
-  const autoRoutedTemplate = getAutoRoutedTemplate(enrichedContact || null);
+      const result = await routerMutation.mutateAsync(routerInput);
+      setRouterResult(result);
+      
+      // Find template matching the case_id or use first template
+      return templates.find(t => t.fa_bucket === result.case_id) || templates[0];
+    } catch (error) {
+      console.error('RouterLLM failed, using fallback:', error);
+      // Fallback to simple logic
+      if (contact.has_opps && contact.focusAreas.length >= 3) {
+        return templates.find(t => t.has_opps && t.fa_bucket && t.fa_bucket >= 3);
+      }
+      return templates.find(t => !t.is_preset) || templates[0];
+    }
+  };
 
   // Derive variables from contact data
   const getDerivedVariables = (contact: EnrichedContact | null) => {
@@ -60,14 +79,25 @@ export function DraftSection() {
     return {
       ...variables,
       focusAreas: contact.focusAreas || [],
-      gbPresent: contact.focusAreas.some(fa => fa.toLowerCase().includes('general')),
-      faCount: Math.max(1, contact.focusAreas.length),
-      hasOpps: contact.has_opps,
-      deltaType: contact.delta_type || 'Email',
+      gb_present: contact.focusAreas.some(fa => fa.toLowerCase().includes('general')),
+      fa_count: Math.max(1, contact.focusAreas.length),
+      has_opps: contact.has_opps,
+      delta_type: contact.delta_type || 'Email',
     };
   };
 
   const derivedVariables = getDerivedVariables(enrichedContact || null);
+
+  const [autoRoutedTemplate, setAutoRoutedTemplate] = useState<any>(null);
+
+  // Effect to handle contact changes and auto-routing
+  useEffect(() => {
+    if (enrichedContact && templates.length > 0) {
+      getAutoRoutedTemplate(enrichedContact).then(template => {
+        setAutoRoutedTemplate(template);
+      });
+    }
+  }, [enrichedContact, templates, variables.gb_present, variables.hs_present, variables.ls_present]);
 
   const handleGenerateDraft = async () => {
     if (!selectedContact || !enrichedContact) return;
@@ -115,12 +145,12 @@ export function DraftSection() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>GB Present: {derivedVariables.gbPresent ? '✓' : '✗'}</div>
-                <div>FA Count: {derivedVariables.faCount}</div>
-                <div>Has Opps: {derivedVariables.hasOpps ? '✓' : '✗'}</div>
-                <div>Delta Type: {derivedVariables.deltaType}</div>
-                <div>HS Present: {derivedVariables.hsPresent ? '✓' : '✗'}</div>
-                <div>LS Present: {derivedVariables.lsPresent ? '✓' : '✗'}</div>
+                <div>GB Present: {derivedVariables.gb_present ? '✓' : '✗'}</div>
+                <div>FA Count: {derivedVariables.fa_count}</div>
+                <div>Has Opps: {derivedVariables.has_opps ? '✓' : '✗'}</div>
+                <div>Delta Type: {derivedVariables.delta_type}</div>
+                <div>HS Present: {derivedVariables.hs_present ? '✓' : '✗'}</div>
+                <div>LS Present: {derivedVariables.ls_present ? '✓' : '✗'}</div>
               </div>
             </CardContent>
           </Card>
@@ -131,17 +161,39 @@ export function DraftSection() {
               <CardTitle className="text-base">Template Selection</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {routerMutation.isPending && (
+                <div className="flex items-center gap-2 p-2 bg-blue-50 rounded text-sm">
+                  <Zap className="h-4 w-4 animate-pulse" />
+                  Routing template with AI...
+                </div>
+              )}
+              
               {autoRoutedTemplate && (
                 <div className="p-3 bg-accent rounded-lg">
-                  <div className="text-sm font-medium">Auto-routed Template:</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-medium">Auto-routed Template:</div>
+                    {routerResult && (
+                      <Badge variant="secondary" className="text-xs">
+                        Case {routerResult.case_id}
+                      </Badge>
+                    )}
+                  </div>
                   <div className="text-sm text-muted-foreground">
                     {autoRoutedTemplate.name} - {autoRoutedTemplate.has_opps ? 'Has opportunities' : 'Standard outreach'}
                   </div>
+                  {routerResult && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {routerResult.reason}
+                    </div>
+                  )}
                 </div>
               )}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Override Template:</label>
-                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                <Select value={selectedTemplate} onValueChange={(value) => {
+                  setSelectedTemplate(value);
+                  setRouterResult(null); // Clear router result when manually overriding
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select template override" />
                   </SelectTrigger>
@@ -208,7 +260,15 @@ export function DraftSection() {
         open={showVariablesModal}
         onClose={() => setShowVariablesModal(false)}
         variables={variables}
-        onVariablesChange={setVariables}
+        onVariablesChange={(newVars) => {
+          setVariables(newVars);
+          // Re-route template when variables change
+          if (enrichedContact) {
+            getAutoRoutedTemplate(enrichedContact).then(template => {
+              setAutoRoutedTemplate(template);
+            });
+          }
+        }}
         derivedVariables={derivedVariables}
       />
     </div>

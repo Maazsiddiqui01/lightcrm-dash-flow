@@ -17,12 +17,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Variables {
   focusAreas: string[];
-  gbPresent: boolean;
-  faCount: number;
-  hasOpps: boolean;
-  deltaType: string;
-  hsPresent: boolean;
-  lsPresent: boolean;
+  gb_present: boolean;
+  fa_count: number;
+  has_opps: boolean;
+  delta_type: string;
+  hs_present: boolean;
+  ls_present: boolean;
   subjectMode: string;
   maxOpps: number;
   extraCC: string;
@@ -83,15 +83,15 @@ export function VariablesModal({
                 <Label htmlFor="gb-present">General BD Toggle</Label>
                 <Switch
                   id="gb-present"
-                  checked={variables.gbPresent}
-                  onCheckedChange={(checked) => updateVariable('gbPresent', checked)}
+                  checked={variables.gb_present}
+                  onCheckedChange={(checked) => updateVariable('gb_present', checked)}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>FA Count (readonly)</Label>
                 <Input
-                  value={variables.faCount}
+                  value={variables.fa_count}
                   readOnly
                   className="bg-muted"
                 />
@@ -108,16 +108,16 @@ export function VariablesModal({
                 <Label htmlFor="has-opps">Has Opportunities Toggle</Label>
                 <Switch
                   id="has-opps"
-                  checked={variables.hasOpps}
-                  onCheckedChange={(checked) => updateVariable('hasOpps', checked)}
+                  checked={variables.has_opps}
+                  onCheckedChange={(checked) => updateVariable('has_opps', checked)}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="delta-type">Delta Type</Label>
                 <Select
-                  value={variables.deltaType}
-                  onValueChange={(value) => updateVariable('deltaType', value)}
+                  value={variables.delta_type}
+                  onValueChange={(value) => updateVariable('delta_type', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -134,16 +134,16 @@ export function VariablesModal({
                   <Label htmlFor="hs-present">HS Present</Label>
                   <Switch
                     id="hs-present"
-                    checked={variables.hsPresent}
-                    onCheckedChange={(checked) => updateVariable('hsPresent', checked)}
+                    checked={variables.hs_present}
+                    onCheckedChange={(checked) => updateVariable('hs_present', checked)}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label htmlFor="ls-present">LS Present</Label>
                   <Switch
                     id="ls-present"
-                    checked={variables.lsPresent}
-                    onCheckedChange={(checked) => updateVariable('lsPresent', checked)}
+                    checked={variables.ls_present}
+                    onCheckedChange={(checked) => updateVariable('ls_present', checked)}
                   />
                 </div>
               </div>

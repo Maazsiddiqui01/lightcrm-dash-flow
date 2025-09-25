@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye } from "lucide-react";
 import { EmailTemplate, useCreateTemplateMutation, useUpdateTemplateMutation } from "@/hooks/useEmailTemplates";
 import { PreviewModal } from "./PreviewModal";
+import { useTemplatePreviewLLM, TemplatePreviewInput } from "@/hooks/useTemplatePreviewLLM";
 import { useDebounce } from "@/hooks/useDebounce";
 
 const templateSchema = z.object({
