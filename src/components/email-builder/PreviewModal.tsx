@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { EmailTemplate } from "@/hooks/useEmailTemplates";
+import { useTemplatePreviewLLM, TemplatePreviewInput } from "@/hooks/useTemplatePreviewLLM";
 import { Loader2 } from "lucide-react";
 
 interface PreviewModalProps {
@@ -20,15 +21,31 @@ interface PreviewModalProps {
 export function PreviewModal({ template, open, onClose }: PreviewModalProps) {
   const [previewContent, setPreviewContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const previewMutation = useTemplatePreviewLLM();
 
   const generatePreview = async () => {
     if (!template) return;
     
     setIsLoading(true);
     
-    // Mock preview generation for now
-    // TODO: Implement actual TemplatePreviewLLM call
-    setTimeout(() => {
+    try {
+      // Use TemplatePreviewLLM for actual preview generation
+      const previewInput: TemplatePreviewInput = {
+        firstName: "Alex",
+        organization: "SampleCo", 
+        focusAreas: ["Healthcare Services"],
+        descriptions: { "Healthcare Services": "businesses that serve hospitals and health systems as key end markets." },
+        delta_type: template.delta_type || "Email",
+        hs_present: template.hs_present || false,
+        ls_present: template.ls_present || false,
+        has_opps: template.has_opps || false
+      };
+
+      const result = await previewMutation.mutateAsync(previewInput);
+      setPreviewContent(result);
+    } catch (error) {
+      console.error('Preview failed, using fallback:', error);
+      // Fallback to mock preview
       const mockPreview = `
 Subject: Following up on our conversation about ${template.name}
 
@@ -46,21 +63,22 @@ Best regards,
 [LG Team Member]
 
 ---
-This is a sample preview. Actual generation will use TemplatePreviewLLM.
+This is a sample preview. TemplatePreviewLLM failed, showing fallback.
 Template: ${template.name}
 Configuration: FA:${template.fa_bucket}, ${template.delta_type}, ${template.subject_mode}
       `.trim();
       
       setPreviewContent(mockPreview);
+    } finally {
       setIsLoading(false);
-    }, 1000);
-  };
-
-  const handleOpen = () => {
-    if (template) {
-      generatePreview();
     }
   };
+
+  useEffect(() => {
+    if (open && template) {
+      generatePreview();
+    }
+  }, [open, template]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

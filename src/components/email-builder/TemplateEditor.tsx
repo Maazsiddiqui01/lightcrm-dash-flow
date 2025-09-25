@@ -20,6 +20,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 const templateSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
+  is_preset: z.boolean().optional(),
   gb_present: z.boolean().optional(),
   fa_bucket: z.number().min(1).max(10).optional(),
   has_opps: z.boolean().optional(),
@@ -41,14 +42,17 @@ interface TemplateEditorProps {
 
 export function TemplateEditor({ template, onTemplateChange }: TemplateEditorProps) {
   const [showPreview, setShowPreview] = useState(false);
+  const [previewContent, setPreviewContent] = useState<string>("");
   const createMutation = useCreateTemplateMutation();
   const updateMutation = useUpdateTemplateMutation();
+  const previewMutation = useTemplatePreviewLLM();
 
   const form = useForm<TemplateFormData>({
     resolver: zodResolver(templateSchema),
     defaultValues: {
       name: '',
       description: '',
+      is_preset: false,
       gb_present: false,
       fa_bucket: 1,
       has_opps: false,
@@ -62,16 +66,16 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
     },
   });
 
-  // Watch form values for auto-save
-  const formValues = form.watch();
-  const debouncedValues = useDebounce(formValues, 500);
+  const watchedValues = form.watch();
+  const debouncedValues = useDebounce(watchedValues, 1000);
 
-  // Update form when template changes
+  // Reset form when template changes
   useEffect(() => {
     if (template) {
       form.reset({
         name: template.name || '',
         description: template.description || '',
+        is_preset: template.is_preset || false,
         gb_present: template.gb_present || false,
         fa_bucket: template.fa_bucket || 1,
         has_opps: template.has_opps || false,
@@ -86,83 +90,115 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
     }
   }, [template, form]);
 
-  // Auto-save on form changes
+  // Auto-save when form values change
   useEffect(() => {
-    if (!template || template.id === 'new') return;
+    if (!template || Object.keys(form.formState.dirtyFields).length === 0) return;
+
+    const saveTemplate = async () => {
+      try {
+        if (template.id) {
+          await updateMutation.mutateAsync({
+            id: template.id,
+            ...debouncedValues,
+          });
+        } else {
+          const newTemplate = await createMutation.mutateAsync({
+            ...debouncedValues,
+            name: debouncedValues.name || 'Untitled Template',
+            is_preset: debouncedValues.is_preset || false
+          } as Omit<EmailTemplate, 'created_at' | 'id'>);
+          onTemplateChange(newTemplate);
+        }
+      } catch (error) {
+        console.error('Failed to save template:', error);
+      }
+    };
+
+    saveTemplate();
+  }, [debouncedValues, template, updateMutation, createMutation, onTemplateChange, form.formState.dirtyFields]);
+
+  const handlePreview = async () => {
+    if (!template) return;
     
-    const isValid = form.formState.isValid;
-    if (isValid && Object.keys(form.formState.dirtyFields).length > 0) {
-      updateMutation.mutate({
-        id: template.id,
-        ...debouncedValues,
-      });
+    const previewInput: TemplatePreviewInput = {
+      firstName: "Alex",
+      organization: "SampleCo", 
+      focusAreas: ["Healthcare Services"],
+      descriptions: { "Healthcare Services": "businesses that serve hospitals and health systems as key end markets." },
+      delta_type: template.delta_type || "Email",
+      hs_present: template.hs_present || false,
+      ls_present: template.ls_present || false,
+      has_opps: template.has_opps || false
+    };
+
+    try {
+      const result = await previewMutation.mutateAsync(previewInput);
+      setPreviewContent(result);
+      setShowPreview(true);
+    } catch (error) {
+      console.error('Preview failed:', error);
     }
-  }, [debouncedValues, template, form.formState, updateMutation]);
+  };
 
   const handleSave = async () => {
-    if (!template) return;
-
-    const values = form.getValues();
+    const formData = form.getValues();
     
-    if (template.id === 'new') {
-      const newTemplate = await createMutation.mutateAsync({
-        ...values,
-        name: values.name || 'Untitled Template',
-        is_preset: false,
-      });
-      onTemplateChange(newTemplate);
-    } else {
-      const updatedTemplate = await updateMutation.mutateAsync({
-        id: template.id,
-        ...values,
-      });
-      onTemplateChange(updatedTemplate);
+    try {
+      if (template?.id) {
+        const updatedTemplate = await updateMutation.mutateAsync({
+          id: template.id,
+          ...formData,
+        });
+        onTemplateChange(updatedTemplate);
+      } else {
+        const newTemplate = await createMutation.mutateAsync({
+          ...formData,
+          name: formData.name || 'Untitled Template',
+          is_preset: formData.is_preset || false
+        } as Omit<EmailTemplate, 'created_at' | 'id'>);
+        onTemplateChange(newTemplate);
+      }
+    } catch (error) {
+      console.error('Failed to save template:', error);
     }
   };
 
   if (!template) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
-        Select a template to edit or create a new one
+        <p>Select a template to edit</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">
-          {template.id === 'new' ? 'New Template' : 'Edit Template'}
-        </h3>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">{template.name}</h3>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowPreview(true)}
-          >
+          <Button variant="outline" size="sm" onClick={handlePreview} disabled={previewMutation.isPending}>
             <Eye className="h-4 w-4 mr-1" />
-            Preview
+            {previewMutation.isPending ? "Generating..." : "Preview"}
           </Button>
-          {template.id === 'new' && (
-            <Button size="sm" onClick={handleSave}>
-              Save Template
-            </Button>
-          )}
+          <Button size="sm" onClick={handleSave} disabled={updateMutation.isPending || createMutation.isPending}>
+            {(updateMutation.isPending || createMutation.isPending) ? "Saving..." : "Save Template"}
+          </Button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-6">
+      <div className="space-y-6">
+        {/* Basic Information */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Basic Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Template Name</Label>
               <Input
                 id="name"
                 {...form.register('name')}
-                placeholder="Template name"
+                placeholder="Enter template name"
               />
               {form.formState.errors.name && (
                 <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
@@ -170,17 +206,17 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description (Optional)</Label>
               <Textarea
                 id="description"
                 {...form.register('description')}
-                placeholder="Template description"
-                className="min-h-[80px]"
+                placeholder="Describe this template's purpose"
               />
             </div>
           </CardContent>
         </Card>
 
+        {/* Case Knobs */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Case Knobs</CardTitle>
@@ -190,29 +226,28 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
               <Checkbox
                 id="gb_present"
                 checked={form.watch('gb_present')}
-                onCheckedChange={(checked) => form.setValue('gb_present', checked as boolean)}
+                onCheckedChange={(checked) => form.setValue('gb_present', !!checked)}
               />
               <Label htmlFor="gb_present">General BD Present</Label>
             </div>
 
             <div className="space-y-2">
-              <Label>FA Bucket</Label>
+              <Label>Subject Mode</Label>
               <RadioGroup
-                value={String(form.watch('fa_bucket'))}
-                onValueChange={(value) => form.setValue('fa_bucket', parseInt(value))}
-                className="flex space-x-4"
+                value={form.watch('subject_mode')}
+                onValueChange={(value) => form.setValue('subject_mode', value)}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="1" id="fa1" />
-                  <Label htmlFor="fa1">1</Label>
+                  <RadioGroupItem value="lg_first" id="lg_first" />
+                  <Label htmlFor="lg_first">LG First</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="2" id="fa2" />
-                  <Label htmlFor="fa2">2</Label>
+                  <RadioGroupItem value="contact_first" id="contact_first" />
+                  <Label htmlFor="contact_first">Contact First</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="3" id="fa3" />
-                  <Label htmlFor="fa3">≥3</Label>
+                  <RadioGroupItem value="subject_only" id="subject_only" />
+                  <Label htmlFor="subject_only">Subject Only</Label>
                 </div>
               </RadioGroup>
             </div>
@@ -221,7 +256,7 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
               <Checkbox
                 id="has_opps"
                 checked={form.watch('has_opps')}
-                onCheckedChange={(checked) => form.setValue('has_opps', checked as boolean)}
+                onCheckedChange={(checked) => form.setValue('has_opps', !!checked)}
               />
               <Label htmlFor="has_opps">Has Opportunities</Label>
             </div>
@@ -233,7 +268,7 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
                 onValueChange={(value) => form.setValue('delta_type', value)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select delta type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Email">Email</SelectItem>
@@ -243,19 +278,18 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
             </div>
 
             <div className="space-y-2">
-              <Label>Subject Mode</Label>
+              <Label>Position</Label>
               <RadioGroup
-                value={form.watch('subject_mode')}
-                onValueChange={(value) => form.setValue('subject_mode', value)}
-                className="flex space-x-4"
+                value={form.watch('custom_insertion')}
+                onValueChange={(value) => form.setValue('custom_insertion', value)}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="lg_first" id="lg_first" />
-                  <Label htmlFor="lg_first">LG First</Label>
+                  <RadioGroupItem value="before_closing" id="before_closing" />
+                  <Label htmlFor="before_closing">Before Closing</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="fa_first" id="fa_first" />
-                  <Label htmlFor="fa_first">FA First</Label>
+                  <RadioGroupItem value="after_closing" id="after_closing" />
+                  <Label htmlFor="after_closing">After Closing</Label>
                 </div>
               </RadioGroup>
             </div>
@@ -287,12 +321,25 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
                 min="1"
                 max="10"
                 value={form.watch('max_opps')}
-                onChange={(e) => form.setValue('max_opps', parseInt(e.target.value) || 3)}
+                onChange={(e) => form.setValue('max_opps', parseInt(e.target.value) || 1)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fa_bucket">FA Bucket</Label>
+              <Input
+                id="fa_bucket"
+                type="number"
+                min="1"
+                max="10"
+                value={form.watch('fa_bucket')}
+                onChange={(e) => form.setValue('fa_bucket', parseInt(e.target.value) || 1)}
               />
             </div>
           </CardContent>
         </Card>
 
+        {/* Custom Options */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Custom Options</CardTitle>
@@ -303,39 +350,17 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
               <Textarea
                 id="custom_instructions"
                 {...form.register('custom_instructions')}
-                placeholder="Additional instructions for the template"
-                className="min-h-[100px]"
+                placeholder="Additional instructions for email generation"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Custom Insertion Position</Label>
-              <RadioGroup
-                value={form.watch('custom_insertion')}
-                onValueChange={(value) => form.setValue('custom_insertion', value)}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="intro" id="intro" />
-                  <Label htmlFor="intro">Intro</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="after_bullets" id="after_bullets" />
-                  <Label htmlFor="after_bullets">After Bullets</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="before_closing" id="before_closing" />
-                  <Label htmlFor="before_closing">Before Closing</Label>
-                </div>
-              </RadioGroup>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <PreviewModal
-        template={template}
+      <PreviewModal 
         open={showPreview}
         onClose={() => setShowPreview(false)}
+        template={template}
       />
     </div>
   );
