@@ -43,7 +43,23 @@ export function useDraftGenerator() {
       const result = await response.json();
       console.log('N8N Webhook response data:', result);
       
-      // Parse the N8N response format (HTML or text)
+      // Handle array response format: [{ "output": { "subject": "...", "body": "..." } }]
+      if (Array.isArray(result) && result.length > 0 && result[0].output) {
+        const outputData = result[0].output;
+        
+        if (outputData.subject && outputData.body) {
+          console.log('Parsed N8N array response:', outputData);
+          return {
+            subject: outputData.subject,
+            body: outputData.body,
+            cc: outputData.cc || [],
+            send: outputData.send !== false,
+            skip_reason: outputData.skip_reason
+          } as DraftResult;
+        }
+      }
+      
+      // Parse the N8N response format (HTML or text) - legacy format
       if (result.output && typeof result.output === 'string') {
         let emailText = result.output;
         
@@ -70,7 +86,7 @@ export function useDraftGenerator() {
           subject,
           body,
           cc: result.cc || [],
-          send: result.send !== false, // Default to true unless explicitly false
+          send: result.send !== false,
           skip_reason: result.skip_reason
         } as DraftResult;
       }
