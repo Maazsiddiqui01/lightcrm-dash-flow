@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FileText, AlertCircle, Mail, MessageSquare } from "lucide-react";
 import { DraftResult } from "@/hooks/useDraftGenerator";
 import { DraftLoadingState } from "./DraftLoadingState";
 
@@ -11,17 +13,6 @@ interface DraftResultCardProps {
 }
 
 export function DraftResultCard({ result, isLoading = false }: DraftResultCardProps) {
-  const formatDraftContent = (result: DraftResult) => {
-    const ccList = result.cc && Array.isArray(result.cc) ? result.cc.join(', ') : 'None';
-    
-    return `Subject: ${result.subject}
-
-${result.body}
-
----
-CC: ${ccList}
-${result.skip_reason ? `Skip Reason: ${result.skip_reason}` : ''}`;
-  };
 
   return (
     <Card>
@@ -37,17 +28,50 @@ ${result.skip_reason ? `Skip Reason: ${result.skip_reason}` : ''}`;
         ) : result ? (
           <div className="space-y-3">
             {result.skip_reason && (
-              <div className="flex items-center gap-2 p-2 bg-warning-light rounded text-warning-foreground">
+              <div className="flex items-center gap-2 p-2 bg-warning/10 rounded text-warning-foreground border border-warning/20">
                 <AlertCircle className="h-4 w-4" />
                 <span className="text-sm font-medium">Skip Reason: {result.skip_reason}</span>
               </div>
             )}
             
-            <Textarea
-              value={formatDraftContent(result)}
-              readOnly
-              className="min-h-[200px] font-mono text-sm resize-none"
-            />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Subject
+                </Label>
+                <Input
+                  value={result.subject}
+                  readOnly
+                  className="font-medium"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Email Body
+                </Label>
+                <Textarea
+                  value={result.body}
+                  readOnly
+                  className="min-h-[200px] text-sm resize-none"
+                />
+              </div>
+              
+              {result.cc && result.cc.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">CC Recipients</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {result.cc.map((email, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {email}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="text-sm text-muted-foreground text-center py-8">

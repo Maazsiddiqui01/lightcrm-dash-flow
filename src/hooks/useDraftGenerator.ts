@@ -43,16 +43,28 @@ export function useDraftGenerator() {
       const result = await response.json();
       console.log('N8N Webhook response data:', result);
       
-      // Parse the N8N response format
+      // Parse the N8N response format (HTML or text)
       if (result.output && typeof result.output === 'string') {
-        // Extract subject and body from the output string
-        const emailText = result.output;
-        const subjectMatch = emailText.match(/Subject:\s*(.+?)(?:\n|$)/);
+        let emailText = result.output;
+        
+        // If response contains HTML, extract text content
+        if (emailText.includes('<') && emailText.includes('>')) {
+          // Create a temporary div to parse HTML
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = emailText;
+          emailText = tempDiv.textContent || tempDiv.innerText || emailText;
+        }
+        
+        // Extract subject and body from the text
+        const subjectMatch = emailText.match(/Subject:\s*(.+?)(?:\n|$)/i);
         const subject = subjectMatch ? subjectMatch[1].trim() : 'No Subject';
         
         // Remove subject line and extract body
-        const bodyStart = emailText.indexOf('\n\n');
-        const body = bodyStart > -1 ? emailText.substring(bodyStart + 2).trim() : emailText;
+        let body = emailText;
+        if (subjectMatch) {
+          const subjectLineEnd = emailText.indexOf(subjectMatch[0]) + subjectMatch[0].length;
+          body = emailText.substring(subjectLineEnd).replace(/^\n+/, '').trim();
+        }
         
         return {
           subject,
