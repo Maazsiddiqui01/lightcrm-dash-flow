@@ -41,7 +41,7 @@ export function DraftResultCard({ result, isLoading = false }: DraftResultCardPr
                   Subject
                 </Label>
                 <Input
-                  value={result.subject}
+                  value={result.subject || ''}
                   readOnly
                   className="font-medium"
                 />
@@ -53,7 +53,7 @@ export function DraftResultCard({ result, isLoading = false }: DraftResultCardPr
                   Email Body
                 </Label>
                 <Textarea
-                  value={result.body}
+                  value={result.body || ''}
                   readOnly
                   className="min-h-[200px] text-sm resize-none"
                 />

@@ -40,59 +40,89 @@ export function useDraftGenerator() {
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
-      const result = await response.json();
-      console.log('N8N Webhook response data:', result);
-      
-      // Handle array response format: [{ "output": { "subject": "...", "body": "..." } }]
-      if (Array.isArray(result) && result.length > 0 && result[0].output) {
-        const outputData = result[0].output;
-        
-        if (outputData.subject && outputData.body) {
-          console.log('Parsed N8N array response:', outputData);
+      const raw = await response.json();
+      console.log('N8N Webhook raw response data:', raw);
+
+      // Normalize various possible n8n shapes into a DraftResult
+      const coerceToDraft = (obj: any): DraftResult | null => {
+        if (!obj) return null;
+        // If object already in expected shape
+        if (typeof obj === 'object' && (obj.subject || obj.body)) {
           return {
-            subject: outputData.subject,
-            body: outputData.body,
-            cc: outputData.cc || [],
-            send: outputData.send !== false,
-            skip_reason: outputData.skip_reason
+            subject: (obj.subject ?? 'No Subject').toString(),
+            body: (obj.body ?? '').toString(),
+            cc: Array.isArray(obj.cc) ? obj.cc : [],
+            send: obj.send !== false,
+            skip_reason: obj.skip_reason,
           } as DraftResult;
         }
-      }
-      
-      // Parse the N8N response format (HTML or text) - legacy format
-      if (result.output && typeof result.output === 'string') {
-        let emailText = result.output;
-        
-        // If response contains HTML, extract text content
-        if (emailText.includes('<') && emailText.includes('>')) {
-          // Create a temporary div to parse HTML
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = emailText;
-          emailText = tempDiv.textContent || tempDiv.innerText || emailText;
+        return null;
+      };
+
+      // 1) Array envelope: [ { output: { subject, body } } ] or [ { subject, body } ]
+      if (Array.isArray(raw) && raw.length > 0) {
+        const first = raw[0];
+        const fromArray = coerceToDraft(first.output ?? first);
+        if (fromArray) {
+          console.log('Parsed N8N array response -> DraftResult:', fromArray);
+          return fromArray;
         }
-        
-        // Extract subject and body from the text
-        const subjectMatch = emailText.match(/Subject:\s*(.+?)(?:\n|$)/i);
-        const subject = subjectMatch ? subjectMatch[1].trim() : 'No Subject';
-        
-        // Remove subject line and extract body
-        let body = emailText;
-        if (subjectMatch) {
-          const subjectLineEnd = emailText.indexOf(subjectMatch[0]) + subjectMatch[0].length;
-          body = emailText.substring(subjectLineEnd).replace(/^\n+/, '').trim();
+        // If output is a stringified JSON or HTML
+        const output = first.output ?? first;
+        if (typeof output === 'string') {
+          try {
+            const parsed = JSON.parse(output);
+            const asDraft = coerceToDraft(parsed);
+            if (asDraft) return asDraft;
+          } catch (e) {
+            console.warn('Array output is string but not JSON, attempting HTML/text parse');
+            // fall through to text/HTML parsing below
+            const text = output as string;
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = text;
+            const plain = tempDiv.textContent || tempDiv.innerText || text;
+            const subjectMatch = plain.match(/Subject:\s*(.+?)(?:\n|$)/i);
+            const subject = subjectMatch ? subjectMatch[1].trim() : 'No Subject';
+            let body = plain;
+            if (subjectMatch) {
+              const subjectLineEnd = plain.indexOf(subjectMatch[0]) + subjectMatch[0].length;
+              body = plain.substring(subjectLineEnd).replace(/^\n+/, '').trim();
+            }
+            return { subject, body, cc: [], send: true } as DraftResult;
+          }
         }
-        
-        return {
-          subject,
-          body,
-          cc: result.cc || [],
-          send: result.send !== false,
-          skip_reason: result.skip_reason
-        } as DraftResult;
       }
-      
-      // Fallback to original format
-      return result as DraftResult;
+
+      // 2) Object envelope with output object or string
+      if (raw && typeof raw === 'object') {
+        const direct = coerceToDraft(raw);
+        if (direct) return direct;
+
+        if (raw.output && typeof raw.output === 'object') {
+          const fromOutputObj = coerceToDraft(raw.output);
+          if (fromOutputObj) return fromOutputObj;
+        }
+
+        if (raw.output && typeof raw.output === 'string') {
+          let emailText = raw.output as string;
+          if (emailText.includes('<') && emailText.includes('>')) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = emailText;
+            emailText = tempDiv.textContent || tempDiv.innerText || emailText;
+          }
+          const subjectMatch = emailText.match(/Subject:\s*(.+?)(?:\n|$)/i);
+          const subject = subjectMatch ? subjectMatch[1].trim() : 'No Subject';
+          let body = emailText;
+          if (subjectMatch) {
+            const subjectLineEnd = emailText.indexOf(subjectMatch[0]) + subjectMatch[0].length;
+            body = emailText.substring(subjectLineEnd).replace(/^\n+/, '').trim();
+          }
+          return { subject, body, cc: raw.cc || [], send: raw.send !== false, skip_reason: raw.skip_reason } as DraftResult;
+        }
+      }
+
+      console.warn('N8N response did not match known formats, coercing to string');
+      return { subject: 'Draft', body: typeof raw === 'string' ? raw : JSON.stringify(raw, null, 2), cc: [], send: true } as DraftResult;
     },
     onSuccess: (data) => {
       console.log('Draft generation successful:', data);
