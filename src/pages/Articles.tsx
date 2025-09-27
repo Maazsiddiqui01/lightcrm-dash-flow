@@ -1,4 +1,5 @@
 import { ArticlesSheet } from "@/components/articles/ArticlesSheet";
+import { ArticlesRepository } from "@/components/articles/ArticlesRepository";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ResponsivePageShell } from "@/components/layout/ResponsivePageShell";
 
@@ -9,7 +10,10 @@ export default function Articles() {
         title="Articles Repository" 
         description="Manage articles organized by focus areas" 
       />
-      <ArticlesSheet />
+      <div className="space-y-8">
+        <ArticlesSheet />
+        <ArticlesRepository />
+      </div>
     </ResponsivePageShell>
   );
 }
