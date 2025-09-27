@@ -5,6 +5,7 @@ export interface DraftPayload {
   contact: any;
   template: any;
   variables: any;
+  selectedArticle?: any; // Add selected article to payload interface
 }
 
 export interface DraftResult {

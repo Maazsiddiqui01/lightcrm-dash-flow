@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ContactPicker } from "./ContactPicker";
+import { ArticleSelector, Article } from "./ArticleSelector";
 import { VariablesModal } from "./VariablesModal";
 import { ContactSummaryCard } from "./ContactSummaryCard";
 import { CCPreviewCard } from "./CCPreviewCard";
@@ -18,6 +19,7 @@ import { useRouterLLM, RouterLLMInput, RouterLLMResult } from "@/hooks/useRouter
 
 export function DraftSection() {
   const [selectedContact, setSelectedContact] = useState<ContactSearchResult | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [showVariablesModal, setShowVariablesModal] = useState(false);
   const [variables, setVariables] = useState({
@@ -125,6 +127,7 @@ export function DraftSection() {
       contact: enrichedContact,
       template: selectedTemplateData,
       variables: derivedVariables,
+      selectedArticle: selectedArticle, // Add selected article to payload
     };
 
     console.log('Sending draft generation request to N8N webhook:', payload);
@@ -160,6 +163,12 @@ export function DraftSection() {
       <ContactPicker
         selectedContact={selectedContact}
         onContactSelect={setSelectedContact}
+      />
+
+      {/* Article Selector */}
+      <ArticleSelector
+        selectedArticle={selectedArticle}
+        onArticleSelect={setSelectedArticle}
       />
 
       {selectedContact && enrichedContact && (
