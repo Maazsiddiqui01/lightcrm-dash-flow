@@ -471,5 +471,5 @@ export const getNonEditableColumns = (): string[] => {
 
 // Get columns that should be hidden by default
 export const getHiddenByDefaultColumns = (): string[] => {
-  return ['id', 'created_at', 'updated_at'];
+  return ['id', 'created_at', 'updated_at', 'intentional_no_outreach', 'intentional_no_outreach_date', 'intentional_no_outreach_note'];
 };

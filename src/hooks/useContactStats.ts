@@ -10,6 +10,7 @@ interface ContactStats {
   contactsWithCadenceData: number;
   overdueContacts: number;
   overdueRate: number;
+  intentionallySkippedContacts: number;
   loading: boolean;
 }
 
@@ -51,6 +52,7 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
     contactsWithCadenceData: 0,
     overdueContacts: 0,
     overdueRate: 0,
+    intentionallySkippedContacts: 0,
     loading: true,
   });
 
@@ -227,7 +229,7 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
 
       let statsQuery = supabase
         .from("contacts_raw")
-        .select("of_emails, of_meetings, most_recent_contact, delta");
+        .select("of_emails, of_meetings, most_recent_contact, delta, intentional_no_outreach");
       statsQuery = applyFilters(statsQuery);
 
       // Apply opportunity-based contact filtering if needed
@@ -246,6 +248,7 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
             contactsWithCadenceData: 0,
             overdueContacts: 0,
             overdueRate: 0,
+            intentionallySkippedContacts: 0,
             loading: false,
           });
           return;
@@ -271,9 +274,16 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
       // Calculate cadence metrics
       let contactsWithCadenceData = 0;
       let overdueContacts = 0;
+      let intentionallySkippedContacts = 0;
 
       if (contactsWithStats) {
         contactsWithStats.forEach((contact: any) => {
+          // Count intentionally skipped contacts
+          if (contact.intentional_no_outreach) {
+            intentionallySkippedContacts++;
+            return;
+          }
+          
           const daysOverUnder = calculateDaysOverUnderMaxLag(
             contact.most_recent_contact,
             contact.delta
@@ -300,6 +310,7 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
         contactsWithCadenceData,
         overdueContacts,
         overdueRate,
+        intentionallySkippedContacts,
         loading: false,
       });
     } catch (error) {
@@ -309,6 +320,7 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
         contactsWithCadenceData: 0,
         overdueContacts: 0,
         overdueRate: 0,
+        intentionallySkippedContacts: 0,
         loading: false 
       }));
     }

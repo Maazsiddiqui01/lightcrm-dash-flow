@@ -47,6 +47,36 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_intentional_no_outreach_events: {
+        Row: {
+          action_type: string
+          contact_id: string
+          created_at: string
+          id: string
+          note: string | null
+          performed_at: string
+          performed_by: string | null
+        }
+        Insert: {
+          action_type?: string
+          contact_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          performed_at?: string
+          performed_by?: string | null
+        }
+        Update: {
+          action_type?: string
+          contact_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          performed_at?: string
+          performed_by?: string | null
+        }
+        Relationships: []
+      }
       contact_note_events: {
         Row: {
           contact_id: string
@@ -144,6 +174,9 @@ export type Database = {
           full_name: string | null
           group_contact: string | null
           id: string
+          intentional_no_outreach: boolean | null
+          intentional_no_outreach_date: string | null
+          intentional_no_outreach_note: string | null
           last_name: string | null
           latest_contact_email: string | null
           latest_contact_meeting: string | null
@@ -200,6 +233,9 @@ export type Database = {
           full_name?: string | null
           group_contact?: string | null
           id?: string
+          intentional_no_outreach?: boolean | null
+          intentional_no_outreach_date?: string | null
+          intentional_no_outreach_note?: string | null
           last_name?: string | null
           latest_contact_email?: string | null
           latest_contact_meeting?: string | null
@@ -256,6 +292,9 @@ export type Database = {
           full_name?: string | null
           group_contact?: string | null
           id?: string
+          intentional_no_outreach?: boolean | null
+          intentional_no_outreach_date?: string | null
+          intentional_no_outreach_note?: string | null
           last_name?: string | null
           latest_contact_email?: string | null
           latest_contact_meeting?: string | null
@@ -2264,6 +2303,10 @@ export type Database = {
       }
       reject_missing_contact: {
         Args: { p_email: string }
+        Returns: undefined
+      }
+      set_intentional_no_outreach: {
+        Args: { p_action_type?: string; p_contact_id: string; p_note?: string }
         Returns: undefined
       }
       set_limit: {

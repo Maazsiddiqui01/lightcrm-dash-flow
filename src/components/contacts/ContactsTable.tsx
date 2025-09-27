@@ -3,12 +3,13 @@ import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedT
 import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
 import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
+import { IntentionalNoOutreachModal } from "./IntentionalNoOutreachModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { sendContactEmail } from "@/features/contacts/sendEmail";
 
 // Dynamic column imports
@@ -89,6 +90,9 @@ interface ContactRaw {
   lg_assistant: string | null;
   group_contact: string | null;
   linkedin_url: string | null; // Added LinkedIn URL field
+  intentional_no_outreach: boolean | null;
+  intentional_no_outreach_date: string | null;
+  intentional_no_outreach_note: string | null;
   opportunities: string; // Comma-separated deal names
   mapped_sectors?: string; // Computed field for sectors mapped from focus areas
   days_over_under_max_lag?: number | null; // Computed field for days over/under max lag
@@ -136,6 +140,12 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
   const [noteContactId, setNoteContactId] = useState<string | null>(null);
   const [noteContactName, setNoteContactName] = useState<string>('');
+  const [intentionalNoOutreachModal, setIntentionalNoOutreachModal] = useState<{
+    open: boolean;
+    contactId: string;
+    contactName: string;
+    isCurrentlySkipped: boolean;
+  }>({ open: false, contactId: "", contactName: "", isCurrentlySkipped: false });
   const { toast } = useToast();
   
   // Load sort state on mount
@@ -174,10 +184,9 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         sectorMapping,
         contact.lg_sector
       ),
-      days_over_under_max_lag: calculateDaysOverUnderMaxLag(
-        contact.most_recent_contact,
-        contact.delta
-      )
+      days_over_under_max_lag: contact.intentional_no_outreach 
+        ? null 
+        : calculateDaysOverUnderMaxLag(contact.most_recent_contact, contact.delta)
     }));
   }, [contacts, sectorMapping]);
 
@@ -239,6 +248,10 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       width: 120,
       enableHiding: false,
       render: (value: any, row: ContactRaw) => {
+        const daysOverUnder = calculateDaysOverUnderMaxLag(row.most_recent_contact, row.delta);
+        const isOverdue = daysOverUnder !== null && daysOverUnder < 0;
+        const isCurrentlySkipped = row.intentional_no_outreach;
+        
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -269,6 +282,39 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
                 <FileText className="mr-2 h-4 w-4" />
                 Add Note
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {isCurrentlySkipped ? (
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIntentionalNoOutreachModal({
+                      open: true,
+                      contactId: row.id,
+                      contactName: row.full_name || 'Unknown',
+                      isCurrentlySkipped: true
+                    });
+                  }}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Outreach
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIntentionalNoOutreachModal({
+                      open: true,
+                      contactId: row.id,
+                      contactName: row.full_name || 'Unknown',
+                      isCurrentlySkipped: false
+                    });
+                  }}
+                  disabled={!isOverdue}
+                >
+                  <UserX className="mr-2 h-4 w-4" />
+                  {isOverdue ? "Skip Outreach" : "Skip Outreach (Not Overdue)"}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -473,6 +519,16 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         onOpenChange={setIsAddNoteModalOpen}
         contactId={noteContactId || ''}
         contactName={noteContactName}
+      />
+
+      {/* Intentional No Outreach Modal */}
+      <IntentionalNoOutreachModal
+        open={intentionalNoOutreachModal.open}
+        onClose={() => setIntentionalNoOutreachModal(prev => ({ ...prev, open: false }))}
+        contactId={intentionalNoOutreachModal.contactId}
+        contactName={intentionalNoOutreachModal.contactName}
+        isCurrentlySkipped={intentionalNoOutreachModal.isCurrentlySkipped}
+        onSuccess={() => refetch()}
       />
 
       {/* Multi-Sort Dialog */}

@@ -54,6 +54,9 @@ interface ContactWithOpportunities {
   updated_at: string | null;
   lg_lead: string | null; // Added new column
   lg_assistant: string | null; // Added new column
+  intentional_no_outreach: boolean | null;
+  intentional_no_outreach_date: string | null;
+  intentional_no_outreach_note: string | null;
   opportunities: string; // Comma-separated deal names or empty string
   mapped_sectors?: string; // Computed field for sectors mapped from focus areas
 }

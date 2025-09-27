@@ -48,3 +48,10 @@ export function getDaysOverUnderColorClass(days: number | null): string {
   if (days === null || days === 0) return '';
   return days > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 }
+
+/**
+ * Check if a contact should be excluded from overdue calculations
+ */
+export function isIntentionallySkipped(contact: { intentional_no_outreach?: boolean | null }): boolean {
+  return Boolean(contact.intentional_no_outreach);
+}

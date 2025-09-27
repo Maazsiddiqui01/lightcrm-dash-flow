@@ -2,7 +2,7 @@ import { ContactsTable } from "@/components/contacts/ContactsTable";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useContactStats } from "@/hooks/useContactStats";
-import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown } from "lucide-react";
+import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX } from "lucide-react";
 import { useState } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { ContactFilterBar } from "@/components/contacts/ContactFilterBar";
@@ -112,7 +112,7 @@ export function Contacts() {
         </div>
 
         {/* Cadence KPI Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-6">
           <StatsCard
             title="Contacts with Cadence Data"
             value={stats.loading ? "..." : stats.contactsWithCadenceData}
@@ -127,6 +127,12 @@ export function Contacts() {
             title="Overdue Rate"
             value={stats.loading ? "..." : `${stats.overdueRate.toFixed(1)}%`}
             icon={TrendingDown}
+          />
+          <StatsCard
+            title="Intentionally Skipped"
+            value={stats.loading ? "..." : stats.intentionallySkippedContacts}
+            subtitle="Excluded from overdue"
+            icon={UserX}
           />
         </div>
 

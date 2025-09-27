@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase } from "lucide-react";
+import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX } from "lucide-react";
 import { useContactOpps } from "@/hooks/useContactOpps";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
@@ -51,7 +51,10 @@ interface ContactRaw {
   lg_lead: string | null;
   lg_assistant: string | null;
   group_contact: string | null;
-  linkedin_url: string | null; // Added LinkedIn URL field
+  linkedin_url: string | null;
+  intentional_no_outreach: boolean | null;
+  intentional_no_outreach_date: string | null;
+  intentional_no_outreach_note: string | null;
 }
 
 interface ContactApp {
@@ -578,6 +581,34 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                   />
                 </div>
               </div>
+              
+              {/* Intentional No Outreach Status */}
+              {contactData.intentional_no_outreach && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-start gap-2">
+                    <UserX className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-amber-800 dark:text-amber-200">Intentional No Outreach</span>
+                        <Badge variant="outline" className="text-xs text-amber-700 border-amber-300">
+                          {contactData.intentional_no_outreach_date 
+                            ? new Date(contactData.intentional_no_outreach_date).toLocaleDateString()
+                            : 'Date unknown'
+                          }
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                        This contact has been marked to skip outreach and will not count as overdue.
+                      </p>
+                      {contactData.intentional_no_outreach_note && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                          <strong>Reason:</strong> {contactData.intentional_no_outreach_note}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <Separator />
