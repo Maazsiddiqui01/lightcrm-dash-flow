@@ -48,11 +48,28 @@ export function ArticleSelector({ selectedArticle, onArticleSelect }: ArticleSel
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
+  // Separate General articles and other articles, always include General
+  const generalArticles = articles.filter(article => 
+    article.focus_area.toLowerCase().includes('general')
+  );
+  
+  const otherArticles = articles.filter(article => 
+    !article.focus_area.toLowerCase().includes('general')
+  );
+  
   // Filter articles based on search term
-  const filteredArticles = articles.filter(article => 
+  const filteredGeneralArticles = generalArticles.filter(article => 
     article.focus_area.toLowerCase().includes(searchTerm.toLowerCase()) ||
     article.article_link.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  const filteredOtherArticles = otherArticles.filter(article => 
+    article.focus_area.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    article.article_link.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // Always show General articles first, then other articles
+  const filteredArticles = [...filteredGeneralArticles, ...filteredOtherArticles];
 
   const handleArticleToggle = (article: Article, checked: boolean) => {
     if (checked) {
