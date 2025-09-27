@@ -54,7 +54,7 @@ export function DashboardHero() {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
           {quickLinks.map((link) => {
             const IconComponent = link.icon;
             return (
