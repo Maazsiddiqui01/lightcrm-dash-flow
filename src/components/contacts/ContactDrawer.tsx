@@ -50,7 +50,8 @@ interface ContactRaw {
   url_to_online_bio: string | null;
   lg_lead: string | null;
   lg_assistant: string | null;
-  group_contact: string | null; // Added group contact field
+  group_contact: string | null;
+  linkedin_url: string | null; // Added LinkedIn URL field
 }
 
 interface ContactApp {
@@ -399,6 +400,16 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     id="url_to_online_bio"
                     value={contactData.url_to_online_bio || ""}
                     onChange={(e) => updateField("url_to_online_bio", e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="linkedin_url">LinkedIn Profile</Label>
+                  <Input
+                    id="linkedin_url"
+                    value={contactData.linkedin_url || ""}
+                    onChange={(e) => updateField("linkedin_url", e.target.value)}
+                    placeholder="https://linkedin.com/in/username"
                   />
                 </div>
 

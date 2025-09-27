@@ -159,6 +159,7 @@ export type Database = {
           lg_focus_areas_comprehensive_list: string | null
           lg_lead: string | null
           lg_sector: string | null
+          linkedin_url: string | null
           meeting_cc: string | null
           meeting_from: string | null
           meeting_title: string | null
@@ -214,6 +215,7 @@ export type Database = {
           lg_focus_areas_comprehensive_list?: string | null
           lg_lead?: string | null
           lg_sector?: string | null
+          linkedin_url?: string | null
           meeting_cc?: string | null
           meeting_from?: string | null
           meeting_title?: string | null
@@ -269,6 +271,7 @@ export type Database = {
           lg_focus_areas_comprehensive_list?: string | null
           lg_lead?: string | null
           lg_sector?: string | null
+          linkedin_url?: string | null
           meeting_cc?: string | null
           meeting_from?: string | null
           meeting_title?: string | null

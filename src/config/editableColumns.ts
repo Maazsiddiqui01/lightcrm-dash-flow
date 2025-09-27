@@ -350,6 +350,7 @@ export const editableColumns: EditableConfig = {
     },
     notes: { type: 'textarea' },
     url_to_online_bio: { type: 'text' },
+    linkedin_url: { type: 'text' },
     outreach_date: { type: 'date' },
     lg_lead: { type: 'text' },
     lg_assistant: { type: 'text' },
