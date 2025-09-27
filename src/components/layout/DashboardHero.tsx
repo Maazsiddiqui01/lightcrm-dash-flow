@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Users, Target, BarChart3, Wrench } from "lucide-react";
+import { Users, Target, BarChart3, Wrench, FileText, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function DashboardHero() {
@@ -18,6 +18,20 @@ export function DashboardHero() {
       icon: Target,
       href: "/opportunities",
       color: "text-green-500",
+    },
+    {
+      title: "Articles",
+      description: "Knowledge repository",
+      icon: FileText,
+      href: "/articles",
+      color: "text-purple-500",
+    },
+    {
+      title: "Email Builder",
+      description: "Create email templates",
+      icon: Mail,
+      href: "/email-builder",
+      color: "text-indigo-500",
     },
     {
       title: "AI Agent",
