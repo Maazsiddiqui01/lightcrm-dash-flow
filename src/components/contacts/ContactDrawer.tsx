@@ -258,7 +258,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     }
   };
 
-  const updateField = (field: keyof ContactRaw, value: string | null) => {
+  const updateField = (field: keyof ContactRaw, value: string | number | boolean | null) => {
     if (!contactData) return;
     
     // Handle delta field specifically since it's a number field
@@ -579,6 +579,22 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     value={contactData.delta || ""}
                     onChange={(e) => updateField("delta", e.target.value)}
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="intentional_no_outreach">Intentional No Outreach</Label>
+                  <Select
+                    value={contactData.intentional_no_outreach ? "true" : "false"}
+                    onValueChange={(value) => updateField("intentional_no_outreach", value === "true")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="false">No</SelectItem>
+                      <SelectItem value="true">Yes</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
