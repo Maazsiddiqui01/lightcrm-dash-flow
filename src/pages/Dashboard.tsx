@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Target, MessageSquare, TrendingUp } from "lucide-react";
+import { Users, Target, MessageSquare, TrendingUp, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
@@ -253,7 +253,7 @@ export function Dashboard() {
               <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <button 
                   onClick={() => navigate('/contacts')}
                   className="p-4 border border-border rounded-lg hover:bg-muted transition-colors text-left"
@@ -288,6 +288,15 @@ export function Dashboard() {
                   <TrendingUp className="h-6 w-6 text-destructive mb-2" />
                   <h3 className="font-medium text-foreground">AI Insights</h3>
                   <p className="text-sm text-muted-foreground">Get data-driven insights</p>
+                </button>
+                
+                <button 
+                  onClick={() => navigate('/meetings-with-team')}
+                  className="p-4 border border-border rounded-lg hover:bg-muted transition-colors text-left"
+                >
+                  <Calendar className="h-6 w-6 text-info mb-2" />
+                  <h3 className="font-medium text-foreground">Meetings with Team</h3>
+                  <p className="text-sm text-muted-foreground">Track 1:1 meeting time</p>
                 </button>
               </div>
             </CardContent>

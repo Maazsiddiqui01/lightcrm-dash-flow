@@ -14,7 +14,6 @@ const navItems = [
   { title: "Interactions", url: "/interactions" },
   { title: "Articles", url: "/articles" },
   { title: "Email Builder", url: "/email-builder" },
-  { title: "Meetings with Team", url: "/meetings-with-team" },
   { title: "AI Agent", url: "/make-your-own-view" },
 ];
 
