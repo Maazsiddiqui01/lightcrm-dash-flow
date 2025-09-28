@@ -257,10 +257,11 @@ export function DraftSection() {
           {/* Right Column Cards */}
           <div className="grid grid-cols-1 gap-4">
             <ContactSummaryCard contact={enrichedContact} />
-            <CCPreviewCard 
+            {/* Temporarily disable CC preview until migration complete */}
+            {/* <CCPreviewCard 
               contact={enrichedContact}
               extraCC={derivedVariables.extraCC}
-            />
+            /> */}
             <OpportunitiesCard opportunities={enrichedContact.opps} />
             <DraftResultCard 
               result={draftResult} 
