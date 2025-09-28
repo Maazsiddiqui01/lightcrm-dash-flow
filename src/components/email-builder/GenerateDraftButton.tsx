@@ -1,14 +1,12 @@
 import { useState } from "react";
-import { useContactEnriched } from "@/hooks/useContactEnriched";
-import { useFocusAreaDescriptions } from "@/hooks/useFocusAreaDescriptions";
-import { useArticlesByFocusAreas } from "@/hooks/useArticlesByFocusAreas";
+import { useEmailBuilderData } from "@/hooks/useEmailBuilderData";
 import { useEmailBuilderDraft } from "@/hooks/useEmailBuilderDraft";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Send, Loader2, Copy, CheckCircle } from "lucide-react";
+import { Send, Loader2, Copy, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { EmailTemplate } from "@/hooks/useEmailTemplates";
 
@@ -22,65 +20,18 @@ export function GenerateDraftButton({ contactId, template }: GenerateDraftButton
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const { data: enrichedData } = useContactEnriched(contactId);
-  const { data: focusAreaDescriptions } = useFocusAreaDescriptions(enrichedData?.focusAreas || []);
-  const { data: articles } = useArticlesByFocusAreas(enrichedData?.focusAreas || []);
+  const { payload, isLoading, error } = useEmailBuilderData(contactId, template);
   const draftMutation = useEmailBuilderDraft();
 
   const handleGenerateDraft = async () => {
-    if (!enrichedData) {
+    if (!payload) {
       toast({
         title: "Error",
-        description: "Contact data is not loaded",
+        description: "Payload data is not ready",
         variant: "destructive",
       });
       return;
     }
-
-    const { contact, focusAreas, opps, focusMeta, mostRecentContact, OutreachDate, delta_type } = enrichedData;
-
-    // Prepare assistants array
-    const assistantNames = Array.from(new Set(
-      (focusMeta || [])
-        .map(meta => meta.assistant_name)
-        .filter(Boolean)
-    ));
-
-    // Prepare CC emails
-    const lgEmailsCc = Array.from(new Set([
-      ...(focusMeta || []).flatMap(meta => [meta.lead1_email, meta.lead2_email, meta.assistant_email]),
-      contact.lgEmailsCc
-    ].filter(Boolean))).join("; ");
-
-    // Prepare payload
-    const payload = {
-      contact: {
-        firstName: contact.firstName || "",
-        fullName: contact.fullName || "",
-        email: contact.email || "",
-        organization: contact.organization || "",
-        lgEmailsCc: lgEmailsCc || "",
-      },
-      focusAreas: focusAreas || [],
-      focusAreaDescriptions: focusAreaDescriptions || [],
-      opps: (opps || []).map(opp => opp.deal_name),
-      assistantNames,
-      delta_type: delta_type || "Email",
-      mostRecentContact: mostRecentContact || new Date().toISOString().split('T')[0],
-      OutreachDate: OutreachDate || new Date().toISOString().split('T')[0],
-      template: {
-        id: template.id,
-        name: template.name,
-        description: template.description || "",
-        is_preset: template.is_preset,
-        customInstructions: template.custom_instructions || "",
-        customInsertion: template.custom_insertion || "before_closing",
-      },
-      articles: (articles || []).map(article => ({
-        focus_area: article.focus_area,
-        article_link: article.article_link,
-      })),
-    };
 
     try {
       const response = await draftMutation.mutateAsync(payload);
@@ -112,7 +63,7 @@ export function GenerateDraftButton({ contactId, template }: GenerateDraftButton
     }
   };
 
-  const isReady = enrichedData && template;
+  const isReady = payload && template && !isLoading;
 
   return (
     <Card>
@@ -143,9 +94,29 @@ export function GenerateDraftButton({ contactId, template }: GenerateDraftButton
         </Button>
 
         {!isReady && (
-          <p className="text-sm text-muted-foreground text-center">
-            Select a contact and template to generate a draft
-          </p>
+          <div className="text-sm text-muted-foreground text-center space-y-2">
+            {isLoading && (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading contact data...
+              </div>
+            )}
+            {error && (
+              <div className="flex items-center justify-center gap-2 text-destructive">
+                <AlertCircle className="h-4 w-4" />
+                Error loading data
+              </div>
+            )}
+            {!contactId && !template && (
+              <p>Select a contact and template to generate a draft</p>
+            )}
+            {!contactId && template && (
+              <p>Select a contact to generate a draft</p>
+            )}
+            {contactId && !template && (
+              <p>Select a template to generate a draft</p>
+            )}
+          </div>
         )}
 
         {result && (

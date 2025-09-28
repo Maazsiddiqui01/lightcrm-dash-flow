@@ -13,23 +13,23 @@ export interface EmailBuilderPayload {
   focusAreaDescriptions: Array<{
     focus_area: string;
     description: string;
-    platform_type: string;
     sector: string;
+    platform_type?: 'New Platform' | 'Add-On';
   }>;
   opps: string[];
   assistantNames: string[];
-  delta_type: string;
+  delta_type: 'Email' | 'Meeting';
   mostRecentContact: string;
   OutreachDate: string;
   template: {
     id: string;
     name: string;
-    description: string;
+    description?: string;
     is_preset: boolean;
-    customInstructions: string;
-    customInsertion: string;
+    customInstructions?: string;
+    customInsertion?: 'before_closing' | 'after_open' | 'after_fa';
   };
-  articles: Array<{
+  articles?: Array<{
     focus_area: string;
     article_link: string;
   }>;
@@ -48,6 +48,8 @@ export function useEmailBuilderDraft() {
 
   return useMutation({
     mutationFn: async (payload: EmailBuilderPayload): Promise<EmailBuilderResult> => {
+      console.log('Sending payload to n8n:', payload);
+      
       const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Email-Builder', {
         method: 'POST',
         headers: {
@@ -57,21 +59,23 @@ export function useEmailBuilderDraft() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
 
       const data = await response.json();
       return data as EmailBuilderResult;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast({
-        title: "Draft Generated",
-        description: "Email draft has been generated successfully",
+        title: "Draft Generated Successfully",
+        description: `Email draft created${result.send ? ' and ready to send' : ''}`,
       });
     },
     onError: (error: any) => {
+      console.error('Draft generation error:', error);
       toast({
-        title: "Generation Failed",
+        title: "Draft Generation Failed",
         description: error.message || "Failed to generate email draft",
         variant: "destructive",
       });
