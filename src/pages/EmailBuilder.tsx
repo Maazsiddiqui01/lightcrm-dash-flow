@@ -6,8 +6,7 @@ import { MasterTemplateSelector } from "@/components/email-builder/MasterTemplat
 import { ModulesCard, type ModuleStates, MODULE_DEFAULTS } from "@/components/email-builder/ModulesCard";
 import { ArticlePicker } from "@/components/email-builder/ArticlePicker";
 import { CCPreviewCard } from "@/components/email-builder/CCPreviewCard";
-import { GenerateDraftButton } from "@/components/email-builder/GenerateDraftButton";
-import { DraftPreviewPanel } from "@/components/email-builder/DraftPreviewPanel";
+import { DraftGenerateButton } from "@/components/email-builder/DraftGenerateButton";
 import { PreviewModal } from "@/components/email-builder/PreviewModal";
 import { Button } from "@/components/ui/button";
 import { Mail, Eye } from "lucide-react";
@@ -122,12 +121,12 @@ export function EmailBuilder() {
               deltaType={deltaType}
             />
             
-            <DraftPreviewPanel 
-              contact={contactData || contact}
-              resolved={null}
-              payload={payload}
-              template={null}
-              isLoading={isLoading}
+            <DraftGenerateButton 
+              contactData={contactData}
+              deltaType={deltaType}
+              moduleStates={moduleStates}
+              selectedArticle={selectedArticle}
+              masterTemplate={masterTemplate}
             />
           </div>
         </div>
