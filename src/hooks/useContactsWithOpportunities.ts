@@ -108,9 +108,9 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         setIsRefreshing(true);
       }
 
-      // First get all contacts with filters
+      // First get all contacts with filters using dynamic view
       let contactsQuery = supabase
-        .from("contacts_raw")
+        .from("contacts_with_dynamic_interactions")
         .select("*");
 
       // Apply contact filters
