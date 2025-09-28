@@ -356,6 +356,7 @@ export const editableColumns: EditableConfig = {
     group_contact: { type: 'text' },
     city: { type: 'text' },
     state: { type: 'text' },
+    intentional_no_outreach: { type: 'boolean' },
   },
   opportunities_raw: {
     deal_name: { type: 'text', required: true },
@@ -471,5 +472,5 @@ export const getNonEditableColumns = (): string[] => {
 
 // Get columns that should be hidden by default
 export const getHiddenByDefaultColumns = (): string[] => {
-  return ['id', 'created_at', 'updated_at', 'intentional_no_outreach', 'intentional_no_outreach_date', 'intentional_no_outreach_note'];
+  return ['id', 'created_at', 'updated_at', 'intentional_no_outreach_date', 'intentional_no_outreach_note'];
 };

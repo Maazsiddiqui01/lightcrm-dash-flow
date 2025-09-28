@@ -309,10 +309,9 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
                       isCurrentlySkipped: false
                     });
                   }}
-                  disabled={!isOverdue}
                 >
                   <UserX className="mr-2 h-4 w-4" />
-                  {isOverdue ? "Skip Outreach" : "Skip Outreach (Not Overdue)"}
+                  Skip Outreach
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
