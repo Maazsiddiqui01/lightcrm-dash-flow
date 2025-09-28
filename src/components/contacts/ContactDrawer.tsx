@@ -52,6 +52,7 @@ interface ContactRaw {
   lg_assistant: string | null;
   group_contact: string | null;
   linkedin_url: string | null;
+  x_twitter_url: string | null;
   intentional_no_outreach: boolean | null;
   intentional_no_outreach_date: string | null;
   intentional_no_outreach_note: string | null;
@@ -413,6 +414,16 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     value={contactData.linkedin_url || ""}
                     onChange={(e) => updateField("linkedin_url", e.target.value)}
                     placeholder="https://linkedin.com/in/username"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="x_twitter_url">X / Twitter</Label>
+                  <Input
+                    id="x_twitter_url"
+                    value={contactData.x_twitter_url || ""}
+                    onChange={(e) => updateField("x_twitter_url", e.target.value)}
+                    placeholder="https://x.com/username"
                   />
                 </div>
 

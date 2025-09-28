@@ -211,6 +211,7 @@ export type Database = {
           total_of_contacts: number | null
           updated_at: string | null
           url_to_online_bio: string | null
+          x_twitter_url: string | null
         }
         Insert: {
           all_emails?: string | null
@@ -270,6 +271,7 @@ export type Database = {
           total_of_contacts?: number | null
           updated_at?: string | null
           url_to_online_bio?: string | null
+          x_twitter_url?: string | null
         }
         Update: {
           all_emails?: string | null
@@ -329,6 +331,7 @@ export type Database = {
           total_of_contacts?: number | null
           updated_at?: string | null
           url_to_online_bio?: string | null
+          x_twitter_url?: string | null
         }
         Relationships: []
       }

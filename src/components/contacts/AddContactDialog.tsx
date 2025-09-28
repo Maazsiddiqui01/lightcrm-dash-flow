@@ -38,6 +38,8 @@ interface IndividualContactForm {
   category: string;
   phone: string;
   url_to_online_bio: string;
+  linkedin_url: string;
+  x_twitter_url: string;
   lg_lead: string;
   lg_assistant: string;
   lg_focus_areas: string[];
@@ -56,6 +58,8 @@ const emptyContactForm: IndividualContactForm = {
   category: "",
   phone: "",
   url_to_online_bio: "",
+  linkedin_url: "",
+  x_twitter_url: "",
   lg_lead: "",
   lg_assistant: "",
   lg_focus_areas: [],
@@ -177,6 +181,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           category: opt(contact.category),
           phone: opt(contact.phone),
           url_to_online_bio: opt(contact.url_to_online_bio),
+          linkedin_url: opt(contact.linkedin_url),
+          x_twitter_url: opt(contact.x_twitter_url),
           lg_lead: opt(contact.lg_lead),
           lg_assistant: opt(contact.lg_assistant),
           group_contact: contactType === "group" ? groupName.trim() : null,
@@ -418,6 +424,26 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                           value={contact.lg_assistant}
                           onChange={(e) => updateContact(index, "lg_assistant", e.target.value)}
                           placeholder="Enter LG Assistant"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`linkedin_url_${index}`}>LinkedIn Profile</Label>
+                        <Input
+                          id={`linkedin_url_${index}`}
+                          value={contact.linkedin_url}
+                          onChange={(e) => updateContact(index, "linkedin_url", e.target.value)}
+                          placeholder="https://linkedin.com/in/username"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`x_twitter_url_${index}`}>X / Twitter</Label>
+                        <Input
+                          id={`x_twitter_url_${index}`}
+                          value={contact.x_twitter_url}
+                          onChange={(e) => updateContact(index, "x_twitter_url", e.target.value)}
+                          placeholder="https://x.com/username"
                         />
                       </div>
                     </div>
