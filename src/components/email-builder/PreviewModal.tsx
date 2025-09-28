@@ -9,111 +9,120 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { EmailTemplate } from "@/hooks/useEmailTemplates";
-import { useTemplatePreviewLLM, TemplatePreviewInput } from "@/hooks/useTemplatePreviewLLM";
+import { useResolvedTemplate, ResolveTemplateInput } from "@/hooks/useResolvedTemplate";
 import { Loader2 } from "lucide-react";
 
 interface PreviewModalProps {
   template: EmailTemplate | null;
+  contactId: string | null;
+  focusAreas: string[];
+  hasOpps: boolean;
+  lagDays: number;
   open: boolean;
   onClose: () => void;
 }
 
-export function PreviewModal({ template, open, onClose }: PreviewModalProps) {
+export function PreviewModal({ template, contactId, focusAreas, hasOpps, lagDays, open, onClose }: PreviewModalProps) {
   const [previewContent, setPreviewContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const previewMutation = useTemplatePreviewLLM();
+  const resolveTemplateMutation = useResolvedTemplate();
 
   const generatePreview = async () => {
-    if (!template) return;
+    if (!template || !contactId) return;
     
     setIsLoading(true);
     
     try {
-      // Use TemplatePreviewLLM for actual preview generation
-      const previewInput: TemplatePreviewInput = {
-        firstName: "Alex",
-        organization: "SampleCo", 
-        focusAreas: ["Healthcare Services"],
-        descriptions: { "Healthcare Services": "businesses that serve hospitals and health systems as key end markets." },
-        focusAreaDescriptions: [
-          {
-            focus_area: "Healthcare Services",
-            description: "businesses that serve hospitals and health systems as key end markets.",
-            platform_type: "New Platform",
-            sector: "Healthcare"
-          }
-        ],
-        articles: [
-          {
-            focus_area: "Healthcare Services",
-            article_link: "https://example.com/article",
-            article_date: "2024-01-15",
-            last_date_to_use: "2024-12-31"
-          }
-        ],
-        delta_type: template.delta_type || "Email",
-        hs_present: template.hs_present || false,
-        ls_present: template.ls_present || false,
-        has_opps: template.has_opps || false
+      const resolveInput: ResolveTemplateInput = {
+        template_id: template.id,
+        contact_id: contactId,
+        faList: focusAreas,
+        hasOpps,
+        lagDays
       };
 
-      const result = await previewMutation.mutateAsync(previewInput);
-      setPreviewContent(result);
-    } catch (error) {
-      console.error('Preview failed, using fallback:', error);
-      // Fallback to mock preview
-      const mockPreview = `
-Subject: Following up on our conversation about ${template.name}
+      const resolved = await resolveTemplateMutation.mutateAsync(resolveInput);
+      
+      // Format resolved template into preview text
+      const moduleContent: string[] = [];
+      
+      if (resolved.included_modules.includes('Top Opportunities') && hasOpps) {
+        moduleContent.push('• Current opportunities that might align with your portfolio');
+      }
+      
+      if (resolved.included_modules.includes('Article Recommendations')) {
+        moduleContent.push('• Recent industry insights and market updates');
+      }
+      
+      if (resolved.included_modules.includes('Platforms') || resolved.included_modules.includes('Add-ons')) {
+        moduleContent.push('• Platform and add-on opportunities in your focus areas');
+      }
+      
+      if (resolved.included_modules.includes('Suggested Talking Points')) {
+        moduleContent.push('• Key discussion points for our next conversation');
+      }
+      
+      if (resolved.included_modules.includes('General Org Update')) {
+        moduleContent.push('• Updates from our team and recent activities');
+      }
+
+      const preview = `
+Subject: ${resolved.chosen_subject}
 
 Dear [Contact Name],
 
-I hope this email finds you well. Following up on our recent ${template.delta_type?.toLowerCase() === 'meeting' ? 'meeting' : 'email exchange'}, I wanted to share some relevant insights about opportunities in [Focus Area].
+${resolved.chosen_greeting}
 
-${template.has_opps ? '• Based on your portfolio, I see potential synergies with our current deals' : '• Looking forward to exploring potential collaboration opportunities'}
-${template.gb_present ? '• Our General BD team has identified some exciting prospects' : ''}
-${template.hs_present || template.ls_present ? '• Our specialized teams have insights that might be valuable' : ''}
+${moduleContent.join('\n')}
 
-${template.custom_instructions ? `Custom notes: ${template.custom_instructions}` : ''}
+${resolved.fa_defaults.map(fa => `${fa.focus_area_label}: ${fa.text_value}`).join('\n')}
+
+${resolved.chosen_meeting_req}
 
 Best regards,
 [LG Team Member]
 
 ---
-This is a sample preview. TemplatePreviewLLM failed, showing fallback.
-Template: ${template.name}
-Configuration: FA:${template.fa_bucket}, ${template.delta_type}, ${template.subject_mode}
+Template Configuration:
+• Tone: ${resolved.tone}
+• Length: ${resolved.length}
+• Modules: ${resolved.included_modules.join(', ')}
+• Lag-based adjustments applied (${lagDays} days)
       `.trim();
       
-      setPreviewContent(mockPreview);
+      setPreviewContent(preview);
+    } catch (error) {
+      console.error('Preview failed:', error);
+      setPreviewContent(`Preview generation failed. Please try again.\n\nError: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (open && template) {
+    if (open && template && contactId) {
       generatePreview();
     }
-  }, [open, template]);
+  }, [open, template, contactId, focusAreas, hasOpps, lagDays]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Template Preview</DialogTitle>
-          <DialogDescription>
-            Sample email generated using "{template?.name}" template
-          </DialogDescription>
+            <DialogDescription>
+              Resolved template configuration with deterministic phrase selection
+            </DialogDescription>
         </DialogHeader>
         
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              Using sample focus areas and contact data
+              Lag: {lagDays} days | Focus Areas: {focusAreas.join(', ')} | Has Opps: {hasOpps ? 'Yes' : 'No'}
             </p>
-            <Button onClick={generatePreview} disabled={isLoading} size="sm">
+            <Button onClick={generatePreview} disabled={isLoading || !contactId} size="sm">
               {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Regenerate Preview
+              Resolve Template
             </Button>
           </div>
           
@@ -121,7 +130,7 @@ Configuration: FA:${template.fa_bucket}, ${template.delta_type}, ${template.subj
             value={previewContent}
             readOnly
             className="min-h-[400px] font-mono text-sm"
-            placeholder={isLoading ? "Generating preview..." : "Preview will appear here"}
+            placeholder={isLoading ? "Resolving template..." : "Select a contact and template to see resolved configuration"}
           />
         </div>
       </DialogContent>

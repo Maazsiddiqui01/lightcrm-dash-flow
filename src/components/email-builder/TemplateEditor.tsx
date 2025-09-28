@@ -377,6 +377,10 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
         open={showPreview}
         onClose={() => setShowPreview(false)}
         template={template}
+        contactId="sample-contact-id"
+        focusAreas={["Healthcare Services"]}
+        hasOpps={template.has_opps || false}
+        lagDays={30}
       />
     </div>
   );

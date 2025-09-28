@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.template_preview_llm]
 verify_jwt = false
+
+[functions.resolve_template]
+verify_jwt = false
