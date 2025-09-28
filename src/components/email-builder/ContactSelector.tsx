@@ -1,26 +1,24 @@
 import { useState } from "react";
-import { useContactSearch } from "@/hooks/useContactSearch";
+import { useSearchContacts } from "@/hooks/useComposer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { ContactEmailComposer } from "@/types/emailComposer";
 
 interface ContactSelectorProps {
-  selectedContactId: string | null;
-  onContactSelect: (contactId: string | null) => void;
+  selectedContact: ContactEmailComposer | null;
+  onContactSelect: (contact: ContactEmailComposer | null) => void;
 }
 
-export function ContactSelector({ selectedContactId, onContactSelect }: ContactSelectorProps) {
+export function ContactSelector({ selectedContact, onContactSelect }: ContactSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const { contacts, isLoading, handleSearch } = useContactSearch();
+  const { data: contacts = [], isLoading } = useSearchContacts(searchTerm);
 
   const handleInputChange = (value: string) => {
     setSearchTerm(value);
-    handleSearch(value);
   };
-
-  const selectedContact = contacts.find(c => c.id === selectedContactId);
 
   return (
     <Card>
@@ -46,7 +44,7 @@ export function ContactSelector({ selectedContactId, onContactSelect }: ContactS
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">{selectedContact.full_name}</p>
-                <p className="text-sm text-muted-foreground">{selectedContact.email_address}</p>
+                <p className="text-sm text-muted-foreground">{selectedContact.email}</p>
                 {selectedContact.organization && (
                   <p className="text-sm text-muted-foreground">{selectedContact.organization}</p>
                 )}
@@ -75,15 +73,15 @@ export function ContactSelector({ selectedContactId, onContactSelect }: ContactS
             ) : (
               contacts.map((contact) => (
                 <div
-                  key={contact.id}
+                  key={contact.contact_id}
                   className={cn(
                     "p-3 border rounded-lg cursor-pointer transition-colors",
                     "hover:bg-muted/50"
                   )}
-                  onClick={() => onContactSelect(contact.id)}
+                  onClick={() => onContactSelect(contact)}
                 >
                   <div className="font-medium">{contact.full_name}</div>
-                  <div className="text-sm text-muted-foreground">{contact.email_address}</div>
+                  <div className="text-sm text-muted-foreground">{contact.email}</div>
                   {contact.organization && (
                     <div className="text-sm text-muted-foreground">{contact.organization}</div>
                   )}

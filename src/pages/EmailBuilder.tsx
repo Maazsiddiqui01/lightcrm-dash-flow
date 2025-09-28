@@ -18,8 +18,7 @@ import type { EmailTemplate } from "@/hooks/useEmailTemplates";
 import type { Article } from "@/types/emailComposer";
 
 export function EmailBuilder() {
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const [selectedContactEmail, setSelectedContactEmail] = useState<string | null>(null);
+  const [selectedContact, setSelectedContact] = useState<any | null>(null);
   const [deltaType, setDeltaType] = useState<'Email' | 'Meeting'>('Email');
   const [showPreview, setShowPreview] = useState(false);
   
@@ -40,7 +39,7 @@ export function EmailBuilder() {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   
   // Get contact data from new composer view
-  const { data: contactData } = useComposerRow(selectedContactEmail);
+  const { data: contactData } = useComposerRow(selectedContact?.email || null);
   
   // Auto-set module defaults when master template changes
   const masterTemplate = contactData ? routeMaster(contactData.most_recent_contact) : null;
@@ -59,7 +58,7 @@ export function EmailBuilder() {
   };
   
   // Legacy support - remove when fully migrated
-  const { contact, lag, opportunities, payload, isLoading } = useEmailBuilderData(selectedContactId, null);
+  const { contact, lag, opportunities, payload, isLoading } = useEmailBuilderData(selectedContact?.contact_id || null, null);
 
   return (
     <div className="min-h-0 flex-1">
@@ -80,25 +79,19 @@ export function EmailBuilder() {
           {/* Left Column - Contact Selection & Info */}
           <div className="flex flex-col gap-6">
             <ContactSelector
-              selectedContactId={selectedContactId}
-              onContactSelect={(id) => {
-                setSelectedContactId(id);
-                // Get email from existing contact data for now
-                if (contact?.email_address) {
-                  setSelectedContactEmail(contact.email_address);
-                }
-              }}
+              selectedContact={selectedContact}
+              onContactSelect={setSelectedContact}
             />
-            {selectedContactId && (
-              <ContactInfoPanel contactId={selectedContactId} />
+            {selectedContact && (
+              <ContactInfoPanel contactId={selectedContact.contact_id} />
             )}
           </div>
 
           {/* Right Column - Template, Preview & Generation */}
           <div className="flex flex-col gap-6">
             <MasterTemplateSelector
-              selectedContactId={selectedContactId}
-              selectedContactEmail={selectedContactEmail}
+              selectedContactId={selectedContact?.contact_id || null}
+              selectedContactEmail={selectedContact?.email || null}
               deltaType={deltaType}
               onDeltaTypeChange={setDeltaType}
             />
@@ -136,7 +129,7 @@ export function EmailBuilder() {
         open={showPreview}
         onClose={() => setShowPreview(false)}
         template={null}
-        contactId={selectedContactId}
+        contactId={selectedContact?.contact_id || null}
         focusAreas={contactData?.focus_areas || []}
         hasOpps={contactData?.has_opps || false}
         lagDays={0}
