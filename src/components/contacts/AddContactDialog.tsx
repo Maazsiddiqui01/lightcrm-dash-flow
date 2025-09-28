@@ -446,6 +446,16 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                           placeholder="https://x.com/username"
                         />
                       </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`category_${index}`}>Profession</Label>
+                        <Input
+                          id={`category_${index}`}
+                          value={contact.category}
+                          onChange={(e) => updateContact(index, "category", e.target.value)}
+                          placeholder="Enter profession/category"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
