@@ -1,16 +1,16 @@
 export interface FocusAreaDescription {
   focus_area: string;
+  description: string;
   platform_type: string;
   sector: string;
-  description: string;
 }
 
-export interface OpportunityData {
+export interface Opportunity {
   deal_name: string;
   ebitda_in_ms: number | null;
 }
 
-export interface ArticleData {
+export interface Article {
   focus_area: string;
   article_link: string;
   last_date_to_use: string | null;
@@ -21,8 +21,8 @@ export interface ContactEmailComposer {
   full_name: string;
   first_name: string;
   email: string;
-  organization: string;
-  lg_emails_cc: string;
+  organization: string | null;
+  lg_emails_cc: string | null;
   focus_areas: string[];
   fa_count: number;
   fa_sectors: string[];
@@ -31,8 +31,8 @@ export interface ContactEmailComposer {
   hs_present: boolean;
   ls_present: boolean;
   has_opps: boolean;
-  opps: OpportunityData[];
-  articles: ArticleData[];
+  opps: Opportunity[];
+  articles: Article[];
   lead_emails: string[];
   assistant_names: string[];
   assistant_emails: string[];
