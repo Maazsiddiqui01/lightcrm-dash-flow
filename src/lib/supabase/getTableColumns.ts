@@ -70,7 +70,6 @@ export const CONTACTS_RAW_COLUMNS: TableColumn[] = [
   { name: 'delta_type', type: 'text', nullable: true, displayName: 'Delta Type' },
   { name: 'url_to_online_bio', type: 'text', nullable: true, displayName: 'URL To Online Bio' },
   { name: 'linkedin_url', type: 'text', nullable: true, displayName: 'LinkedIn Profile' },
-  { name: 'x_twitter_url', type: 'text', nullable: true, displayName: 'X / Twitter' },
   { name: 'email_subject', type: 'text', nullable: true, displayName: 'Email Subject' },
   { name: 'meeting_title', type: 'text', nullable: true, displayName: 'Meeting Title' },
   { name: 'email_from', type: 'text', nullable: true, displayName: 'Email From' },
