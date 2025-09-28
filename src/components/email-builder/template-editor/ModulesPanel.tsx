@@ -27,6 +27,23 @@ const TRI_STATE_OPTIONS = [
 export function ModulesPanel({ settings, onSettingsChange }: ModulesPanelProps) {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
+  // Early return if settings or modules are not properly initialized
+  if (!settings || !settings.modules || !settings.modules.order || !settings.modules.triState) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            Modules
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">Loading modules...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const updateTriState = (module: string, triState: 'Always' | 'Sometimes' | 'Never') => {
     onSettingsChange({
       ...settings,
