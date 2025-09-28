@@ -1,0 +1,165 @@
+import { useContactEnriched } from "@/hooks/useContactEnriched";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Info, 
+  Building, 
+  Mail, 
+  Users, 
+  Target, 
+  Calendar,
+  TrendingUp
+} from "lucide-react";
+import { format } from "date-fns";
+
+interface ContactInfoPanelProps {
+  contactId: string;
+}
+
+export function ContactInfoPanel({ contactId }: ContactInfoPanelProps) {
+  const { data: enrichedData, isLoading } = useContactEnriched(contactId);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-4 w-4" />
+            Contact Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="h-4 bg-muted rounded animate-pulse" />
+            <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+            <div className="h-4 bg-muted rounded animate-pulse w-1/2" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!enrichedData) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-4 w-4" />
+            Contact Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Contact information not available</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const { contact, focusAreas, opps, focusMeta, mostRecentContact, OutreachDate } = enrichedData;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Info className="h-4 w-4" />
+          Contact Information
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Basic Info */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Building className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{contact.organization || "No organization"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">{contact.email}</span>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Focus Areas */}
+        {focusAreas && focusAreas.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Target className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">Focus Areas</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {focusAreas.map((area) => (
+                <Badge key={area} variant="secondary">
+                  {area}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Opportunities */}
+        {opps && opps.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">Current Opportunities</span>
+            </div>
+            <div className="space-y-1">
+              {opps.slice(0, 3).map((opp, index) => (
+                <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded">
+                  {opp.deal_name}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Leads & Assistants */}
+        {focusMeta && focusMeta.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">Team</span>
+            </div>
+            <div className="space-y-2 text-sm">
+              {Array.from(new Set(focusMeta.flatMap(meta => [
+                meta.lead1_name,
+                meta.lead2_name,
+                meta.assistant_name
+              ]).filter(Boolean))).map((name) => (
+                <div key={name} className="text-muted-foreground">
+                  {name}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Separator />
+
+        {/* Contact Timeline */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">Timeline</span>
+          </div>
+          <div className="text-sm space-y-1">
+            {mostRecentContact && mostRecentContact !== "0" && (
+              <div>
+                <span className="text-muted-foreground">Last Contact: </span>
+                <span>{format(new Date(mostRecentContact), "MMM dd, yyyy")}</span>
+              </div>
+            )}
+            {OutreachDate && (
+              <div>
+                <span className="text-muted-foreground">Next Outreach: </span>
+                <span>{format(new Date(OutreachDate), "MMM dd, yyyy")}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

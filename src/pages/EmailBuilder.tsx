@@ -1,50 +1,56 @@
 import { useState } from "react";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
-import { TemplatesSection } from "@/components/email-builder/TemplatesSection";
-import { DraftSection } from "@/components/email-builder/DraftSection";
+import { ContactSelector } from "@/components/email-builder/ContactSelector";
+import { ContactInfoPanel } from "@/components/email-builder/ContactInfoPanel";
+import { TemplateSwitcher } from "@/components/email-builder/TemplateSwitcher";
+import { GenerateDraftButton } from "@/components/email-builder/GenerateDraftButton";
 import { Mail } from "lucide-react";
+import type { EmailTemplate } from "@/hooks/useEmailTemplates";
 
 export function EmailBuilder() {
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+
   return (
     <div className="min-h-0 flex-1">
       <ResponsiveContainer className="flex flex-col gap-6 py-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-primary-light flex items-center justify-center">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
             <Mail className="h-4 w-4 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">Email Builder</h1>
-            <p className="text-muted-foreground">Manage templates and draft personalized emails</p>
+            <p className="text-muted-foreground">Generate personalized email drafts with AI</p>
           </div>
         </div>
 
-        {/* Two-Section Layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-0">
-          {/* Section 1: Templates */}
-          <div className="flex flex-col min-h-0">
-            <div className="border rounded-lg bg-card shadow-sm flex-1 flex flex-col">
-              <div className="p-4 border-b">
-                <h2 className="text-lg font-semibold">Templates</h2>
-                <p className="text-sm text-muted-foreground">Create and manage email templates</p>
-              </div>
-              <div className="flex-1 min-h-0">
-                <TemplatesSection />
-              </div>
-            </div>
+        {/* Main Content - Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
+          {/* Left Column - Contact Selection & Info */}
+          <div className="flex flex-col gap-6">
+            <ContactSelector
+              selectedContactId={selectedContactId}
+              onContactSelect={setSelectedContactId}
+            />
+            {selectedContactId && (
+              <ContactInfoPanel contactId={selectedContactId} />
+            )}
           </div>
 
-          {/* Section 2: Draft Emails */}
-          <div className="flex flex-col min-h-0">
-            <div className="border rounded-lg bg-card shadow-sm flex-1 flex flex-col">
-              <div className="p-4 border-b">
-                <h2 className="text-lg font-semibold">Draft Emails</h2>
-                <p className="text-sm text-muted-foreground">Generate personalized email drafts</p>
-              </div>
-              <div className="flex-1 min-h-0">
-                <DraftSection />
-              </div>
-            </div>
+          {/* Right Column - Template & Generation */}
+          <div className="flex flex-col gap-6">
+            <TemplateSwitcher
+              selectedTemplate={selectedTemplate}
+              onTemplateSelect={setSelectedTemplate}
+            />
+            
+            {selectedContactId && selectedTemplate && (
+              <GenerateDraftButton
+                contactId={selectedContactId}
+                template={selectedTemplate}
+              />
+            )}
           </div>
         </div>
       </ResponsiveContainer>
