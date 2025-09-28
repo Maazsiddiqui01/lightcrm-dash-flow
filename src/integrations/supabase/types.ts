@@ -2125,6 +2125,32 @@ export type Database = {
         }
         Relationships: []
       }
+      v_contact_email_composer: {
+        Row: {
+          articles: Json[] | null
+          assistant_emails: string[] | null
+          assistant_names: string[] | null
+          contact_id: string | null
+          email: string | null
+          fa_count: number | null
+          fa_descriptions: Json[] | null
+          fa_sectors: string[] | null
+          first_name: string | null
+          focus_areas: string[] | null
+          full_name: string | null
+          gb_present: boolean | null
+          has_opps: boolean | null
+          hs_present: boolean | null
+          lead_emails: string[] | null
+          lg_emails_cc: string | null
+          ls_present: boolean | null
+          most_recent_contact: string | null
+          opps: Json[] | null
+          organization: string | null
+          outreach_date: string | null
+        }
+        Relationships: []
+      }
       v_contact_lag: {
         Row: {
           contact_id: string | null
