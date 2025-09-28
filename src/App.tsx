@@ -18,6 +18,7 @@ import { MeetingsWithTeam } from "@/pages/MeetingsWithTeam";
 import Articles from "@/pages/Articles";
 import { EmailBuilder } from "@/pages/EmailBuilder";
 import { ContactsEmail } from "@/pages/ContactsEmail";
+import { DataMaintenance } from "@/pages/DataMaintenance";
 import { Auth } from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
@@ -65,6 +66,7 @@ function App() {
                       <Route path="/meetings-with-team" element={<MeetingsWithTeam />} />
                       <Route path="/tom-new-view" element={<TomNewView />} />
                       <Route path="/make-your-own-view" element={<MakeYourOwnView />} />
+                      <Route path="/data-maintenance" element={<DataMaintenance />} />
                       <Route path="/datatable-test" element={<DataTableTest />} />
                       <Route path="/ask-ai" element={<AskAI />} />
                       <Route path="*" element={<NotFound />} />

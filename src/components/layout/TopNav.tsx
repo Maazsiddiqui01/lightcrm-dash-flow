@@ -15,6 +15,7 @@ const navItems = [
   { title: "Articles", url: "/articles" },
   { title: "Email Builder", url: "/email-builder" },
   { title: "AI Agent", url: "/make-your-own-view" },
+  { title: "Data Maintenance", url: "/data-maintenance" },
 ];
 
 const filterPages = ["/contacts", "/missing-contacts", "/opportunities", "/interactions", "/kpis"];

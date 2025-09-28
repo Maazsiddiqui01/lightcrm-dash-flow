@@ -17,7 +17,11 @@ interface LookupGroup {
   values: string[];
 }
 
-export function LookupManager() {
+interface LookupManagerProps {
+  tableScope?: "contacts" | "opportunities" | "global";
+}
+
+export function LookupManager({ tableScope = "global" }: LookupManagerProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -112,10 +116,16 @@ export function LookupManager() {
     }
   ];
 
-  const filteredGroups = lookupGroups.filter(group =>
-    group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    group.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredGroups = lookupGroups.filter(group => {
+    const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesScope = tableScope === "global" || 
+      (tableScope === "contacts" && group.table === "contacts_raw") ||
+      (tableScope === "opportunities" && group.table === "opportunities_raw");
+    
+    return matchesSearch && matchesScope;
+  });
 
   const handleAddValue = (groupName: string) => {
     toast({

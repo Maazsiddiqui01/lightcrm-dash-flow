@@ -1,114 +1,200 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, Settings, Users, Building } from "lucide-react";
+import { Database, Users, Building, Settings, List, Eye } from "lucide-react";
 import { ColumnManager } from "@/components/data-maintenance/ColumnManager";
 import { LookupManager } from "@/components/data-maintenance/LookupManager";
 import { SchemaOverview } from "@/components/data-maintenance/SchemaOverview";
 
 export function DataMaintenance() {
-  const [activeTable, setActiveTable] = useState<'contacts_raw' | 'opportunities_raw'>('contacts_raw');
+  const [activeContactsTab, setActiveContactsTab] = useState<string>("columns");
+  const [activeOpportunitiesTab, setActiveOpportunitiesTab] = useState<string>("columns");
 
   return (
     <section className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="p-4 space-y-4">
+      <div className="p-6 border-b">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Database className="h-6 w-6" />
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Database className="h-8 w-8" />
             Data Maintenance
           </h1>
-          <p className="text-muted-foreground">
-            Manage database schema and configuration without technical intervention
+          <p className="text-muted-foreground mt-2">
+            Complete database management and configuration without technical intervention
           </p>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 mx-4 mb-4 overflow-hidden">
+      <div className="flex-1 p-6 overflow-hidden">
         <Tabs defaultValue="overview" className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="columns">Column Management</TabsTrigger>
-            <TabsTrigger value="lookups">Dropdown Values</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              System Overview
+            </TabsTrigger>
+            <TabsTrigger value="contacts" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Contacts Management
+            </TabsTrigger>
+            <TabsTrigger value="opportunities" className="flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              Opportunities Management
+            </TabsTrigger>
+            <TabsTrigger value="global" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Global Settings
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="flex-1 mt-4">
+          {/* System Overview */}
+          <TabsContent value="overview" className="flex-1 mt-0">
             <SchemaOverview />
           </TabsContent>
 
-          <TabsContent value="columns" className="flex-1 mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
-              {/* Table Selector */}
-              <Card className="lg:col-span-1">
+          {/* Contacts Management */}
+          <TabsContent value="contacts" className="flex-1 mt-0">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Contacts Data Management
+                </CardTitle>
+                <CardDescription>
+                  Manage contacts table structure, columns, validation rules, and dropdown options
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-full">
+                <Tabs value={activeContactsTab} onValueChange={setActiveContactsTab} className="h-full flex flex-col">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="columns">Columns & Structure</TabsTrigger>
+                    <TabsTrigger value="lookups">Dropdown Values</TabsTrigger>
+                    <TabsTrigger value="validation">Validation Rules</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="columns" className="flex-1 mt-4">
+                    <ColumnManager tableName="contacts_raw" />
+                  </TabsContent>
+
+                  <TabsContent value="lookups" className="flex-1 mt-4">
+                    <div className="space-y-4">
+                      <div className="text-sm text-muted-foreground">
+                        Manage dropdown options for contacts fields like LG Sectors, Focus Areas, Contact Types, etc.
+                      </div>
+                      <LookupManager tableScope="contacts" />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="validation" className="flex-1 mt-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Validation Rules</CardTitle>
+                        <CardDescription>
+                          Configure field validation, required fields, and data integrity rules
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-center py-8 text-muted-foreground">
+                          Validation rules management coming soon...
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Opportunities Management */}
+          <TabsContent value="opportunities" className="flex-1 mt-0">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Opportunities Data Management
+                </CardTitle>
+                <CardDescription>
+                  Manage opportunities table structure, columns, validation rules, and dropdown options
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-full">
+                <Tabs value={activeOpportunitiesTab} onValueChange={setActiveOpportunitiesTab} className="h-full flex flex-col">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="columns">Columns & Structure</TabsTrigger>
+                    <TabsTrigger value="lookups">Dropdown Values</TabsTrigger>
+                    <TabsTrigger value="validation">Validation Rules</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="columns" className="flex-1 mt-4">
+                    <ColumnManager tableName="opportunities_raw" />
+                  </TabsContent>
+
+                  <TabsContent value="lookups" className="flex-1 mt-4">
+                    <div className="space-y-4">
+                      <div className="text-sm text-muted-foreground">
+                        Manage dropdown options for opportunities fields like Status, Tier, Ownership Type, Platform/Add-on, etc.
+                      </div>
+                      <LookupManager tableScope="opportunities" />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="validation" className="flex-1 mt-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Validation Rules</CardTitle>
+                        <CardDescription>
+                          Configure field validation, required fields, and data integrity rules
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-center py-8 text-muted-foreground">
+                          Validation rules management coming soon...
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Global Settings */}
+          <TabsContent value="global" className="flex-1 mt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Select Table</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <List className="h-4 w-4" />
+                    System Lookups
+                  </CardTitle>
+                  <CardDescription>
+                    Manage global dropdown values and lookup tables
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <button
-                    onClick={() => setActiveTable('contacts_raw')}
-                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                      activeTable === 'contacts_raw'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:bg-muted/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <div>
-                        <div className="font-medium">Contacts</div>
-                        <div className="text-xs text-muted-foreground">contacts_raw</div>
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTable('opportunities_raw')}
-                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                      activeTable === 'opportunities_raw'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:bg-muted/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      <div>
-                        <div className="font-medium">Opportunities</div>
-                        <div className="text-xs text-muted-foreground">opportunities_raw</div>
-                      </div>
-                    </div>
-                  </button>
+                <CardContent>
+                  <LookupManager tableScope="global" />
                 </CardContent>
               </Card>
 
-              {/* Column Management */}
-              <div className="lg:col-span-3">
-                <ColumnManager tableName={activeTable} />
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    System Configuration
+                  </CardTitle>
+                  <CardDescription>
+                    Advanced system settings and maintenance options
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="text-center py-8 text-muted-foreground">
+                      System configuration options coming soon...
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </TabsContent>
-
-          <TabsContent value="lookups" className="flex-1 mt-4">
-            <LookupManager />
-          </TabsContent>
-
-          <TabsContent value="settings" className="flex-1 mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  System Settings
-                </CardTitle>
-                <CardDescription>
-                  Advanced configuration and maintenance options
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  System settings coming soon...
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
