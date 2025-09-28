@@ -1457,6 +1457,189 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts_with_dynamic_interactions: {
+        Row: {
+          all_emails: string | null
+          all_opps: number | null
+          areas_of_specialization: string | null
+          category: string | null
+          city: string | null
+          contact_type: string | null
+          created_at: string | null
+          days_since_last_email: number | null
+          days_since_last_meeting: number | null
+          delta: number | null
+          delta_type: string | null
+          email_address: string | null
+          email_cc: string | null
+          email_from: string | null
+          email_subject: string | null
+          email_to: string | null
+          first_name: string | null
+          full_name: string | null
+          group_contact: string | null
+          id: string | null
+          intentional_no_outreach: boolean | null
+          intentional_no_outreach_date: string | null
+          intentional_no_outreach_note: string | null
+          last_name: string | null
+          latest_contact_email: string | null
+          latest_contact_meeting: string | null
+          lg_assistant: string | null
+          lg_focus_area_1: string | null
+          lg_focus_area_2: string | null
+          lg_focus_area_3: string | null
+          lg_focus_area_4: string | null
+          lg_focus_area_5: string | null
+          lg_focus_area_6: string | null
+          lg_focus_area_7: string | null
+          lg_focus_area_8: string | null
+          lg_focus_areas_comprehensive_list: string | null
+          lg_lead: string | null
+          lg_sector: string | null
+          linkedin_url: string | null
+          meeting_cc: string | null
+          meeting_from: string | null
+          meeting_title: string | null
+          meeting_to: string | null
+          most_recent_contact: string | null
+          no_of_lg_focus_areas: number | null
+          no_of_opps_sourced: number | null
+          notes: string | null
+          of_emails: number | null
+          of_meetings: number | null
+          organization: string | null
+          outreach_date: string | null
+          phone: string | null
+          state: string | null
+          title: string | null
+          total_of_contacts: number | null
+          updated_at: string | null
+          url_to_online_bio: string | null
+          x_twitter_url: string | null
+        }
+        Insert: {
+          all_emails?: string | null
+          all_opps?: number | null
+          areas_of_specialization?: string | null
+          category?: string | null
+          city?: string | null
+          contact_type?: string | null
+          created_at?: string | null
+          days_since_last_email?: number | null
+          days_since_last_meeting?: number | null
+          delta?: number | null
+          delta_type?: string | null
+          email_address?: string | null
+          email_cc?: string | null
+          email_from?: string | null
+          email_subject?: string | null
+          email_to?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          group_contact?: string | null
+          id?: string | null
+          intentional_no_outreach?: boolean | null
+          intentional_no_outreach_date?: string | null
+          intentional_no_outreach_note?: string | null
+          last_name?: string | null
+          latest_contact_email?: never
+          latest_contact_meeting?: never
+          lg_assistant?: string | null
+          lg_focus_area_1?: string | null
+          lg_focus_area_2?: string | null
+          lg_focus_area_3?: string | null
+          lg_focus_area_4?: string | null
+          lg_focus_area_5?: string | null
+          lg_focus_area_6?: string | null
+          lg_focus_area_7?: string | null
+          lg_focus_area_8?: string | null
+          lg_focus_areas_comprehensive_list?: string | null
+          lg_lead?: string | null
+          lg_sector?: string | null
+          linkedin_url?: string | null
+          meeting_cc?: string | null
+          meeting_from?: string | null
+          meeting_title?: string | null
+          meeting_to?: string | null
+          most_recent_contact?: never
+          no_of_lg_focus_areas?: number | null
+          no_of_opps_sourced?: number | null
+          notes?: string | null
+          of_emails?: number | null
+          of_meetings?: number | null
+          organization?: string | null
+          outreach_date?: string | null
+          phone?: string | null
+          state?: string | null
+          title?: string | null
+          total_of_contacts?: number | null
+          updated_at?: string | null
+          url_to_online_bio?: string | null
+          x_twitter_url?: string | null
+        }
+        Update: {
+          all_emails?: string | null
+          all_opps?: number | null
+          areas_of_specialization?: string | null
+          category?: string | null
+          city?: string | null
+          contact_type?: string | null
+          created_at?: string | null
+          days_since_last_email?: number | null
+          days_since_last_meeting?: number | null
+          delta?: number | null
+          delta_type?: string | null
+          email_address?: string | null
+          email_cc?: string | null
+          email_from?: string | null
+          email_subject?: string | null
+          email_to?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          group_contact?: string | null
+          id?: string | null
+          intentional_no_outreach?: boolean | null
+          intentional_no_outreach_date?: string | null
+          intentional_no_outreach_note?: string | null
+          last_name?: string | null
+          latest_contact_email?: never
+          latest_contact_meeting?: never
+          lg_assistant?: string | null
+          lg_focus_area_1?: string | null
+          lg_focus_area_2?: string | null
+          lg_focus_area_3?: string | null
+          lg_focus_area_4?: string | null
+          lg_focus_area_5?: string | null
+          lg_focus_area_6?: string | null
+          lg_focus_area_7?: string | null
+          lg_focus_area_8?: string | null
+          lg_focus_areas_comprehensive_list?: string | null
+          lg_lead?: string | null
+          lg_sector?: string | null
+          linkedin_url?: string | null
+          meeting_cc?: string | null
+          meeting_from?: string | null
+          meeting_title?: string | null
+          meeting_to?: string | null
+          most_recent_contact?: never
+          no_of_lg_focus_areas?: number | null
+          no_of_opps_sourced?: number | null
+          notes?: string | null
+          of_emails?: number | null
+          of_meetings?: number | null
+          organization?: string | null
+          outreach_date?: string | null
+          phone?: string | null
+          state?: string | null
+          title?: string | null
+          total_of_contacts?: number | null
+          updated_at?: string | null
+          url_to_online_bio?: string | null
+          x_twitter_url?: string | null
+        }
+        Relationships: []
+      }
       focus_area_options_v: {
         Row: {
           focus_area: string | null
@@ -2292,6 +2475,18 @@ export type Database = {
           lead2_name: string
           sector_id: string
         }[]
+      }
+      get_latest_contact_email: {
+        Args: { p_email: string }
+        Returns: string
+      }
+      get_latest_contact_meeting: {
+        Args: { p_email: string }
+        Returns: string
+      }
+      get_most_recent_contact_dynamic: {
+        Args: { p_email: string }
+        Returns: string
       }
       get_opps_for_contact: {
         Args: { full_name: string; limit_n?: number }
