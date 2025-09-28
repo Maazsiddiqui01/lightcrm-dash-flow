@@ -102,6 +102,14 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
       query = query.in('delta_type', filters.deltaType);
     }
 
+    // LG Lead filter - handle comma-separated values
+    if (filters.lgLead && filters.lgLead.length > 0) {
+      const leadConditions = filters.lgLead.map(lead => 
+        `lg_lead.ilike.%${lead}%`
+      ).join(',');
+      query = query.or(leadConditions);
+    }
+
     // Has opportunities filter
     if (filters.hasOpportunities && filters.hasOpportunities.length > 0) {
       filters.hasOpportunities.forEach(hasOpp => {

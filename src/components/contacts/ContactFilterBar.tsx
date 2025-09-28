@@ -20,6 +20,7 @@ import {
   useOpportunityLeads,
   useDistinctOptions
 } from '@/hooks/useDistinctOptions';
+import { useContactLgLeads } from '@/hooks/useContactLgLeads';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSectors } from '@/hooks/useLookups';
@@ -99,12 +100,15 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
   // Fetch group contacts
   const { data: groupContactOptions = [], isLoading: groupContactsLoading } = useGroupContacts();
 
+  // Fetch distinct options for contact LG leads
+  const { data: contactLgLeadOptions = [], isLoading: contactLgLeadsLoading } = useContactLgLeads();
+  
   // Fetch distinct options for opportunity filters
   const { data: tierOptions = [], isLoading: tiersLoading } = useOpportunityTiers();
   const { data: platformAddonOptions = [], isLoading: platformAddonsLoading } = useOpportunityPlatformAddOn();
   const { data: ownershipTypeOptions = [], isLoading: ownershipTypesLoading } = useOpportunityOwnershipTypes();
   const { data: statusOptions = [], isLoading: statusLoading } = useOpportunityStatuses();
-  const { data: lgLeadOptions = [], isLoading: lgLeadsLoading } = useOpportunityLeads();
+  const { data: opportunityLgLeadOptions = [], isLoading: opportunityLgLeadsLoading } = useOpportunityLeads();
 
   // Delta type options (static)
   const deltaTypeOptions = [
@@ -309,14 +313,14 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
           </div>
         </div>
 
-        {/* LG Lead */}
+        {/* Contact LG Lead */}
         <ComboboxMulti
-          label="LG Lead"
-          options={lgLeadOptions}
+          label="Contact LG Lead"
+          options={contactLgLeadOptions}
           values={filters.lgLead || []}
           onChange={(values) => handleFilterChange('lgLead', values)}
-          searchPlaceholder="Search LG Leads"
-          loading={lgLeadsLoading}
+          searchPlaceholder="Search Contact LG Leads"
+          loading={contactLgLeadsLoading}
         />
 
         {/* Group Contact */}
@@ -387,14 +391,14 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
             loading={statusLoading}
           />
 
-          {/* LG Lead */}
+          {/* Opportunity LG Lead */}
           <ComboboxMulti
-            label="LG Lead"
-            options={lgLeadOptions}
+            label="Opportunity LG Lead"
+            options={opportunityLgLeadOptions}
             values={filters.opportunityLgLead || []}
             onChange={(values) => handleOpportunityFilterChange('lgLead', values)}
-            searchPlaceholder="Search LG Leads"
-            loading={lgLeadsLoading}
+            searchPlaceholder="Search Opportunity LG Leads"
+            loading={opportunityLgLeadsLoading}
           />
 
           {/* EBITDA Range */}
