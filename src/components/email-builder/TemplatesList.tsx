@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Plus, Copy, Trash2 } from "lucide-react";
 import { useEmailTemplatesQuery, useDeleteTemplateMutation, useDuplicateTemplateMutation, EmailTemplate } from "@/hooks/useEmailTemplates";
+import { TemplateEditorModal } from "./TemplateEditorModal";
 import { cn } from "@/lib/utils";
 
 interface TemplatesListProps {
@@ -14,6 +15,8 @@ interface TemplatesListProps {
 
 export function TemplatesList({ selectedTemplate, onTemplateSelect }: TemplatesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [showEditor, setShowEditor] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const { data: templates = [], isLoading } = useEmailTemplatesQuery();
   const deleteTemplateMutation = useDeleteTemplateMutation();
   const duplicateTemplateMutation = useDuplicateTemplateMutation();
@@ -25,7 +28,7 @@ export function TemplatesList({ selectedTemplate, onTemplateSelect }: TemplatesL
   const handleNewTemplate = () => {
     const newTemplate: EmailTemplate = {
       id: 'new',
-      name: 'New Template',
+      name: '',
       description: '',
       is_preset: false,
       gb_present: false,
@@ -39,7 +42,13 @@ export function TemplatesList({ selectedTemplate, onTemplateSelect }: TemplatesL
       custom_instructions: '',
       custom_insertion: 'before_closing',
     };
-    onTemplateSelect(newTemplate);
+    setEditingTemplate(newTemplate);
+    setShowEditor(true);
+  };
+
+  const handleEditTemplate = (template: EmailTemplate) => {
+    setEditingTemplate(template);
+    setShowEditor(true);
   };
 
   const handleDuplicate = (template: EmailTemplate) => {
@@ -106,7 +115,7 @@ export function TemplatesList({ selectedTemplate, onTemplateSelect }: TemplatesL
               "cursor-pointer transition-colors hover:bg-accent",
               selectedTemplate?.id === template.id && "ring-2 ring-primary bg-accent"
             )}
-            onClick={() => onTemplateSelect(template)}
+            onClick={() => handleEditTemplate(template)}
           >
             <CardContent className="p-3">
               <div className="flex items-start justify-between mb-2">
@@ -155,6 +164,21 @@ export function TemplatesList({ selectedTemplate, onTemplateSelect }: TemplatesL
           </Card>
         ))}
       </div>
+
+      {/* Template Editor Modal */}
+      <TemplateEditorModal
+        open={showEditor}
+        onClose={() => {
+          setShowEditor(false);
+          setEditingTemplate(null);
+        }}
+        template={editingTemplate}
+        onSaved={(template) => {
+          onTemplateSelect(template);
+          setShowEditor(false);
+          setEditingTemplate(null);
+        }}
+      />
     </div>
   );
 }
