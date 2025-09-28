@@ -2056,6 +2056,13 @@ export type Database = {
           lead_name: string
         }[]
       }
+      calculate_contact_leads_and_assistants: {
+        Args: { p_focus_areas_list: string }
+        Returns: {
+          assistants: string
+          leads: string
+        }[]
+      }
       canonical_focus_area: {
         Args: { input_text: string }
         Returns: string
@@ -2296,6 +2303,10 @@ export type Database = {
           status: string
           tier: string
         }[]
+      }
+      refresh_all_contact_leads_assistants: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       refresh_missing_contacts: {
         Args: { p_exclude_domain?: string }
