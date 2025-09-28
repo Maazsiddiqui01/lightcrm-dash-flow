@@ -20,8 +20,10 @@ export function getComparableValue(value: any, columnKey: string): any {
       columnKey === 'most_recent_contact' || columnKey === 'latest_contact_email' ||
       columnKey === 'latest_contact_meeting' || columnKey === 'occurred_at' ||
       columnKey === 'created_at' || columnKey === 'updated_at') {
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? 0 : date.getTime();
+    // Import parseFlexibleDate here to avoid circular imports
+    const { parseFlexibleDate } = require('@/utils/dateUtils');
+    const date = parseFlexibleDate(value);
+    return date ? date.getTime() : 0;
   }
   
   // Handle numeric columns - more comprehensive detection

@@ -2,7 +2,8 @@ import React from 'react';
 import { ColumnDef } from '@/components/shared/AdvancedTable';
 import { TableColumn } from '@/lib/supabase/getTableColumns';
 import { editableColumns, EditableFieldConfig, getNonEditableColumns, getHiddenByDefaultColumns } from '@/config/editableColumns';
-import { format, isValid, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { parseFlexibleDate } from '@/utils/dateUtils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EditableCell } from '@/components/shared/EditableCell';
 import { Badge } from '@/components/ui/badge';
@@ -27,13 +28,9 @@ export const formatCellValue = (value: any, column: TableColumn): string => {
   if (value === null || value === undefined) return '';
   
   if (column.type === 'timestamp with time zone') {
-    try {
-      const date = typeof value === 'string' ? parseISO(value) : new Date(value);
-      if (isValid(date)) {
-        return format(date, 'MMM dd, yyyy');
-      }
-    } catch {
-      // If parsing fails, return the raw value
+    const date = parseFlexibleDate(value);
+    if (date) {
+      return format(date, 'MMM dd, yyyy');
     }
   }
   

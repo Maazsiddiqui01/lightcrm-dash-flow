@@ -1,4 +1,5 @@
-import { format, addDays, differenceInDays, parseISO } from 'date-fns';
+import { format, addDays, differenceInDays } from 'date-fns';
+import { parseFlexibleDate } from '@/utils/dateUtils';
 
 /**
  * Calculate days over/under max lag for a contact
@@ -19,7 +20,8 @@ export function calculateDaysOverUnderMaxLag(
 
   try {
     const today = new Date();
-    const contactDate = parseISO(mostRecentContact);
+    const contactDate = parseFlexibleDate(mostRecentContact);
+    if (!contactDate) return null;
     const nextContactDue = addDays(contactDate, maxLagDays);
     
     // Calculate difference: (outreach date) - today
