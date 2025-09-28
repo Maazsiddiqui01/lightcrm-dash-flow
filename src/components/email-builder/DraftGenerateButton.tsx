@@ -32,8 +32,13 @@ export function DraftGenerateButton({
   const draftMutation = useDraftBuilder();
   const { toast } = useToast();
 
-  // Validation
-  const canGenerate = contactData && contactData.email && contactData.focus_areas.length > 0;
+  // Validation - more robust checks
+  const canGenerate = contactData && 
+    contactData.email && 
+    contactData.focus_areas && 
+    contactData.focus_areas.length > 0 &&
+    masterTemplate;
+  
   const hasWarning = deltaType === 'Meeting' && 
     (!contactData?.assistant_emails || contactData.assistant_emails.length === 0);
 
@@ -117,8 +122,10 @@ export function DraftGenerateButton({
           <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg">
             <AlertTriangle className="h-4 w-4" />
             <span className="text-sm">
-              {!contactData?.email && "Contact email required. "}
-              {contactData?.focus_areas.length === 0 && "At least one focus area required."}
+              {!contactData && "Please select a contact. "}
+              {contactData && !contactData.email && "Contact email required. "}
+              {contactData && (!contactData.focus_areas || contactData.focus_areas.length === 0) && "At least one focus area required. "}
+              {!masterTemplate && "Template routing required."}
             </span>
           </div>
         )}
