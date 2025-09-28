@@ -22,7 +22,6 @@ const menuItems = [
   { title: "Interactions", url: "/interactions", icon: MessageSquare },
   { title: "Articles", url: "/articles", icon: FileText },
   { title: "Email Builder", url: "/email-builder", icon: Mail },
-  { title: "Contacts Email", url: "/contacts-email", icon: Mail },
   { title: "KPIs", url: "/kpis", icon: BarChart3 },
   { title: "Tom New View", url: "/tom-new-view", icon: Eye },
   { title: "Make Your Own View", url: "/make-your-own-view", icon: Table },
