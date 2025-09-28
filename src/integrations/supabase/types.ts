@@ -2127,13 +2127,13 @@ export type Database = {
       }
       v_contact_email_composer: {
         Row: {
-          articles: Json[] | null
+          articles: Json | null
           assistant_emails: string[] | null
           assistant_names: string[] | null
           contact_id: string | null
           email: string | null
           fa_count: number | null
-          fa_descriptions: Json[] | null
+          fa_descriptions: Json | null
           fa_sectors: string[] | null
           first_name: string | null
           focus_areas: string[] | null
@@ -2145,7 +2145,7 @@ export type Database = {
           lg_emails_cc: string | null
           ls_present: boolean | null
           most_recent_contact: string | null
-          opps: Json[] | null
+          opps: Json | null
           organization: string | null
           outreach_date: string | null
         }
