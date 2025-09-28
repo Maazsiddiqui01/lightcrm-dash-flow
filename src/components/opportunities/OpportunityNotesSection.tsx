@@ -6,6 +6,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { ChevronDown, ChevronUp, Copy, CalendarIcon, Clock } from 'lucide-react';
 import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -27,7 +29,7 @@ interface OpportunityNotesSectionProps {
   currentValue: string | null;
   currentDueDate?: string | null;
   timeline: OpportunityNote[];
-  onSave: (content: string, dueDate?: string) => void;
+  onSave: (content: string, dueDate?: string, addInToDo?: boolean) => void;
   isSaving: boolean;
   isLoadingCurrent: boolean;
   isLoadingTimeline: boolean;
@@ -46,6 +48,7 @@ export function OpportunityNotesSection({
 }: OpportunityNotesSectionProps) {
   const [draft, setDraft] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [addInToDo, setAddInToDo] = useState(true);
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
@@ -68,7 +71,7 @@ export function OpportunityNotesSection({
   const handleSave = () => {
     if (draft.trim() !== (currentValue || '').trim() || (isNextSteps && dueDate !== (currentDueDate ? new Date(currentDueDate) : undefined))) {
       const dueDateString = dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined;
-      onSave(draft.trim(), dueDateString);
+      onSave(draft.trim(), dueDateString, isNextSteps ? addInToDo : undefined);
     }
   };
 
@@ -198,10 +201,21 @@ export function OpportunityNotesSection({
                       />
                     </PopoverContent>
                   </Popover>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="add-in-todo-section"
+                      checked={addInToDo}
+                      onCheckedChange={(checked) => setAddInToDo(checked as boolean)}
+                    />
+                    <Label htmlFor="add-in-todo-section" className="text-sm font-medium">
+                      Add in To Do
+                    </Label>
+                  </div>
                 </div>
               )}
               
-              <Button 
+              <Button
                 onClick={handleSave} 
                 disabled={!canSave || isSaving}
                 size="sm"

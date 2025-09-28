@@ -62,7 +62,7 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
 
   // Save next steps mutation
   const saveNextStepsMutation = useMutation({
-    mutationFn: async ({ opportunityId, content, dueDate }: { opportunityId: string; content: string; dueDate?: string }) => {
+    mutationFn: async ({ opportunityId, content, dueDate, addInToDo }: { opportunityId: string; content: string; dueDate?: string; addInToDo?: boolean }) => {
       const { error } = await supabase.rpc('add_opportunity_note', {
         p_opportunity_id: opportunityId,
         p_field: 'next_steps',
@@ -72,7 +72,7 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
 
       if (error) throw error;
       
-      return { content, dueDate };
+      return { content, dueDate, addInToDo };
     },
     onSuccess: async (data) => {
       toast({
@@ -92,6 +92,7 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
               opportunityName: opportunityName,
               nextSteps: data.content,
               dueDate: data.dueDate || null,
+              addInToDo: data.addInToDo !== undefined ? data.addInToDo : true,
             }),
           });
         } catch (error) {
@@ -150,9 +151,9 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
     timeline: timelineQuery.data || [],
     isLoadingCurrent: currentNotesQuery.isLoading,
     isLoadingTimeline: timelineQuery.isLoading,
-    saveNextSteps: (content: string, dueDate?: string) => {
+    saveNextSteps: (content: string, dueDate?: string, addInToDo?: boolean) => {
       if (!opportunityId) return;
-      saveNextStepsMutation.mutate({ opportunityId, content, dueDate });
+      saveNextStepsMutation.mutate({ opportunityId, content, dueDate, addInToDo });
     },
     saveMostRecentNotes: (content: string) => {
       if (!opportunityId) return;

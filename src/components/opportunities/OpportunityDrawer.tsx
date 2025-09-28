@@ -612,7 +612,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             currentValue={currentNotes?.next_steps || null}
             currentDueDate={currentNotes?.next_steps_due_date || null}
             timeline={timeline}
-            onSave={(content, dueDate) => saveNextSteps(content, dueDate)}
+            onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
             isSaving={isSavingNextSteps}
             isLoadingCurrent={isLoadingCurrent}
             isLoadingTimeline={isLoadingTimeline}
