@@ -196,31 +196,12 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         contactsQuery = contactsQuery.lte('delta', deltaMax);
       }
 
-      // Filter contacts by LG Lead if specified (contacts that have opportunities with these leads)
+      // Filter contacts by LG Lead if specified (contact's lg_lead field)
       if (lgLead.length > 0) {
-        // First get opportunities that match the LG Lead criteria
-        const lgLeadOppsQuery = supabase
-          .from("opportunities_raw")
-          .select("deal_source_individual_1, deal_source_individual_2");
-        
-        const leadQuery = lgLead.map(lead => 
-          `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
+        const leadConditions = lgLead.map(lead => 
+          `lg_lead.ilike.%${lead}%`
         ).join(',');
-        
-        const { data: lgLeadOpps } = await lgLeadOppsQuery.or(leadQuery);
-        
-        if (lgLeadOpps && lgLeadOpps.length > 0) {
-          const sourceNames = new Set();
-          lgLeadOpps.forEach(opp => {
-            if (opp.deal_source_individual_1) sourceNames.add(opp.deal_source_individual_1.toLowerCase().trim());
-            if (opp.deal_source_individual_2) sourceNames.add(opp.deal_source_individual_2.toLowerCase().trim());
-          });
-          
-          if (sourceNames.size > 0) {
-            const nameQueries = Array.from(sourceNames).map(name => `full_name.ilike.${name}`).join(',');
-            contactsQuery = contactsQuery.or(nameQueries);
-          }
-        }
+        contactsQuery = contactsQuery.or(leadConditions);
       }
 
       const { data: contactsData, error: contactsError } = await contactsQuery;
