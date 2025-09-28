@@ -402,7 +402,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               {/* Funds */}
               <SingleSelectDropdown
                 label="Funds"
-                options={['LG Fund VI', 'LG Horizons']}
+                options={['LG Fund VI']}
                 value={editedFields.funds || ""}
                 onChange={(value) => handleFieldChange("funds", value)}
                 placeholder="Select funds"

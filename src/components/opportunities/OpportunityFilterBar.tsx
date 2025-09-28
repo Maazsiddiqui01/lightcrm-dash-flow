@@ -247,8 +247,7 @@ export function OpportunityFilterBar({
         <ComboboxMulti
           label="Funds"
           options={[
-            { value: 'LG Fund VI', label: 'LG Fund VI' },
-            { value: 'LG Horizons', label: 'LG Horizons' }
+            { value: 'LG Fund VI', label: 'LG Fund VI' }
           ]}
           values={filters.funds || []}
           onChange={(values) => updateFilter('funds', values)}

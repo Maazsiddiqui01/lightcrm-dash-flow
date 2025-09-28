@@ -402,7 +402,7 @@ export const editableColumns: EditableConfig = {
     },
     funds: {
       type: 'select',
-      options: ['LG Fund VI', 'LG Horizons']
+      options: ['LG Fund VI']
     },
     platform_add_on: { 
       type: 'select',
