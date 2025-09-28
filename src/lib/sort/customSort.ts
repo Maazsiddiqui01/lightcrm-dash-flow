@@ -82,10 +82,10 @@ export function createLevelComparator<T>(level: SortLevel) {
     const compA = getComparableValue(valueA, level.id);
     const compB = getComparableValue(valueB, level.id);
     
-    // Handle nulls (always last for asc, first for desc)
+    // Handle nulls (always last regardless of sort direction)
     if (compA === null && compB === null) return 0;
-    if (compA === null) return level.desc ? -1 : 1;
-    if (compB === null) return level.desc ? 1 : -1;
+    if (compA === null) return 1; // A (null) goes after B
+    if (compB === null) return -1; // B (null) goes after A
     
     // Compare values
     let result = 0;
