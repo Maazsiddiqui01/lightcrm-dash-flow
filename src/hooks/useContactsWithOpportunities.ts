@@ -204,6 +204,11 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         contactsQuery = contactsQuery.or(leadConditions);
       }
 
+      // Performance: sort by most recent and limit result set to avoid timeouts
+      contactsQuery = contactsQuery
+        .order('most_recent_contact', { ascending: false, nullsFirst: false })
+        .limit(1000);
+
       const { data: contactsData, error: contactsError } = await contactsQuery;
 
       if (contactsError) {
@@ -211,12 +216,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         return;
       }
 
-      // Get all opportunities with filters
-      let opportunitiesQuery = supabase
-        .from("opportunities_raw")
-        .select("deal_name, deal_source_individual_1, deal_source_individual_2, tier, platform_add_on, ownership_type, status, date_of_origination, investment_professional_point_person_1, investment_professional_point_person_2, ebitda_in_ms");
-
-      // Apply opportunity filters
+      // Prepare opportunity filters
       const {
         tier = [],
         platformAddon = [],
@@ -229,55 +229,65 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         ebitdaMax
       } = opportunityFilters;
 
-      // Check if any opportunity filters are applied
+      // Determine if we need to query opportunities at all
       const hasOpportunityFilters = tier.length > 0 || platformAddon.length > 0 || ownershipType.length > 0 || 
         status.length > 0 || oppLgLead.length > 0 || dateRangeStart || dateRangeEnd || 
         (ebitdaMin !== null && ebitdaMin !== undefined) || (ebitdaMax !== null && ebitdaMax !== undefined);
 
-      if (tier.length > 0) {
-        opportunitiesQuery = opportunitiesQuery.in('tier', tier);
-      }
+      let opportunitiesData: any[] = [];
 
-      if (platformAddon.length > 0) {
-        opportunitiesQuery = opportunitiesQuery.in('platform_add_on', platformAddon);
-      }
+      if (hasOpportunityFilters) {
+        let opportunitiesQuery = supabase
+          .from('opportunities_raw')
+          .select('deal_name, deal_source_individual_1, deal_source_individual_2, tier, platform_add_on, ownership_type, status, date_of_origination, investment_professional_point_person_1, investment_professional_point_person_2, ebitda_in_ms');
 
-      if (ownershipType.length > 0) {
-        opportunitiesQuery = opportunitiesQuery.in('ownership_type', ownershipType);
-      }
+        if (tier.length > 0) {
+          opportunitiesQuery = opportunitiesQuery.in('tier', tier);
+        }
 
-      if (status.length > 0) {
-        opportunitiesQuery = opportunitiesQuery.in('status', status);
-      }
+        if (platformAddon.length > 0) {
+          opportunitiesQuery = opportunitiesQuery.in('platform_add_on', platformAddon);
+        }
 
-      if (oppLgLead.length > 0) {
-        const leadQuery = oppLgLead.map(lead => 
-          `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
-        ).join(',');
-        opportunitiesQuery = opportunitiesQuery.or(leadQuery);
-      }
+        if (ownershipType.length > 0) {
+          opportunitiesQuery = opportunitiesQuery.in('ownership_type', ownershipType);
+        }
 
-      if (ebitdaMin !== null && ebitdaMin !== undefined) {
-        opportunitiesQuery = opportunitiesQuery.gte('ebitda_in_ms', ebitdaMin);
-      }
+        if (status.length > 0) {
+          opportunitiesQuery = opportunitiesQuery.in('status', status);
+        }
 
-      if (ebitdaMax !== null && ebitdaMax !== undefined) {
-        opportunitiesQuery = opportunitiesQuery.lte('ebitda_in_ms', ebitdaMax);
-      }
+        if (oppLgLead.length > 0) {
+          const leadQuery = oppLgLead.map(lead => 
+            `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
+          ).join(',');
+          opportunitiesQuery = opportunitiesQuery.or(leadQuery);
+        }
 
-      if (dateRangeStart) {
-        opportunitiesQuery = opportunitiesQuery.gte('date_of_origination', dateRangeStart);
-      }
+        if (ebitdaMin !== null && ebitdaMin !== undefined) {
+          opportunitiesQuery = opportunitiesQuery.gte('ebitda_in_ms', ebitdaMin);
+        }
 
-      if (dateRangeEnd) {
-        opportunitiesQuery = opportunitiesQuery.lte('date_of_origination', dateRangeEnd);
-      }
+        if (ebitdaMax !== null && ebitdaMax !== undefined) {
+          opportunitiesQuery = opportunitiesQuery.lte('ebitda_in_ms', ebitdaMax);
+        }
 
-      const { data: opportunitiesData, error: opportunitiesError } = await opportunitiesQuery;
+        if (dateRangeStart) {
+          opportunitiesQuery = opportunitiesQuery.gte('date_of_origination', dateRangeStart);
+        }
 
-      if (opportunitiesError) {
-        console.error("Error fetching opportunities:", opportunitiesError);
-        return;
+        if (dateRangeEnd) {
+          opportunitiesQuery = opportunitiesQuery.lte('date_of_origination', dateRangeEnd);
+        }
+
+        const { data: oppData, error: opportunitiesError } = await opportunitiesQuery;
+
+        if (opportunitiesError) {
+          console.error('Error fetching opportunities:', opportunitiesError);
+          // Do not fail the contacts load due to opp errors
+        } else {
+          opportunitiesData = oppData || [];
+        }
       }
 
       // If opportunity filters are applied, filter contacts to only those with matching opportunities
