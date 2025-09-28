@@ -494,6 +494,38 @@ export type Database = {
         }
         Relationships: []
       }
+      email_template_settings: {
+        Row: {
+          core_overrides: Json | null
+          modules: Json | null
+          personalization: Json | null
+          sometimes_weights: Json | null
+          template_id: string
+        }
+        Insert: {
+          core_overrides?: Json | null
+          modules?: Json | null
+          personalization?: Json | null
+          sometimes_weights?: Json | null
+          template_id: string
+        }
+        Update: {
+          core_overrides?: Json | null
+          modules?: Json | null
+          personalization?: Json | null
+          sometimes_weights?: Json | null
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_template_settings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: true
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           created_at: string | null
@@ -1157,6 +1189,95 @@ export type Database = {
             columns: ["opportunity_id"]
             isOneToOne: false
             referencedRelation: "opps_date_norm"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phrase_library: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          focus_area_label: string | null
+          id: string
+          scope: string
+          style: string | null
+          template_id: string | null
+          text_value: string
+          tri_state: string
+          weight: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          focus_area_label?: string | null
+          id?: string
+          scope: string
+          style?: string | null
+          template_id?: string | null
+          text_value: string
+          tri_state?: string
+          weight?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          focus_area_label?: string | null
+          id?: string
+          scope?: string
+          style?: string | null
+          template_id?: string | null
+          text_value?: string
+          tri_state?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phrase_library_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phrase_rotation_log: {
+        Row: {
+          contact_id: string | null
+          id: string
+          phrase_id: string | null
+          scope: string
+          template_id: string | null
+          used_at: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          id?: string
+          phrase_id?: string | null
+          scope: string
+          template_id?: string | null
+          used_at?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          id?: string
+          phrase_id?: string | null
+          scope?: string
+          template_id?: string | null
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phrase_rotation_log_phrase_id_fkey"
+            columns: ["phrase_id"]
+            isOneToOne: false
+            referencedRelation: "phrase_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -2001,6 +2122,48 @@ export type Database = {
       ui_distinct_lg_sectors: {
         Row: {
           lg_sector: string | null
+        }
+        Relationships: []
+      }
+      v_contact_lag: {
+        Row: {
+          contact_id: string | null
+          email_address: string | null
+          first_name: string | null
+          full_name: string | null
+          lag_days: number | null
+          last_contact_date: string | null
+          organization: string | null
+          outreach_date: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          email_address?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          lag_days?: never
+          last_contact_date?: never
+          organization?: string | null
+          outreach_date?: never
+        }
+        Update: {
+          contact_id?: string | null
+          email_address?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          lag_days?: never
+          last_contact_date?: never
+          organization?: string | null
+          outreach_date?: never
+        }
+        Relationships: []
+      }
+      v_contact_top_opps: {
+        Row: {
+          contact_id: string | null
+          deal_name: string | null
+          ebitda_in_ms: number | null
+          rn: number | null
         }
         Relationships: []
       }
