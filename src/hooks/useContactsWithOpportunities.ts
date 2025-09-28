@@ -94,13 +94,19 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
   const [contacts, setContacts] = useState<ContactWithOpportunities[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
+    if (isFetching) return; // Prevent overlapping fetches
     fetchContactsWithOpportunities();
-  }, [filters]);
+  }, [JSON.stringify(filters)]);
 
   const fetchContactsWithOpportunities = async () => {
+    if (isFetching) return; // Prevent overlapping fetches
+    
     try {
+      setIsFetching(true);
+      
       // Only show full loading on initial load, use refreshing for subsequent updates
       if (contacts.length === 0) {
         setLoading(true);
@@ -213,7 +219,35 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
       if (contactsError) {
         console.error("Error fetching contacts:", contactsError);
-        return;
+        
+        // Fallback to contacts_app if dynamic view fails
+        try {
+          console.log("Falling back to contacts_app table...");
+          const fallbackQuery = supabase
+            .from("contacts_app")
+            .select("*")
+            .order('most_recent_contact', { ascending: false, nullsFirst: false })
+            .limit(1000);
+          
+          const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+          
+          if (fallbackError) {
+            console.error("Fallback query failed:", fallbackError);
+            return;
+          }
+          
+          // Use fallback data with empty opportunities
+          const fallbackContacts = (fallbackData || []).map(contact => ({
+            ...contact,
+            opportunities: ''
+          })) as ContactWithOpportunities[];
+          
+          setContacts(fallbackContacts);
+          return;
+        } catch (fallbackErr) {
+          console.error("Fallback failed:", fallbackErr);
+          return;
+        }
       }
 
       // Prepare opportunity filters
@@ -346,6 +380,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      setIsFetching(false);
     }
   };
 

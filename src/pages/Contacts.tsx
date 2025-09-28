@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useContactStats } from "@/hooks/useContactStats";
 import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { ContactFilterBar } from "@/components/contacts/ContactFilterBar";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
@@ -48,7 +48,8 @@ export function Contacts() {
     return undefined;
   };
 
-  const stats = useContactStats({
+  // Stabilize filters object to prevent infinite re-renders
+  const stableContactFilters = useMemo(() => ({
     ...filters,
     opportunityFilters: {
       tier: (filters.opportunityTier as string[]) || [],
@@ -61,7 +62,16 @@ export function Contacts() {
       ebitdaMin: getNumericValue(filters.opportunityEbitdaMin),
       ebitdaMax: getNumericValue(filters.opportunityEbitdaMax)
     }
-  });
+  }), [
+    filters.focusAreas, filters.sectors, filters.areasOfSpecialization, filters.organizations,
+    filters.titles, filters.categories, filters.deltaType, filters.hasOpportunities,
+    filters.mostRecentContactStart, filters.mostRecentContactEnd, filters.deltaMin, filters.deltaMax,
+    filters.opportunityTier, filters.opportunityPlatformAddon, filters.opportunityOwnershipType,
+    filters.opportunityStatus, filters.opportunityLgLead, filters.opportunityDateRangeStart,
+    filters.opportunityDateRangeEnd, filters.opportunityEbitdaMin, filters.opportunityEbitdaMax
+  ]);
+
+  const stats = useContactStats(stableContactFilters);
 
   return (
     <div className="min-h-0 flex-1">
@@ -137,20 +147,7 @@ export function Contacts() {
         </div>
 
         <ContactsTable 
-          filters={{
-            ...filters,
-            opportunityFilters: {
-              tier: (filters.opportunityTier as string[]) || [],
-              platformAddon: (filters.opportunityPlatformAddon as string[]) || [],
-              ownershipType: (filters.opportunityOwnershipType as string[]) || [],
-              status: (filters.opportunityStatus as string[]) || [],
-              lgLead: (filters.opportunityLgLead as string[]) || [],
-              dateRangeStart: filters.opportunityDateRangeStart as string,
-              dateRangeEnd: filters.opportunityDateRangeEnd as string,
-              ebitdaMin: getNumericValue(filters.opportunityEbitdaMin),
-              ebitdaMax: getNumericValue(filters.opportunityEbitdaMax)
-            }
-          }}
+          filters={stableContactFilters}
           onOpportunityColumnVisibilityChange={setShowOpportunityFilters}
         />
 
