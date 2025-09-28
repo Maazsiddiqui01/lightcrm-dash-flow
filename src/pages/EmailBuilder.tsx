@@ -4,10 +4,12 @@ import { ContactSelector } from "@/components/email-builder/ContactSelector";
 import { ContactInfoPanel } from "@/components/email-builder/ContactInfoPanel";
 import { TemplateSwitcher } from "@/components/email-builder/TemplateSwitcher";
 import { GenerateDraftButton } from "@/components/email-builder/GenerateDraftButton";
+import { DraftPreviewPanel } from "@/components/email-builder/DraftPreviewPanel";
 import { PreviewModal } from "@/components/email-builder/PreviewModal";
 import { Button } from "@/components/ui/button";
 import { Mail, Eye } from "lucide-react";
 import { useEmailBuilderData } from "@/hooks/useEmailBuilderData";
+import { useResolvedTemplateQuery } from "@/hooks/useResolvedTemplate";
 import type { EmailTemplate } from "@/hooks/useEmailTemplates";
 
 export function EmailBuilder() {
@@ -16,6 +18,17 @@ export function EmailBuilder() {
   const [showPreview, setShowPreview] = useState(false);
   
   const { contact, lag, opportunities, payload, isLoading } = useEmailBuilderData(selectedContactId, selectedTemplate);
+  
+  // Get resolved template data when we have template and contact
+  const resolvedInput = selectedTemplate && selectedContactId && contact ? {
+    template_id: selectedTemplate.id,
+    contact_id: selectedContactId,
+    faList: contact.lg_focus_areas_comprehensive_list?.split(',').map(fa => fa.trim()).filter(fa => fa) || [],
+    hasOpps: (contact.all_opps || 0) > 0,
+    lagDays: lag?.lag_days || 0
+  } : null;
+  
+  const { data: resolved, isLoading: isResolvingTemplate } = useResolvedTemplateQuery(resolvedInput);
 
   return (
     <div className="min-h-0 flex-1">
@@ -44,32 +57,33 @@ export function EmailBuilder() {
             )}
           </div>
 
-          {/* Right Column - Template & Generation */}
+          {/* Right Column - Template, Preview & Generation */}
           <div className="flex flex-col gap-6">
-            <TemplateSwitcher 
+            <TemplateSwitcher
               selectedTemplate={selectedTemplate}
               onTemplateSelect={setSelectedTemplate}
             />
             
             <div className="flex flex-col gap-4">
               {selectedContactId && selectedTemplate && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowPreview(true)}
-                    disabled={isLoading}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview Resolved Template
-                  </Button>
-                  
-                  <GenerateDraftButton 
-                    contactId={selectedContactId}
-                    template={selectedTemplate}
-                  />
-                </>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPreview(true)}
+                  disabled={isLoading || isResolvingTemplate}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview Template Config
+                </Button>
               )}
             </div>
+            
+            <DraftPreviewPanel 
+              contact={contact}
+              resolved={resolved}
+              payload={payload}
+              template={selectedTemplate}
+              isLoading={isLoading || isResolvingTemplate}
+            />
           </div>
         </div>
       </ResponsiveContainer>
