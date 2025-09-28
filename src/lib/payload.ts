@@ -208,9 +208,7 @@ export function buildDraftPayload(
       deltaType: uiState.deltaType,
       subjectMode: 'lg_first', // Default for now
       maxOpps: 3,
-      extraCC: undefined,
       chosenArticle: uiState.selectedArticle?.article_link || null,
-      customInstructions: undefined,
       customInsertion: 'before_closing',
       userSignatureName: 'Tom Luce',
     },
