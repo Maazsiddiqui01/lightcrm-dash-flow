@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Target, MessageSquare, Table, Bot, LogOut, Eye, BarChart3, FileText, Mail, MailOpen } from "lucide-react";
+import { Home, Users, Target, MessageSquare, Table, Bot, LogOut, Eye, BarChart3, FileText, Mail, MailOpen, Library } from "lucide-react";
 
 const menuItems = [
   { title: "Sourcing Greatness", url: "/sourcing-greatness", icon: BarChart3 },
@@ -22,6 +22,7 @@ const menuItems = [
   { title: "Interactions", url: "/interactions", icon: MessageSquare },
   { title: "Articles", url: "/articles", icon: FileText },
   { title: "Email Builder", url: "/email-builder", icon: Mail },
+  { title: "Global Libraries", url: "/global-libraries", icon: Library },
   { title: "Contacts Email", url: "/contacts-email", icon: MailOpen },
   { title: "KPIs", url: "/kpis", icon: BarChart3 },
   { title: "Tom New View", url: "/tom-new-view", icon: Eye },

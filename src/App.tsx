@@ -19,6 +19,7 @@ import Articles from "@/pages/Articles";
 import { EmailBuilder } from "@/pages/EmailBuilder";
 import { ContactsEmail } from "@/pages/ContactsEmail";
 import { DataMaintenance } from "@/pages/DataMaintenance";
+import { GlobalLibraries } from "@/pages/GlobalLibraries";
 import { Auth } from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
@@ -61,6 +62,7 @@ function App() {
                       <Route path="/interactions" element={<Interactions />} />
                       <Route path="/articles" element={<Articles />} />
                       <Route path="/email-builder" element={<EmailBuilder />} />
+                      <Route path="/global-libraries" element={<GlobalLibraries />} />
                       <Route path="/contacts-email" element={<ContactsEmail />} />
                       <Route path="/kpis" element={<KPIs />} />
                       <Route path="/meetings-with-team" element={<MeetingsWithTeam />} />
