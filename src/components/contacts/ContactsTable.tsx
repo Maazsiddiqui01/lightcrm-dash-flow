@@ -4,8 +4,9 @@ import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
 import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
 import { IntentionalNoOutreachModal } from "./IntentionalNoOutreachModal";
+import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
@@ -132,6 +133,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const [selectedContact, setSelectedContact] = useState<ContactRaw | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string>("most_recent_contact");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const [sortLevels, setSortLevels] = useState<SortLevel[]>([]);
@@ -472,10 +474,17 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
             icon={<Download className="h-4 w-4" />}
           />
 
-          <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Contact
-          </Button>
+          <SplitButton
+            label="Add Contact"
+            primaryAction={() => setIsAddDialogOpen(true)}
+            menu={[
+              { 
+                label: 'Import CSV', 
+                onClick: () => setIsImportModalOpen(true)
+              }
+            ]}
+            icon={<Plus className="h-4 w-4" />}
+          />
         </div>
       </div>
 
@@ -538,6 +547,14 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         contactName={intentionalNoOutreachModal.contactName}
         isCurrentlySkipped={intentionalNoOutreachModal.isCurrentlySkipped}
         onSuccess={() => refetch()}
+      />
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        open={isImportModalOpen}
+        onOpenChange={setIsImportModalOpen}
+        entityType="contacts"
+        onImportComplete={() => refetch()}
       />
 
       {/* Multi-Sort Dialog */}

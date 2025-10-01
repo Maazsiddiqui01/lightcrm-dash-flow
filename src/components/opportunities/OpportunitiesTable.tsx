@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
 import { OpportunityDrawer } from "./OpportunityDrawer";
 import { AddOpportunityDialog } from "./AddOpportunityDialog";
+import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle } from "lucide-react";
+import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
@@ -107,6 +108,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const [selectedOpportunity, setSelectedOpportunity] = useState<OpportunityRaw | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string>("created_at");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
@@ -520,10 +522,17 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
             icon={<Download className="h-4 w-4" />}
           />
 
-          <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Opportunity
-          </Button>
+          <SplitButton
+            label="Add Opportunity"
+            primaryAction={() => setIsAddDialogOpen(true)}
+            menu={[
+              { 
+                label: 'Import CSV', 
+                onClick: () => setIsImportModalOpen(true)
+              }
+            ]}
+            icon={<Plus className="h-4 w-4" />}
+          />
         </div>
       </div>
 
@@ -586,6 +595,14 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         opportunityId={selectedOpportunity?.id || ''}
         type={quickAddType}
         opportunityName={selectedOpportunity?.deal_name || ''}
+      />
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        open={isImportModalOpen}
+        onOpenChange={setIsImportModalOpen}
+        entityType="opportunities"
+        onImportComplete={() => fetchOpportunities()}
       />
     </div>
   );
