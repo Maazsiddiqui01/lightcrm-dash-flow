@@ -318,34 +318,65 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
             .in('id', batch);
           
           if (oppError) {
-            console.error('Error fetching opportunities from view:', oppError);
+            console.error('Error fetching opportunities from view (by id):', oppError);
           } else {
             opportunitiesData.push(...(oppData || []));
           }
         }
       }
 
-      console.log('💼 Total opportunities fetched:', opportunitiesData.length);
+      console.log('💼 Total opportunities fetched (by id):', opportunitiesData.length);
 
       // Build contact ID -> opportunities map
       const contactOppsMap = new Map<string, string>();
-      opportunitiesData.forEach(opp => {
-        if (opp.id && opp.opportunities) {
-          contactOppsMap.set(opp.id, opp.opportunities);
+      opportunitiesData.forEach((opp) => {
+        if (opp.id && typeof opp.opportunities === 'string') {
+          contactOppsMap.set(String(opp.id), opp.opportunities);
         }
       });
+
+      // Fallback: if nothing mapped by id, try matching by full_name
+      if (contactOppsMap.size === 0) {
+        const names = (contactsData || [])
+          .map((c) => c.full_name)
+          .filter((n): n is string => !!n);
+        if (names.length > 0) {
+          const uniqueNames = Array.from(new Set(names));
+          const BATCH_SIZE = 500;
+          for (let i = 0; i < uniqueNames.length; i += BATCH_SIZE) {
+            const batch = uniqueNames.slice(i, i + BATCH_SIZE);
+            const { data: oppByName, error: oppByNameErr } = await supabase
+              .from('contacts_with_opportunities_v')
+              .select('full_name, opportunities')
+              .in('full_name', batch);
+            if (oppByNameErr) {
+              console.error('Error fetching opportunities from view (by name):', oppByNameErr);
+            } else {
+              for (const row of oppByName || []) {
+                const opps = typeof row.opportunities === 'string' ? row.opportunities : '';
+                // assign opps to all contacts with this name
+                (contactsData || []).forEach((c) => {
+                  if (c.full_name && row.full_name && c.full_name === row.full_name) {
+                    contactOppsMap.set(String(c.id), opps);
+                  }
+                });
+              }
+            }
+          }
+        }
+      }
 
       console.log('📦 Opportunities map size:', contactOppsMap.size);
       console.log('📦 Sample opportunities:', Array.from(contactOppsMap.entries()).slice(0, 3));
 
       // Join contacts with their opportunities
-      const contactsWithOpportunities = contactsData?.map(contact => ({
+      const contactsWithOpportunities = contactsData?.map((contact) => ({
         ...contact,
-        opportunities: contactOppsMap.get(contact.id) || ''
+        opportunities: contactOppsMap.get(String(contact.id)) || ''
       })) || [];
 
       console.log('🎯 Final contacts with opportunities:', contactsWithOpportunities.length);
-      console.log('🎯 Sample contact with opps:', contactsWithOpportunities.find(c => c.opportunities) || 'none found');
+      console.log('🎯 Sample contact with opps:', contactsWithOpportunities.find((c) => c.opportunities) || 'none found');
 
       setContacts(contactsWithOpportunities);
     } catch (error) {
