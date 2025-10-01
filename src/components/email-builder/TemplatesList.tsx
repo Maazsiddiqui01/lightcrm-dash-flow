@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Plus, Copy, Trash2 } from "lucide-react";
 import { useEmailTemplatesQuery, useDeleteTemplateMutation, useDuplicateTemplateMutation, EmailTemplate } from "@/hooks/useEmailTemplates";
-import { TemplateEditorModal } from "./TemplateEditorModal";
+import { TemplateConfigModal } from './TemplateConfigModal';
 import { cn } from "@/lib/utils";
 
 interface TemplatesListProps {
@@ -166,17 +166,13 @@ export function TemplatesList({ selectedTemplate, onTemplateSelect }: TemplatesL
       </div>
 
       {/* Template Editor Modal */}
-      <TemplateEditorModal
-        open={showEditor}
-        onClose={() => {
-          setShowEditor(false);
-          setEditingTemplate(null);
-        }}
+      <TemplateConfigModal
         template={editingTemplate}
-        onSaved={(template) => {
-          onTemplateSelect(template);
+        open={showEditor}
+        onOpenChange={setShowEditor}
+        onSave={(savedTemplate) => {
           setShowEditor(false);
-          setEditingTemplate(null);
+          onTemplateSelect(savedTemplate);
         }}
       />
     </div>
