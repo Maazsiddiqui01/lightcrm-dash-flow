@@ -155,7 +155,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
       // Areas of specialization
       if (areasOfSpecialization.length > 0) {
-        const areasQuery = areasOfSpecialization.map(area => `areas_of_specialization.ilike.%${area}%`).join(',');
+        const areasQuery = areasOfSpecialization.map(area => `areas_of_specialization.ilike.*${area}*`).join(',');
         contactsQuery = contactsQuery.or(areasQuery);
       }
 
@@ -208,7 +208,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       // Filter contacts by LG Lead if specified (contact's lg_lead field)
       if (lgLead.length > 0) {
         const leadConditions = lgLead.map(lead => 
-          `lg_lead.ilike.%${lead}%`
+          `lg_lead.ilike.*${lead}*`
         ).join(',');
         contactsQuery = contactsQuery.or(leadConditions);
       }
@@ -218,10 +218,22 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         contactsQuery = contactsQuery.in('group_contact', groupContacts);
       }
 
+      // Determine if opportunity filters are applied to adjust result size early
+      const hasOpportunityFilters =
+        (Array.isArray((opportunityFilters as any).tier) && (opportunityFilters as any).tier.length > 0) ||
+        (Array.isArray((opportunityFilters as any).platformAddon) && (opportunityFilters as any).platformAddon.length > 0) ||
+        (Array.isArray((opportunityFilters as any).ownershipType) && (opportunityFilters as any).ownershipType.length > 0) ||
+        (Array.isArray((opportunityFilters as any).status) && (opportunityFilters as any).status.length > 0) ||
+        (Array.isArray((opportunityFilters as any).lgLead) && (opportunityFilters as any).lgLead.length > 0) ||
+        !!(opportunityFilters as any).dateRangeStart ||
+        !!(opportunityFilters as any).dateRangeEnd ||
+        (opportunityFilters as any).ebitdaMin !== null && (opportunityFilters as any).ebitdaMin !== undefined ||
+        (opportunityFilters as any).ebitdaMax !== null && (opportunityFilters as any).ebitdaMax !== undefined;
+
       // Performance: sort by most recent and limit result set to avoid timeouts
       contactsQuery = contactsQuery
         .order('most_recent_contact', { ascending: false, nullsFirst: false })
-        .limit(1000);
+        .limit(hasOpportunityFilters ? 5000 : 1000);
 
       const { data: contactsData, error: contactsError } = await contactsQuery;
 
@@ -272,9 +284,8 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       } = opportunityFilters;
 
       // Determine if we need to query opportunities at all
-      const hasOpportunityFilters = tier.length > 0 || platformAddon.length > 0 || ownershipType.length > 0 || 
-        status.length > 0 || oppLgLead.length > 0 || dateRangeStart || dateRangeEnd || 
-        (ebitdaMin !== null && ebitdaMin !== undefined) || (ebitdaMax !== null && ebitdaMax !== undefined);
+      // hasOpportunityFilters computed earlier based on opportunityFilters
+
 
       let opportunitiesData: any[] = [];
 
@@ -301,7 +312,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
         if (oppLgLead.length > 0) {
           const leadQuery = oppLgLead.map(lead => 
-            `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
+            `investment_professional_point_person_1.ilike.*${lead}*,investment_professional_point_person_2.ilike.*${lead}*`
           ).join(',');
           opportunitiesQuery = opportunitiesQuery.or(leadQuery);
         }
