@@ -11,7 +11,19 @@ export type PhraseCategory =
   | 'inquiry_article'
   | 'inquiry_focus_area'
   | 'inquiry_generic'
-  | 'ps';
+  | 'ps'
+  | 'top_opportunities'
+  | 'article_recommendations'
+  | 'platforms'
+  | 'addons'
+  | 'talking_points'
+  | 'org_update'
+  | 'attachments'
+  | 'focus_area_defaults'
+  | 'self_personalization'
+  | 'ai_backup'
+  | 'team_mention'
+  | 'assistant_cc';
 
 export interface PhraseLibraryItem {
   id: string;
@@ -86,7 +98,19 @@ export const PHRASE_CATEGORIES: Record<PhraseCategory, string> = {
   inquiry_article: 'Inquiry: Article',
   inquiry_focus_area: 'Inquiry: Focus Area',
   inquiry_generic: 'Inquiry: Generic',
-  ps: 'P.S. Lines'
+  ps: 'P.S. Lines',
+  top_opportunities: 'Top Opportunities',
+  article_recommendations: 'Article Recommendations',
+  platforms: 'Platforms',
+  addons: 'Add-on Opportunities',
+  talking_points: 'Suggested Talking Points',
+  org_update: 'General Org Update',
+  attachments: 'Attachments',
+  focus_area_defaults: 'Focus Area Defaults',
+  self_personalization: 'Self Personalization',
+  ai_backup: 'AI Backup Personalization',
+  team_mention: 'Team Mention',
+  assistant_cc: 'Assistant CC'
 };
 
 export const MODULE_LABELS: Record<string, string> = {

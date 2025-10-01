@@ -1,133 +1,75 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { TemplateSettings } from '@/types/phraseLibrary';
 
-export interface PhraseLibraryItem {
-  id: string;
-  template_id: string;
-  scope: string;
-  focus_area_label?: string;
-  text_value: string;
-  tri_state: 'Always' | 'Sometimes' | 'Never';
-  style?: string;
-  weight: number;
-  active: boolean;
-}
+// Re-export for backward compatibility
+export type { TemplateSettings } from '@/types/phraseLibrary';
+export type { PhraseLibraryItem } from '@/types/phraseLibrary';
 
-export interface TemplateSettings {
-  template_id: string;
-  core_overrides: {
-    maxLagDays?: number;
-    tone?: 'auto' | 'casual' | 'neutral' | 'formal';
-    length?: 'auto' | 'brief' | 'mid' | 'long';
-    subjectPools?: string[];
-    meetingRequest?: 'Always' | 'Sometimes' | 'Never';
-  };
-  modules: {
-    order: string[];
-    triState: Record<string, 'Always' | 'Sometimes' | 'Never'>;
-  };
-  personalization: Record<string, any>;
-  sometimes_weights: Record<string, any>;
-}
-
-const DEFAULT_MODULES = [
-  'Top Opportunities',
-  'Article Recommendations',
-  'Platforms',
-  'Add-ons',
-  'Suggested Talking Points',
-  'General Org Update',
-  'Attachments'
-];
+const DEFAULT_SETTINGS: Omit<TemplateSettings, 'template_id'> = {
+  tone_override: null,
+  length_override: null,
+  subject_pool_override: null,
+  days_range_config: {},
+  module_states: {
+    top_opportunities: 'always',
+    article_recommendations: 'sometimes',
+    platforms: 'sometimes',
+    addons: 'sometimes',
+    suggested_talking_points: 'sometimes',
+    general_org_update: 'sometimes',
+    attachments: 'never',
+    ps: 'sometimes',
+  },
+  personalization_config: {
+    sources: {
+      user_notes: 'always',
+      ai_notes: 'sometimes',
+      linkedin: 'always',
+      twitter: 'sometimes',
+      self_personalization: 'sometimes',
+      ai_backup: 'sometimes',
+    },
+    self_topics: [],
+  },
+  inquiry_config: {
+    priority: ['opportunity', 'article', 'focus_area', 'generic'],
+    min_inquiries: 1,
+    max_inquiries: 2,
+  },
+  quality_rules: {
+    skip_if_no_opps: false,
+    skip_if_no_articles: false,
+    min_personalization_score: 0,
+    ebitda_threshold: 30,
+  },
+};
 
 export function useTemplateSettings(templateId: string | null) {
   return useQuery({
-    queryKey: ['template_settings', templateId],
-    queryFn: async (): Promise<TemplateSettings | null> => {
-      if (!templateId) return null;
-      
-      try {
-        const { data, error } = await supabase
-          .from('email_template_settings' as any)
-          .select('*')
-          .eq('template_id', templateId)
-          .maybeSingle();
+    queryKey: ['template-settings', templateId],
+    queryFn: async () => {
+      if (!templateId) return { ...DEFAULT_SETTINGS, template_id: '' };
 
-        if (error) throw error;
-        
-        if (!data) {
-          // Return default settings if none exist
-          return {
-            template_id: templateId,
-            core_overrides: {
-              maxLagDays: 30,
-              tone: 'auto',
-              length: 'auto',
-              subjectPools: ['formal'],
-              meetingRequest: 'Sometimes'
-            },
-            modules: {
-              order: DEFAULT_MODULES,
-              triState: DEFAULT_MODULES.reduce((acc, module) => ({
-                ...acc,
-                [module]: 'Sometimes' as const
-              }), {})
-            },
-            personalization: {},
-            sometimes_weights: {}
-          };
+      const { data, error } = await supabase
+        .from('email_template_settings')
+        .select('*')
+        .eq('template_id', templateId)
+        .maybeSingle();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return { ...DEFAULT_SETTINGS, template_id: templateId };
         }
-
-        return data as unknown as TemplateSettings;
-      } catch (error) {
-        console.error('Failed to fetch template settings:', error);
-        // Return default settings on error
-        return {
-          template_id: templateId,
-          core_overrides: {
-            maxLagDays: 30,
-            tone: 'auto',
-            length: 'auto',
-            subjectPools: ['formal'],
-            meetingRequest: 'Sometimes'
-          },
-          modules: {
-            order: DEFAULT_MODULES,
-            triState: DEFAULT_MODULES.reduce((acc, module) => ({
-              ...acc,
-              [module]: 'Sometimes' as const
-            }), {})
-          },
-          personalization: {},
-          sometimes_weights: {}
-        };
+        throw error;
       }
-    },
-    enabled: !!templateId,
-  });
-}
 
-export function usePhraseLibrary(templateId: string | null) {
-  return useQuery({
-    queryKey: ['phrase_library', templateId],
-    queryFn: async (): Promise<PhraseLibraryItem[]> => {
-      if (!templateId) return [];
-      
-      try {
-        const { data, error } = await supabase
-          .from('phrase_library' as any)
-          .select('*')
-          .eq('template_id', templateId)
-          .order('scope')
-          .order('weight');
-
-        if (error) throw error;
-        return (data || []) as unknown as PhraseLibraryItem[];
-      } catch (error) {
-        console.error('Failed to fetch phrase library:', error);
-        return [];
+      if (!data) {
+        return { ...DEFAULT_SETTINGS, template_id: templateId };
       }
+
+      return data as TemplateSettings;
     },
     enabled: !!templateId,
   });
@@ -140,7 +82,7 @@ export function useUpdateTemplateSettings() {
   return useMutation({
     mutationFn: async (settings: TemplateSettings) => {
       const { data, error } = await supabase
-        .from('email_template_settings' as any)
+        .from('email_template_settings')
         .upsert(settings, { onConflict: 'template_id' })
         .select()
         .single();
@@ -148,59 +90,18 @@ export function useUpdateTemplateSettings() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['template_settings'] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['template-settings'] });
       toast({
-        title: "Settings Updated",
-        description: "Template settings have been saved successfully",
+        title: 'Settings saved',
+        description: 'Template settings have been updated',
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update template settings",
-        variant: "destructive",
-      });
-    },
-  });
-}
-
-export function useUpdatePhraseLibrary() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: async ({ templateId, phrases }: { templateId: string; phrases: PhraseLibraryItem[] }) => {
-      // Delete existing phrases for this template
-      await supabase
-        .from('phrase_library' as any)
-        .delete()
-        .eq('template_id', templateId);
-
-      // Insert new phrases
-      const { data, error } = await supabase
-        .from('phrase_library' as any)
-        .insert(phrases.map(phrase => ({
-          ...phrase,
-          template_id: templateId,
-        })))
-        .select();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['phrase_library', variables.templateId] });
-      toast({
-        title: "Phrases Updated",
-        description: "Phrase library has been saved successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Update Failed", 
-        description: error.message || "Failed to update phrase library",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
       });
     },
   });

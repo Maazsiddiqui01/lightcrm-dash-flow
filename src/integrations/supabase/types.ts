@@ -496,25 +496,37 @@ export type Database = {
       }
       email_template_settings: {
         Row: {
-          core_overrides: Json | null
-          modules: Json | null
-          personalization: Json | null
-          sometimes_weights: Json | null
+          days_range_config: Json | null
+          inquiry_config: Json | null
+          length_override: string | null
+          module_states: Json | null
+          personalization_config: Json | null
+          quality_rules: Json | null
+          subject_pool_override: string | null
           template_id: string
+          tone_override: string | null
         }
         Insert: {
-          core_overrides?: Json | null
-          modules?: Json | null
-          personalization?: Json | null
-          sometimes_weights?: Json | null
+          days_range_config?: Json | null
+          inquiry_config?: Json | null
+          length_override?: string | null
+          module_states?: Json | null
+          personalization_config?: Json | null
+          quality_rules?: Json | null
+          subject_pool_override?: string | null
           template_id: string
+          tone_override?: string | null
         }
         Update: {
-          core_overrides?: Json | null
-          modules?: Json | null
-          personalization?: Json | null
-          sometimes_weights?: Json | null
+          days_range_config?: Json | null
+          inquiry_config?: Json | null
+          length_override?: string | null
+          module_states?: Json | null
+          personalization_config?: Json | null
+          quality_rules?: Json | null
+          subject_pool_override?: string | null
           template_id?: string
+          tone_override?: string | null
         }
         Relationships: [
           {
@@ -885,6 +897,39 @@ export type Database = {
         }
         Relationships: []
       }
+      master_template_defaults: {
+        Row: {
+          created_at: string | null
+          days_max: number | null
+          days_min: number
+          default_modules: Json | null
+          length: string
+          master_key: string
+          subject_style: string
+          tone: string
+        }
+        Insert: {
+          created_at?: string | null
+          days_max?: number | null
+          days_min: number
+          default_modules?: Json | null
+          length: string
+          master_key: string
+          subject_style: string
+          tone: string
+        }
+        Update: {
+          created_at?: string | null
+          days_max?: number | null
+          days_min?: number
+          default_modules?: Json | null
+          length?: string
+          master_key?: string
+          subject_style?: string
+          tone?: string
+        }
+        Relationships: []
+      }
       n8n_chat_histories: {
         Row: {
           id: number
@@ -1195,39 +1240,39 @@ export type Database = {
       }
       phrase_library: {
         Row: {
-          active: boolean | null
+          category: string
           created_at: string | null
-          focus_area_label: string | null
           id: string
-          scope: string
-          style: string | null
+          is_global: boolean | null
+          phrase_text: string
+          sync_behavior: string | null
           template_id: string | null
-          text_value: string
           tri_state: string
+          updated_at: string | null
           weight: number | null
         }
         Insert: {
-          active?: boolean | null
+          category: string
           created_at?: string | null
-          focus_area_label?: string | null
           id?: string
-          scope: string
-          style?: string | null
+          is_global?: boolean | null
+          phrase_text: string
+          sync_behavior?: string | null
           template_id?: string | null
-          text_value: string
           tri_state?: string
+          updated_at?: string | null
           weight?: number | null
         }
         Update: {
-          active?: boolean | null
+          category?: string
           created_at?: string | null
-          focus_area_label?: string | null
           id?: string
-          scope?: string
-          style?: string | null
+          is_global?: boolean | null
+          phrase_text?: string
+          sync_behavior?: string | null
           template_id?: string | null
-          text_value?: string
           tri_state?: string
+          updated_at?: string | null
           weight?: number | null
         }
         Relationships: [
@@ -1243,41 +1288,108 @@ export type Database = {
       phrase_rotation_log: {
         Row: {
           contact_id: string | null
+          email_type: string | null
           id: string
           phrase_id: string | null
-          scope: string
-          template_id: string | null
           used_at: string | null
         }
         Insert: {
           contact_id?: string | null
+          email_type?: string | null
           id?: string
           phrase_id?: string | null
-          scope: string
-          template_id?: string | null
           used_at?: string | null
         }
         Update: {
           contact_id?: string | null
+          email_type?: string | null
           id?: string
           phrase_id?: string | null
-          scope?: string
-          template_id?: string | null
           used_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
           {
             foreignKeyName: "phrase_rotation_log_phrase_id_fkey"
             columns: ["phrase_id"]
             isOneToOne: false
             referencedRelation: "phrase_library"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "phrase_rotation_log_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "email_templates"
             referencedColumns: ["id"]
           },
         ]

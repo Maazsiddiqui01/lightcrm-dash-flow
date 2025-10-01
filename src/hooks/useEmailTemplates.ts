@@ -174,3 +174,8 @@ export function useDuplicateTemplateMutation() {
     },
   });
 }
+
+// Aliases for backward compatibility
+export const useCreateTemplate = useCreateTemplateMutation;
+export const useUpdateTemplate = useUpdateTemplateMutation;
+export const useEmailTemplates = useEmailTemplatesQuery;
