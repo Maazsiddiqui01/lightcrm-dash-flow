@@ -372,11 +372,11 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     setSortDirection(direction);
   };
 
-  // New export function using the shared service
-  const handleExport = async (mode: 'current' | 'detailed') => {
+  // Simplified export function - exports visible columns of filtered rows
+  const handleExport = async () => {
     setIsExporting(true);
     
-    // For now, use all visible columns from the dynamic columns
+    // Get only visible columns
     const visibleColumns = dynamicColumns
       .filter(col => columnVisibility.columnVisibility[col.key] !== false)
       .map(col => col.key);
@@ -388,7 +388,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     try {
       await exportCsv({
         page: 'contacts',
-        mode,
+        mode: 'current', // Always export current view
         selectedIds: undefined, // No selection support yet
         filters: { searchTerm },
         sortLevels,
@@ -463,16 +463,19 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
             Sort
           </Button>
           
-          <SplitButton
-            label="Export"
-            primaryAction={() => handleExport('current')}
-            menu={[
-              { label: 'Detailed (all columns)', onClick: () => handleExport('detailed') }
-            ]}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
             disabled={isExporting}
-            loading={isExporting}
-            icon={<Download className="h-4 w-4" />}
-          />
+          >
+            {isExporting ? (
+              <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Export
+          </Button>
 
           <SplitButton
             label="Add Contact"
