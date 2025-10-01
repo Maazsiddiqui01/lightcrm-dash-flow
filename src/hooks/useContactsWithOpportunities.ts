@@ -117,6 +117,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       }
 
       // First get all contacts with filters using dynamic view
+      let effectiveContactsData: any[] | null = null;
       let contactsQuery = supabase
         .from("contacts_with_dynamic_interactions")
         .select("*");
@@ -291,8 +292,8 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
       if (hasOpportunityFilters) {
         let opportunitiesQuery = supabase
-          .from('opportunities_raw')
-          .select('deal_name, deal_source_individual_1, deal_source_individual_2, tier, platform_add_on, ownership_type, status, date_of_origination, investment_professional_point_person_1, investment_professional_point_person_2, ebitda_in_ms');
+          .from('opportunities_norm')
+          .select('deal_name, norm_src_1, norm_src_2, tier, platform_add_on, ownership_type, status, date_of_origination, investment_professional_point_person_1, investment_professional_point_person_2, ebitda_in_ms');
 
         if (tier.length > 0) {
           opportunitiesQuery = opportunitiesQuery.in('tier', tier);
@@ -350,18 +351,18 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         // Get unique contact names from filtered opportunities
         const contactNamesWithOpps = new Set<string>();
         opportunitiesData.forEach(opp => {
-          if (opp.deal_source_individual_1) {
-            contactNamesWithOpps.add(opp.deal_source_individual_1.toLowerCase().trim());
+          if (opp.norm_src_1) {
+            contactNamesWithOpps.add(String(opp.norm_src_1).toLowerCase().replace(/\s+/g, ' ').trim());
           }
-          if (opp.deal_source_individual_2) {
-            contactNamesWithOpps.add(opp.deal_source_individual_2.toLowerCase().trim());
+          if (opp.norm_src_2) {
+            contactNamesWithOpps.add(String(opp.norm_src_2).toLowerCase().replace(/\s+/g, ' ').trim());
           }
         });
 
         // Filter contacts to only include those who sourced the filtered opportunities
         finalContactsData = contactsData?.filter(contact => {
           if (!contact.full_name) return false;
-          const normalizedContactName = contact.full_name.toLowerCase().trim();
+          const normalizedContactName = contact.full_name.toLowerCase().replace(/\s+/g, ' ').trim();
           return contactNamesWithOpps.has(normalizedContactName);
         }) || [];
       } else if (hasOpportunityFilters && (!opportunitiesData || opportunitiesData.length === 0)) {
@@ -374,9 +375,9 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         const matchingOpportunities = opportunitiesData?.filter(opp => {
           if (!contact.full_name) return false;
           
-          const normalizedContactName = contact.full_name.toLowerCase().trim();
-          const normalizedSource1 = (opp.deal_source_individual_1 || '').toLowerCase().trim();
-          const normalizedSource2 = (opp.deal_source_individual_2 || '').toLowerCase().trim();
+          const normalizedContactName = contact.full_name.toLowerCase().replace(/\s+/g, ' ').trim();
+          const normalizedSource1 = String(opp.norm_src_1 || '').toLowerCase().trim();
+          const normalizedSource2 = String(opp.norm_src_2 || '').toLowerCase().trim();
           
           return normalizedSource1 === normalizedContactName || 
                  normalizedSource2 === normalizedContactName;
