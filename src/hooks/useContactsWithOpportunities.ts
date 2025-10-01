@@ -302,172 +302,44 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         }
       }
 
-      // Prepare opportunity filters
-      const {
-        tier = [],
-        platformAddon = [],
-        ownershipType = [],
-        status = [],
-        lgLead: oppLgLead = [],
-        dateRangeStart,
-        dateRangeEnd,
-        ebitdaMin,
-        ebitdaMax
-      } = opportunityFilters;
-
       console.log('📊 Fetching opportunities for', contactsData?.length || 0, 'contacts');
-      console.log('🔍 Opportunity filters active:', hasOpportunityFilters);
 
-      // STEP 1: Build normalized name set from all contacts
-      const normalizedContactNames = new Set<string>();
-      const contactNameMap = new Map<string, any>(); // Map normalized name -> contact
+      // Fetch opportunities from the backend view
+      const contactIds = contactsData?.map(c => c.id).filter(Boolean) || [];
       
-      contactsData?.forEach(contact => {
-        if (contact.full_name) {
-          const normalized = contact.full_name.toLowerCase().replace(/\s+/g, ' ').trim();
-          normalizedContactNames.add(normalized);
-          contactNameMap.set(normalized, contact);
-        }
-      });
-
-      console.log('📝 Total unique contact names:', normalizedContactNames.size);
-
-      // STEP 2: Query opportunities in batches matching contact names
-      let allOpportunities: any[] = [];
-      
-      if (normalizedContactNames.size > 0) {
-        const nameArray = Array.from(normalizedContactNames);
-        const BATCH_SIZE = 200;
-        
-        // Query opportunities where norm_src_1 OR norm_src_2 matches any contact name
-        for (let i = 0; i < nameArray.length; i += BATCH_SIZE) {
-          const batch = nameArray.slice(i, i + BATCH_SIZE);
+      let opportunitiesData: any[] = [];
+      if (contactIds.length > 0) {
+        const BATCH_SIZE = 1000;
+        for (let i = 0; i < contactIds.length; i += BATCH_SIZE) {
+          const batch = contactIds.slice(i, i + BATCH_SIZE);
+          const { data: oppData, error: oppError } = await supabase
+            .from('contacts_with_opportunities_v')
+            .select('id, opportunities')
+            .in('id', batch);
           
-          try {
-            // Build base query
-            let oppsQuery1 = supabase
-              .from('opportunities_norm')
-              .select('deal_name, norm_src_1, norm_src_2, tier, platform_add_on, ownership_type, status, date_of_origination, investment_professional_point_person_1, investment_professional_point_person_2, ebitda_in_ms')
-              .in('norm_src_1', batch);
-
-            // Apply opportunity filters to query 1
-            if (tier.length > 0) oppsQuery1 = oppsQuery1.in('tier', tier);
-            if (platformAddon.length > 0) oppsQuery1 = oppsQuery1.in('platform_add_on', platformAddon);
-            if (ownershipType.length > 0) oppsQuery1 = oppsQuery1.in('ownership_type', ownershipType);
-            if (status.length > 0) oppsQuery1 = oppsQuery1.in('status', status);
-            if (oppLgLead.length > 0) {
-              const leadConditions = oppLgLead.map(lead => 
-                `investment_professional_point_person_1.ilike.*${lead}*,investment_professional_point_person_2.ilike.*${lead}*`
-              ).join(',');
-              oppsQuery1 = oppsQuery1.or(leadConditions);
-            }
-            if (ebitdaMin !== null && ebitdaMin !== undefined) oppsQuery1 = oppsQuery1.gte('ebitda_in_ms', ebitdaMin);
-            if (ebitdaMax !== null && ebitdaMax !== undefined) oppsQuery1 = oppsQuery1.lte('ebitda_in_ms', ebitdaMax);
-            if (dateRangeStart) oppsQuery1 = oppsQuery1.gte('date_of_origination', dateRangeStart);
-            if (dateRangeEnd) oppsQuery1 = oppsQuery1.lte('date_of_origination', dateRangeEnd);
-
-            const { data: opps1, error: error1 } = await oppsQuery1;
-            
-            if (error1) {
-              console.error('Error fetching opportunities (src_1):', error1);
-            } else {
-              allOpportunities.push(...(opps1 || []));
-            }
-
-            // Query for norm_src_2
-            let oppsQuery2 = supabase
-              .from('opportunities_norm')
-              .select('deal_name, norm_src_1, norm_src_2, tier, platform_add_on, ownership_type, status, date_of_origination, investment_professional_point_person_1, investment_professional_point_person_2, ebitda_in_ms')
-              .in('norm_src_2', batch);
-
-            // Apply same filters to query 2
-            if (tier.length > 0) oppsQuery2 = oppsQuery2.in('tier', tier);
-            if (platformAddon.length > 0) oppsQuery2 = oppsQuery2.in('platform_add_on', platformAddon);
-            if (ownershipType.length > 0) oppsQuery2 = oppsQuery2.in('ownership_type', ownershipType);
-            if (status.length > 0) oppsQuery2 = oppsQuery2.in('status', status);
-            if (oppLgLead.length > 0) {
-              const leadConditions = oppLgLead.map(lead => 
-                `investment_professional_point_person_1.ilike.*${lead}*,investment_professional_point_person_2.ilike.*${lead}*`
-              ).join(',');
-              oppsQuery2 = oppsQuery2.or(leadConditions);
-            }
-            if (ebitdaMin !== null && ebitdaMin !== undefined) oppsQuery2 = oppsQuery2.gte('ebitda_in_ms', ebitdaMin);
-            if (ebitdaMax !== null && ebitdaMax !== undefined) oppsQuery2 = oppsQuery2.lte('ebitda_in_ms', ebitdaMax);
-            if (dateRangeStart) oppsQuery2 = oppsQuery2.gte('date_of_origination', dateRangeStart);
-            if (dateRangeEnd) oppsQuery2 = oppsQuery2.lte('date_of_origination', dateRangeEnd);
-
-            const { data: opps2, error: error2 } = await oppsQuery2;
-            
-            if (error2) {
-              console.error('Error fetching opportunities (src_2):', error2);
-            } else {
-              allOpportunities.push(...(opps2 || []));
-            }
-          } catch (err) {
-            console.error('Error in batch', i, ':', err);
+          if (oppError) {
+            console.error('Error fetching opportunities from view:', oppError);
+          } else {
+            opportunitiesData.push(...(oppData || []));
           }
         }
-
-        // Deduplicate opportunities by deal_name
-        const uniqueOppsMap = new Map();
-        allOpportunities.forEach(opp => {
-          if (opp.deal_name && !uniqueOppsMap.has(opp.deal_name)) {
-            uniqueOppsMap.set(opp.deal_name, opp);
-          }
-        });
-        allOpportunities = Array.from(uniqueOppsMap.values());
-        
-        console.log('💼 Total opportunities fetched:', allOpportunities.length);
       }
 
-      // STEP 3: Build contact -> opportunities map
-      const contactOppsMap = new Map<string, any[]>();
-      
-      allOpportunities.forEach(opp => {
-        const src1 = String(opp.norm_src_1 || '').toLowerCase().replace(/\s+/g, ' ').trim();
-        const src2 = String(opp.norm_src_2 || '').toLowerCase().replace(/\s+/g, ' ').trim();
-        
-        if (src1 && normalizedContactNames.has(src1)) {
-          if (!contactOppsMap.has(src1)) contactOppsMap.set(src1, []);
-          contactOppsMap.get(src1)!.push(opp);
-        }
-        
-        if (src2 && normalizedContactNames.has(src2)) {
-          if (!contactOppsMap.has(src2)) contactOppsMap.set(src2, []);
-          contactOppsMap.get(src2)!.push(opp);
+      console.log('💼 Total opportunities fetched:', opportunitiesData.length);
+
+      // Build contact ID -> opportunities map
+      const contactOppsMap = new Map<string, string>();
+      opportunitiesData.forEach(opp => {
+        if (opp.id && opp.opportunities) {
+          contactOppsMap.set(opp.id, opp.opportunities);
         }
       });
 
-      console.log('🔗 Contacts with opportunities:', contactOppsMap.size);
-
-      // STEP 4: Filter contacts if opportunity filters are active
-      let finalContactsData = contactsData;
-      
-      if (hasOpportunityFilters) {
-        // Only keep contacts that have at least one matching opportunity
-        finalContactsData = contactsData?.filter(contact => {
-          if (!contact.full_name) return false;
-          const normalized = contact.full_name.toLowerCase().replace(/\s+/g, ' ').trim();
-          return contactOppsMap.has(normalized);
-        }) || [];
-        
-        console.log('✅ Contacts after opportunity filtering:', finalContactsData.length);
-      }
-
-      // STEP 5: Join contacts with their opportunities
-      const contactsWithOpportunities = finalContactsData?.map(contact => {
-        const normalized = contact.full_name?.toLowerCase().replace(/\s+/g, ' ').trim() || '';
-        const matchingOpps = contactOppsMap.get(normalized) || [];
-        
-        // Build comma-separated deal names, deduplicated
-        const dealNames = [...new Set(matchingOpps.map(opp => opp.deal_name).filter(Boolean))];
-        const opportunityNames = dealNames.join(', ');
-
-        return {
-          ...contact,
-          opportunities: opportunityNames
-        };
-      }) || [];
+      // Join contacts with their opportunities
+      const contactsWithOpportunities = contactsData?.map(contact => ({
+        ...contact,
+        opportunities: contactOppsMap.get(contact.id) || ''
+      })) || [];
 
       console.log('🎯 Final contacts with opportunities:', contactsWithOpportunities.length);
 

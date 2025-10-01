@@ -1640,6 +1640,15 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts_with_opportunities_v: {
+        Row: {
+          email_address: string | null
+          full_name: string | null
+          id: string | null
+          opportunities: string | null
+        }
+        Relationships: []
+      }
       focus_area_options_v: {
         Row: {
           focus_area: string | null
@@ -2445,6 +2454,22 @@ export type Database = {
       compute_ebitda_range: {
         Args: { p_amount: number; p_notes: string }
         Returns: string
+      }
+      contacts_ids_by_opportunity_filters: {
+        Args: {
+          p_date_end?: string
+          p_date_start?: string
+          p_ebitda_max?: number
+          p_ebitda_min?: number
+          p_lg_lead?: string[]
+          p_ownership_type?: string[]
+          p_platform_add_on?: string[]
+          p_status?: string[]
+          p_tier?: string[]
+        }
+        Returns: {
+          contact_id: string
+        }[]
       }
       dismiss_contact_candidate: {
         Args: { p_email: string; p_note?: string }
