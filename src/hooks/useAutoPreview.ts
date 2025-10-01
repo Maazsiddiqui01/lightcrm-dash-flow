@@ -42,7 +42,23 @@ export function useAutoPreview(
     let cancelled = false;
 
     const generatePreview = async () => {
-      if (!contactData || !masterTemplate || !contactData.contact) {
+      console.log('🔍 Preview generation starting:', { 
+        hasContactData: !!contactData, 
+        hasMasterTemplate: !!masterTemplate,
+        contactEmail: contactData?.email,
+        contactFirstName: contactData?.first_name,
+        focusAreas: contactData?.focus_areas
+      });
+
+      if (!contactData || !masterTemplate) {
+        console.log('❌ Missing contactData or masterTemplate');
+        setPreviewData(null);
+        return;
+      }
+
+      // Check if we have the minimum required data
+      if (!contactData.email || !contactData.first_name) {
+        console.log('❌ Missing contact email or first_name');
         setPreviewData(null);
         return;
       }
@@ -53,10 +69,12 @@ export function useAutoPreview(
         // Get master template defaults
         const masterDefaults = masterTemplates?.find(mt => mt.master_key === masterTemplate.master_key);
         if (!masterDefaults) {
+          console.log('❌ Master defaults not found');
           setIsGenerating(false);
           return;
         }
 
+        console.log('✅ Building module configuration...');
         // Build module configuration with actual library selections
         const moduleConfig = await buildModuleConfiguration({
           contact: contactData,
@@ -69,11 +87,13 @@ export function useAutoPreview(
         // Select subject from library with token replacement
         const selectedSubject = await pickSubject({
           tone: subjectStyle,
-          org: contactData.contact.organization || '',
+          org: contactData.organization || '',
           focusAreas: contactData.focus_areas || [],
-          sector: contactData.focusMeta?.[0]?.sector,
+          sector: contactData.fa_descriptions?.[0]?.sector,
           subjects: subjectLibrary,
         });
+
+        console.log('✅ Selected subject:', selectedSubject);
 
         // Build body preview using selected phrases
         const bodyParts: string[] = [];
@@ -81,7 +101,7 @@ export function useAutoPreview(
         // Greeting
         if (moduleConfig.phrases.greeting) {
           let greeting = moduleConfig.phrases.greeting.phrase_text;
-          greeting = greeting.replace('[First Name]', contactData.contact.firstName || 'there');
+          greeting = greeting.replace('[First Name]', contactData.first_name || 'there');
           bodyParts.push(greeting);
         }
 
@@ -146,11 +166,13 @@ export function useAutoPreview(
           bodyPreview: bodyParts.join('\n'),
         };
 
+        console.log('✅ Preview generated:', preview);
+
         if (!cancelled) {
           setPreviewData(preview);
         }
       } catch (error) {
-        console.error('Preview generation error:', error);
+        console.error('❌ Preview generation error:', error);
       } finally {
         if (!cancelled) {
           setIsGenerating(false);
@@ -164,7 +186,7 @@ export function useAutoPreview(
       cancelled = true;
     };
   }, [
-    contactData?.contact?.email, 
+    contactData?.email, 
     debouncedModuleStates, 
     debouncedDeltaType, 
     selectedArticle?.article_link, 
