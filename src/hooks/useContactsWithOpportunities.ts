@@ -335,6 +335,9 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         }
       });
 
+      console.log('📦 Opportunities map size:', contactOppsMap.size);
+      console.log('📦 Sample opportunities:', Array.from(contactOppsMap.entries()).slice(0, 3));
+
       // Join contacts with their opportunities
       const contactsWithOpportunities = contactsData?.map(contact => ({
         ...contact,
@@ -342,6 +345,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       })) || [];
 
       console.log('🎯 Final contacts with opportunities:', contactsWithOpportunities.length);
+      console.log('🎯 Sample contact with opps:', contactsWithOpportunities.find(c => c.opportunities) || 'none found');
 
       setContacts(contactsWithOpportunities);
     } catch (error) {
