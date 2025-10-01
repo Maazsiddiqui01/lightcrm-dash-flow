@@ -91,15 +91,15 @@ export function useLogPhraseUsage() {
     mutationFn: async ({ contactId, phraseId }: LogPhraseUsageParams) => {
       const { error } = await supabase
         .from('phrase_rotation_log' as any)
-        .upsert({
+        .insert({
           contact_id: contactId,
           phrase_id: phraseId,
           used_at: new Date().toISOString()
-        }, {
-          onConflict: 'contact_id,phrase_id'
         });
       
-      if (error) throw error;
+      if (error) {
+        console.warn('phrase_rotation_log insert failed (non-blocking):', error);
+      }
     },
   });
 }
@@ -112,15 +112,15 @@ export function useLogInquiryUsage() {
     mutationFn: async ({ contactId, inquiryId }: LogInquiryUsageParams) => {
       const { error } = await supabase
         .from('inquiry_rotation_log' as any)
-        .upsert({
+        .insert({
           contact_id: contactId,
           inquiry_id: inquiryId,
           used_at: new Date().toISOString()
-        }, {
-          onConflict: 'contact_id,inquiry_id'
         });
       
-      if (error) throw error;
+      if (error) {
+        console.warn('inquiry_rotation_log insert failed (non-blocking):', error);
+      }
     },
   });
 }

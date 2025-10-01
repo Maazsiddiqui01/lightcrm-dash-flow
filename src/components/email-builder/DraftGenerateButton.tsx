@@ -149,21 +149,29 @@ export function DraftGenerateButton({
 
       console.log('✅ Subject selected:', selectedSubject);
 
-      // Log phrase and inquiry usage for rotation tracking
+      // Log phrase and inquiry usage for rotation tracking (non-blocking)
       if (moduleConfig.inquiry) {
-        await logInquiryUse({
-          contactId: contactData.contact_id,
-          inquiryId: moduleConfig.inquiry.id,
-        });
+        try {
+          await logInquiryUse({
+            contactId: contactData.contact_id,
+            inquiryId: moduleConfig.inquiry.id,
+          });
+        } catch (e) {
+          console.warn('Non-blocking: failed to log inquiry usage', e);
+        }
       }
 
       for (const [category, phrase] of Object.entries(moduleConfig.phrases)) {
         if (phrase) {
-          await logPhrase.mutateAsync({
-            contactId: contactData.contact_id,
-            phraseId: phrase.id,
-            category,
-          });
+          try {
+            await logPhrase.mutateAsync({
+              contactId: contactData.contact_id,
+              phraseId: phrase.id,
+              category,
+            });
+          } catch (e) {
+            console.warn('Non-blocking: failed to log phrase usage', category, e);
+          }
         }
       }
 
