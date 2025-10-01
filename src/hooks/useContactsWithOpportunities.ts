@@ -231,6 +231,37 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         (opportunityFilters as any).ebitdaMin !== null && (opportunityFilters as any).ebitdaMin !== undefined ||
         (opportunityFilters as any).ebitdaMax !== null && (opportunityFilters as any).ebitdaMax !== undefined;
 
+      // If opportunity filters are active, pre-filter contacts by matching opportunity set via RPC
+      if (hasOpportunityFilters) {
+        console.log('🔎 Using backend RPC to pre-filter contacts by opportunity filters');
+        const { data: idRows, error: rpcError } = await (supabase as any).rpc('contacts_ids_by_opportunity_filters', {
+          p_tier: (opportunityFilters as any).tier?.length ? (opportunityFilters as any).tier : null,
+          p_platform_add_on: (opportunityFilters as any).platformAddon?.length ? (opportunityFilters as any).platformAddon : null,
+          p_ownership_type: (opportunityFilters as any).ownershipType?.length ? (opportunityFilters as any).ownershipType : null,
+          p_status: (opportunityFilters as any).status?.length ? (opportunityFilters as any).status : null,
+          p_lg_lead: (opportunityFilters as any).lgLead?.length ? (opportunityFilters as any).lgLead : null,
+          p_date_start: (opportunityFilters as any).dateRangeStart || null,
+          p_date_end: (opportunityFilters as any).dateRangeEnd || null,
+          p_ebitda_min: (opportunityFilters as any).ebitdaMin ?? null,
+          p_ebitda_max: (opportunityFilters as any).ebitdaMax ?? null,
+        });
+
+        if (rpcError) {
+          console.error('RPC contacts_ids_by_opportunity_filters error:', rpcError);
+        } else {
+          const ids = (idRows || []).map((r: any) => r.contact_id).filter(Boolean);
+          console.log('✅ RPC returned matching contact IDs:', ids.length);
+          if (ids.length === 0) {
+            setContacts([]);
+            setLoading(false);
+            setIsRefreshing(false);
+            setIsFetching(false);
+            return;
+          }
+          contactsQuery = contactsQuery.in('id', ids);
+        }
+      }
+
       // Performance: sort by most recent and limit result set to avoid timeouts
       contactsQuery = contactsQuery
         .order('most_recent_contact', { ascending: false, nullsFirst: false })
