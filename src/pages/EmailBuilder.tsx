@@ -9,14 +9,14 @@ import { ArticlePicker } from "@/components/email-builder/ArticlePicker";
 import { CCPreviewCard } from "@/components/email-builder/CCPreviewCard";
 import { DraftGenerateButton } from "@/components/email-builder/DraftGenerateButton";
 import { PreviewModal } from "@/components/email-builder/PreviewModal";
-import { Button } from "@/components/ui/button";
-import { Mail, Eye } from "lucide-react";
+import { Mail } from "lucide-react";
 import { useEmailBuilderData } from "@/hooks/useEmailBuilderData";
 import { useResolvedTemplateQuery } from "@/hooks/useResolvedTemplate";
 import { useComposerRow } from "@/hooks/useComposer";
 import { routeMaster } from "@/lib/router";
 import type { EmailTemplate } from "@/hooks/useEmailTemplates";
 import type { Article } from "@/types/emailComposer";
+import type { TriState } from "@/types/phraseLibrary";
 
 export function EmailBuilder() {
   // Enable real-time synchronization with Global Libraries
@@ -28,17 +28,17 @@ export function EmailBuilder() {
   
   // Module states for email builder
   const [moduleStates, setModuleStates] = useState<ModuleStates>({
-    initial_greeting: true,
-    self_personalization: true,
-    top_opportunities: true,
-    article_recommendations: true,
-    platforms: false,
-    addons: false,
-    suggested_talking_points: true,
-    general_org_update: false,
-    attachments: false,
-    meeting_request: true,
-    ai_backup_personalization: true,
+    initial_greeting: 'always',
+    self_personalization: 'always',
+    top_opportunities: 'always',
+    article_recommendations: 'always',
+    platforms: 'never',
+    addons: 'never',
+    suggested_talking_points: 'sometimes',
+    general_org_update: 'never',
+    attachments: 'never',
+    meeting_request: 'always',
+    ai_backup_personalization: 'always',
   });
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   
@@ -48,8 +48,8 @@ export function EmailBuilder() {
   // Auto-set module defaults when master template changes
   const masterTemplate = contactData ? routeMaster(contactData.most_recent_contact) : null;
   
-  const handleModuleChange = (module: keyof ModuleStates, enabled: boolean) => {
-    setModuleStates(prev => ({ ...prev, [module]: enabled }));
+  const handleModuleChange = (module: keyof ModuleStates, value: TriState) => {
+    setModuleStates(prev => ({ ...prev, [module]: value }));
   };
   
   const handleResetToDefaults = () => {

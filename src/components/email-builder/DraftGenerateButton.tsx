@@ -134,15 +134,16 @@ export function DraftGenerateButton({
         }
       }
 
-      // Build payload with library-selected content and convert modules to ModuleStates
-      const enhancedModuleStates: ModuleStates = {
+      // Build payload with library-selected content
+      // Convert Record<string, boolean> to specific module object type
+      const evaluatedModules = {
         initial_greeting: moduleConfig.modules.initial_greeting ?? false,
         self_personalization: moduleConfig.modules.self_personalization ?? false,
         top_opportunities: moduleConfig.modules.top_opportunities ?? false,
         article_recommendations: moduleConfig.modules.article_recommendations ?? false,
-        suggested_talking_points: moduleConfig.modules.suggested_talking_points ?? false,
         platforms: moduleConfig.modules.platforms ?? false,
         addons: moduleConfig.modules.addons ?? false,
+        suggested_talking_points: moduleConfig.modules.suggested_talking_points ?? false,
         general_org_update: moduleConfig.modules.general_org_update ?? false,
         attachments: moduleConfig.modules.attachments ?? false,
         meeting_request: moduleConfig.modules.meeting_request ?? false,
@@ -151,7 +152,7 @@ export function DraftGenerateButton({
 
       const payload = buildDraftPayload(contactData, {
         deltaType,
-        moduleStates: enhancedModuleStates,
+        moduleStates: evaluatedModules,
         selectedArticle,
         masterTemplate,
       });

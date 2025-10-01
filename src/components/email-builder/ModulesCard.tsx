@@ -1,71 +1,71 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { RotateCcw, Settings } from "lucide-react";
 import type { MasterTemplate } from "@/lib/router";
+import { TriStateToggle } from "./TriStateToggle";
+import type { TriState } from "@/types/phraseLibrary";
 
 export interface ModuleStates {
-  initial_greeting: boolean;
-  self_personalization: boolean;
-  top_opportunities: boolean;
-  article_recommendations: boolean;
-  platforms: boolean;
-  addons: boolean;
-  suggested_talking_points: boolean;
-  general_org_update: boolean;
-  attachments: boolean;
-  meeting_request: boolean;
-  ai_backup_personalization: boolean;
+  initial_greeting: TriState;
+  self_personalization: TriState;
+  top_opportunities: TriState;
+  article_recommendations: TriState;
+  platforms: TriState;
+  addons: TriState;
+  suggested_talking_points: TriState;
+  general_org_update: TriState;
+  attachments: TriState;
+  meeting_request: TriState;
+  ai_backup_personalization: TriState;
 }
 
 interface ModulesCardProps {
   masterTemplate: MasterTemplate | null;
   moduleStates: ModuleStates;
-  onModuleChange: (module: keyof ModuleStates, enabled: boolean) => void;
+  onModuleChange: (module: keyof ModuleStates, value: TriState) => void;
   onResetToDefaults: () => void;
 }
 
 // Default configurations for each master template
 export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
   relationship_maintenance: {
-    initial_greeting: true,
-    self_personalization: true,
-    top_opportunities: true,
-    article_recommendations: true,
-    platforms: false,
-    addons: false,
-    suggested_talking_points: true, // Sometimes - treating as true for now
-    general_org_update: false,
-    attachments: false,
-    meeting_request: true,
-    ai_backup_personalization: true,
+    initial_greeting: 'always',
+    self_personalization: 'always',
+    top_opportunities: 'always',
+    article_recommendations: 'always',
+    platforms: 'never',
+    addons: 'never',
+    suggested_talking_points: 'sometimes',
+    general_org_update: 'never',
+    attachments: 'never',
+    meeting_request: 'always',
+    ai_backup_personalization: 'always',
   },
   business_development: {
-    initial_greeting: true,
-    self_personalization: true,
-    top_opportunities: true,
-    article_recommendations: true,
-    platforms: true,
-    addons: true,
-    suggested_talking_points: true,
-    general_org_update: true,
-    attachments: true, // Can be toggled
-    meeting_request: true,
-    ai_backup_personalization: true,
+    initial_greeting: 'always',
+    self_personalization: 'always',
+    top_opportunities: 'always',
+    article_recommendations: 'always',
+    platforms: 'always',
+    addons: 'always',
+    suggested_talking_points: 'always',
+    general_org_update: 'always',
+    attachments: 'sometimes',
+    meeting_request: 'always',
+    ai_backup_personalization: 'always',
   },
   hybrid_neutral: {
-    initial_greeting: true,
-    self_personalization: true,
-    top_opportunities: true,
-    article_recommendations: true, // ~60% - treating as true for now
-    platforms: false,
-    addons: false,
-    suggested_talking_points: true,
-    general_org_update: false,
-    attachments: false,
-    meeting_request: true,
-    ai_backup_personalization: true,
+    initial_greeting: 'always',
+    self_personalization: 'always',
+    top_opportunities: 'always',
+    article_recommendations: 'sometimes',
+    platforms: 'never',
+    addons: 'never',
+    suggested_talking_points: 'always',
+    general_org_update: 'never',
+    attachments: 'never',
+    meeting_request: 'always',
+    ai_backup_personalization: 'always',
   },
 };
 
@@ -118,24 +118,25 @@ export function ModulesCard({
         )}
 
         {masterTemplate && (
-          <div className="grid gap-3">
+          <div className="space-y-3">
             {Object.entries(MODULE_LABELS).map(([moduleKey, label]) => {
               const key = moduleKey as keyof ModuleStates;
-              const isEnabled = moduleStates[key];
+              const value = moduleStates[key];
               
               return (
-                <div key={moduleKey} className="flex items-center justify-between space-x-2">
-                  <Label 
-                    htmlFor={moduleKey} 
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1"
-                  >
-                    {label}
-                  </Label>
-                  <Switch
-                    id={moduleKey}
-                    checked={isEnabled}
-                    onCheckedChange={(checked) => onModuleChange(key, checked)}
-                  />
+                <div 
+                  key={moduleKey} 
+                  className={`p-3 rounded-lg border transition-colors ${
+                    value === 'never' ? 'opacity-50 bg-muted/20' : 'bg-card'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-sm font-medium flex-1">{label}</span>
+                    <TriStateToggle
+                      value={value}
+                      onChange={(newValue) => onModuleChange(key, newValue)}
+                    />
+                  </div>
                 </div>
               );
             })}

@@ -100,7 +100,19 @@ export type DraftPayload = {
 
 interface UIState {
   deltaType: 'Email' | 'Meeting';
-  moduleStates: ModuleStates;
+  moduleStates: {
+    initial_greeting: boolean;
+    self_personalization: boolean;
+    top_opportunities: boolean;
+    article_recommendations: boolean;
+    platforms: boolean;
+    addons: boolean;
+    suggested_talking_points: boolean;
+    general_org_update: boolean;
+    attachments: boolean;
+    meeting_request: boolean;
+    ai_backup_personalization: boolean;
+  };
   selectedArticle?: Article | null;
   masterTemplate?: MasterTemplate | null;
 }
@@ -108,7 +120,19 @@ interface UIState {
 /**
  * Generate flow array based on master template and enabled modules
  */
-function generateFlow(masterKey: string, modules: ModuleStates): string[] {
+function generateFlow(masterKey: string, modules: {
+  initial_greeting: boolean;
+  self_personalization: boolean;
+  top_opportunities: boolean;
+  article_recommendations: boolean;
+  platforms: boolean;
+  addons: boolean;
+  suggested_talking_points: boolean;
+  general_org_update: boolean;
+  attachments: boolean;
+  meeting_request: boolean;
+  ai_backup_personalization: boolean;
+}): string[] {
   const flow: string[] = [];
 
   // Always start with greeting if enabled
