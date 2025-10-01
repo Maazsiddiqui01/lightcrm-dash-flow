@@ -11,6 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { Library, Plus, Trash2, Edit2, RotateCcw } from 'lucide-react';
 import { useGlobalPhrases, useCreatePhrase, useUpdatePhrase, useDeletePhrase } from '@/hooks/usePhraseLibrary';
 import { useGlobalInquiries, useCreateInquiry, useUpdateInquiry, useDeleteInquiry } from '@/hooks/useInquiryLibrary';
+import { useGlobalSignatures } from '@/hooks/useSignatureLibrary';
+import { EditPhraseModal } from '@/components/global-libraries/EditPhraseModal';
+import { EditInquiryModal } from '@/components/global-libraries/EditInquiryModal';
 import type { PhraseCategory } from '@/types/phraseLibrary';
 import type { InquiryCategory } from '@/hooks/useInquiryLibrary';
 
@@ -43,9 +46,12 @@ export function GlobalLibraries() {
   const [editingInquiry, setEditingInquiry] = useState<any>(null);
   const [newPhraseText, setNewPhraseText] = useState('');
   const [newInquiryText, setNewInquiryText] = useState('');
+  const [phraseModalOpen, setPhraseModalOpen] = useState(false);
+  const [inquiryModalOpen, setInquiryModalOpen] = useState(false);
 
   const { data: phrases = [], isLoading: phrasesLoading } = useGlobalPhrases(selectedPhraseCategory);
   const { data: inquiries = [], isLoading: inquiriesLoading } = useGlobalInquiries(selectedInquiryCategory);
+  const { data: signatures = [] } = useGlobalSignatures();
 
   const createPhrase = useCreatePhrase();
   const updatePhrase = useUpdatePhrase();
@@ -101,9 +107,10 @@ export function GlobalLibraries() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="phrases" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="phrases">Phrase Library</TabsTrigger>
             <TabsTrigger value="inquiries">Inquiry Library</TabsTrigger>
+            <TabsTrigger value="signatures">Signatures</TabsTrigger>
           </TabsList>
 
           {/* Phrases Tab */}
@@ -180,6 +187,16 @@ export function GlobalLibraries() {
                                 </div>
                               </div>
                               <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingPhrase(phrase);
+                                    setPhraseModalOpen(true);
+                                  }}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -271,6 +288,16 @@ export function GlobalLibraries() {
                                 <Button
                                   size="sm"
                                   variant="ghost"
+                                  onClick={() => {
+                                    setEditingInquiry(inquiry);
+                                    setInquiryModalOpen(true);
+                                  }}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
                                   onClick={() => deleteInquiry.mutate(inquiry.id)}
                                 >
                                   <Trash2 className="h-3 w-3" />
@@ -286,7 +313,53 @@ export function GlobalLibraries() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Signatures Tab */}
+          <TabsContent value="signatures" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Signature Library</CardTitle>
+                <CardDescription>
+                  Email signatures mapped to tone. Selected automatically based on template tone.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  {signatures.map((sig) => (
+                    <Card key={sig.id}>
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Badge variant="outline" className="mb-1 capitalize">{sig.tone}</Badge>
+                            <p className="text-sm font-mono">{sig.signature_text}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        {/* Edit Modals */}
+        <EditPhraseModal
+          phrase={editingPhrase}
+          open={phraseModalOpen}
+          onOpenChange={(open) => {
+            setPhraseModalOpen(open);
+            if (!open) setEditingPhrase(null);
+          }}
+        />
+        <EditInquiryModal
+          inquiry={editingInquiry}
+          open={inquiryModalOpen}
+          onOpenChange={(open) => {
+            setInquiryModalOpen(open);
+            if (!open) setEditingInquiry(null);
+          }}
+        />
       </ResponsiveContainer>
     </div>
   );

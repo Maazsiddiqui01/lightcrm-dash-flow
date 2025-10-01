@@ -166,6 +166,7 @@ export function DraftGenerateButton({
               }
             : null,
           assistantClause: moduleConfig.assistantClause,
+          selectedSignature: moduleConfig.signature,
           selectedPhrases: Object.fromEntries(
             Object.entries(moduleConfig.phrases)
               .filter(([_, phrase]) => phrase !== null)

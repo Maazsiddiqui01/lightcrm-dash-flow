@@ -718,6 +718,82 @@ export type Database = {
         }
         Relationships: []
       }
+      inquiry_library: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          inquiry_text: string
+          is_global: boolean
+          sync_behavior: string | null
+          template_id: string | null
+          tri_state: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          inquiry_text: string
+          is_global?: boolean
+          sync_behavior?: string | null
+          template_id?: string | null
+          tri_state?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          inquiry_text?: string
+          is_global?: boolean
+          sync_behavior?: string | null
+          template_id?: string | null
+          tri_state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiry_library_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inquiry_rotation_log: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          inquiry_id: string
+          used_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          inquiry_id: string
+          used_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          inquiry_id?: string
+          used_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiry_rotation_log_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "inquiry_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interactions_n8n: {
         Row: {
           all_emails: string | null
@@ -1390,6 +1466,88 @@ export type Database = {
             columns: ["phrase_id"]
             isOneToOne: false
             referencedRelation: "phrase_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_library: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          is_global: boolean
+          signature_text: string
+          template_id: string | null
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          is_global?: boolean
+          signature_text: string
+          template_id?: string | null
+          tone: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          is_global?: boolean
+          signature_text?: string
+          template_id?: string | null
+          tone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_library_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subject_library: {
+        Row: {
+          created_at: string
+          id: string
+          is_global: boolean
+          style: string
+          subject_template: string
+          sync_behavior: string | null
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_global?: boolean
+          style: string
+          subject_template: string
+          sync_behavior?: string | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_global?: boolean
+          style?: string
+          subject_template?: string
+          sync_behavior?: string | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_library_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
             referencedColumns: ["id"]
           },
         ]

@@ -6,6 +6,7 @@ import type { ContactEmailComposer } from '@/types/emailComposer';
 import type { TemplateSettings, TriState, PhraseLibraryItem, MasterTemplateDefaults } from '@/types/phraseLibrary';
 import type { InquiryLibraryItem } from '@/hooks/useInquiryLibrary';
 import { getAvailablePhrases, getAvailableInquiries } from '@/hooks/useRotationTracking';
+import { pickSignature } from '@/hooks/useSignatureLibrary';
 
 interface GenerationContext {
   contact: ContactEmailComposer;
@@ -201,6 +202,7 @@ export async function buildModuleConfiguration(
   phrases: Record<string, PhraseLibraryItem | null>;
   inquiry: InquiryLibraryItem | null;
   assistantClause: string;
+  signature: string;
   qualityCheck: { pass: boolean; reason?: string };
 }> {
   const { masterTemplate, templateSettings, contact } = context;
@@ -257,6 +259,10 @@ export async function buildModuleConfiguration(
   // Build assistant clause for Meeting Request
   const assistantClause = buildAssistantClause(contact, modules.meeting_request || false);
 
+  // Select signature based on tone
+  const tone = context.masterTemplate?.tone || 'hybrid';
+  const signature = await pickSignature(tone as 'formal' | 'hybrid' | 'casual');
+
   // Quality control check
   const qualityCheck = passesQualityControl(context, modules);
 
@@ -265,6 +271,7 @@ export async function buildModuleConfiguration(
     phrases,
     inquiry,
     assistantClause,
+    signature,
     qualityCheck
   };
 }
