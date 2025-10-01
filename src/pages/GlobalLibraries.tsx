@@ -77,6 +77,7 @@ export function GlobalLibraries() {
     createInquiry.mutate({
       category: selectedInquiryCategory,
       inquiry_text: newInquiryText,
+      tri_state: 'sometimes',
       is_global: true,
       template_id: null,
     });

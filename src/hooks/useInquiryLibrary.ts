@@ -3,11 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export type InquiryCategory = 'opportunity' | 'article' | 'focus_area' | 'generic';
+export type TriState = 'always' | 'sometimes' | 'never';
 
 export interface InquiryLibraryItem {
   id: string;
   category: InquiryCategory;
   inquiry_text: string;
+  tri_state: TriState;
   is_global: boolean;
   template_id: string | null;
   created_at: string;

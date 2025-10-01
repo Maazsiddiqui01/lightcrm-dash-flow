@@ -180,3 +180,22 @@ export function useBulkUpdatePhrases() {
     },
   });
 }
+
+/**
+ * Log phrase usage for rotation tracking
+ */
+export async function logPhraseUsage(contactId: string, phraseId: string): Promise<void> {
+  const { error } = await supabase
+    .from('phrase_rotation_log' as any)
+    .upsert({
+      contact_id: contactId,
+      phrase_id: phraseId,
+      used_at: new Date().toISOString()
+    }, {
+      onConflict: 'contact_id,phrase_id'
+    });
+  
+  if (error) {
+    console.error('Failed to log phrase usage:', error);
+  }
+}
