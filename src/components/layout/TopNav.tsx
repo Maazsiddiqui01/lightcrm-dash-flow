@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { title: "Dashboard", url: "/dashboard" },
   { title: "Contacts", url: "/contacts" },
-  { title: "New Contacts", url: "/missing-contacts" },
+  { title: "Pending Contacts", url: "/missing-contacts" },
   { title: "Opportunities", url: "/opportunities" },
   { title: "Interactions", url: "/interactions" },
   { title: "Articles", url: "/articles" },

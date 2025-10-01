@@ -276,8 +276,8 @@ export default function MissingContacts() {
     <div className="min-h-0 flex-1 overflow-x-hidden">
       <div className="space-y-4 p-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold">Missing Contacts</h1>
-          <p className="text-muted-foreground">Review and promote new contacts discovered from interactions.</p>
+          <h1 className="text-2xl font-bold">Pending Contacts</h1>
+          <p className="text-muted-foreground">Review and promote pending contacts discovered from interactions.</p>
         </div>
         
         <div className="space-y-4">
