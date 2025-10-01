@@ -26,25 +26,15 @@ export function EditPhraseModal({ phrase, open, onOpenChange }: EditPhraseModalP
   const handleSave = () => {
     if (!phrase) return;
 
-    const updates: any = {
+    updatePhrase.mutate({
       id: phrase.id,
-      phrase_text: phraseText,
-    };
-
-    if (applyScope === 'all') {
-      // Update global record
-      updates.sync_behavior = 'inherit';
-      if (updateTriState) {
-        updates.tri_state = triState;
-      }
-    } else {
-      // For local-only, would need to clone to template-specific record
-      // This requires template context which we'll add later
-      updates.sync_behavior = 'override';
-      updates.tri_state = triState;
-    }
-
-    updatePhrase.mutate(updates, {
+      updates: {
+        phrase_text: phraseText,
+        tri_state: triState as TriState,
+      },
+      applyToAll: applyScope === 'all',
+      updateTriStateDefaults: applyScope === 'all' && updateTriState
+    }, {
       onSuccess: () => onOpenChange(false),
     });
   };

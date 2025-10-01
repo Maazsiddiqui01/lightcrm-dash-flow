@@ -102,19 +102,57 @@ export function useUpdateInquiry() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<InquiryLibraryItem> }) => {
-      const { data, error } = await supabase
-        .from('inquiry_library' as any)
-        .update(updates as any)
-        .eq('id', id)
-        .select()
-        .single();
+    mutationFn: async ({ 
+      id, 
+      updates,
+      applyToAll,
+      updateTriStateDefaults 
+    }: { 
+      id: string; 
+      updates: Partial<InquiryLibraryItem>;
+      applyToAll?: boolean;
+      updateTriStateDefaults?: boolean;
+    }) => {
+      if (applyToAll) {
+        // Get the original inquiry
+        const { data: original, error: fetchError } = await supabase
+          .from('inquiry_library' as any)
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      if (error) throw error;
-      return data;
+        if (fetchError) throw fetchError;
+        
+        if (original && (original as any).inquiry_text) {
+          // Update all inquiries with same text/category
+          const { error } = await supabase
+            .from('inquiry_library' as any)
+            .update(updates as any)
+            .eq('inquiry_text', (original as any).inquiry_text)
+            .eq('category', (original as any).category);
+
+          if (error) throw error;
+        }
+      } else {
+        // Update single inquiry
+        const { data, error } = await supabase
+          .from('inquiry_library' as any)
+          .update(updates as any)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (error) throw error;
+      }
+
+      return { success: true };
     },
     onSuccess: () => {
+      // Invalidate all inquiry library queries
       queryClient.invalidateQueries({ queryKey: ['inquiry-library'] });
+      // Also invalidate email builder related queries
+      queryClient.invalidateQueries({ queryKey: ['email-builder'] });
+      queryClient.invalidateQueries({ queryKey: ['composer'] });
       toast({
         title: 'Inquiry updated',
         description: 'The inquiry has been updated',

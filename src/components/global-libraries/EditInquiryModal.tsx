@@ -35,22 +35,15 @@ export function EditInquiryModal({ inquiry, open, onOpenChange }: EditInquiryMod
   const handleSave = () => {
     if (!inquiry) return;
 
-    const updates: any = {
+    updateInquiry.mutate({
       id: inquiry.id,
-      inquiry_text: inquiryText,
-    };
-
-    if (applyScope === 'all') {
-      updates.sync_behavior = 'inherit';
-      if (updateTriState) {
-        updates.tri_state = triState;
-      }
-    } else {
-      updates.sync_behavior = 'override';
-      updates.tri_state = triState;
-    }
-
-    updateInquiry.mutate(updates, {
+      updates: {
+        inquiry_text: inquiryText,
+        tri_state: triState as TriState,
+      },
+      applyToAll: applyScope === 'all',
+      updateTriStateDefaults: applyScope === 'all' && updateTriState
+    }, {
       onSuccess: () => onOpenChange(false),
     });
   };

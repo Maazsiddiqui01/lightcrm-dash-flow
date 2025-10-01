@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
+import { useRealtimeLibrarySync } from "@/hooks/useRealtimeSync";
 import { ContactSelector } from "@/components/email-builder/ContactSelector";
 import { ContactInfoPanel } from "@/components/email-builder/ContactInfoPanel";
 import { MasterTemplateSelector } from "@/components/email-builder/MasterTemplateSelector";
@@ -18,6 +19,9 @@ import type { EmailTemplate } from "@/hooks/useEmailTemplates";
 import type { Article } from "@/types/emailComposer";
 
 export function EmailBuilder() {
+  // Enable real-time synchronization with Global Libraries
+  useRealtimeLibrarySync();
+  
   const [selectedContact, setSelectedContact] = useState<any | null>(null);
   const [deltaType, setDeltaType] = useState<'Email' | 'Meeting'>('Email');
   const [showPreview, setShowPreview] = useState(false);

@@ -14,6 +14,7 @@ import { useGlobalInquiries, useCreateInquiry, useUpdateInquiry, useDeleteInquir
 import { useGlobalSignatures } from '@/hooks/useSignatureLibrary';
 import { EditPhraseModal } from '@/components/global-libraries/EditPhraseModal';
 import { EditInquiryModal } from '@/components/global-libraries/EditInquiryModal';
+import { useRealtimeLibrarySync } from '@/hooks/useRealtimeSync';
 import type { PhraseCategory } from '@/types/phraseLibrary';
 import type { InquiryCategory } from '@/hooks/useInquiryLibrary';
 
@@ -40,6 +41,9 @@ const INQUIRY_CATEGORIES: { value: InquiryCategory; label: string }[] = [
 ];
 
 export function GlobalLibraries() {
+  // Enable real-time synchronization
+  useRealtimeLibrarySync();
+  
   const [selectedPhraseCategory, setSelectedPhraseCategory] = useState<PhraseCategory>('greeting');
   const [selectedInquiryCategory, setSelectedInquiryCategory] = useState<InquiryCategory>('opportunity');
   const [editingPhrase, setEditingPhrase] = useState<any>(null);

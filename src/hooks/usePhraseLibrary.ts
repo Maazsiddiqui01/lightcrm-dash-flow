@@ -89,19 +89,57 @@ export function useUpdatePhrase() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<PhraseLibraryItem> }) => {
-      const { data, error } = await supabase
-        .from('phrase_library' as any)
-        .update(updates as any)
-        .eq('id', id)
-        .select()
-        .single();
+    mutationFn: async ({ 
+      id, 
+      updates, 
+      applyToAll,
+      updateTriStateDefaults 
+    }: { 
+      id: string; 
+      updates: Partial<PhraseLibraryItem>;
+      applyToAll?: boolean;
+      updateTriStateDefaults?: boolean;
+    }) => {
+      if (applyToAll) {
+        // Get the original phrase to find all related phrases
+        const { data: original, error: fetchError } = await supabase
+          .from('phrase_library' as any)
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      if (error) throw error;
-      return data;
+        if (fetchError) throw fetchError;
+        
+        if (original && (original as any).phrase_text) {
+          // Update all phrases with same text/category
+          const { error } = await supabase
+            .from('phrase_library' as any)
+            .update(updates as any)
+            .eq('phrase_text', (original as any).phrase_text)
+            .eq('category', (original as any).category);
+
+          if (error) throw error;
+        }
+      } else {
+        // Update single phrase
+        const { data, error } = await supabase
+          .from('phrase_library' as any)
+          .update(updates as any)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (error) throw error;
+      }
+
+      return { success: true };
     },
     onSuccess: () => {
+      // Invalidate all phrase library queries
       queryClient.invalidateQueries({ queryKey: ['phrase-library'] });
+      // Also invalidate email builder related queries
+      queryClient.invalidateQueries({ queryKey: ['email-builder'] });
+      queryClient.invalidateQueries({ queryKey: ['composer'] });
       toast({
         title: 'Phrase updated',
         description: 'The phrase has been updated',
