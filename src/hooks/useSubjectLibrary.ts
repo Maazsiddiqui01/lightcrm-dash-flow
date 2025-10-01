@@ -54,3 +54,52 @@ export function selectSubject(
 
   return subject;
 }
+
+/**
+ * Pick subject with token replacement and optional rotation
+ */
+export async function pickSubject({
+  tone,
+  org,
+  focusAreas,
+  sector,
+  subjects,
+}: {
+  tone: 'formal' | 'hybrid' | 'casual';
+  org: string;
+  focusAreas: string[];
+  sector?: string;
+  subjects: SubjectLibraryItem[];
+}): Promise<string> {
+  // Filter by tone
+  const pool = subjects.filter(s => s.style === tone);
+  
+  if (pool.length === 0) {
+    return focusAreas.length > 0 ? `Re: ${focusAreas[0]}` : 'Following Up';
+  }
+
+  // Pick random
+  const selected = pool[Math.floor(Math.random() * pool.length)];
+  let subject = selected.subject_template;
+
+  // Handle (no subject) marker
+  if (subject.toLowerCase() === '(no subject)') {
+    return '';
+  }
+
+  // Token replacement
+  subject = subject.replace(/\[My Org\]/g, 'Lindsay Goldberg');
+  subject = subject.replace(/\[Their Org\]/g, org || '[Organization]');
+  subject = subject.replace(/\[Focus Area\]/g, focusAreas.length > 0 ? focusAreas[0] : '[Focus Area]');
+  
+  // Sector replacement
+  if (sector) {
+    subject = subject.replace(/\[Sector\]/g, sector);
+  } else if (focusAreas.length > 0) {
+    // Try to extract unique sectors from focus areas if available
+    const sectors = [...new Set(focusAreas.map(fa => fa.split(':')[0]).filter(Boolean))];
+    subject = subject.replace(/\[Sector\]/g, sectors.length > 0 ? sectors.join(', ') : '[Sector]');
+  }
+
+  return subject;
+}

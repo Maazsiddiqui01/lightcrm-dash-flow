@@ -62,7 +62,7 @@ function checkModulePrerequisites(
 }
 
 /**
- * Select appropriate inquiry based on priority system
+ * Select appropriate inquiry based on priority system with rotation
  */
 async function selectInquiry(
   context: GenerationContext
@@ -83,7 +83,7 @@ async function selectInquiry(
     if (category === 'article' && contact.articles.length === 0) continue;
     if (category === 'focus_area' && contact.focus_areas.length === 0) continue;
 
-    // Get available inquiries for this category
+    // Get available inquiries for this category with rotation
     const categoryInquiries = allInquiries.filter(i => i.category === category);
     const available = await getAvailableInquiries(
       contact.contact_id,
@@ -98,6 +98,31 @@ async function selectInquiry(
   }
 
   return null;
+}
+
+/**
+ * Build assistant CC clause for Meeting Request module
+ */
+function buildAssistantClause(
+  contact: ContactEmailComposer,
+  meetingRequestEnabled: boolean
+): string {
+  if (!meetingRequestEnabled) return '';
+  
+  const assistants = contact.assistant_emails.filter(Boolean);
+  if (assistants.length === 0) return '';
+
+  // Extract first names from emails or use full emails
+  const assistantNames = contact.assistant_names?.filter(Boolean) || [];
+  
+  if (assistantNames.length > 0) {
+    const nameList = assistantNames.length > 1 
+      ? `${assistantNames.slice(0, -1).join(', ')} and ${assistantNames[assistantNames.length - 1]}`
+      : assistantNames[0];
+    return `${nameList}, copied here, can coordinate logistics.`;
+  }
+
+  return 'My assistant, copied here, can coordinate logistics.';
 }
 
 /**
@@ -175,6 +200,7 @@ export async function buildModuleConfiguration(
   modules: Record<string, boolean>;
   phrases: Record<string, PhraseLibraryItem | null>;
   inquiry: InquiryLibraryItem | null;
+  assistantClause: string;
   qualityCheck: { pass: boolean; reason?: string };
 }> {
   const { masterTemplate, templateSettings, contact } = context;
@@ -212,7 +238,24 @@ export async function buildModuleConfiguration(
   }
 
   // Select inquiry (mandatory - at least 1 per email)
-  const inquiry = await selectInquiry(context);
+  let inquiry = await selectInquiry(context);
+
+  // GUARANTEE ≥1 inquiry per email: if no inquiry selected, force one from generic pool
+  if (!inquiry) {
+    const genericInquiries = context.allInquiries.filter(i => i.category === 'generic');
+    if (genericInquiries.length > 0) {
+      const available = await getAvailableInquiries(
+        contact.contact_id,
+        'generic',
+        genericInquiries
+      );
+      const pool = available.length > 0 ? available : genericInquiries;
+      inquiry = pool[Math.floor(Math.random() * pool.length)];
+    }
+  }
+
+  // Build assistant clause for Meeting Request
+  const assistantClause = buildAssistantClause(contact, modules.meeting_request || false);
 
   // Quality control check
   const qualityCheck = passesQualityControl(context, modules);
@@ -221,6 +264,7 @@ export async function buildModuleConfiguration(
     modules,
     phrases,
     inquiry,
+    assistantClause,
     qualityCheck
   };
 }

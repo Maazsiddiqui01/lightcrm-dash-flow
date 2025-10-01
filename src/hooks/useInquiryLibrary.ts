@@ -159,3 +159,130 @@ export function useDeleteInquiry() {
     },
   });
 }
+
+/**
+ * Get available inquiries with template + global filtering
+ */
+export async function getAvailableInquiries({
+  templateId,
+  includeGlobal = true,
+  activeOnly = true,
+}: {
+  templateId?: string | null;
+  includeGlobal?: boolean;
+  activeOnly?: boolean;
+}) {
+  let query = supabase
+    .from('inquiry_library' as any)
+    .select('*');
+
+  if (includeGlobal && templateId) {
+    query = query.or(`is_global.eq.true,template_id.eq.${templateId}`);
+  } else if (includeGlobal) {
+    query = query.eq('is_global', true);
+  } else if (templateId) {
+    query = query.eq('template_id', templateId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const inquiries = data as unknown as InquiryLibraryItem[];
+  
+  // Group by category
+  const grouped = inquiries.reduce((acc, inquiry) => {
+    if (!acc[inquiry.category]) {
+      acc[inquiry.category] = [];
+    }
+    acc[inquiry.category].push(inquiry);
+    return acc;
+  }, {} as Record<InquiryCategory, InquiryLibraryItem[]>);
+
+  return grouped;
+}
+
+/**
+ * Pick inquiry with priority system and rotation avoidance
+ * Priority: opportunity → article → focus_area → generic
+ */
+export async function pickInquiry({
+  contactId,
+  hasOpps,
+  articleChosen,
+  focusAreas,
+  allInquiries,
+}: {
+  contactId: string;
+  hasOpps: boolean;
+  articleChosen: boolean;
+  focusAreas: string[];
+  allInquiries: InquiryLibraryItem[];
+}): Promise<{ id: string; text: string; category: InquiryCategory } | null> {
+  const priorityOrder: InquiryCategory[] = ['opportunity', 'article', 'focus_area', 'generic'];
+
+  for (const category of priorityOrder) {
+    // Check if category is applicable
+    if (category === 'opportunity' && !hasOpps) continue;
+    if (category === 'article' && !articleChosen) continue;
+    if (category === 'focus_area' && focusAreas.length === 0) continue;
+
+    // Get category inquiries
+    const categoryInquiries = allInquiries.filter(i => i.category === category);
+    if (categoryInquiries.length === 0) continue;
+
+    // Get recent usage for this contact (last 10)
+    const { data: recentUse } = await supabase
+      .from('inquiry_rotation_log' as any)
+      .select('inquiry_id')
+      .eq('contact_id', contactId)
+      .order('used_at', { ascending: false })
+      .limit(10);
+
+    const recentIds = new Set(recentUse?.map((r: any) => r.inquiry_id) || []);
+
+    // Filter out recently used
+    const available = categoryInquiries.filter(i => !recentIds.has(i.id));
+
+    if (available.length > 0) {
+      const selected = available[Math.floor(Math.random() * available.length)];
+      return {
+        id: selected.id,
+        text: selected.inquiry_text,
+        category: selected.category,
+      };
+    }
+
+    // If all used, reset and pick from all
+    if (categoryInquiries.length > 0) {
+      const selected = categoryInquiries[Math.floor(Math.random() * categoryInquiries.length)];
+      return {
+        id: selected.id,
+        text: selected.inquiry_text,
+        category: selected.category,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Log inquiry usage for rotation tracking
+ */
+export async function logInquiryUse({
+  contactId,
+  inquiryId,
+}: {
+  contactId: string;
+  inquiryId: string;
+}): Promise<void> {
+  const { error } = await supabase
+    .from('inquiry_rotation_log' as any)
+    .insert({
+      contact_id: contactId,
+      inquiry_id: inquiryId,
+      used_at: new Date().toISOString(),
+    });
+
+  if (error) throw error;
+}

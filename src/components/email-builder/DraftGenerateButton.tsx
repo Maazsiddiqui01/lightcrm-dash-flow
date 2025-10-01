@@ -14,9 +14,10 @@ import type { MasterTemplate } from "@/lib/router";
 import { buildModuleConfiguration } from "@/lib/draftGeneration";
 import { useGlobalPhrases } from "@/hooks/usePhraseLibrary";
 import { useGlobalInquiries } from "@/hooks/useInquiryLibrary";
-import { useSubjectLibrary, selectSubject } from "@/hooks/useSubjectLibrary";
+import { useSubjectLibrary, pickSubject } from "@/hooks/useSubjectLibrary";
 import { useLogPhraseUsage, useLogInquiryUsage } from "@/hooks/useRotationTracking";
 import { useMasterTemplates } from "@/hooks/useMasterTemplates";
+import { logInquiryUse } from "@/hooks/useInquiryLibrary";
 
 // Response type from n8n Email-Builder webhook
 export interface DraftBuilderResult {
@@ -103,15 +104,20 @@ export function DraftGenerateButton({
         return;
       }
 
-      // Select subject from library
-      const selectedSubject = selectSubject(subjectLibrary, contactData.focus_areas);
+      // Select subject from library with token replacement
+      const selectedSubject = await pickSubject({
+        tone: subjectStyle,
+        org: contactData.organization || '',
+        focusAreas: contactData.focus_areas,
+        sector: contactData.fa_descriptions[0]?.sector,
+        subjects: subjectLibrary,
+      });
 
       // Log phrase and inquiry usage for rotation tracking
       if (moduleConfig.inquiry) {
-        await logInquiry.mutateAsync({
+        await logInquiryUse({
           contactId: contactData.contact_id,
           inquiryId: moduleConfig.inquiry.id,
-          category: moduleConfig.inquiry.category,
         });
       }
 
@@ -147,13 +153,19 @@ export function DraftGenerateButton({
         masterTemplate,
       });
 
-      // Enhance payload with library selections
+      // Enhance payload with RESOLVED library selections
       const enhancedPayload = {
         ...payload,
         helpers: {
           ...payload.helpers,
-          subjectComputed: selectedSubject,
-          inquiryLine: moduleConfig.inquiry?.inquiry_text || null,
+          selectedSubject,
+          selectedInquiry: moduleConfig.inquiry 
+            ? {
+                text: moduleConfig.inquiry.inquiry_text,
+                category: moduleConfig.inquiry.category,
+              }
+            : null,
+          assistantClause: moduleConfig.assistantClause,
           selectedPhrases: Object.fromEntries(
             Object.entries(moduleConfig.phrases)
               .filter(([_, phrase]) => phrase !== null)
