@@ -18,6 +18,7 @@ import { useSubjectLibrary, pickSubject } from "@/hooks/useSubjectLibrary";
 import { useLogPhraseUsage, useLogInquiryUsage } from "@/hooks/useRotationTracking";
 import { useMasterTemplates } from "@/hooks/useMasterTemplates";
 import { logInquiryUse } from "@/hooks/useInquiryLibrary";
+import { DebugResolvedLibraries, type DebugData } from "./DebugResolvedLibraries";
 
 // Response type from n8n Email-Builder webhook
 export interface DraftBuilderResult {
@@ -45,6 +46,8 @@ export function DraftGenerateButton({
 }: DraftGenerateButtonProps) {
   const [draftResult, setDraftResult] = useState<DraftBuilderResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [debugData, setDebugData] = useState<DebugData | null>(null);
+  const [sessionRotationCounts, setSessionRotationCounts] = useState({ phrases: 0, inquiries: 0 });
   const { toast } = useToast();
 
   // Load global libraries
@@ -193,6 +196,50 @@ export function DraftGenerateButton({
       console.log('Received draft from n8n:', result);
 
       setDraftResult(result as DraftBuilderResult);
+
+      // Update rotation counts
+      const phraseCount = Object.values(moduleConfig.phrases).filter(p => p !== null).length;
+      const inquiryCount = moduleConfig.inquiry ? 1 : 0;
+      setSessionRotationCounts(prev => ({
+        phrases: prev.phrases + phraseCount,
+        inquiries: prev.inquiries + inquiryCount,
+      }));
+
+      // Build debug data
+      const masterDefForDebug = masterTemplates?.find(mt => mt.master_key === masterTemplate.master_key);
+      const triStateSnapshot: Record<string, { decision: boolean; rule: 'always' | 'sometimes' | 'never' }> = {};
+      
+      for (const [module, enabled] of Object.entries(moduleConfig.modules)) {
+        const masterSetting = masterDefForDebug?.[module as keyof typeof masterDefForDebug];
+        const rule = ['always', 'sometimes', 'never'].includes(masterSetting as string) 
+          ? (masterSetting as 'always' | 'sometimes' | 'never')
+          : 'never';
+        triStateSnapshot[module] = { decision: enabled, rule };
+      }
+
+      setDebugData({
+        resolvedLibraries: {
+          selectedSubject: selectedSubject 
+            ? { text: selectedSubject, tone: subjectStyle }
+            : null,
+          selectedInquiry: moduleConfig.inquiry 
+            ? { 
+                text: moduleConfig.inquiry.inquiry_text, 
+                category: moduleConfig.inquiry.category 
+              }
+            : null,
+          selectedSignature: moduleConfig.signature 
+            ? { text: moduleConfig.signature, tone: 'professional' }
+            : null,
+          assistantClause: moduleConfig.assistantClause,
+        },
+        triStateSnapshot,
+        rotationWrites: {
+          phrases: sessionRotationCounts.phrases + phraseCount,
+          inquiries: sessionRotationCounts.inquiries + inquiryCount,
+        },
+        payloadPreview: enhancedPayload,
+      });
 
       toast({
         title: "Draft Generated Successfully",
@@ -383,6 +430,14 @@ export function DraftGenerateButton({
               </div>
             )}
           </div>
+        )}
+
+        {/* Debug Panel */}
+        {draftResult && (
+          <>
+            <Separator className="my-6" />
+            <DebugResolvedLibraries debugData={debugData} />
+          </>
         )}
       </CardContent>
     </Card>
