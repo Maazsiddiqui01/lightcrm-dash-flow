@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Copy, Send, AlertTriangle } from "lucide-react";
-import { type DraftBuilderResult } from "@/hooks/useDraftBuilder";
 import { buildDraftPayload } from "@/lib/payload";
 import { buildCc } from "@/lib/buildCc";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +11,15 @@ import type { ContactEmailComposer } from "@/types/emailComposer";
 import type { ModuleStates } from "@/components/email-builder/ModulesCard";
 import type { Article } from "@/types/emailComposer";
 import type { MasterTemplate } from "@/lib/router";
+
+// Response type from n8n Email-Builder webhook
+export interface DraftBuilderResult {
+  subject: string;
+  body: string;
+  cc?: string;
+  send: boolean;
+  skip_reason?: string;
+}
 
 interface DraftGenerateButtonProps {
   contactData: ContactEmailComposer | null;
