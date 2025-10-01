@@ -20,7 +20,6 @@ const menuItems = [
   { title: "Pending Contacts", url: "/missing-contacts", icon: Users },
   { title: "Opportunities", url: "/opportunities", icon: Target },
   { title: "Interactions", url: "/interactions", icon: MessageSquare },
-  { title: "Articles", url: "/articles", icon: FileText },
   { title: "Email Builder", url: "/email-builder", icon: Mail },
   { title: "Global Libraries", url: "/global-libraries", icon: Library },
   { title: "Contacts Email", url: "/contacts-email", icon: MailOpen },
