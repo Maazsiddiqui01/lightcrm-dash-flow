@@ -23,6 +23,8 @@ export function Contacts() {
     categories: [],
     deltaType: [],
     hasOpportunities: [],
+    lgLead: [],
+    groupContacts: [],
     mostRecentContactStart: null,
     mostRecentContactEnd: null,
     deltaMin: null,
@@ -65,6 +67,7 @@ export function Contacts() {
   }), [
     filters.focusAreas, filters.sectors, filters.areasOfSpecialization, filters.organizations,
     filters.titles, filters.categories, filters.deltaType, filters.hasOpportunities,
+    filters.lgLead, filters.groupContacts,
     filters.mostRecentContactStart, filters.mostRecentContactEnd, filters.deltaMin, filters.deltaMax,
     filters.opportunityTier, filters.opportunityPlatformAddon, filters.opportunityOwnershipType,
     filters.opportunityStatus, filters.opportunityLgLead, filters.opportunityDateRangeStart,

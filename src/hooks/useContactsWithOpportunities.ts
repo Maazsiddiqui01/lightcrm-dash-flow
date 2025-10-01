@@ -54,6 +54,7 @@ interface ContactWithOpportunities {
   updated_at: string | null;
   lg_lead: string | null; // Added new column
   lg_assistant: string | null; // Added new column
+  group_contact: string | null;
   intentional_no_outreach: boolean | null;
   intentional_no_outreach_date: string | null;
   intentional_no_outreach_note: string | null;
@@ -83,6 +84,7 @@ interface ContactFilters {
   deltaType?: string[];
   hasOpportunities?: string[];
   lgLead?: string[];
+  groupContacts?: string[];
   mostRecentContactStart?: string;
   mostRecentContactEnd?: string;
   deltaMin?: number;
@@ -130,6 +132,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         deltaType = [],
         hasOpportunities = [],
         lgLead = [],
+        groupContacts = [],
         mostRecentContactStart,
         mostRecentContactEnd,
         deltaMin,
@@ -208,6 +211,11 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           `lg_lead.ilike.%${lead}%`
         ).join(',');
         contactsQuery = contactsQuery.or(leadConditions);
+      }
+
+      // Filter contacts by Group Contact if specified
+      if (groupContacts.length > 0) {
+        contactsQuery = contactsQuery.in('group_contact', groupContacts);
       }
 
       // Performance: sort by most recent and limit result set to avoid timeouts
