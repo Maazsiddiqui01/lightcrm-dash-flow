@@ -9,6 +9,7 @@ import { EditableCell } from '@/components/shared/EditableCell';
 import { Badge } from '@/components/ui/badge';
 import { formatDaysOverUnder, getDaysOverUnderColorClass } from '@/utils/contactCalculations';
 import { getTierDisplayValue } from '@/lib/export/opportunityUtils';
+import { addDays } from 'date-fns';
 
 export interface EditState {
   editMode: boolean;
@@ -132,6 +133,22 @@ export function createDynamicColumns<T extends Record<string, any>>(
 
         // Get display value and modification state first
         let displayValue = formatCellValue(editedValue, tableColumn);
+        
+        // Special handling for outreach_date - calculate from most_recent_contact + delta
+        if (tableColumn.name === 'outreach_date') {
+          const mostRecentContact = row.most_recent_contact;
+          const delta = row.delta;
+          
+          if (mostRecentContact && delta) {
+            const contactDate = parseFlexibleDate(mostRecentContact);
+            if (contactDate) {
+              const outreachDate = addDays(contactDate, delta);
+              displayValue = format(outreachDate, 'MMM dd, yyyy');
+            }
+          } else {
+            displayValue = '';
+          }
+        }
         
         // Special handling for tier column to show descriptive labels
         if (tableColumn.name === 'tier') {
