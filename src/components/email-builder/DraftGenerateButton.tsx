@@ -11,6 +11,12 @@ import type { ContactEmailComposer } from "@/types/emailComposer";
 import type { ModuleStates } from "@/components/email-builder/ModulesCard";
 import type { Article } from "@/types/emailComposer";
 import type { MasterTemplate } from "@/lib/router";
+import { buildModuleConfiguration } from "@/lib/draftGeneration";
+import { useGlobalPhrases } from "@/hooks/usePhraseLibrary";
+import { useGlobalInquiries } from "@/hooks/useInquiryLibrary";
+import { useSubjectLibrary, selectSubject } from "@/hooks/useSubjectLibrary";
+import { useLogPhraseUsage, useLogInquiryUsage } from "@/hooks/useRotationTracking";
+import { useMasterTemplates } from "@/hooks/useMasterTemplates";
 
 // Response type from n8n Email-Builder webhook
 export interface DraftBuilderResult {
@@ -40,6 +46,20 @@ export function DraftGenerateButton({
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
+  // Load global libraries
+  const { data: masterTemplates } = useMasterTemplates();
+  const { data: globalPhrases = [] } = useGlobalPhrases();
+  const { data: globalInquiries = [] } = useGlobalInquiries();
+  // Map subject_style, defaulting to 'hybrid' for 'mixed' or unknown values
+  const subjectStyle = (masterTemplate?.subject_style === 'formal' || masterTemplate?.subject_style === 'casual') 
+    ? masterTemplate.subject_style 
+    : 'hybrid';
+  const { data: subjectLibrary = [] } = useSubjectLibrary(subjectStyle);
+  
+  // Rotation tracking mutations
+  const logPhrase = useLogPhraseUsage();
+  const logInquiry = useLogInquiryUsage();
+
   // Validation - more robust checks
   const canGenerate = contactData && 
     contactData.email && 
@@ -51,27 +71,104 @@ export function DraftGenerateButton({
     (!contactData?.assistant_emails || contactData.assistant_emails.length === 0);
 
   const handleGenerateDraft = async () => {
-    if (!contactData || !canGenerate) return;
+    if (!contactData || !canGenerate || !masterTemplate) return;
 
-    // Clear previous result
     setDraftResult(null);
     setIsGenerating(true);
 
     try {
-      // Build complete payload with all helpers
+      // Get master template defaults
+      const masterDefaults = masterTemplates?.find(mt => mt.master_key === masterTemplate.master_key);
+      if (!masterDefaults) {
+        throw new Error('Master template defaults not found');
+      }
+
+      // Build module configuration with tri-state logic and rotation
+      const moduleConfig = await buildModuleConfiguration({
+        contact: contactData,
+        masterTemplate: masterDefaults,
+        allPhrases: globalPhrases,
+        allInquiries: globalInquiries,
+        selectedArticle: selectedArticle?.article_link || null,
+      });
+
+      // Check quality control
+      if (!moduleConfig.qualityCheck.pass) {
+        toast({
+          title: "Quality Check Failed",
+          description: moduleConfig.qualityCheck.reason,
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      // Select subject from library
+      const selectedSubject = selectSubject(subjectLibrary, contactData.focus_areas);
+
+      // Log phrase and inquiry usage for rotation tracking
+      if (moduleConfig.inquiry) {
+        await logInquiry.mutateAsync({
+          contactId: contactData.contact_id,
+          inquiryId: moduleConfig.inquiry.id,
+          category: moduleConfig.inquiry.category,
+        });
+      }
+
+      for (const [category, phrase] of Object.entries(moduleConfig.phrases)) {
+        if (phrase) {
+          await logPhrase.mutateAsync({
+            contactId: contactData.contact_id,
+            phraseId: phrase.id,
+            category,
+          });
+        }
+      }
+
+      // Build payload with library-selected content and convert modules to ModuleStates
+      const enhancedModuleStates: ModuleStates = {
+        initial_greeting: moduleConfig.modules.initial_greeting ?? false,
+        self_personalization: moduleConfig.modules.self_personalization ?? false,
+        top_opportunities: moduleConfig.modules.top_opportunities ?? false,
+        article_recommendations: moduleConfig.modules.article_recommendations ?? false,
+        suggested_talking_points: moduleConfig.modules.suggested_talking_points ?? false,
+        platforms: moduleConfig.modules.platforms ?? false,
+        addons: moduleConfig.modules.addons ?? false,
+        general_org_update: moduleConfig.modules.general_org_update ?? false,
+        attachments: moduleConfig.modules.attachments ?? false,
+        meeting_request: moduleConfig.modules.meeting_request ?? false,
+        ai_backup_personalization: moduleConfig.modules.ai_backup_personalization ?? false,
+      };
+
       const payload = buildDraftPayload(contactData, {
         deltaType,
-        moduleStates,
+        moduleStates: enhancedModuleStates,
         selectedArticle,
         masterTemplate,
       });
 
-      console.log('Sending enriched payload to n8n Email-Builder webhook:', payload);
+      // Enhance payload with library selections
+      const enhancedPayload = {
+        ...payload,
+        helpers: {
+          ...payload.helpers,
+          subjectComputed: selectedSubject,
+          inquiryLine: moduleConfig.inquiry?.inquiry_text || null,
+          selectedPhrases: Object.fromEntries(
+            Object.entries(moduleConfig.phrases)
+              .filter(([_, phrase]) => phrase !== null)
+              .map(([key, phrase]) => [key, phrase?.phrase_text])
+          ),
+        },
+      };
 
+      console.log('Sending enhanced draft payload to n8n:', enhancedPayload);
+
+      // POST to n8n webhook
       const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Email-Builder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(enhancedPayload),
       });
 
       if (!response.ok) {
@@ -80,19 +177,21 @@ export function DraftGenerateButton({
       }
 
       const result = await response.json();
-      console.log('Received response from n8n Email-Builder webhook:', result);
-      
+      console.log('Received draft from n8n:', result);
+
       setDraftResult(result as DraftBuilderResult);
-      
+
       toast({
         title: "Draft Generated Successfully",
-        description: `Email draft created${result.send ? ' and ready to send' : ''}`,
+        description: result.send
+          ? "Email draft is ready to send"
+          : result.skip_reason || "Draft generated but marked as do not send",
       });
     } catch (error) {
-      console.error('Failed to generate draft:', error);
+      console.error('Draft generation error:', error);
       toast({
-        title: "Draft Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate email draft",
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate draft",
         variant: "destructive",
       });
     } finally {
