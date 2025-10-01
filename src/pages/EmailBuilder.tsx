@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 import { useRealtimeLibrarySync } from "@/hooks/useRealtimeSync";
 import { ContactSelector } from "@/components/email-builder/ContactSelector";
@@ -9,10 +9,15 @@ import { ArticlePicker } from "@/components/email-builder/ArticlePicker";
 import { CCPreviewCard } from "@/components/email-builder/CCPreviewCard";
 import { DraftGenerateButton } from "@/components/email-builder/DraftGenerateButton";
 import { PreviewModal } from "@/components/email-builder/PreviewModal";
-import { Mail } from "lucide-react";
+import { LivePreviewPanel } from "@/components/email-builder/LivePreviewPanel";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Mail, Save, RotateCcw } from "lucide-react";
 import { useEmailBuilderData } from "@/hooks/useEmailBuilderData";
 import { useResolvedTemplateQuery } from "@/hooks/useResolvedTemplate";
 import { useComposerRow } from "@/hooks/useComposer";
+import { useContactSettings } from "@/hooks/useContactSettings";
+import { useAutoPreview } from "@/hooks/useAutoPreview";
 import { routeMaster } from "@/lib/router";
 import type { EmailTemplate } from "@/hooks/useEmailTemplates";
 import type { Article } from "@/types/emailComposer";
@@ -48,6 +53,42 @@ export function EmailBuilder() {
   // Auto-set module defaults when master template changes
   const masterTemplate = contactData ? routeMaster(contactData.most_recent_contact) : null;
   
+  // Load and save contact-specific settings
+  const {
+    settings: contactSettings,
+    isLoading: isLoadingSettings,
+    saveSettings,
+    isSaving,
+    resetSettings,
+    isResetting,
+  } = useContactSettings(selectedContact?.contact_id || null);
+
+  // Auto-load saved settings when contact changes
+  useEffect(() => {
+    if (contactSettings) {
+      setModuleStates(contactSettings.module_states as ModuleStates);
+      setDeltaType(contactSettings.delta_type);
+      if (contactSettings.selected_article_id) {
+        // Could load article here if needed
+      }
+    } else if (masterTemplate) {
+      // Fallback to master template defaults
+      const defaults = MODULE_DEFAULTS[masterTemplate.master_key];
+      if (defaults) {
+        setModuleStates(defaults);
+      }
+    }
+  }, [contactSettings, masterTemplate, selectedContact]);
+
+  // Auto-preview hook
+  const { previewData, isGenerating } = useAutoPreview(
+    contactData,
+    deltaType,
+    moduleStates,
+    selectedArticle,
+    masterTemplate
+  );
+  
   const handleModuleChange = (module: keyof ModuleStates, value: TriState) => {
     setModuleStates(prev => ({ ...prev, [module]: value }));
   };
@@ -59,6 +100,25 @@ export function EmailBuilder() {
         setModuleStates(defaults);
       }
     }
+  };
+
+  const handleSaveSettings = () => {
+    if (!selectedContact?.contact_id) return;
+    
+    saveSettings({
+      contactId: selectedContact.contact_id,
+      moduleStates,
+      deltaType,
+      selectedArticleId: selectedArticle?.article_link,
+    });
+  };
+
+  const handleResetSettings = () => {
+    if (!selectedContact?.contact_id) return;
+    
+    resetSettings(selectedContact.contact_id);
+    // Reset to template defaults
+    handleResetToDefaults();
   };
   
   // Legacy support - remove when fully migrated
@@ -89,6 +149,17 @@ export function EmailBuilder() {
             {selectedContact && (
               <ContactInfoPanel contactId={selectedContact.contact_id} />
             )}
+
+            {/* Live Preview Section */}
+            {selectedContact && (
+              <LivePreviewPanel
+                isGenerating={isGenerating}
+                subject={previewData?.subject}
+                inquiry={previewData?.inquiry}
+                assistantClause={previewData?.assistantClause}
+                bodyPreview={previewData?.bodyPreview}
+              />
+            )}
           </div>
 
           {/* Right Column - Template, Preview & Generation */}
@@ -117,6 +188,40 @@ export function EmailBuilder() {
               contactData={contactData}
               deltaType={deltaType}
             />
+
+            {/* Settings Controls */}
+            {selectedContact && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {contactSettings && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Save className="h-3 w-3" />
+                    Custom Settings
+                  </Badge>
+                )}
+                <Button
+                  onClick={handleSaveSettings}
+                  disabled={isSaving || !selectedContact}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {isSaving ? 'Saving...' : 'Save Settings'}
+                </Button>
+                {contactSettings && (
+                  <Button
+                    onClick={handleResetSettings}
+                    disabled={isResetting}
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Reset to Defaults
+                  </Button>
+                )}
+              </div>
+            )}
             
             <DraftGenerateButton 
               contactData={contactData}
