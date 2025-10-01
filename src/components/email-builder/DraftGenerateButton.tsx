@@ -75,7 +75,25 @@ export function DraftGenerateButton({
     (!contactData?.assistant_emails || contactData.assistant_emails.length === 0);
 
   const handleGenerateDraft = async () => {
-    if (!contactData || !canGenerate || !masterTemplate) return;
+    if (!contactData || !canGenerate || !masterTemplate) {
+      console.error('❌ Cannot generate - missing required data:', { 
+        hasContactData: !!contactData,
+        canGenerate,
+        hasMasterTemplate: !!masterTemplate 
+      });
+      return;
+    }
+
+    console.log('🚀 Starting draft generation for:', contactData.email);
+    console.log('📊 Contact data structure:', {
+      contact_id: contactData.contact_id,
+      email: contactData.email,
+      first_name: contactData.first_name,
+      focus_areas: contactData.focus_areas,
+      has_opps: contactData.has_opps,
+      opps_count: contactData.opps?.length || 0,
+      articles_count: contactData.articles?.length || 0,
+    });
 
     setDraftResult(null);
     setIsGenerating(true);
@@ -84,10 +102,13 @@ export function DraftGenerateButton({
       // Get master template defaults
       const masterDefaults = masterTemplates?.find(mt => mt.master_key === masterTemplate.master_key);
       if (!masterDefaults) {
-        throw new Error('Master template defaults not found');
+        throw new Error('Master template defaults not found for: ' + masterTemplate.master_key);
       }
 
+      console.log('✅ Master template defaults found:', masterDefaults.master_key);
+
       // Build module configuration with tri-state logic and rotation
+      console.log('🔧 Building module configuration...');
       const moduleConfig = await buildModuleConfiguration({
         contact: contactData,
         masterTemplate: masterDefaults,
@@ -96,8 +117,15 @@ export function DraftGenerateButton({
         selectedArticle: selectedArticle?.article_link || null,
       });
 
+      console.log('✅ Module config built:', {
+        modules: Object.keys(moduleConfig.modules).filter(k => moduleConfig.modules[k as keyof typeof moduleConfig.modules]),
+        hasInquiry: !!moduleConfig.inquiry,
+        hasSignature: !!moduleConfig.signature,
+      });
+
       // Check quality control
       if (!moduleConfig.qualityCheck.pass) {
+        console.warn('⚠️ Quality check failed:', moduleConfig.qualityCheck.reason);
         toast({
           title: "Quality Check Failed",
           description: moduleConfig.qualityCheck.reason,
@@ -107,7 +135,10 @@ export function DraftGenerateButton({
         return;
       }
 
+      console.log('✅ Quality check passed');
+
       // Select subject from library with token replacement
+      console.log('📧 Selecting subject from library...');
       const selectedSubject = await pickSubject({
         tone: subjectStyle,
         org: contactData.organization || '',
@@ -115,6 +146,8 @@ export function DraftGenerateButton({
         sector: contactData.fa_descriptions[0]?.sector,
         subjects: subjectLibrary,
       });
+
+      console.log('✅ Subject selected:', selectedSubject);
 
       // Log phrase and inquiry usage for rotation tracking
       if (moduleConfig.inquiry) {
@@ -179,7 +212,8 @@ export function DraftGenerateButton({
         },
       };
 
-      console.log('Sending enhanced draft payload to n8n:', enhancedPayload);
+      console.log('🌐 Sending payload to n8n webhook...');
+      console.log('📦 Enhanced payload:', JSON.stringify(enhancedPayload, null, 2));
 
       // POST to n8n webhook
       const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Email-Builder', {
@@ -188,13 +222,16 @@ export function DraftGenerateButton({
         body: JSON.stringify(enhancedPayload),
       });
 
+      console.log('📡 Response status:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('❌ n8n webhook error:', errorText);
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('Received draft from n8n:', result);
+      console.log('✅ Received draft from n8n:', result);
 
       setDraftResult(result as DraftBuilderResult);
 
@@ -249,7 +286,8 @@ export function DraftGenerateButton({
           : result.skip_reason || "Draft generated but marked as do not send",
       });
     } catch (error) {
-      console.error('Draft generation error:', error);
+      console.error('❌ Draft generation error:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       toast({
         title: "Generation Failed",
         description: error instanceof Error ? error.message : "Failed to generate draft",

@@ -18,6 +18,13 @@ export function LivePreviewPanel({
   assistantClause,
   bodyPreview,
 }: LivePreviewPanelProps) {
+  console.log('🎨 LivePreviewPanel render:', {
+    isGenerating,
+    hasSubject: !!subject,
+    hasInquiry: !!inquiry,
+    hasBodyPreview: !!bodyPreview,
+  });
+
   if (isGenerating) {
     return (
       <Card className="border-primary/20">
