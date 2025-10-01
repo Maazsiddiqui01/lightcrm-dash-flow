@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, Users, Building, Settings, List, Eye } from "lucide-react";
+import { Database, Users, Building, Settings, List, Eye, Sparkles } from "lucide-react";
 import { ColumnManager } from "@/components/data-maintenance/ColumnManager";
 import { LookupManager } from "@/components/data-maintenance/LookupManager";
 import { SchemaOverview } from "@/components/data-maintenance/SchemaOverview";
+import { DataHygienePanel } from "@/components/data-maintenance/DataHygienePanel";
 
 export function DataMaintenance() {
   const [activeContactsTab, setActiveContactsTab] = useState<string>("columns");
@@ -28,18 +29,22 @@ export function DataMaintenance() {
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-hidden">
         <Tabs defaultValue="overview" className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Eye className="h-4 w-4" />
               System Overview
             </TabsTrigger>
+            <TabsTrigger value="hygiene" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Data Hygiene
+            </TabsTrigger>
             <TabsTrigger value="contacts" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Contacts Management
+              Contacts
             </TabsTrigger>
             <TabsTrigger value="opportunities" className="flex items-center gap-2">
               <Building className="h-4 w-4" />
-              Opportunities Management
+              Opportunities
             </TabsTrigger>
             <TabsTrigger value="global" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -50,6 +55,11 @@ export function DataMaintenance() {
           {/* System Overview */}
           <TabsContent value="overview" className="flex-1 mt-0">
             <SchemaOverview />
+          </TabsContent>
+
+          {/* Data Hygiene */}
+          <TabsContent value="hygiene" className="flex-1 mt-0">
+            <DataHygienePanel />
           </TabsContent>
 
           {/* Contacts Management */}
