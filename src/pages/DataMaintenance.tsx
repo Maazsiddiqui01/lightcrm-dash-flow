@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, Users, Building, Settings, List, Eye, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Database, Users, Building, Settings, List, Eye, Sparkles, Upload } from "lucide-react";
 import { ColumnManager } from "@/components/data-maintenance/ColumnManager";
 import { LookupManager } from "@/components/data-maintenance/LookupManager";
 import { SchemaOverview } from "@/components/data-maintenance/SchemaOverview";
 import { DataHygienePanel } from "@/components/data-maintenance/DataHygienePanel";
+import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 
 export function DataMaintenance() {
   const [activeContactsTab, setActiveContactsTab] = useState<string>("columns");
   const [activeOpportunitiesTab, setActiveOpportunitiesTab] = useState<string>("columns");
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importEntityType, setImportEntityType] = useState<'contacts' | 'opportunities'>('contacts');
 
   return (
     <section className="h-full flex flex-col overflow-hidden">
@@ -66,13 +70,27 @@ export function DataMaintenance() {
           <TabsContent value="contacts" className="flex-1 mt-0">
             <Card className="h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Contacts Data Management
-                </CardTitle>
-                <CardDescription>
-                  Manage contacts table structure, columns, validation rules, and dropdown options
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Contacts Data Management
+                    </CardTitle>
+                    <CardDescription>
+                      Manage contacts table structure, columns, validation rules, and dropdown options
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    onClick={() => {
+                      setImportEntityType('contacts');
+                      setImportModalOpen(true);
+                    }}
+                    variant="outline"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import CSV
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="h-full">
                 <Tabs value={activeContactsTab} onValueChange={setActiveContactsTab} className="h-full flex flex-col">
@@ -119,13 +137,27 @@ export function DataMaintenance() {
           <TabsContent value="opportunities" className="flex-1 mt-0">
             <Card className="h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5" />
-                  Opportunities Data Management
-                </CardTitle>
-                <CardDescription>
-                  Manage opportunities table structure, columns, validation rules, and dropdown options
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building className="h-5 w-5" />
+                      Opportunities Data Management
+                    </CardTitle>
+                    <CardDescription>
+                      Manage opportunities table structure, columns, validation rules, and dropdown options
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    onClick={() => {
+                      setImportEntityType('opportunities');
+                      setImportModalOpen(true);
+                    }}
+                    variant="outline"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import CSV
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="h-full">
                 <Tabs value={activeOpportunitiesTab} onValueChange={setActiveOpportunitiesTab} className="h-full flex flex-col">
@@ -208,6 +240,16 @@ export function DataMaintenance() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Import Modal */}
+      <BulkImportModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        entityType={importEntityType}
+        onImportComplete={() => {
+          // Could trigger a refresh of data here if needed
+        }}
+      />
     </section>
   );
 }
