@@ -302,81 +302,37 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         }
       }
 
-      console.log('📊 Fetching opportunities for', contactsData?.length || 0, 'contacts');
-
-      // Fetch opportunities from the backend view
-      const contactIds = contactsData?.map(c => c.id).filter(Boolean) || [];
+      // Fetch opportunities directly from the view - simplified approach
+      console.log('📊 Fetching opportunities from view...');
       
-      let opportunitiesData: any[] = [];
-      if (contactIds.length > 0) {
-        const BATCH_SIZE = 1000;
-        for (let i = 0; i < contactIds.length; i += BATCH_SIZE) {
-          const batch = contactIds.slice(i, i + BATCH_SIZE);
-          const { data: oppData, error: oppError } = await supabase
-            .from('contacts_with_opportunities_v')
-            .select('id, opportunities')
-            .in('id', batch);
-          
-          if (oppError) {
-            console.error('Error fetching opportunities from view (by id):', oppError);
-          } else {
-            opportunitiesData.push(...(oppData || []));
-          }
-        }
+      const { data: oppsData, error: oppsError } = await supabase
+        .from('contacts_with_opportunities_v')
+        .select('id, opportunities');
+      
+      if (oppsError) {
+        console.error('❌ Error fetching opportunities from view:', oppsError);
       }
 
-      console.log('💼 Total opportunities fetched (by id):', opportunitiesData.length);
-
-      // Build contact ID -> opportunities map
-      const contactOppsMap = new Map<string, string>();
-      opportunitiesData.forEach((opp) => {
-        if (opp.id && typeof opp.opportunities === 'string') {
-          contactOppsMap.set(String(opp.id), opp.opportunities);
+      // Build a simple map: contact id -> opportunities string
+      const oppsMap = new Map<string, string>();
+      (oppsData || []).forEach(row => {
+        if (row.id && row.opportunities) {
+          oppsMap.set(row.id, row.opportunities);
         }
       });
 
-      // Fallback: if nothing mapped by id, try matching by full_name
-      if (contactOppsMap.size === 0) {
-        const names = (contactsData || [])
-          .map((c) => c.full_name)
-          .filter((n): n is string => !!n);
-        if (names.length > 0) {
-          const uniqueNames = Array.from(new Set(names));
-          const BATCH_SIZE = 500;
-          for (let i = 0; i < uniqueNames.length; i += BATCH_SIZE) {
-            const batch = uniqueNames.slice(i, i + BATCH_SIZE);
-            const { data: oppByName, error: oppByNameErr } = await supabase
-              .from('contacts_with_opportunities_v')
-              .select('full_name, opportunities')
-              .in('full_name', batch);
-            if (oppByNameErr) {
-              console.error('Error fetching opportunities from view (by name):', oppByNameErr);
-            } else {
-              for (const row of oppByName || []) {
-                const opps = typeof row.opportunities === 'string' ? row.opportunities : '';
-                // assign opps to all contacts with this name
-                (contactsData || []).forEach((c) => {
-                  if (c.full_name && row.full_name && c.full_name === row.full_name) {
-                    contactOppsMap.set(String(c.id), opps);
-                  }
-                });
-              }
-            }
-          }
-        }
-      }
+      console.log('✅ Opportunities map built:', oppsMap.size, 'contacts have opportunities');
+      console.log('🔍 Sample opportunities:', Array.from(oppsMap.entries()).slice(0, 3));
 
-      console.log('📦 Opportunities map size:', contactOppsMap.size);
-      console.log('📦 Sample opportunities:', Array.from(contactOppsMap.entries()).slice(0, 3));
-
-      // Join contacts with their opportunities
-      const contactsWithOpportunities = contactsData?.map((contact) => ({
+      // Attach opportunities to each contact
+      const contactsWithOpportunities = contactsData?.map(contact => ({
         ...contact,
-        opportunities: contactOppsMap.get(String(contact.id)) || ''
+        opportunities: oppsMap.get(contact.id) || ''
       })) || [];
 
-      console.log('🎯 Final contacts with opportunities:', contactsWithOpportunities.length);
-      console.log('🎯 Sample contact with opps:', contactsWithOpportunities.find((c) => c.opportunities) || 'none found');
+      const withOpps = contactsWithOpportunities.filter(c => c.opportunities).length;
+      console.log('✅ Final result:', contactsWithOpportunities.length, 'total contacts,', withOpps, 'with opportunities');
+      console.log('🔍 Sample contact with opportunities:', contactsWithOpportunities.find(c => c.opportunities));
 
       setContacts(contactsWithOpportunities);
     } catch (error) {
