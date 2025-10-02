@@ -6,7 +6,7 @@ import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
 import { IntentionalNoOutreachModal } from "./IntentionalNoOutreachModal";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
@@ -21,6 +21,7 @@ import { useColumnVisibility } from "@/hooks/useColumnVisibility";
 import { ColumnsMenu } from "@/components/shared/ColumnsMenu";
 import { EditToolbar } from "@/components/shared/EditToolbar";
 import { useContactsWithOpportunities } from "@/hooks/useContactsWithOpportunities";
+import { BulkGroupAssignmentModal } from "./BulkGroupAssignmentModal";
 import { useFocusAreaSectorMapping } from "@/hooks/useFocusAreaSectorMapping";
 import { mapFocusAreasToSectors, getAllFocusAreas } from "@/utils/sectorMapping";
 import { calculateDaysOverUnderMaxLag } from "@/utils/contactCalculations";
@@ -149,6 +150,8 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     contactName: string;
     isCurrentlySkipped: boolean;
   }>({ open: false, contactId: "", contactName: "", isCurrentlySkipped: false });
+  const [showBulkGroupModal, setShowBulkGroupModal] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const { toast } = useToast();
   
   // Load sort state on mount
@@ -437,6 +440,29 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
           </h3>
         </div>
         <div className="flex gap-2">
+          {/* Selection Toolbar */}
+          {selectedRows.length > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-md border border-primary/20">
+              <span className="text-sm font-medium text-foreground">
+                {selectedRows.length} selected
+              </span>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setShowBulkGroupModal(true)}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Add to Group
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedRows([])}
+              >
+                Clear
+              </Button>
+            </div>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -509,6 +535,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
           description: isRefreshing ? "Please wait while we update the contacts list." : "Try adjusting your search or filters to find contacts.",
         }}
         enableRowSelection={true}
+        onSelectedRowsChange={setSelectedRows}
         idKey="id"
         initialPageSize={50}
         tableId="contacts-table"
@@ -568,6 +595,21 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         columns={columnOptions}
         sortLevels={sortLevels}
         onApply={handleSortChange}
+      />
+
+      {/* Bulk Group Assignment Modal */}
+      <BulkGroupAssignmentModal
+        open={showBulkGroupModal}
+        onOpenChange={setShowBulkGroupModal}
+        selectedContacts={selectedRows.map(contact => ({
+          id: contact.id,
+          full_name: contact.full_name || 'Unknown',
+          group_contact: contact.group_contact
+        }))}
+        onSuccess={() => {
+          refetch();
+          setSelectedRows([]);
+        }}
       />
     </div>
   );
