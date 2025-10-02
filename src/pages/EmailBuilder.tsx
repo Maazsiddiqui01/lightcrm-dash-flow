@@ -9,7 +9,7 @@ import { ModulesCard, type ModuleStates, MODULE_DEFAULTS, getModuleDefaultsFromM
 import { useMasterTemplates } from "@/hooks/useMasterTemplates";
 import { ArticlePicker } from "@/components/email-builder/ArticlePicker";
 import { CCPreviewCard } from "@/components/email-builder/CCPreviewCard";
-import { DraftGenerateButton } from "@/components/email-builder/DraftGenerateButton";
+import { EnhancedDraftSection } from "@/components/email-builder/EnhancedDraftSection";
 import { PreviewModal } from "@/components/email-builder/PreviewModal";
 import { LivePreviewPanel } from "@/components/email-builder/LivePreviewPanel";
 import { Button } from "@/components/ui/button";
@@ -20,15 +20,22 @@ import { useResolvedTemplateQuery } from "@/hooks/useResolvedTemplate";
 import { useComposerRow } from "@/hooks/useComposer";
 import { useContactSettings } from "@/hooks/useContactSettings";
 import { useAutoPreview } from "@/hooks/useAutoPreview";
+import { useEnhancedDraftGenerator } from "@/hooks/useEnhancedDraftGenerator";
+import { useGlobalPhrases } from "@/hooks/usePhraseLibrary";
+import { useGlobalInquiries } from "@/hooks/useInquiryLibrary";
+import { useSubjectLibrary } from "@/hooks/useSubjectLibrary";
+import { buildEnhancedDraftPayload } from "@/lib/enhancedPayload";
 import { routeMaster } from "@/lib/router";
 import type { EmailTemplate } from "@/hooks/useEmailTemplates";
 import type { Article } from "@/types/emailComposer";
 import type { TriState } from "@/types/phraseLibrary";
+import { useToast } from "@/hooks/use-toast";
 
 export function EmailBuilder() {
   // Enable real-time synchronization with Global Libraries
   useRealtimeLibrarySync();
   
+  const { toast } = useToast();
   const [selectedContact, setSelectedContact] = useState<any | null>(null);
   const [deltaType, setDeltaType] = useState<'Email' | 'Meeting'>('Email');
   const [showPreview, setShowPreview] = useState(false);
@@ -57,6 +64,21 @@ export function EmailBuilder() {
   
   // Get contact data from new composer view
   const { data: contactData } = useComposerRow(selectedContact?.email || null);
+  
+  // Load library data
+  const { data: allPhrases = [] } = useGlobalPhrases();
+  const { data: allInquiries = [] } = useGlobalInquiries();
+  const { data: allSubjects = [] } = useSubjectLibrary();
+  
+  // Enhanced draft generator
+  const {
+    generateDraft,
+    isGenerating,
+    progress,
+    streamedContent,
+  } = useEnhancedDraftGenerator();
+  
+  const [draftResult, setDraftResult] = useState<any | null>(null);
   
   // Auto-set days since contact when contact changes
   useEffect(() => {
@@ -108,7 +130,7 @@ export function EmailBuilder() {
   }, [contactSettings, masterTemplate, masterTemplates, selectedContact]);
 
   // Auto-preview hook
-  const { previewData, isGenerating } = useAutoPreview(
+  const { previewData, isGenerating: isAutoGenerating } = useAutoPreview(
     contactData,
     deltaType,
     moduleStates,
@@ -154,6 +176,80 @@ export function EmailBuilder() {
     // Reset to template defaults
     handleResetToDefaults();
   };
+
+  // Enhanced draft generation handler
+  const handleGenerateDraft = async () => {
+    if (!contactData || !masterTemplate) {
+      toast({
+        title: 'Missing Data',
+        description: 'Please select a contact first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Get full master template from database
+    const fullMasterTemplate = masterTemplates?.find(
+      t => t.master_key === masterTemplate.master_key
+    );
+    
+    if (!fullMasterTemplate) {
+      toast({
+        title: 'Template Not Found',
+        description: 'Master template not found in database',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Build enhanced payload
+      const payload = await buildEnhancedDraftPayload(
+        contactData,
+        fullMasterTemplate,
+        allPhrases,
+        allInquiries,
+        allSubjects,
+        daysSinceContact,
+        selectedArticle?.article_link,
+        toneOverride || undefined,
+        subjectPoolOverride
+      );
+
+      // Generate draft
+      const result = await generateDraft(payload);
+      
+      if (result) {
+        setDraftResult(result);
+      }
+    } catch (error) {
+      console.error('Failed to generate draft:', error);
+      toast({
+        title: 'Generation Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Copy to clipboard handler
+  const handleCopyToClipboard = () => {
+    if (!draftResult) return;
+
+    const fullEmail = `Subject: ${draftResult.subject}
+
+${draftResult.greeting},
+
+${draftResult.body}
+
+${draftResult.signature}`;
+
+    navigator.clipboard.writeText(fullEmail);
+    toast({
+      title: 'Copied!',
+      description: 'Email draft copied to clipboard',
+    });
+  };
   
   // Legacy support - remove when fully migrated
   const { contact, lag, opportunities, payload, isLoading } = useEmailBuilderData(selectedContact?.contact_id || null, null);
@@ -187,7 +283,7 @@ export function EmailBuilder() {
             {/* Live Preview Section */}
             {selectedContact && (
               <LivePreviewPanel
-                isGenerating={isGenerating}
+                isGenerating={isAutoGenerating}
                 subject={previewData?.subject}
                 inquiry={previewData?.inquiry}
                 assistantClause={previewData?.assistantClause}
@@ -268,13 +364,18 @@ export function EmailBuilder() {
               </div>
             )}
             
-            <DraftGenerateButton 
-              contactData={contactData}
-              deltaType={deltaType}
-              moduleStates={moduleStates}
-              selectedArticle={selectedArticle}
-              masterTemplate={masterTemplate}
-            />
+            {/* Enhanced Draft Section - replaces old DraftGenerateButton */}
+            {selectedContact && contactData && masterTemplate && (
+              <EnhancedDraftSection
+                isGenerating={isGenerating}
+                progress={progress}
+                streamedContent={streamedContent}
+                result={draftResult}
+                onGenerate={handleGenerateDraft}
+                onCopyToClipboard={handleCopyToClipboard}
+                disabled={!contactData}
+              />
+            )}
           </div>
         </div>
       </ResponsiveContainer>
