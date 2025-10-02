@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.generate_email_draft]
 verify_jwt = false
+
+[functions.post_to_n8n]
+verify_jwt = false
