@@ -303,6 +303,7 @@ export type Database = {
           meeting_title: string | null
           meeting_to: string | null
           most_recent_contact: string | null
+          most_recent_group_contact: string | null
           no_of_lg_focus_areas: number | null
           no_of_opps_sourced: number | null
           notes: string | null
@@ -363,6 +364,7 @@ export type Database = {
           meeting_title?: string | null
           meeting_to?: string | null
           most_recent_contact?: string | null
+          most_recent_group_contact?: string | null
           no_of_lg_focus_areas?: number | null
           no_of_opps_sourced?: number | null
           notes?: string | null
@@ -423,6 +425,7 @@ export type Database = {
           meeting_title?: string | null
           meeting_to?: string | null
           most_recent_contact?: string | null
+          most_recent_group_contact?: string | null
           no_of_lg_focus_areas?: number | null
           no_of_opps_sourced?: number | null
           notes?: string | null

@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useContactNotes } from "@/hooks/useContactNotes";
 import { ContactNotesSection } from "./ContactNotesSection";
+import { format } from 'date-fns';
+import { parseFlexibleDate } from '@/utils/dateUtils';
 import {
   Sheet,
   SheetContent,
@@ -56,6 +58,10 @@ interface ContactRaw {
   intentional_no_outreach: boolean | null;
   intentional_no_outreach_date: string | null;
   intentional_no_outreach_note: string | null;
+  most_recent_contact: string | null;
+  most_recent_group_contact: string | null;
+  of_emails: number | null;
+  of_meetings: number | null;
 }
 
 interface ContactApp {
@@ -69,6 +75,8 @@ interface ContactApp {
   of_meetings: number | null;
   all_opps: number | null;
   most_recent_contact: string | null;
+  most_recent_group_contact: string | null;
+  group_contact: string | null;
 }
 
 interface Interaction {
@@ -529,6 +537,47 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     />
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Contact Statistics */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Contact Statistics</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Most Recent Contact</Label>
+                  <p className="text-sm font-medium mt-1">
+                    {contactData.most_recent_contact 
+                      ? format(parseFlexibleDate(contactData.most_recent_contact) || new Date(), 'MMM dd, yyyy')
+                      : '—'
+                    }
+                  </p>
+                </div>
+
+                {contactData.group_contact && (
+                  <div>
+                    <Label className="text-muted-foreground">Most Recent Group Contact</Label>
+                    <p className="text-sm font-medium mt-1">
+                      {contactData.most_recent_group_contact 
+                        ? format(parseFlexibleDate(contactData.most_recent_group_contact) || new Date(), 'MMM dd, yyyy')
+                        : '—'
+                      }
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <Label className="text-muted-foreground"># of Emails</Label>
+                  <p className="text-sm font-medium mt-1">{contactData.of_emails || 0}</p>
+                </div>
+
+                <div>
+                  <Label className="text-muted-foreground"># of Meetings</Label>
+                  <p className="text-sm font-medium mt-1">{contactData.of_meetings || 0}</p>
+                </div>
               </div>
             </div>
 

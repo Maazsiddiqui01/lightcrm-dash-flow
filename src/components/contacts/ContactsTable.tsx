@@ -62,6 +62,7 @@ interface ContactRaw {
   notes: string | null;
   url_to_online_bio: string | null;
   most_recent_contact: string | null;
+  most_recent_group_contact: string | null;
   latest_contact_email: string | null;
   latest_contact_meeting: string | null;
   outreach_date: string | null;

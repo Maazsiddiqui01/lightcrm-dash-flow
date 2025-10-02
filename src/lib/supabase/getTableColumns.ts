@@ -40,6 +40,7 @@ export const CONTACTS_RAW_COLUMNS: TableColumn[] = [
   { name: 'category', type: 'text', nullable: true, displayName: 'Profession' },
   { name: 'contact_type', type: 'text', nullable: true, displayName: 'Preferred Contact Method' },
   { name: 'most_recent_contact', type: 'timestamp with time zone', nullable: true, displayName: 'Most Recent Contact' },
+  { name: 'most_recent_group_contact', type: 'timestamp with time zone', nullable: true, displayName: 'Most Recent Group Contact' },
   { name: 'latest_contact_email', type: 'timestamp with time zone', nullable: true, displayName: 'Most Recent Email (Sent/Received)' },
   { name: 'latest_contact_meeting', type: 'timestamp with time zone', nullable: true, displayName: 'Most Recent Meeting' },
   { name: 'outreach_date', type: 'timestamp with time zone', nullable: true, displayName: 'Next Planned Outreach (date)' },
