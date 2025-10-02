@@ -22,6 +22,13 @@ export interface GroupSuggestion {
   sampleSubjects: string[];
 }
 
+export interface GroupConflict {
+  email: string;
+  name?: string;
+  currentGroup: string;
+  suggestedGroup: string;
+}
+
 export function useSuggestGroups() {
   return useMutation({
     mutationFn: async () => {
@@ -37,7 +44,7 @@ export function useSuggestGroups() {
   });
 }
 
-export function useCreateGroupFromSuggestion() {
+export function useCheckGroupConflicts() {
   return useMutation({
     mutationFn: async ({ 
       groupName, 
@@ -46,18 +53,81 @@ export function useCreateGroupFromSuggestion() {
       groupName: string; 
       memberEmails: string[] 
     }) => {
-      // Update all existing contacts with this group
+      // Check if group name already exists
+      const { data: existingGroups } = await supabase
+        .from('contacts_raw')
+        .select('group_contact')
+        .eq('group_contact', groupName)
+        .limit(1);
+
+      let finalGroupName = groupName;
+      if (existingGroups && existingGroups.length > 0) {
+        // Find unique name
+        let counter = 2;
+        while (true) {
+          const testName = `${groupName} (${counter})`;
+          const { data: test } = await supabase
+            .from('contacts_raw')
+            .select('group_contact')
+            .eq('group_contact', testName)
+            .limit(1);
+          
+          if (!test || test.length === 0) {
+            finalGroupName = testName;
+            break;
+          }
+          counter++;
+          if (counter > 10) break; // Safety limit
+        }
+      }
+
+      // Check for contacts already in groups
       const { data: contacts } = await supabase
         .from('contacts_raw')
-        .select('id, email_address')
+        .select('id, email_address, full_name, group_contact')
         .in('email_address', memberEmails);
 
       if (!contacts || contacts.length === 0) {
         throw new Error('No matching contacts found');
       }
 
-      const contactIds = contacts.map(c => c.id);
-      
+      const conflicts: GroupConflict[] = contacts
+        .filter(c => c.group_contact && c.group_contact.trim() !== '')
+        .map(c => ({
+          email: c.email_address!,
+          name: c.full_name,
+          currentGroup: c.group_contact!,
+          suggestedGroup: finalGroupName
+        }));
+
+      return {
+        finalGroupName,
+        conflicts,
+        validContacts: contacts.filter(c => !c.group_contact || c.group_contact.trim() === ''),
+        allContacts: contacts
+      };
+    },
+    onError: (error) => {
+      console.error('Error checking conflicts:', error);
+      toast.error('Failed to check for conflicts. Please try again.');
+    },
+  });
+}
+
+export function useCreateGroupFromSuggestion() {
+  return useMutation({
+    mutationFn: async ({ 
+      groupName, 
+      contactIds 
+    }: { 
+      groupName: string; 
+      contactIds: string[] 
+    }) => {
+      if (contactIds.length === 0) {
+        throw new Error('No contacts selected');
+      }
+
+      // Update only the selected contacts
       const { error } = await supabase
         .from('contacts_raw')
         .update({ group_contact: groupName })
@@ -65,19 +135,10 @@ export function useCreateGroupFromSuggestion() {
 
       if (error) throw error;
 
-      return { 
-        updatedCount: contactIds.length,
-        missingCount: memberEmails.length - contactIds.length 
-      };
+      return { updatedCount: contactIds.length };
     },
-    onSuccess: ({ updatedCount, missingCount }) => {
-      if (missingCount > 0) {
-        toast.success(
-          `Group created with ${updatedCount} contacts. ${missingCount} member(s) not found in contacts.`
-        );
-      } else {
-        toast.success(`Group created successfully with ${updatedCount} members!`);
-      }
+    onSuccess: ({ updatedCount }) => {
+      toast.success(`Group created successfully with ${updatedCount} members!`);
     },
     onError: (error) => {
       console.error('Error creating group:', error);

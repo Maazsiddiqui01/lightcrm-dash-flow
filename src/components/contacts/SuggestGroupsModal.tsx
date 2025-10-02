@@ -35,10 +35,14 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
 
   const handleCreateGroup = (suggestion: GroupSuggestion) => {
     const groupName = editedNames[suggestion.id] || suggestion.suggestedName;
-    const memberEmails = suggestion.members.map(m => m.email);
+    const contactIds = suggestion.members.filter(m => m.contactId).map(m => m.contactId!);
+
+    if (contactIds.length === 0) {
+      return;
+    }
 
     createGroup(
-      { groupName, memberEmails },
+      { groupName, contactIds },
       {
         onSuccess: () => {
           setCreatedGroups(prev => new Set(prev).add(suggestion.id));
