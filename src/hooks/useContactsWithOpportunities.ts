@@ -273,27 +273,83 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       if (contactsError) {
         console.error("Error fetching contacts:", contactsError);
         
-        // Fallback to contacts_app if dynamic view fails
+        // Fallback to contacts_raw if dynamic view fails (ensures group fields exist)
         try {
-          console.log("Falling back to contacts_app table...");
+          console.log("Falling back to contacts_raw table...");
           const fallbackQuery = supabase
-            .from("contacts_app")
+            .from("contacts_raw")
             .select("*")
-            .order('most_recent_contact', { ascending: false, nullsFirst: false })
+            .order('updated_at', { ascending: false, nullsFirst: false })
             .limit(1000);
           
           const { data: fallbackData, error: fallbackError } = await fallbackQuery;
           
           if (fallbackError) {
-            console.error("Fallback query failed:", fallbackError);
+            console.error("Fallback query (contacts_raw) failed:", fallbackError);
             return;
           }
           
-          // Use fallback data with empty opportunities
-          const fallbackContacts = (fallbackData || []).map(contact => ({
-            ...contact,
+          // Use fallback data with empty opportunities and ensure required fields exist
+          const fallbackContacts: ContactWithOpportunities[] = (fallbackData || []).map((contact: any) => ({
+            id: contact.id,
+            full_name: contact.full_name ?? null,
+            first_name: contact.first_name ?? null,
+            last_name: contact.last_name ?? null,
+            email_address: contact.email_address ?? null,
+            phone: contact.phone ?? null,
+            title: contact.title ?? null,
+            organization: contact.organization ?? null,
+            areas_of_specialization: contact.areas_of_specialization ?? null,
+            lg_sector: contact.lg_sector ?? null,
+            lg_focus_area_1: contact.lg_focus_area_1 ?? null,
+            lg_focus_area_2: contact.lg_focus_area_2 ?? null,
+            lg_focus_area_3: contact.lg_focus_area_3 ?? null,
+            lg_focus_area_4: contact.lg_focus_area_4 ?? null,
+            lg_focus_area_5: contact.lg_focus_area_5 ?? null,
+            lg_focus_area_6: contact.lg_focus_area_6 ?? null,
+            lg_focus_area_7: contact.lg_focus_area_7 ?? null,
+            lg_focus_area_8: contact.lg_focus_area_8 ?? null,
+            lg_focus_areas_comprehensive_list: contact.lg_focus_areas_comprehensive_list ?? null,
+            category: contact.category ?? null,
+            contact_type: contact.contact_type ?? null,
+            delta_type: contact.delta_type ?? null,
+            notes: contact.notes ?? null,
+            url_to_online_bio: contact.url_to_online_bio ?? null,
+            most_recent_contact: contact.most_recent_contact ?? null,
+            latest_contact_email: contact.latest_contact_email ?? null,
+            latest_contact_meeting: contact.latest_contact_meeting ?? null,
+            outreach_date: contact.outreach_date ?? null,
+            email_subject: contact.email_subject ?? null,
+            meeting_title: contact.meeting_title ?? null,
+            total_of_contacts: contact.total_of_contacts ?? null,
+            of_emails: contact.of_emails ?? null,
+            of_meetings: contact.of_meetings ?? null,
+            delta: contact.delta ?? null,
+            days_since_last_email: contact.days_since_last_email ?? null,
+            days_since_last_meeting: contact.days_since_last_meeting ?? null,
+            no_of_lg_focus_areas: contact.no_of_lg_focus_areas ?? null,
+            all_opps: contact.all_opps ?? null,
+            no_of_opps_sourced: contact.no_of_opps_sourced ?? null,
+            email_from: contact.email_from ?? null,
+            email_to: contact.email_to ?? null,
+            email_cc: contact.email_cc ?? null,
+            meeting_from: contact.meeting_from ?? null,
+            meeting_to: contact.meeting_to ?? null,
+            meeting_cc: contact.meeting_cc ?? null,
+            all_emails: contact.all_emails ?? null,
+            city: contact.city ?? null,
+            state: contact.state ?? null,
+            created_at: contact.created_at ?? null,
+            updated_at: contact.updated_at ?? null,
+            lg_lead: contact.lg_lead ?? null,
+            lg_assistant: contact.lg_assistant ?? null,
+            group_contact: contact.group_contact ?? null,
+            most_recent_group_contact: contact.most_recent_group_contact ?? null,
+            intentional_no_outreach: contact.intentional_no_outreach ?? null,
+            intentional_no_outreach_date: contact.intentional_no_outreach_date ?? null,
+            intentional_no_outreach_note: contact.intentional_no_outreach_note ?? null,
             opportunities: ''
-          })) as ContactWithOpportunities[];
+          }));
           
           setContacts(fallbackContacts);
           return;
