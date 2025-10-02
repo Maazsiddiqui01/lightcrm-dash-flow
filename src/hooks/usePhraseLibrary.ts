@@ -220,6 +220,59 @@ export function useBulkUpdatePhrases() {
 }
 
 /**
+ * Get available phrases with rotation tracking
+ * Returns phrases from a category that haven't been used recently for this contact
+ */
+export async function getAvailablePhrases(
+  contactId: string,
+  category: PhraseCategory,
+  allPhrases: PhraseLibraryItem[]
+): Promise<PhraseLibraryItem[]> {
+  const { data: usedLogs } = await supabase
+    .from('phrase_rotation_log' as any)
+    .select('phrase_id')
+    .eq('contact_id', contactId)
+    .order('used_at', { ascending: false })
+    .limit(20); // Track last 20 used phrases
+  
+  const usedIds = new Set(usedLogs?.map((log: any) => log.phrase_id) || []);
+  
+  // Filter to category and exclude used
+  const categoryPhrases = allPhrases.filter(p => p.category === category);
+  let available = categoryPhrases.filter(p => !usedIds.has(p.id));
+  
+  // If all used, reset rotation for this category
+  if (available.length === 0 && categoryPhrases.length > 0) {
+    const categoryPhraseIds = categoryPhrases.map(p => p.id);
+    await supabase
+      .from('phrase_rotation_log' as any)
+      .delete()
+      .eq('contact_id', contactId)
+      .in('phrase_id', categoryPhraseIds);
+    
+    available = categoryPhrases;
+  }
+  
+  return available;
+}
+
+/**
+ * Pick a random phrase from available phrases with rotation tracking
+ */
+export async function pickPhrase(
+  contactId: string,
+  category: PhraseCategory,
+  allPhrases: PhraseLibraryItem[]
+): Promise<PhraseLibraryItem | null> {
+  const available = await getAvailablePhrases(contactId, category, allPhrases);
+  
+  if (available.length === 0) return null;
+  
+  const selected = available[Math.floor(Math.random() * available.length)];
+  return selected;
+}
+
+/**
  * Log phrase usage for rotation tracking
  */
 export async function logPhraseUsage(contactId: string, phraseId: string): Promise<void> {

@@ -240,6 +240,42 @@ export async function getAvailableInquiries({
 }
 
 /**
+ * Get available inquiries with rotation tracking for a specific category
+ */
+export async function getAvailableInquiriesByCategory(
+  contactId: string,
+  category: InquiryCategory,
+  allInquiries: InquiryLibraryItem[]
+): Promise<InquiryLibraryItem[]> {
+  const { data: usedLogs } = await supabase
+    .from('inquiry_rotation_log' as any)
+    .select('inquiry_id')
+    .eq('contact_id', contactId)
+    .order('used_at', { ascending: false })
+    .limit(15);
+  
+  const usedIds = new Set(usedLogs?.map((log: any) => log.inquiry_id) || []);
+  
+  // Filter to category and exclude used
+  const categoryInquiries = allInquiries.filter(i => i.category === category);
+  let available = categoryInquiries.filter(i => !usedIds.has(i.id));
+  
+  // If all used, reset rotation for this category
+  if (available.length === 0 && categoryInquiries.length > 0) {
+    const categoryInquiryIds = categoryInquiries.map(i => i.id);
+    await supabase
+      .from('inquiry_rotation_log' as any)
+      .delete()
+      .eq('contact_id', contactId)
+      .in('inquiry_id', categoryInquiryIds);
+    
+    available = categoryInquiries;
+  }
+  
+  return available;
+}
+
+/**
  * Pick inquiry with priority system and rotation avoidance
  * Priority: opportunity → article → focus_area → generic
  */
@@ -264,35 +300,11 @@ export async function pickInquiry({
     if (category === 'article' && !articleChosen) continue;
     if (category === 'focus_area' && focusAreas.length === 0) continue;
 
-    // Get category inquiries
-    const categoryInquiries = allInquiries.filter(i => i.category === category);
-    if (categoryInquiries.length === 0) continue;
-
-    // Get recent usage for this contact (last 10)
-    const { data: recentUse } = await supabase
-      .from('inquiry_rotation_log' as any)
-      .select('inquiry_id')
-      .eq('contact_id', contactId)
-      .order('used_at', { ascending: false })
-      .limit(10);
-
-    const recentIds = new Set(recentUse?.map((r: any) => r.inquiry_id) || []);
-
-    // Filter out recently used
-    const available = categoryInquiries.filter(i => !recentIds.has(i.id));
+    // Get available inquiries with rotation tracking
+    const available = await getAvailableInquiriesByCategory(contactId, category, allInquiries);
 
     if (available.length > 0) {
       const selected = available[Math.floor(Math.random() * available.length)];
-      return {
-        id: selected.id,
-        text: selected.inquiry_text,
-        category: selected.category,
-      };
-    }
-
-    // If all used, reset and pick from all
-    if (categoryInquiries.length > 0) {
-      const selected = categoryInquiries[Math.floor(Math.random() * categoryInquiries.length)];
       return {
         id: selected.id,
         text: selected.inquiry_text,
