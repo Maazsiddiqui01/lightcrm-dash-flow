@@ -15,6 +15,7 @@ import { useGlobalSignatures } from '@/hooks/useSignatureLibrary';
 import { EditPhraseModal } from '@/components/global-libraries/EditPhraseModal';
 import { EditInquiryModal } from '@/components/global-libraries/EditInquiryModal';
 import { TriStateApplyModal } from '@/components/global-libraries/TriStateApplyModal';
+import { TeamDirectoryManager } from '@/components/global-libraries/TeamDirectoryManager';
 import { useRealtimeLibrarySync } from '@/hooks/useRealtimeSync';
 import { useSubjectLibrary } from '@/hooks/useSubjectLibrary';
 import { useQuery } from '@tanstack/react-query';
@@ -77,7 +78,7 @@ export function GlobalLibraries() {
         .select('*')
         .order('focus_area');
       if (error) throw error;
-      return data || [];
+      return (data || []) as any[];
     },
   });
 
@@ -435,50 +436,7 @@ export function GlobalLibraries() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {teamDirectory.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No team directory entries</div>
-                  ) : (
-                    teamDirectory.map((entry: any) => (
-                      <Card key={entry.focus_area}>
-                        <CardContent className="p-4">
-                          <div className="space-y-2">
-                            <div className="font-medium">{entry.focus_area}</div>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <div className="text-muted-foreground text-xs mb-1">Lead 1</div>
-                                {entry.lead1_name && (
-                                  <div>
-                                    <div>{entry.lead1_name}</div>
-                                    <div className="text-muted-foreground text-xs">{entry.lead1_email}</div>
-                                  </div>
-                                )}
-                              </div>
-                              <div>
-                                <div className="text-muted-foreground text-xs mb-1">Lead 2</div>
-                                {entry.lead2_name && (
-                                  <div>
-                                    <div>{entry.lead2_name}</div>
-                                    <div className="text-muted-foreground text-xs">{entry.lead2_email}</div>
-                                  </div>
-                                )}
-                              </div>
-                              <div>
-                                <div className="text-muted-foreground text-xs mb-1">Assistant</div>
-                                {entry.assistant_name && (
-                                  <div>
-                                    <div>{entry.assistant_name}</div>
-                                    <div className="text-muted-foreground text-xs">{entry.assistant_email}</div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
+                <TeamDirectoryManager entries={teamDirectory} />
               </CardContent>
             </Card>
           </TabsContent>

@@ -292,10 +292,15 @@ export async function buildModuleConfiguration(
     // Final decision: module is active only if enabled AND prerequisites met
     modules[moduleName] = enabled && meetsPrereqs;
     
-    // Special case: skip quick fillers for short gaps (0-14 days)
+    // Special case: 0-14 day range (ultra-recent contacts)
     if (daysSinceContact <= 14) {
-      if (['general_org_update', 'platforms', 'attachments'].includes(moduleName)) {
+      // Ultra-recent: Skip business dev modules, focus on relationship
+      if (['general_org_update', 'platforms', 'addons', 'attachments'].includes(moduleName)) {
         modules[moduleName] = false;
+      }
+      // Boost personal/inquiry modules
+      if (['self_personalization', 'suggested_talking_points'].includes(moduleName) && meetsPrereqs) {
+        modules[moduleName] = true;
       }
     }
     
@@ -357,12 +362,13 @@ export async function buildModuleConfiguration(
 }
 
 /**
- * Build sophisticated content ordering
+ * Build sophisticated content ordering with data-aware refinement
  */
 export function buildContentFlow(
   masterKey: string,
   modules: Record<string, boolean>,
-  hasInquiry: boolean
+  hasInquiry: boolean,
+  context?: GenerationContext
 ): string[] {
   const flow: string[] = [];
 
@@ -371,7 +377,7 @@ export function buildContentFlow(
     flow.push('personal_hook');
   }
 
-  // Template-specific ordering
+  // Template-specific ordering with data-aware adjustments
   if (masterKey === 'relationship_maintenance') {
     // Relationship: personal_hook → top_opp → inquiry → talking_points → team_mention → focus_area_defaults → close
     if (modules.top_opportunities) flow.push('top_opportunities');
@@ -382,9 +388,20 @@ export function buildContentFlow(
     if (modules.meeting_request) flow.push('meeting_request');
   } else if (masterKey === 'hybrid_neutral') {
     // Hybrid: personal_hook → article → inquiry → top_opp → platforms/addons → team_mention → focus_area_defaults → close
-    if (modules.article_recommendations) flow.push('article');
-    if (hasInquiry) flow.push('inquiry');
-    if (modules.top_opportunities) flow.push('top_opportunities');
+    // Data-aware: If has high-value opps, prioritize them over article
+    const hasHighValueOpps = context?.contact?.has_opps && 
+      context.contact.opps.some(o => (o.ebitda_in_ms || 0) >= 40);
+    
+    if (hasHighValueOpps) {
+      if (modules.top_opportunities) flow.push('top_opportunities');
+      if (hasInquiry) flow.push('inquiry');
+      if (modules.article_recommendations) flow.push('article');
+    } else {
+      if (modules.article_recommendations) flow.push('article');
+      if (hasInquiry) flow.push('inquiry');
+      if (modules.top_opportunities) flow.push('top_opportunities');
+    }
+    
     if (modules.platforms) flow.push('platforms');
     if (modules.addons) flow.push('addons');
     if (modules.team_mention) flow.push('team_mention');
@@ -392,11 +409,24 @@ export function buildContentFlow(
     if (modules.meeting_request) flow.push('meeting_request');
   } else if (masterKey === 'business_development') {
     // BD: personal_hook → article → top_opp → inquiry → platforms → addons → org_update → attachments → team_mention → focus_area_defaults → close
+    // Data-aware: Prioritize platforms/addons if no recent opps
+    const hasRecentOpps = context?.contact?.has_opps && 
+      context.contact.opps.length > 0;
+    
     if (modules.article_recommendations) flow.push('article');
-    if (modules.top_opportunities) flow.push('top_opportunities');
-    if (hasInquiry) flow.push('inquiry');
-    if (modules.platforms) flow.push('platforms');
-    if (modules.addons) flow.push('addons');
+    
+    if (hasRecentOpps) {
+      if (modules.top_opportunities) flow.push('top_opportunities');
+      if (hasInquiry) flow.push('inquiry');
+      if (modules.platforms) flow.push('platforms');
+      if (modules.addons) flow.push('addons');
+    } else {
+      if (hasInquiry) flow.push('inquiry');
+      if (modules.platforms) flow.push('platforms');
+      if (modules.addons) flow.push('addons');
+      if (modules.top_opportunities) flow.push('top_opportunities');
+    }
+    
     if (modules.general_org_update) flow.push('org_update');
     if (modules.attachments) flow.push('attachments');
     if (modules.team_mention) flow.push('team_mention');

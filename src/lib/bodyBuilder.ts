@@ -90,6 +90,22 @@ function replaceTokens(
     result = result.replace(/\[Teammate\]/g, leadName);
   }
   
+  // Assistant tokens
+  if (payload.cc.assistants.length > 0) {
+    const assistantEmail = payload.cc.assistants[0];
+    const assistantName = assistantEmail.split('@')[0].split('.').map(
+      part => part.charAt(0).toUpperCase() + part.slice(1)
+    ).join(' ');
+    result = result.replace(/\[Assistant\]/g, assistantName);
+  }
+  
+  // Article Title tokens
+  if (payload.articles.selected) {
+    // Extract title from article link or use generic
+    const articleTitle = payload.articles.selected.split('/').pop()?.replace(/-/g, ' ') || 'Recent Article';
+    result = result.replace(/\[Article Title\]/g, articleTitle);
+  }
+  
   // Title/Attachment tokens
   result = result.replace(/\[Title\]/g, 'Investment Overview');
   result = result.replace(/\[news\]/g, 'recent announcement');
