@@ -4,6 +4,7 @@ import { useRealtimeLibrarySync } from "@/hooks/useRealtimeSync";
 import { ContactSelector } from "@/components/email-builder/ContactSelector";
 import { ContactInfoPanel } from "@/components/email-builder/ContactInfoPanel";
 import { MasterTemplateSelector } from "@/components/email-builder/MasterTemplateSelector";
+import { EmailBuilderCoreSettings } from "@/components/email-builder/EmailBuilderCoreSettings";
 import { ModulesCard, type ModuleStates, MODULE_DEFAULTS } from "@/components/email-builder/ModulesCard";
 import { ArticlePicker } from "@/components/email-builder/ArticlePicker";
 import { CCPreviewCard } from "@/components/email-builder/CCPreviewCard";
@@ -31,6 +32,12 @@ export function EmailBuilder() {
   const [deltaType, setDeltaType] = useState<'Email' | 'Meeting'>('Email');
   const [showPreview, setShowPreview] = useState(false);
   
+  // Core Settings state
+  const [daysSinceContact, setDaysSinceContact] = useState<number>(0);
+  const [toneOverride, setToneOverride] = useState<'casual' | 'hybrid' | 'formal' | null>(null);
+  const [lengthOverride, setLengthOverride] = useState<'brief' | 'medium' | 'detailed' | null>(null);
+  const [subjectPoolOverride, setSubjectPoolOverride] = useState<string[]>([]);
+  
   // Module states for email builder
   const [moduleStates, setModuleStates] = useState<ModuleStates>({
     initial_greeting: 'always',
@@ -49,6 +56,16 @@ export function EmailBuilder() {
   
   // Get contact data from new composer view
   const { data: contactData } = useComposerRow(selectedContact?.email || null);
+  
+  // Auto-set days since contact when contact changes
+  useEffect(() => {
+    if (contactData?.most_recent_contact) {
+      const days = Math.floor(
+        (Date.now() - new Date(contactData.most_recent_contact).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      setDaysSinceContact(days);
+    }
+  }, [contactData?.most_recent_contact]);
   
   // Auto-set module defaults when master template changes
   const masterTemplate = contactData ? routeMaster(contactData.most_recent_contact) : null;
@@ -169,6 +186,17 @@ export function EmailBuilder() {
               selectedContactEmail={selectedContact?.email || null}
               deltaType={deltaType}
               onDeltaTypeChange={setDeltaType}
+            />
+            
+            <EmailBuilderCoreSettings
+              daysSinceContact={daysSinceContact}
+              onDaysSinceContactChange={setDaysSinceContact}
+              toneOverride={toneOverride}
+              onToneOverrideChange={setToneOverride}
+              lengthOverride={lengthOverride}
+              onLengthOverrideChange={setLengthOverride}
+              subjectPoolOverride={subjectPoolOverride}
+              onSubjectPoolOverrideChange={setSubjectPoolOverride}
             />
             
             <ModulesCard

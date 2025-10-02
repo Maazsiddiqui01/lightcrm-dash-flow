@@ -1,45 +1,43 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useMasterTemplateForDays } from '@/hooks/useMasterTemplates';
-import type { TemplateSettings } from '@/types/phraseLibrary';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { TemplateSettings } from "@/types/phraseLibrary";
 
 interface CoreSettingsPanelProps {
   daysSinceContact: number;
   settings: TemplateSettings;
-  onSettingsChange: (settings: Partial<TemplateSettings>) => void;
+  onSettingsChange: (updates: Partial<TemplateSettings>) => void;
 }
 
-export function CoreSettingsPanel({ daysSinceContact, settings, onSettingsChange }: CoreSettingsPanelProps) {
-  const masterTemplate = useMasterTemplateForDays(daysSinceContact);
-
-  const effectiveTone = settings.tone_override || masterTemplate?.tone || 'hybrid';
-  const effectiveLength = settings.length_override || masterTemplate?.length || 'medium';
-  const effectiveSubjectPool = settings.subject_pool_override || masterTemplate?.subject_style || 'mixed';
-
+export function CoreSettingsPanel({
+  daysSinceContact,
+  settings,
+  onSettingsChange,
+}: CoreSettingsPanelProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Core Settings</CardTitle>
+        <CardTitle className="text-sm">Core Email Settings</CardTitle>
         <CardDescription>
-          Based on {daysSinceContact} days since last contact
-          {masterTemplate && ` (${masterTemplate.master_key.replace(/_/g, ' ')})`}
+          Configure tone, length, and subject line preferences
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label>Tone Override</Label>
+          <Label htmlFor="tone">Tone Override</Label>
           <Select
-            value={settings.tone_override || 'auto'}
-            onValueChange={(value) => 
-              onSettingsChange({ tone_override: value === 'auto' ? null : value as any })
+            value={settings.tone_override || 'default'}
+            onValueChange={(val) =>
+              onSettingsChange({
+                tone_override: val === 'default' ? null : val,
+              })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger id="tone">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="auto">Auto ({effectiveTone})</SelectItem>
+              <SelectItem value="default">Use Default</SelectItem>
               <SelectItem value="casual">Casual</SelectItem>
               <SelectItem value="hybrid">Hybrid</SelectItem>
               <SelectItem value="formal">Formal</SelectItem>
@@ -48,55 +46,52 @@ export function CoreSettingsPanel({ daysSinceContact, settings, onSettingsChange
         </div>
 
         <div className="space-y-2">
-          <Label>Length Override</Label>
+          <Label htmlFor="length">Length Override</Label>
           <Select
-            value={settings.length_override || 'auto'}
-            onValueChange={(value) => 
-              onSettingsChange({ length_override: value === 'auto' ? null : value as any })
+            value={settings.length_override || 'default'}
+            onValueChange={(val) =>
+              onSettingsChange({
+                length_override: val === 'default' ? null : val,
+              })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger id="length">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="auto">Auto ({effectiveLength})</SelectItem>
-              <SelectItem value="brief">Brief (2-4 lines)</SelectItem>
-              <SelectItem value="medium">Medium (5-8 lines)</SelectItem>
-              <SelectItem value="detailed">Detailed (9+ lines)</SelectItem>
+              <SelectItem value="default">Use Default</SelectItem>
+              <SelectItem value="brief">Brief</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="detailed">Detailed</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label>Subject Pool Override</Label>
+          <Label htmlFor="subject-pool">Subject Pool Override</Label>
           <Select
-            value={settings.subject_pool_override || 'auto'}
-            onValueChange={(value) => 
-              onSettingsChange({ subject_pool_override: value === 'auto' ? null : value as any })
+            value={settings.subject_pool_override || 'default'}
+            onValueChange={(val) =>
+              onSettingsChange({
+                subject_pool_override: val === 'default' ? null : val,
+              })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger id="subject-pool">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="auto">Auto ({effectiveSubjectPool})</SelectItem>
+              <SelectItem value="default">Use Default</SelectItem>
               <SelectItem value="casual">Casual</SelectItem>
-              <SelectItem value="mixed">Mixed</SelectItem>
+              <SelectItem value="hybrid">Hybrid</SelectItem>
               <SelectItem value="formal">Formal</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="pt-2 border-t">
-          <p className="text-sm text-muted-foreground">
-            Days since contact: <span className="font-medium">{daysSinceContact}</span>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Master template: <span className="font-medium capitalize">
-              {masterTemplate?.master_key.replace(/_/g, ' ')}
-            </span>
-          </p>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Based on {daysSinceContact} days since contact
+        </p>
       </CardContent>
     </Card>
   );
