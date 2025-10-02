@@ -7,6 +7,8 @@ import type { TemplateSettings, TriState, PhraseLibraryItem, MasterTemplateDefau
 import type { InquiryLibraryItem } from '@/hooks/useInquiryLibrary';
 import { getAvailablePhrases, getAvailableInquiries } from '@/hooks/useRotationTracking';
 import { pickSignature } from '@/hooks/useSignatureLibrary';
+import { pickPhrase } from '@/hooks/usePhraseLibrary';
+import type { PhraseCategory } from '@/types/phraseLibrary';
 
 interface GenerationContext {
   contact: ContactEmailComposer;
@@ -192,17 +194,8 @@ async function selectPhrase(
   category: string,
   allPhrases: PhraseLibraryItem[]
 ): Promise<PhraseLibraryItem | null> {
-  const categoryPhrases = allPhrases.filter(p => p.category === category);
-  
-  if (categoryPhrases.length === 0) return null;
-
-  const available = await getAvailablePhrases(contactId, category, categoryPhrases);
-  
-  if (available.length > 0) {
-    return available[Math.floor(Math.random() * available.length)];
-  }
-
-  return null;
+  // Use the enhanced pickPhrase function from usePhraseLibrary
+  return await pickPhrase(contactId, category as PhraseCategory, allPhrases);
 }
 
 /**
