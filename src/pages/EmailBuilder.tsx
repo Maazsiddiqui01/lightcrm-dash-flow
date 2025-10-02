@@ -5,7 +5,8 @@ import { ContactSelector } from "@/components/email-builder/ContactSelector";
 import { ContactInfoPanel } from "@/components/email-builder/ContactInfoPanel";
 import { MasterTemplateSelector } from "@/components/email-builder/MasterTemplateSelector";
 import { EmailBuilderCoreSettings } from "@/components/email-builder/EmailBuilderCoreSettings";
-import { ModulesCard, type ModuleStates, MODULE_DEFAULTS } from "@/components/email-builder/ModulesCard";
+import { ModulesCard, type ModuleStates, MODULE_DEFAULTS, getModuleDefaultsFromMaster } from "@/components/email-builder/ModulesCard";
+import { useMasterTemplates } from "@/hooks/useMasterTemplates";
 import { ArticlePicker } from "@/components/email-builder/ArticlePicker";
 import { CCPreviewCard } from "@/components/email-builder/CCPreviewCard";
 import { DraftGenerateButton } from "@/components/email-builder/DraftGenerateButton";
@@ -80,6 +81,9 @@ export function EmailBuilder() {
     isResetting,
   } = useContactSettings(selectedContact?.contact_id || null);
 
+  // Load master templates from database
+  const { data: masterTemplates } = useMasterTemplates();
+  
   // Auto-load saved settings when contact changes
   useEffect(() => {
     if (contactSettings) {
@@ -88,14 +92,20 @@ export function EmailBuilder() {
       if (contactSettings.selected_article_id) {
         // Could load article here if needed
       }
-    } else if (masterTemplate) {
-      // Fallback to master template defaults
-      const defaults = MODULE_DEFAULTS[masterTemplate.master_key];
+    } else if (masterTemplate && masterTemplates) {
+      // Load defaults from database-driven master template
+      const defaults = getModuleDefaultsFromMaster(masterTemplate.master_key, masterTemplates);
       if (defaults) {
         setModuleStates(defaults);
+      } else {
+        // Fallback to hardcoded defaults
+        const fallback = MODULE_DEFAULTS[masterTemplate.master_key];
+        if (fallback) {
+          setModuleStates(fallback);
+        }
       }
     }
-  }, [contactSettings, masterTemplate, selectedContact]);
+  }, [contactSettings, masterTemplate, masterTemplates, selectedContact]);
 
   // Auto-preview hook
   const { previewData, isGenerating } = useAutoPreview(
@@ -111,10 +121,17 @@ export function EmailBuilder() {
   };
   
   const handleResetToDefaults = () => {
-    if (masterTemplate) {
-      const defaults = MODULE_DEFAULTS[masterTemplate.master_key];
+    if (masterTemplate && masterTemplates) {
+      // Load defaults from database-driven master template
+      const defaults = getModuleDefaultsFromMaster(masterTemplate.master_key, masterTemplates);
       if (defaults) {
         setModuleStates(defaults);
+      } else {
+        // Fallback to hardcoded defaults
+        const fallback = MODULE_DEFAULTS[masterTemplate.master_key];
+        if (fallback) {
+          setModuleStates(fallback);
+        }
       }
     }
   };

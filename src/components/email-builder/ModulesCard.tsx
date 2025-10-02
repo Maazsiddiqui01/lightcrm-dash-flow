@@ -26,25 +26,50 @@ interface ModulesCardProps {
   onResetToDefaults: () => void;
 }
 
-// Default configurations for each master template
+/**
+ * Get module defaults from master template (database-driven)
+ * These are now loaded from master_template_defaults table
+ */
+export function getModuleDefaultsFromMaster(masterKey: string, masterTemplates: any[]): ModuleStates | null {
+  const template = masterTemplates.find(t => t.master_key === masterKey);
+  if (!template || !template.default_modules) return null;
+  
+  const defaults = template.default_modules;
+  
+  return {
+    initial_greeting: defaults.initial_greeting || 'always',
+    self_personalization: defaults.self_personalization || 'always',
+    top_opportunities: defaults.top_opportunities || 'always',
+    article_recommendations: defaults.article_recommendations || 'sometimes',
+    platforms: defaults.platforms || 'never',
+    addons: defaults.addons || 'never',
+    suggested_talking_points: defaults.suggested_talking_points || 'sometimes',
+    general_org_update: defaults.general_org_update || 'never',
+    attachments: defaults.attachments || 'never',
+    meeting_request: defaults.meeting_request || 'sometimes',
+    ai_backup_personalization: defaults.ai_backup_personalization || 'sometimes',
+  };
+}
+
+// Fallback defaults (used when database is not available)
 export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
   relationship_maintenance: {
     initial_greeting: 'always',
     self_personalization: 'always',
     top_opportunities: 'always',
-    article_recommendations: 'always',
+    article_recommendations: 'sometimes',
     platforms: 'never',
     addons: 'never',
     suggested_talking_points: 'sometimes',
     general_org_update: 'never',
     attachments: 'never',
-    meeting_request: 'always',
-    ai_backup_personalization: 'always',
+    meeting_request: 'sometimes',
+    ai_backup_personalization: 'sometimes',
   },
   business_development: {
     initial_greeting: 'always',
     self_personalization: 'always',
-    top_opportunities: 'always',
+    top_opportunities: 'sometimes',
     article_recommendations: 'always',
     platforms: 'always',
     addons: 'always',
@@ -52,7 +77,7 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     general_org_update: 'always',
     attachments: 'sometimes',
     meeting_request: 'always',
-    ai_backup_personalization: 'always',
+    ai_backup_personalization: 'sometimes',
   },
   hybrid_neutral: {
     initial_greeting: 'always',
@@ -61,11 +86,11 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     article_recommendations: 'sometimes',
     platforms: 'never',
     addons: 'never',
-    suggested_talking_points: 'always',
+    suggested_talking_points: 'sometimes',
     general_org_update: 'never',
     attachments: 'never',
-    meeting_request: 'always',
-    ai_backup_personalization: 'always',
+    meeting_request: 'sometimes',
+    ai_backup_personalization: 'sometimes',
   },
 };
 

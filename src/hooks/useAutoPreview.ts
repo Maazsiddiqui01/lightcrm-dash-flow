@@ -75,6 +75,12 @@ export function useAutoPreview(
         }
 
         console.log('✅ Building module configuration...');
+        
+        // Calculate days since most recent contact
+        const daysSinceContact = contactData.most_recent_contact 
+          ? Math.floor((Date.now() - new Date(contactData.most_recent_contact).getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+        
         // Build module configuration with actual library selections
         const moduleConfig = await buildModuleConfiguration({
           contact: contactData,
@@ -82,6 +88,7 @@ export function useAutoPreview(
           allPhrases: globalPhrases,
           allInquiries: globalInquiries,
           selectedArticle: selectedArticle?.article_link || null,
+          daysSinceContact,
         });
 
         // Select subject from library with token replacement

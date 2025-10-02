@@ -107,6 +107,11 @@ export function DraftGenerateButton({
 
       console.log('✅ Master template defaults found:', masterDefaults.master_key);
 
+      // Calculate days since most recent contact
+      const daysSinceContact = contactData.most_recent_contact 
+        ? Math.floor((Date.now() - new Date(contactData.most_recent_contact).getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
       // Build module configuration with tri-state logic and rotation
       console.log('🔧 Building module configuration...');
       const moduleConfig = await buildModuleConfiguration({
@@ -115,6 +120,7 @@ export function DraftGenerateButton({
         allPhrases: globalPhrases,
         allInquiries: globalInquiries,
         selectedArticle: selectedArticle?.article_link || null,
+        daysSinceContact,
       });
 
       console.log('✅ Module config built:', {

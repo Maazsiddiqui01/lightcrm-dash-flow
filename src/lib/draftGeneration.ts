@@ -15,17 +15,75 @@ interface GenerationContext {
   allPhrases: PhraseLibraryItem[];
   allInquiries: InquiryLibraryItem[];
   selectedArticle?: string | null;
+  daysSinceContact: number;
 }
 
 /**
- * Evaluate tri-state setting (always, sometimes, never)
- * "always" = 100%, "sometimes" = 70%, "never" = 0%
+ * Evaluate tri-state setting with probabilistic logic based on days since contact
+ * "always" = 100%, "sometimes" = variable probability, "never" = 0%
  */
-function evaluateTriState(state: TriState): boolean {
+function evaluateTriState(
+  state: TriState,
+  moduleName: string,
+  daysSinceContact: number,
+  masterKey: string
+): boolean {
   if (state === 'always') return true;
   if (state === 'never') return false;
-  // "sometimes" = 70% chance
-  return Math.random() < 0.7;
+  
+  // "sometimes" logic varies by module, days, and template
+  let probability = 0.5; // Base 50%
+  
+  // Module-specific conditional logic
+  switch (moduleName) {
+    case 'meeting_request':
+      // Higher probability for recent contacts (0-14 days = 50%, 15-45 = 60%, 46+ = 80%)
+      if (daysSinceContact <= 14) probability = 0.5;
+      else if (daysSinceContact <= 45) probability = 0.6;
+      else probability = 0.8;
+      
+      // Extra boost if there are opportunities
+      // This would need contact data, so we keep it at base for now
+      break;
+      
+    case 'article_recommendations':
+      // Higher for mid-range contacts
+      if (daysSinceContact <= 14) probability = 0.5;
+      else if (daysSinceContact <= 90) probability = 0.7;
+      else probability = 0.8;
+      break;
+      
+    case 'platforms':
+    case 'addons':
+      // Higher for longer gaps (business development)
+      if (daysSinceContact <= 45) probability = 0.3;
+      else if (daysSinceContact <= 90) probability = 0.5;
+      else probability = 0.7;
+      break;
+      
+    case 'suggested_talking_points':
+      // Moderate probability, slightly higher for longer gaps
+      if (daysSinceContact <= 45) probability = 0.4;
+      else probability = 0.6;
+      break;
+      
+    case 'general_org_update':
+    case 'attachments':
+      // Higher for long gaps (91+)
+      if (daysSinceContact <= 90) probability = 0.2;
+      else probability = 0.6;
+      break;
+      
+    case 'ai_backup_personalization':
+      // Lower probability, used as fallback
+      probability = 0.3;
+      break;
+      
+    default:
+      probability = 0.5;
+  }
+  
+  return Math.random() < probability;
 }
 
 /**
@@ -205,7 +263,7 @@ export async function buildModuleConfiguration(
   signature: string;
   qualityCheck: { pass: boolean; reason?: string };
 }> {
-  const { masterTemplate, templateSettings, contact } = context;
+  const { masterTemplate, templateSettings, contact, daysSinceContact } = context;
   const modules: Record<string, boolean> = {};
   const phrases: Record<string, PhraseLibraryItem | null> = {};
 
@@ -217,14 +275,33 @@ export async function buildModuleConfiguration(
     // Get template-specific override or use default
     const state = (templateSettings?.module_states?.[moduleName] || defaultState) as TriState;
     
-    // Evaluate tri-state
-    const enabled = evaluateTriState(state);
+    // Evaluate tri-state with probabilistic logic
+    const enabled = evaluateTriState(
+      state,
+      moduleName,
+      daysSinceContact,
+      masterTemplate.master_key
+    );
     
     // Check prerequisites
     const meetsPrereqs = checkModulePrerequisites(moduleName, context);
     
-    // Final decision
+    // Final decision: module is active only if enabled AND prerequisites met
     modules[moduleName] = enabled && meetsPrereqs;
+    
+    // Special case: skip quick fillers for short gaps (0-14 days)
+    if (daysSinceContact <= 14) {
+      if (['general_org_update', 'platforms', 'attachments'].includes(moduleName)) {
+        modules[moduleName] = false;
+      }
+    }
+    
+    // Special case: include context modules for long gaps (91+)
+    if (daysSinceContact >= 91) {
+      if (['general_org_update', 'suggested_talking_points'].includes(moduleName) && meetsPrereqs) {
+        modules[moduleName] = true;
+      }
+    }
   }
 
   // Select phrases for enabled modules
