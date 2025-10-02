@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { EnhancedDraftPayload } from '@/lib/enhancedPayload';
 import { logPayloadUsage } from '@/lib/enhancedPayload';
+import { buildEmailBody, formatCompleteEmail } from '@/lib/bodyBuilder';
 
 interface DraftGenerationResult {
   body: string;
@@ -76,6 +77,14 @@ export function useEnhancedDraftGenerator() {
       const n8nResult = await response.json();
       console.log('n8n response:', n8nResult);
 
+      // Build email body locally from payload if n8n doesn't return one
+      let emailBody = n8nResult.body || n8nResult.emailBody || '';
+      
+      if (!emailBody || emailBody.trim() === '') {
+        console.log('n8n returned no body, building locally from phrase library...');
+        emailBody = buildEmailBody(payload);
+      }
+
       setProgress(100);
 
       // Log rotation tracking
@@ -93,9 +102,9 @@ export function useEnhancedDraftGenerator() {
         ccList = payload.cc.final;
       }
 
-      // Build final result from n8n response with proper formatting
+      // Build final result with fallback to locally built body
       const result: DraftGenerationResult = {
-        body: n8nResult.body || n8nResult.emailBody || '',
+        body: emailBody,
         subject: n8nResult.subject || payload.content.subject,
         greeting: n8nResult.greeting || payload.content.greeting || `Hi ${payload.contact.firstName}`,
         signature: n8nResult.signature || payload.content.signature,
