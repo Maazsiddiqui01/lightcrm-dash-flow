@@ -213,7 +213,7 @@ serve(async (req) => {
     const n8nPayload = transformToN8NPayload(payload);
     console.log('Transformed to n8n format:', JSON.stringify(n8nPayload, null, 2));
 
-    // POST to n8n webhook
+    // POST to n8n webhook and stream the response
     const response = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: {
@@ -228,12 +228,14 @@ serve(async (req) => {
       throw new Error(`n8n webhook failed: ${response.status} - ${errorText}`);
     }
 
-    const result = await response.json();
-    console.log('n8n response:', result);
-
-    // Return n8n response with CORS headers
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Stream the response back to the client
+    return new Response(response.body, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
   } catch (error) {
     console.error('post_to_n8n error:', error);

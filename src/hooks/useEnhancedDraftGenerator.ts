@@ -39,7 +39,7 @@ export function useEnhancedDraftGenerator() {
     setStreamedContent('');
 
     try {
-      // POST to n8n via edge function
+      // POST to n8n via edge function with streaming support
       const FUNCTION_URL = `https://wjghdqkxwuyptxzdidtf.supabase.co/functions/v1/post_to_n8n`;
 
       const response = await fetch(FUNCTION_URL, {
@@ -71,10 +71,38 @@ export function useEnhancedDraftGenerator() {
         return null;
       }
 
-      setProgress(75);
+      setProgress(60);
 
-      // n8n returns: { subject, body, cc?, send, skip_reason? }
-      const n8nResult = await response.json();
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          accumulated += chunk;
+          setStreamedContent(accumulated);
+          setProgress(prev => Math.min(prev + 5, 95));
+        }
+      }
+
+      setProgress(100);
+
+      // Parse the final accumulated result
+      let n8nResult;
+      try {
+        // Handle array response format [{ output: {...} }]
+        const parsed = JSON.parse(accumulated);
+        n8nResult = Array.isArray(parsed) && parsed.length > 0 ? parsed[0].output : parsed;
+      } catch (e) {
+        console.error('Failed to parse n8n response:', e);
+        n8nResult = {};
+      }
+      
       console.log('n8n response:', n8nResult);
 
       // Build email body locally from payload if n8n doesn't return one
