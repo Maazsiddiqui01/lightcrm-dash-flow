@@ -105,20 +105,12 @@ export function useEnhancedDraftGenerator() {
       
       console.log('n8n response:', n8nResult);
 
-      // Build email body locally from payload if n8n doesn't return one
-      let emailBody = n8nResult.body || n8nResult.emailBody || '';
-      
-      if (!emailBody || emailBody.trim() === '') {
-        console.log('n8n returned no body, building locally from phrase library...');
-        emailBody = buildEmailBody(payload);
-      }
-
       setProgress(100);
 
       // Log rotation tracking
       await logPayloadUsage(payload.contact.id, payload.tracking);
 
-      // Parse CC list from n8n response - should include names
+      // Parse CC list from n8n response
       let ccList: string[] = [];
       if (n8nResult.cc) {
         if (typeof n8nResult.cc === 'string') {
@@ -126,16 +118,20 @@ export function useEnhancedDraftGenerator() {
         } else if (Array.isArray(n8nResult.cc)) {
           ccList = n8nResult.cc;
         }
-      } else {
-        ccList = payload.cc.final;
       }
 
-      // Build final result with fallback to locally built body
+      // Extract greeting and signature from body
+      const bodyLines = (n8nResult.body || '').split('\n');
+      const greeting = bodyLines[0] || `Hi ${payload.contact.firstName}`;
+      const signature = bodyLines[bodyLines.length - 1] || payload.content.signature;
+      const bodyWithoutGreetingAndSignature = bodyLines.slice(1, -1).join('\n').trim();
+
+      // Build final result directly from n8n
       const result: DraftGenerationResult = {
-        body: emailBody,
-        subject: n8nResult.subject || payload.content.subject,
-        greeting: n8nResult.greeting || payload.content.greeting || `Hi ${payload.contact.firstName}`,
-        signature: n8nResult.signature || payload.content.signature,
+        body: bodyWithoutGreetingAndSignature,
+        subject: n8nResult.subject || '',
+        greeting: greeting,
+        signature: signature,
         ccList,
       };
 
