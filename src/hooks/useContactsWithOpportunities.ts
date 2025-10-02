@@ -55,6 +55,7 @@ interface ContactWithOpportunities {
   lg_lead: string | null; // Added new column
   lg_assistant: string | null; // Added new column
   group_contact: string | null;
+  most_recent_group_contact: string | null;
   intentional_no_outreach: boolean | null;
   intentional_no_outreach_date: string | null;
   intentional_no_outreach_note: string | null;
