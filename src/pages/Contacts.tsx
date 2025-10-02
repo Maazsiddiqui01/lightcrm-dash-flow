@@ -2,9 +2,10 @@ import { ContactsTable } from "@/components/contacts/ContactsTable";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useContactStats } from "@/hooks/useContactStats";
-import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX } from "lucide-react";
+import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX, Sparkles } from "lucide-react";
 import { useState, useMemo } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
+import { SuggestGroupsModal } from "@/components/contacts/SuggestGroupsModal";
 import { ContactFilterBar } from "@/components/contacts/ContactFilterBar";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
@@ -12,6 +13,7 @@ import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 
 export function Contacts() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSuggestGroupsOpen, setIsSuggestGroupsOpen] = useState(false);
   const [showOpportunityFilters, setShowOpportunityFilters] = useState(true);
   
   const { filters, updateFilters, clearFilters } = useUrlFilters({
@@ -85,10 +87,16 @@ export function Contacts() {
             <h1 className="text-2xl font-bold">Contacts</h1>
             <p className="text-muted-foreground">Manage your professional contacts and relationships</p>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Add Contact</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setIsSuggestGroupsOpen(true)} variant="outline" className="touch-target">
+              <Sparkles className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Suggest Groups</span>
+            </Button>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Contact</span>
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -160,6 +168,11 @@ export function Contacts() {
           onContactAdded={() => {
             setIsAddDialogOpen(false);
           }} 
+        />
+
+        <SuggestGroupsModal
+          open={isSuggestGroupsOpen}
+          onOpenChange={setIsSuggestGroupsOpen}
         />
       </ResponsiveContainer>
     </div>

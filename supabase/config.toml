@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.post_to_n8n]
 verify_jwt = false
+
+[functions.suggest_contact_groups]
+verify_jwt = false
