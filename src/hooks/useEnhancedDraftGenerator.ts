@@ -81,17 +81,24 @@ export function useEnhancedDraftGenerator() {
       // Log rotation tracking
       await logPayloadUsage(payload.contact.id, payload.tracking);
 
-      // Parse CC list from n8n response
-      const ccList = n8nResult.cc 
-        ? n8nResult.cc.split(/[;,]/).map((e: string) => e.trim()).filter(Boolean)
-        : payload.cc.final;
+      // Parse CC list from n8n response - should include names
+      let ccList: string[] = [];
+      if (n8nResult.cc) {
+        if (typeof n8nResult.cc === 'string') {
+          ccList = n8nResult.cc.split(/[;,]/).map((e: string) => e.trim()).filter(Boolean);
+        } else if (Array.isArray(n8nResult.cc)) {
+          ccList = n8nResult.cc;
+        }
+      } else {
+        ccList = payload.cc.final;
+      }
 
-      // Build final result from n8n response
+      // Build final result from n8n response with proper formatting
       const result: DraftGenerationResult = {
-        body: n8nResult.body || '',
+        body: n8nResult.body || n8nResult.emailBody || '',
         subject: n8nResult.subject || payload.content.subject,
-        greeting: payload.content.greeting || `Hi ${payload.contact.firstName}`,
-        signature: payload.content.signature,
+        greeting: n8nResult.greeting || payload.content.greeting || `Hi ${payload.contact.firstName}`,
+        signature: n8nResult.signature || payload.content.signature,
         ccList,
       };
 

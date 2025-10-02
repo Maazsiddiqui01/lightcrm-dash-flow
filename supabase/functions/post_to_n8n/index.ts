@@ -13,68 +13,46 @@ const N8N_WEBHOOK_URL = 'https://inverisllc.app.n8n.cloud/webhook/Email-Builder'
 function transformToN8NPayload(enhanced: any): any {
   // Extract data from EnhancedDraftPayload
   const contact = enhanced.contact;
-  const focusAreas = enhanced.focusAreas || [];
-  const opportunities = enhanced.opportunities || [];
-  const focusMeta = enhanced.focusMeta || [];
-  const articles = enhanced.articles || [];
-  const timing = enhanced.timing || {};
+  const focusAreasObj = enhanced.focusAreas || {};
+  const focusAreas = focusAreasObj.list || [];
+  const faDescriptions = focusAreasObj.descriptions || [];
+  const opportunities = (enhanced.opportunities?.top || []);
+  const articlesObj = enhanced.articles || {};
+  const articles = articlesObj.available || [];
   const routing = enhanced.routing || {};
   const content = enhanced.content || {};
   const cc = enhanced.cc || {};
   const modules = enhanced.modules || {};
 
-  // Build focus area descriptions from focusMeta
-  const faDescriptions = focusMeta.map((meta: any) => ({
-    focus_area: meta.focus_area,
-    description: meta.description || '',
-    sector: meta.sector_id || '',
-    platform_type: null, // Enhanced payload doesn't have this
-  }));
-
-  // Extract sectors from focusMeta
-  const sectors = Array.from(new Set(focusMeta.map((m: any) => m.sector_id).filter(Boolean)));
+  // Extract sectors from descriptions
+  const sectors = Array.from(new Set(faDescriptions.map((d: any) => d.sector).filter(Boolean)));
   
   // Check for Healthcare/Life Sciences
   const hs_present = sectors.some((s: string) => s?.toLowerCase().includes('healthcare'));
   const ls_present = sectors.some((s: string) => s?.toLowerCase().includes('life'));
 
-  // Build team data
-  const leadEmails = focusMeta
-    .flatMap((m: any) => [m.lead1_email, m.lead2_email])
-    .filter(Boolean);
-  
-  const assistantNames = focusMeta
-    .map((m: any) => m.assistant_name)
-    .filter(Boolean);
-  
-  const assistantEmails = focusMeta
-    .map((m: any) => m.assistant_email)
-    .filter(Boolean);
+  // Build team data from CC
+  const leadEmails = cc.leads || [];
+  const assistantNames = contact.assistantNames || [];
+  const assistantEmails = cc.assistants || [];
 
   // Compute helpers
   const uniqueEmails = (arr: string[]) => Array.from(new Set(arr.filter(Boolean).map(e => e.toLowerCase())));
   
-  const baseCC = uniqueEmails((cc.lgEmailsCc || '').split(/[;,]/g));
   const leadCC = uniqueEmails(leadEmails);
   const assistantCC = uniqueEmails(assistantEmails);
-  const ccFinal = uniqueEmails([
-    ...baseCC,
+  const ccFinal = cc.final || uniqueEmails([
     ...leadCC,
     ...(routing.deltaType === 'Meeting' ? assistantCC : []),
   ]).filter((e: string) => e !== contact.email?.toLowerCase());
 
   const descByFA: Record<string, string> = {};
   faDescriptions.forEach((r: any) => {
-    if (r?.focus_area) descByFA[r.focus_area] = r.description || '';
+    if (r?.focusArea) descByFA[r.focusArea] = r.description || '';
   });
 
-  const platformFAs = faDescriptions
-    .filter((r: any) => /new platform/i.test(r.platform_type || ''))
-    .map((r: any) => r.focus_area);
-  
-  const addonFAs = faDescriptions
-    .filter((r: any) => /add-?on/i.test(r.platform_type || ''))
-    .map((r: any) => r.focus_area);
+  const platformFAs = focusAreasObj.platforms || [];
+  const addonFAs = focusAreasObj.addons || [];
 
   const hasOther = focusAreas.some((fa: string) =>
     !/^healthcare services/i.test(fa) && !/^life sciences/i.test(fa)
@@ -100,7 +78,9 @@ function transformToN8NPayload(enhanced: any): any {
     const month = d.toLocaleString('en-US', { month: 'long' });
     return { bucket, month };
   };
-  const { bucket: mrcBucket, month: mrcMonth } = bucketMRC(timing.mostRecentContact);
+  const daysSince = routing.daysSinceContact || 0;
+  const mrcISO = daysSince ? new Date(Date.now() - daysSince * 86400000).toISOString() : null;
+  const { bucket: mrcBucket, month: mrcMonth } = bucketMRC(mrcISO);
 
   const joinOxford = (arr: string[]) => {
     const a = (arr || []).filter(Boolean);
@@ -109,7 +89,7 @@ function transformToN8NPayload(enhanced: any): any {
     return `${a.slice(0, -1).join(', ')}, and ${a[a.length - 1]}`;
   };
   
-  const oppNames = opportunities.slice(0, 3).map((o: any) => o.deal_name || o.name).filter(Boolean);
+  const oppNames = opportunities.slice(0, 3).map((o: any) => o.dealName || o.deal_name).filter(Boolean);
   const oppsFlat = joinOxford(oppNames);
 
   const computeSubject = (fas: string[], org: string) => {
@@ -125,7 +105,7 @@ function transformToN8NPayload(enhanced: any): any {
     if (day === 0 || day === 6) return { blocked: true, reason: 'Weekend blackout' };
     return { blocked: false, reason: '' };
   };
-  const blackout = computeBlackout(timing.outreachDate);
+  const blackout = computeBlackout(new Date().toISOString());
 
   const assistantClause = (routing.deltaType === 'Meeting' && assistantNames.length)
     ? `${joinOxford(assistantNames)}, copied here, can assist with scheduling on our end.`
@@ -148,10 +128,9 @@ function transformToN8NPayload(enhanced: any): any {
   return {
     contact: {
       email: contact.email,
-      fullName: contact.fullName,
-      firstName: contact.firstName,
+      fullName: contact.fullName || contact.full_name,
+      firstName: contact.firstName || contact.first_name,
       organization: contact.organization || '',
-      lgEmailsCc: cc.lgEmailsCc || undefined,
     },
     focus: {
       gb_present: focusAreas.some((fa: string) => /general\s*bd/i.test(fa)),
@@ -170,34 +149,34 @@ function transformToN8NPayload(enhanced: any): any {
     opportunities: {
       has_opps: opportunities.length > 0,
       list: opportunities.slice(0, 3).map((o: any) => ({
-        deal_name: o.deal_name || o.name,
-        ebitda_in_ms: o.ebitda_in_ms || null,
+        deal_name: o.dealName || o.deal_name,
+        ebitda_in_ms: o.ebitda || o.ebitda_in_ms || null,
       })),
     },
     articles: articles.map((a: any) => ({
-      focus_area: a.focus_area || null,
-      article_link: a.article_link || a.link,
-      last_date_to_use: a.last_date_to_use || null,
+      focus_area: a.focusArea || a.focus_area || null,
+      article_link: a.link || a.article_link,
+      last_date_to_use: a.lastDate || a.last_date_to_use || null,
     })),
     timing: {
-      mostRecentContact: timing.mostRecentContact || null,
-      outreachDate: timing.outreachDate || null,
+      mostRecentContact: mrcISO,
+      outreachDate: new Date().toISOString(),
     },
     routing: {
-      case_key: routing.caseKey || 'case_7',
-      master_key: routing.masterKey || 'hybrid_neutral',
+      case_key: 'case_7', // Computed based on rules
+      master_key: routing.masterKey || routing.master_key || 'hybrid_neutral',
       tone: routing.tone || 'hybrid',
-      subject_style: routing.subjectStyle || 'mixed',
+      subject_style: routing.subjectStyle || routing.subject_style || 'mixed',
       modules: modules,
       flow: enhanced.flow || [],
     },
     custom: {
-      deltaType: routing.deltaType || 'Email',
+      deltaType: 'Email',
       subjectMode: 'lg_first',
       maxOpps: 3,
-      chosenArticle: articles[0]?.article_link || null,
+      chosenArticle: articlesObj.selected || articles[0]?.link || null,
       customInsertion: 'before_closing',
-      userSignatureName: 'Tom Luce',
+      userSignatureName: content.signature || 'Tom Luce',
     },
     helpers: {
       ccFinal,
@@ -211,10 +190,10 @@ function transformToN8NPayload(enhanced: any): any {
       oppsFlat,
       subjectComputed,
       blackout,
-      articleChosen: articles[0]?.article_link || null,
+      articleChosen: articlesObj.selected || articles[0]?.link || null,
       insertArticleAfterGreeting: !!articles[0],
-      assistantClause,
-      caseHuman: caseLabels[routing.caseKey] || routing.caseKey,
+      assistantClause: content.assistantClause || assistantClause,
+      caseHuman: caseLabels['case_7'] || 'case_7',
       sectorsUnique,
     },
   };

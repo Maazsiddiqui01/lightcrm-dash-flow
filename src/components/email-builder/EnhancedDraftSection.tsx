@@ -116,15 +116,24 @@ export function EnhancedDraftSection({
               </div>
             )}
 
-            {/* Email Body */}
+            {/* Email Body with multi-paragraph formatting */}
             <div>
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Email Body
               </label>
               <div className="mt-1 p-4 bg-muted/30 rounded-lg border border-border max-h-96 overflow-y-auto">
-                <div className="whitespace-pre-wrap text-sm space-y-2">
+                <div className="text-sm space-y-4">
+                  {/* Greeting */}
                   <p className="font-medium">{result.greeting},</p>
-                  <div>{result.body}</div>
+                  
+                  {/* Body - preserve paragraph breaks */}
+                  <div className="whitespace-pre-wrap space-y-4">
+                    {result.body.split('\n\n').map((paragraph, idx) => (
+                      <p key={idx}>{paragraph}</p>
+                    ))}
+                  </div>
+                  
+                  {/* Signature */}
                   <p className="font-medium">{result.signature}</p>
                 </div>
               </div>
