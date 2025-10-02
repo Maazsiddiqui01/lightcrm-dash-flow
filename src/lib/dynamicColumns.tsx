@@ -134,16 +134,32 @@ export function createDynamicColumns<T extends Record<string, any>>(
         // Get display value and modification state first
         let displayValue = formatCellValue(editedValue, tableColumn);
         
-        // Special handling for outreach_date - calculate from most_recent_contact + delta
+        // Special handling for outreach_date - calculate from MAX(most_recent_contact, most_recent_group_contact) + delta
         if (tableColumn.name === 'outreach_date') {
           const mostRecentContact = row.most_recent_contact;
+          const mostRecentGroupContact = row.most_recent_group_contact;
           const delta = row.delta;
           
-          if (mostRecentContact && delta) {
-            const contactDate = parseFlexibleDate(mostRecentContact);
-            if (contactDate) {
-              const outreachDate = addDays(contactDate, delta);
+          if (delta) {
+            // Get the higher of the two dates
+            let effectiveContactDate: Date | null = null;
+            
+            const contactDate = mostRecentContact ? parseFlexibleDate(mostRecentContact) : null;
+            const groupContactDate = mostRecentGroupContact ? parseFlexibleDate(mostRecentGroupContact) : null;
+            
+            if (contactDate && groupContactDate) {
+              effectiveContactDate = contactDate > groupContactDate ? contactDate : groupContactDate;
+            } else if (contactDate) {
+              effectiveContactDate = contactDate;
+            } else if (groupContactDate) {
+              effectiveContactDate = groupContactDate;
+            }
+            
+            if (effectiveContactDate) {
+              const outreachDate = addDays(effectiveContactDate, delta);
               displayValue = format(outreachDate, 'MMM dd, yyyy');
+            } else {
+              displayValue = '';
             }
           } else {
             displayValue = '';
