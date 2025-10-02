@@ -14,7 +14,11 @@ import { useGlobalInquiries, useCreateInquiry, useUpdateInquiry, useDeleteInquir
 import { useGlobalSignatures } from '@/hooks/useSignatureLibrary';
 import { EditPhraseModal } from '@/components/global-libraries/EditPhraseModal';
 import { EditInquiryModal } from '@/components/global-libraries/EditInquiryModal';
+import { TriStateApplyModal } from '@/components/global-libraries/TriStateApplyModal';
 import { useRealtimeLibrarySync } from '@/hooks/useRealtimeSync';
+import { useSubjectLibrary } from '@/hooks/useSubjectLibrary';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import type { PhraseCategory } from '@/types/phraseLibrary';
 import type { InquiryCategory } from '@/hooks/useInquiryLibrary';
 
@@ -30,6 +34,9 @@ const PHRASE_CATEGORIES: { value: PhraseCategory; label: string }[] = [
   { value: 'addons', label: 'Add-On Opportunities' },
   { value: 'talking_points', label: 'Talking Points' },
   { value: 'org_update', label: 'Org Updates' },
+  { value: 'attachments', label: 'Attachments' },
+  { value: 'focus_area_defaults', label: 'Focus Area Defaults' },
+  { value: 'team_mention', label: 'Team Mention' },
   { value: 'ps', label: 'P.S. Lines' },
 ];
 
@@ -52,10 +59,27 @@ export function GlobalLibraries() {
   const [newInquiryText, setNewInquiryText] = useState('');
   const [phraseModalOpen, setPhraseModalOpen] = useState(false);
   const [inquiryModalOpen, setInquiryModalOpen] = useState(false);
+  const [applyModalOpen, setApplyModalOpen] = useState(false);
+  const [pendingUpdate, setPendingUpdate] = useState<{ id: string; updates: any; type: 'phrase' | 'inquiry' } | null>(null);
+  const [selectedSubjectStyle, setSelectedSubjectStyle] = useState<'formal' | 'hybrid' | 'casual'>('formal');
 
   const { data: phrases = [], isLoading: phrasesLoading } = useGlobalPhrases(selectedPhraseCategory);
   const { data: inquiries = [], isLoading: inquiriesLoading } = useGlobalInquiries(selectedInquiryCategory);
   const { data: signatures = [] } = useGlobalSignatures();
+  const { data: subjects = [] } = useSubjectLibrary(selectedSubjectStyle);
+  
+  // Team Directory data
+  const { data: teamDirectory = [] } = useQuery({
+    queryKey: ['team-directory'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lg_focus_area_directory' as any)
+        .select('*')
+        .order('focus_area');
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const createPhrase = useCreatePhrase();
   const updatePhrase = useUpdatePhrase();
@@ -111,10 +135,12 @@ export function GlobalLibraries() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="phrases" className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger value="phrases">Phrase Library</TabsTrigger>
-            <TabsTrigger value="inquiries">Inquiry Library</TabsTrigger>
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
+            <TabsTrigger value="phrases">Phrases</TabsTrigger>
+            <TabsTrigger value="subjects">Subjects</TabsTrigger>
+            <TabsTrigger value="inquiries">Inquiries</TabsTrigger>
             <TabsTrigger value="signatures">Signatures</TabsTrigger>
+            <TabsTrigger value="team">Team</TabsTrigger>
           </TabsList>
 
           {/* Phrases Tab */}
@@ -214,6 +240,59 @@ export function GlobalLibraries() {
                         </Card>
                       ))
                     )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Subjects Tab */}
+          <TabsContent value="subjects" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Subject Line Library</CardTitle>
+                <CardDescription>
+                  Manage subject line templates organized by style. Includes token replacement for [My Org], [Their Org], [Focus Area].
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Style</Label>
+                  <Select
+                    value={selectedSubjectStyle}
+                    onValueChange={(val) => setSelectedSubjectStyle(val as 'formal' | 'hybrid' | 'casual')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="formal">Formal</SelectItem>
+                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                      <SelectItem value="casual">Casual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="capitalize">{selectedSubjectStyle} Subjects ({subjects.length})</Label>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {subjects.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">No subjects in this style</div>
+                    ) : (
+                      subjects.map((subject) => (
+                        <Card key={subject.id}>
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="font-mono text-sm">{subject.subject_template}</div>
+                              <Badge variant="outline" className="capitalize">{subject.style}</Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    <strong>Tokens:</strong> [My Org], [Their Org], [Focus Area], (Send with no subject)
                   </div>
                 </div>
               </CardContent>
@@ -345,6 +424,64 @@ export function GlobalLibraries() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Team & Assistant Directory Tab */}
+          <TabsContent value="team" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Team & Assistant Directory</CardTitle>
+                <CardDescription>
+                  Focus area leads and assistants for auto-CC and meeting coordination.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {teamDirectory.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">No team directory entries</div>
+                  ) : (
+                    teamDirectory.map((entry: any) => (
+                      <Card key={entry.focus_area}>
+                        <CardContent className="p-4">
+                          <div className="space-y-2">
+                            <div className="font-medium">{entry.focus_area}</div>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <div className="text-muted-foreground text-xs mb-1">Lead 1</div>
+                                {entry.lead1_name && (
+                                  <div>
+                                    <div>{entry.lead1_name}</div>
+                                    <div className="text-muted-foreground text-xs">{entry.lead1_email}</div>
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <div className="text-muted-foreground text-xs mb-1">Lead 2</div>
+                                {entry.lead2_name && (
+                                  <div>
+                                    <div>{entry.lead2_name}</div>
+                                    <div className="text-muted-foreground text-xs">{entry.lead2_email}</div>
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <div className="text-muted-foreground text-xs mb-1">Assistant</div>
+                                {entry.assistant_name && (
+                                  <div>
+                                    <div>{entry.assistant_name}</div>
+                                    <div className="text-muted-foreground text-xs">{entry.assistant_email}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Edit Modals */}
@@ -363,6 +500,29 @@ export function GlobalLibraries() {
             setInquiryModalOpen(open);
             if (!open) setEditingInquiry(null);
           }}
+        />
+        <TriStateApplyModal
+          open={applyModalOpen}
+          onOpenChange={setApplyModalOpen}
+          onConfirm={(applyToAll, updateTriStateDefaults) => {
+            if (pendingUpdate) {
+              if (pendingUpdate.type === 'phrase') {
+                updatePhrase.mutate({ 
+                  id: pendingUpdate.id, 
+                  updates: pendingUpdate.updates, 
+                  applyToAll,
+                  updateTriStateDefaults 
+                });
+              } else {
+                updateInquiry.mutate({ 
+                  id: pendingUpdate.id, 
+                  updates: pendingUpdate.updates 
+                });
+              }
+              setPendingUpdate(null);
+            }
+          }}
+          itemType={pendingUpdate?.type || 'phrase'}
         />
       </ResponsiveContainer>
     </div>
