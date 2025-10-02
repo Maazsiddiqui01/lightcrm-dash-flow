@@ -117,6 +117,16 @@ function checkModulePrerequisites(
     case 'suggested_talking_points':
       return contact.focus_areas.length > 0;
     
+    case 'focus_area_defaults':
+      return contact.focus_areas.length > 0;
+    
+    case 'team_mention':
+      return contact.lead_emails.length > 0;
+    
+    case 'attachments':
+      // Attachments require explicit file upload (checked elsewhere)
+      return true;
+    
     default:
       return true;
   }
@@ -363,21 +373,25 @@ export function buildContentFlow(
 
   // Template-specific ordering
   if (masterKey === 'relationship_maintenance') {
-    // Relationship: personal_hook → top_opp → inquiry → talking_points → close
+    // Relationship: personal_hook → top_opp → inquiry → talking_points → team_mention → focus_area_defaults → close
     if (modules.top_opportunities) flow.push('top_opportunities');
     if (hasInquiry) flow.push('inquiry');
     if (modules.suggested_talking_points) flow.push('talking_points');
+    if (modules.team_mention) flow.push('team_mention');
+    if (modules.focus_area_defaults) flow.push('focus_area_defaults');
     if (modules.meeting_request) flow.push('meeting_request');
   } else if (masterKey === 'hybrid_neutral') {
-    // Hybrid: personal_hook → article → inquiry → top_opp → platforms/addons → close
+    // Hybrid: personal_hook → article → inquiry → top_opp → platforms/addons → team_mention → focus_area_defaults → close
     if (modules.article_recommendations) flow.push('article');
     if (hasInquiry) flow.push('inquiry');
     if (modules.top_opportunities) flow.push('top_opportunities');
     if (modules.platforms) flow.push('platforms');
     if (modules.addons) flow.push('addons');
+    if (modules.team_mention) flow.push('team_mention');
+    if (modules.focus_area_defaults) flow.push('focus_area_defaults');
     if (modules.meeting_request) flow.push('meeting_request');
   } else if (masterKey === 'business_development') {
-    // BD: personal_hook → article → top_opp → inquiry → platforms → addons → org_update → close
+    // BD: personal_hook → article → top_opp → inquiry → platforms → addons → org_update → attachments → team_mention → focus_area_defaults → close
     if (modules.article_recommendations) flow.push('article');
     if (modules.top_opportunities) flow.push('top_opportunities');
     if (hasInquiry) flow.push('inquiry');
@@ -385,6 +399,8 @@ export function buildContentFlow(
     if (modules.addons) flow.push('addons');
     if (modules.general_org_update) flow.push('org_update');
     if (modules.attachments) flow.push('attachments');
+    if (modules.team_mention) flow.push('team_mention');
+    if (modules.focus_area_defaults) flow.push('focus_area_defaults');
     if (modules.meeting_request) flow.push('meeting_request');
   }
 
