@@ -1,9 +1,10 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { parseFlexibleDate } from "@/utils/dateUtils";
-import { AlertCircle } from "lucide-react";
+import { Users, Mail, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface GroupContactAlertProps {
   groupName: string;
@@ -65,25 +66,22 @@ export function GroupContactAlert({
   const now = new Date();
   const groupLastContact = parseFlexibleDate(groupLastContactDate);
   
-  // Build baseline message
-  let baseMessage = '';
+  // Calculate days since group contact
   let daysSinceGroupContact = 0;
+  let hasGroupContact = false;
   
   if (groupLastContact) {
     daysSinceGroupContact = Math.floor(
       (now.getTime() - groupLastContact.getTime()) / (1000 * 60 * 60 * 24)
     );
-    const daysText = daysSinceGroupContact === 1 ? 'DAY' : 'DAYS';
-    baseMessage = `GROUP CONTACT: IT HAS BEEN ${daysSinceGroupContact} ${daysText} SINCE YOU EMAILED THIS GROUP CONTACT LIST`;
-  } else {
-    baseMessage = 'GROUP CONTACT: YOU HAVE NOT EMAILED THIS GROUP CONTACT LIST YET';
+    hasGroupContact = true;
   }
 
   // Find all group members who have been contacted since the group last contact date
-  let additionalMessage = '';
+  let recentContacts: Array<{ name: string; contactType: string; daysAgo: number; icon: 'email' | 'meeting' }> = [];
   
   if (memberInteractions && groupLastContact) {
-    const recentContacts = groupMembers.all
+    recentContacts = groupMembers.all
       .filter(member => member.full_name && member.full_name !== contactFullName) // Exclude the selected contact
       .map(member => {
         // Safety check for email
@@ -111,42 +109,68 @@ export function GroupContactAlert({
         // 1. Contacted more recently than the group last contact
         // 2. Within the delta period
         if (interactionDate > groupLastContact && daysAgo < deltaDays) {
-          const contactType = mostRecentInteraction.source?.toLowerCase() === 'meeting' 
-            ? 'MET WITH' 
-            : 'EMAILED';
+          const isMeeting = mostRecentInteraction.source?.toLowerCase() === 'meeting';
+          const contactType = isMeeting ? 'met with' : 'emailed';
 
           return {
             name: member.full_name,
             contactType,
             daysAgo,
+            icon: isMeeting ? 'meeting' as const : 'email' as const,
           };
         }
 
         return null;
       })
-      .filter(Boolean) as Array<{ name: string; contactType: string; daysAgo: number }>;
+      .filter(Boolean) as Array<{ name: string; contactType: string; daysAgo: number; icon: 'email' | 'meeting' }>;
 
-    if (recentContacts.length > 0) {
-      // Sort by most recent first
-      recentContacts.sort((a, b) => a.daysAgo - b.daysAgo);
-
-      // Build the additional contacts message
-      const contactsList = recentContacts
-        .map(c => `YOU ${c.contactType} ${c.name.toUpperCase()} ${c.daysAgo} ${c.daysAgo === 1 ? 'DAY' : 'DAYS'} AGO`)
-        .join(', AND ');
-      
-      additionalMessage = `, BUT ${contactsList}`;
-    }
+    // Sort by most recent first
+    recentContacts.sort((a, b) => a.daysAgo - b.daysAgo);
   }
 
-  const fullMessage = baseMessage + additionalMessage;
-
   return (
-    <Alert className="mb-4 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-      <AlertDescription className="font-bold text-amber-900 dark:text-amber-200">
-        {fullMessage}
-      </AlertDescription>
+    <Alert className="mb-4 border-blue-500/50 bg-gradient-to-r from-blue-50 to-blue-50/50 dark:from-blue-950/20 dark:to-blue-950/10">
+      <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <AlertTitle className="text-blue-900 dark:text-blue-200 font-semibold">
+            Group Contact
+          </AlertTitle>
+          <Badge variant="secondary" className="text-xs">
+            {groupMembers.all.length} {groupMembers.all.length === 1 ? 'member' : 'members'}
+          </Badge>
+        </div>
+        
+        <AlertDescription className="text-blue-800 dark:text-blue-300 space-y-2">
+          {hasGroupContact ? (
+            <div>
+              Last group email sent <span className="font-semibold">{daysSinceGroupContact} {daysSinceGroupContact === 1 ? 'day' : 'days'} ago</span>
+            </div>
+          ) : (
+            <div className="font-medium">No group email sent yet</div>
+          )}
+          
+          {recentContacts.length > 0 && (
+            <div className="pt-2 border-t border-blue-200 dark:border-blue-800">
+              <div className="text-sm font-medium mb-1.5">Recent individual contacts:</div>
+              <div className="space-y-1">
+                {recentContacts.map((contact, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm">
+                    {contact.icon === 'email' ? (
+                      <Mail className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    ) : (
+                      <Calendar className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    )}
+                    <span>
+                      You {contact.contactType} <span className="font-semibold">{contact.name}</span> {contact.daysAgo} {contact.daysAgo === 1 ? 'day' : 'days'} ago
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </AlertDescription>
+      </div>
     </Alert>
   );
 }
