@@ -13,6 +13,7 @@ import { EnhancedDraftSection } from "@/components/email-builder/EnhancedDraftSe
 import { PreviewModal } from "@/components/email-builder/PreviewModal";
 import { LivePreviewPanel } from "@/components/email-builder/LivePreviewPanel";
 import { GroupContactAlert } from "@/components/email-builder/GroupContactAlert";
+import { IndividualContactAlert } from "@/components/email-builder/IndividualContactAlert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Save, RotateCcw } from "lucide-react";
@@ -280,6 +281,15 @@ ${draftResult.signature}`;
             contactFullName={contactData.full_name || groupInfo.full_name}
             groupLastContactDate={contactData.most_recent_contact}
             deltaDays={groupInfo.delta || 30}
+          />
+        )}
+
+        {/* Individual Contact Alert */}
+        {selectedContact && contactData?.most_recent_contact && (
+          <IndividualContactAlert
+            contactFullName={contactData.full_name}
+            lastContactDate={contactData.most_recent_contact}
+            deltaType={deltaType}
           />
         )}
 
