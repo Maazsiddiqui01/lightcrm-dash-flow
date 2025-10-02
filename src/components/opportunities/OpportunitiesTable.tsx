@@ -494,6 +494,16 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
           </h3>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {isExporting ? 'Exporting...' : 'Export'}
+          </Button>
+          
           <ColumnsMenu
             columns={dynamicColumns}
             columnVisibility={columnVisibility.columnVisibility}
@@ -509,20 +519,6 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
           >
             <ArrowUpDown className="h-4 w-4 mr-2" />
             Sort
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={isExporting}
-          >
-            {isExporting ? (
-              <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
-            Export
           </Button>
 
           <SplitButton
