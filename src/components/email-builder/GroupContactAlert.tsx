@@ -59,80 +59,93 @@ export function GroupContactAlert({
   // Don't show anything while loading
   if (loadingMembers || loadingInteractions) return null;
   
-  // Safety checks
-  if (!groupMembers || !groupLastContactDate || !memberInteractions) return null;
-  
-  if (!groupMembers.all || groupMembers.all.length === 0) return null;
+  // Safety checks - only require groupMembers to exist
+  if (!groupMembers || !groupMembers.all || groupMembers.all.length === 0) return null;
 
   const now = new Date();
   const groupLastContact = parseFlexibleDate(groupLastContactDate);
   
-  if (!groupLastContact) return null;
-
-  const daysSinceGroupContact = Math.floor(
-    (now.getTime() - groupLastContact.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  // Build baseline message
+  let baseMessage = '';
+  let daysSinceGroupContact = 0;
+  
+  if (groupLastContact) {
+    daysSinceGroupContact = Math.floor(
+      (now.getTime() - groupLastContact.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const daysText = daysSinceGroupContact === 1 ? 'DAY' : 'DAYS';
+    baseMessage = `GROUP CONTACT: IT HAS BEEN ${daysSinceGroupContact} ${daysText} SINCE YOU EMAILED THIS GROUP CONTACT LIST`;
+  } else {
+    baseMessage = 'GROUP CONTACT: YOU HAVE NOT EMAILED THIS GROUP CONTACT LIST YET';
+  }
 
   // Find all group members who have been contacted since the group last contact date
-  const recentContacts = groupMembers.all
-    .filter(member => member.full_name && member.full_name !== contactFullName) // Exclude the selected contact
-    .map(member => {
-      // Safety check for email
-      if (!member.email_address) return null;
+  let additionalMessage = '';
+  
+  if (memberInteractions && groupLastContact) {
+    const recentContacts = groupMembers.all
+      .filter(member => member.full_name && member.full_name !== contactFullName) // Exclude the selected contact
+      .map(member => {
+        // Safety check for email
+        if (!member.email_address) return null;
+        
+        // Get most recent interaction for this member by email
+        const memberEmail = member.email_address.toLowerCase();
+        const memberInteractionRecords = memberInteractions.filter(i => {
+          const allEmails = (i.all_emails || '').toLowerCase();
+          return allEmails && allEmails.includes(memberEmail);
+        });
+
+        if (memberInteractionRecords.length === 0) return null;
+
+        const mostRecentInteraction = memberInteractionRecords[0]; // Already sorted by date desc
+        const interactionDate = parseFlexibleDate(mostRecentInteraction.occurred_at);
+        
+        if (!interactionDate) return null;
+
+        const daysAgo = Math.floor(
+          (now.getTime() - interactionDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // Only include if:
+        // 1. Contacted more recently than the group last contact
+        // 2. Within the delta period
+        if (interactionDate > groupLastContact && daysAgo < deltaDays) {
+          const contactType = mostRecentInteraction.source?.toLowerCase() === 'meeting' 
+            ? 'MET WITH' 
+            : 'EMAILED';
+
+          return {
+            name: member.full_name,
+            contactType,
+            daysAgo,
+          };
+        }
+
+        return null;
+      })
+      .filter(Boolean) as Array<{ name: string; contactType: string; daysAgo: number }>;
+
+    if (recentContacts.length > 0) {
+      // Sort by most recent first
+      recentContacts.sort((a, b) => a.daysAgo - b.daysAgo);
+
+      // Build the additional contacts message
+      const contactsList = recentContacts
+        .map(c => `YOU ${c.contactType} ${c.name.toUpperCase()} ${c.daysAgo} ${c.daysAgo === 1 ? 'DAY' : 'DAYS'} AGO`)
+        .join(', AND ');
       
-      // Get most recent interaction for this member by email
-      const memberEmail = member.email_address.toLowerCase();
-      const memberInteractionRecords = memberInteractions.filter(i => {
-        const allEmails = (i.all_emails || '').toLowerCase();
-        return allEmails && allEmails.includes(memberEmail);
-      });
+      additionalMessage = `, BUT ${contactsList}`;
+    }
+  }
 
-      if (memberInteractionRecords.length === 0) return null;
-
-      const mostRecentInteraction = memberInteractionRecords[0]; // Already sorted by date desc
-      const interactionDate = parseFlexibleDate(mostRecentInteraction.occurred_at);
-      
-      if (!interactionDate) return null;
-
-      const daysAgo = Math.floor(
-        (now.getTime() - interactionDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      // Only include if:
-      // 1. Contacted more recently than the group last contact
-      // 2. Within the delta period
-      if (interactionDate > groupLastContact && daysAgo < deltaDays) {
-        const contactType = mostRecentInteraction.source?.toLowerCase() === 'meeting' 
-          ? 'MET WITH' 
-          : 'EMAILED';
-
-        return {
-          name: member.full_name,
-          contactType,
-          daysAgo,
-        };
-      }
-
-      return null;
-    })
-    .filter(Boolean) as Array<{ name: string; contactType: string; daysAgo: number }>;
-
-  // Don't show alert if no recent contacts
-  if (recentContacts.length === 0) return null;
-
-  // Sort by most recent first
-  recentContacts.sort((a, b) => a.daysAgo - b.daysAgo);
-
-  // Build the notification message
-  const contactsList = recentContacts
-    .map(c => `YOU ${c.contactType} ${c.name.toUpperCase()} ${c.daysAgo} ${c.daysAgo === 1 ? 'DAY' : 'DAYS'} AGO`)
-    .join(', AND ');
+  const fullMessage = baseMessage + additionalMessage;
 
   return (
-    <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+    <Alert className="mb-4 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
       <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
       <AlertDescription className="font-bold text-amber-900 dark:text-amber-200">
-        GROUP CONTACT NOTIFICATION: IT HAS BEEN {daysSinceGroupContact} {daysSinceGroupContact === 1 ? 'DAY' : 'DAYS'} SINCE YOU EMAILED THIS GROUP CONTACT LIST, BUT {contactsList}.
+        {fullMessage}
       </AlertDescription>
     </Alert>
   );

@@ -12,7 +12,8 @@ export function GroupMembersBadge({ groupName, compact = false }: GroupMembersBa
 
   if (!groupName || isLoading) return null;
 
-  const totalMembers = (groupMembers?.to.length || 0) + (groupMembers?.cc.length || 0) + (groupMembers?.bcc.length || 0);
+  // Count all members, even if roles are not assigned
+  const totalMembers = groupMembers?.all?.length || (groupMembers?.to.length || 0) + (groupMembers?.cc.length || 0) + (groupMembers?.bcc.length || 0);
 
   if (totalMembers === 0) return null;
 

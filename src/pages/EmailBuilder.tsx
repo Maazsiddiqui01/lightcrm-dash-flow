@@ -274,23 +274,22 @@ ${draftResult.signature}`;
           </div>
         </div>
 
-        {/* Group Contact Alert */}
-        {groupInfo?.group_contact && contactData?.most_recent_contact && (
+        {/* Alert Section - Show Group Alert if in group, otherwise Individual Alert */}
+        {groupInfo?.group_contact ? (
           <GroupContactAlert
             groupName={groupInfo.group_contact}
-            contactFullName={contactData.full_name || groupInfo.full_name}
-            groupLastContactDate={contactData.most_recent_contact}
+            contactFullName={contactData?.full_name || groupInfo.full_name}
+            groupLastContactDate={groupInfo.most_recent_group_contact || null}
             deltaDays={groupInfo.delta || 30}
           />
-        )}
-
-        {/* Individual Contact Alert */}
-        {selectedContact && contactData?.most_recent_contact && (
-          <IndividualContactAlert
-            contactFullName={contactData.full_name}
-            lastContactDate={contactData.most_recent_contact}
-            deltaType={deltaType}
-          />
+        ) : (
+          selectedContact && contactData?.most_recent_contact && (
+            <IndividualContactAlert
+              contactFullName={contactData.full_name}
+              lastContactDate={contactData.most_recent_contact}
+              deltaType={deltaType}
+            />
+          )
         )}
 
         {/* Main Content - Two Column Layout */}
