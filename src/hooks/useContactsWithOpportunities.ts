@@ -345,7 +345,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
             updated_at: contact.updated_at ?? null,
             lg_lead: contact.lg_lead ?? null,
             lg_assistant: contact.lg_assistant ?? null,
-            group_contact: contact.group_contact ?? null,
+            group_contact: contact.group_contact && contact.group_contact.trim() !== '' ? contact.group_contact : null,
             most_recent_group_contact: contact.most_recent_group_contact ?? null,
             intentional_no_outreach: contact.intentional_no_outreach ?? null,
             intentional_no_outreach_date: contact.intentional_no_outreach_date ?? null,
@@ -383,10 +383,12 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       console.log('✅ Opportunities map built:', oppsMap.size, 'contacts have opportunities');
       console.log('🔍 Sample opportunities:', Array.from(oppsMap.entries()).slice(0, 3));
 
-      // Attach opportunities to each contact
+      // Attach opportunities to each contact with proper null handling for group fields
       const contactsWithOpportunities = contactsData?.map(contact => ({
         ...contact,
         group_email_role: (contact as any).group_email_role ?? null,
+        group_contact: (contact as any).group_contact && (contact as any).group_contact.trim() !== '' ? (contact as any).group_contact : null,
+        most_recent_group_contact: (contact as any).most_recent_group_contact ?? null,
         opportunities: oppsMap.get(contact.id) || ''
       })) || [];
 

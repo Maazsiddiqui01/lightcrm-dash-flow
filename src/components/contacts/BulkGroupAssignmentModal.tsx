@@ -33,6 +33,7 @@ export function BulkGroupAssignmentModal({
   const handleAssign = async () => {
     const groupName = mode === "existing" ? selectedGroup : newGroupName.trim();
 
+    // Validation
     if (!groupName) {
       toast({
         title: "Group name required",
@@ -42,17 +43,42 @@ export function BulkGroupAssignmentModal({
       return;
     }
 
+    if (!selectedContacts || selectedContacts.length === 0) {
+      toast({
+        title: "No contacts selected",
+        description: "Please select at least one contact",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUpdating(true);
 
     try {
-      const contactIds = selectedContacts.map(c => c.id);
+      const contactIds = selectedContacts.map(c => c.id).filter(Boolean);
+      
+      if (contactIds.length === 0) {
+        throw new Error("No valid contact IDs found");
+      }
 
-      const { error } = await supabase
+      console.log('Assigning contacts to group:', { groupName, contactIds });
+
+      const { data, error } = await supabase
         .from("contacts_raw")
         .update({ group_contact: groupName })
-        .in("id", contactIds);
+        .in("id", contactIds)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error details:", error);
+        throw new Error(`Database error: ${error.message} (Code: ${error.code})`);
+      }
+
+      if (!data || data.length === 0) {
+        console.warn("Update returned no data, but no error");
+      }
+
+      console.log('Successfully updated contacts:', data?.length || 0);
 
       toast({
         title: "Success",
@@ -66,11 +92,15 @@ export function BulkGroupAssignmentModal({
       setSelectedGroup("");
       setNewGroupName("");
       setMode("existing");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error assigning contacts to group:", error);
+      
+      const errorMessage = error?.message || "Failed to assign contacts to group";
+      const errorDetails = error?.details || error?.hint || "";
+      
       toast({
         title: "Error",
-        description: "Failed to assign contacts to group",
+        description: errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage,
         variant: "destructive",
       });
     } finally {

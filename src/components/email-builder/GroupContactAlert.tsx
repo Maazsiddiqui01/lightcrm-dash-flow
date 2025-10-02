@@ -18,16 +18,20 @@ export function GroupContactAlert({
   groupLastContactDate,
   deltaDays 
 }: GroupContactAlertProps) {
-  const { data: groupMembers } = useGroupMembers(groupName);
+  const { data: groupMembers, isLoading: loadingMembers } = useGroupMembers(groupName);
 
   // Fetch full interaction history for each group member
-  const { data: memberInteractions } = useQuery({
+  const { data: memberInteractions, isLoading: loadingInteractions } = useQuery({
     queryKey: ['group-member-interactions', groupName],
     queryFn: async () => {
       if (!groupName || !groupMembers?.all || groupMembers.all.length === 0) return [];
 
       // Get all email addresses from the group
-      const memberEmails = groupMembers.all.map(m => m.email_address.toLowerCase());
+      const memberEmails = groupMembers.all
+        .map(m => m.email_address?.toLowerCase())
+        .filter(Boolean);
+      
+      if (memberEmails.length === 0) return [];
       
       // Query interactions where any group member's email appears
       const { data, error } = await supabase
@@ -36,12 +40,15 @@ export function GroupContactAlert({
         .order('occurred_at', { ascending: false })
         .limit(500); // Limit to recent interactions
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching group interactions:', error);
+        throw error;
+      }
 
       // Filter locally to find interactions involving group members
       const filteredData = (data || []).filter(interaction => {
         const allEmails = (interaction.all_emails || '').toLowerCase();
-        return memberEmails.some(email => allEmails.includes(email));
+        return memberEmails.some(email => allEmails && allEmails.includes(email));
       });
 
       return filteredData;
@@ -49,7 +56,13 @@ export function GroupContactAlert({
     enabled: !!groupName && !!groupMembers?.all && groupMembers.all.length > 0,
   });
 
+  // Don't show anything while loading
+  if (loadingMembers || loadingInteractions) return null;
+  
+  // Safety checks
   if (!groupMembers || !groupLastContactDate || !memberInteractions) return null;
+  
+  if (!groupMembers.all || groupMembers.all.length === 0) return null;
 
   const now = new Date();
   const groupLastContact = parseFlexibleDate(groupLastContactDate);
@@ -62,13 +75,16 @@ export function GroupContactAlert({
 
   // Find all group members who have been contacted since the group last contact date
   const recentContacts = groupMembers.all
-    .filter(member => member.full_name !== contactFullName) // Exclude the selected contact
+    .filter(member => member.full_name && member.full_name !== contactFullName) // Exclude the selected contact
     .map(member => {
+      // Safety check for email
+      if (!member.email_address) return null;
+      
       // Get most recent interaction for this member by email
       const memberEmail = member.email_address.toLowerCase();
       const memberInteractionRecords = memberInteractions.filter(i => {
         const allEmails = (i.all_emails || '').toLowerCase();
-        return allEmails.includes(memberEmail);
+        return allEmails && allEmails.includes(memberEmail);
       });
 
       if (memberInteractionRecords.length === 0) return null;
