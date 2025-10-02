@@ -467,14 +467,13 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 <div>
                   <Label htmlFor="group_email_role">Group Email Role</Label>
                   <Select 
-                    value={contactData.group_email_role || ""} 
-                    onValueChange={(value) => updateField("group_email_role", value)}
+                    value={contactData.group_email_role || undefined} 
+                    onValueChange={(value) => updateField("group_email_role", value || null)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
+                      <SelectValue placeholder="None - Select role if in a group" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
                       <SelectItem value="to">To (Primary Recipient)</SelectItem>
                       <SelectItem value="cc">CC (Carbon Copy)</SelectItem>
                       <SelectItem value="bcc">BCC (Blind Carbon Copy)</SelectItem>
