@@ -18,8 +18,7 @@ export function useGroupMembers(groupName: string | null | undefined) {
       const { data, error } = await supabase
         .from('contacts_raw')
         .select('id, email_address, full_name, group_email_role, most_recent_contact')
-        .eq('group_contact', groupName)
-        .not('group_email_role', 'is', null);
+        .eq('group_contact', groupName);
 
       if (error) throw error;
 

@@ -1,4 +1,7 @@
 import { useContactEnriched } from "@/hooks/useContactEnriched";
+import { useContactGroupInfo } from "@/hooks/useContactGroupInfo";
+import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { GroupMembersBadge } from "@/components/email-builder/GroupMembersBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -19,6 +22,8 @@ interface ContactInfoPanelProps {
 
 export function ContactInfoPanel({ contactId }: ContactInfoPanelProps) {
   const { data: enrichedData, isLoading } = useContactEnriched(contactId);
+  const { data: groupInfo } = useContactGroupInfo(contactId);
+  const { data: groupMembers } = useGroupMembers(groupInfo?.group_contact);
 
   if (isLoading) {
     return (
@@ -78,6 +83,29 @@ export function ContactInfoPanel({ contactId }: ContactInfoPanelProps) {
             <span className="text-sm">{contact.email}</span>
           </div>
         </div>
+
+        <Separator />
+
+        {/* Group Contact */}
+        {groupInfo?.group_contact && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">Group Contact</span>
+            </div>
+            <div className="space-y-2">
+              <Badge variant="outline" className="text-sm">
+                {groupInfo.group_contact}
+              </Badge>
+              <GroupMembersBadge groupName={groupInfo.group_contact} compact />
+              {groupMembers?.all && groupMembers.all.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  Members: {groupMembers.all.map(m => m.full_name || m.email_address).join(', ')}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <Separator />
 

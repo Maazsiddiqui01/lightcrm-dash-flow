@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGroupContacts } from "@/hooks/useGroupContacts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Users } from "lucide-react";
 
 interface BulkGroupAssignmentModalProps {
@@ -28,6 +29,7 @@ export function BulkGroupAssignmentModal({
   const [newGroupName, setNewGroupName] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const queryClient = useQueryClient();
   const { data: groupOptions, isLoading: loadingGroups } = useGroupContacts();
 
   const handleAssign = async () => {
@@ -83,6 +85,13 @@ export function BulkGroupAssignmentModal({
       toast({
         title: "Success",
         description: `${selectedContacts.length} contact${selectedContacts.length > 1 ? 's' : ''} assigned to ${groupName}`,
+      });
+
+      // Invalidate related queries for immediate UI update
+      queryClient.invalidateQueries({ queryKey: ['group-members', groupName] });
+      queryClient.invalidateQueries({ queryKey: ['group-contacts'] });
+      contactIds.forEach(id => {
+        queryClient.invalidateQueries({ queryKey: ['contact-group-info', id] });
       });
 
       onSuccess();

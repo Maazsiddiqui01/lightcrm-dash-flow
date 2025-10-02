@@ -274,11 +274,11 @@ ${draftResult.signature}`;
         </div>
 
         {/* Group Contact Alert */}
-        {groupInfo?.group_contact && groupInfo?.most_recent_group_contact && (
+        {groupInfo?.group_contact && contactData?.most_recent_contact && (
           <GroupContactAlert
             groupName={groupInfo.group_contact}
-            contactFullName={groupInfo.full_name}
-            groupLastContactDate={groupInfo.most_recent_group_contact}
+            contactFullName={contactData.full_name || groupInfo.full_name}
+            groupLastContactDate={contactData.most_recent_contact}
             deltaDays={groupInfo.delta || 30}
           />
         )}
