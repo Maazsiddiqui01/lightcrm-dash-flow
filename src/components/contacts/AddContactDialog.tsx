@@ -43,6 +43,7 @@ interface IndividualContactForm {
   lg_lead: string;
   lg_assistant: string;
   lg_focus_areas: string[];
+  group_email_role: string;
 }
 
 const emptyContactForm: IndividualContactForm = {
@@ -63,6 +64,7 @@ const emptyContactForm: IndividualContactForm = {
   lg_lead: "",
   lg_assistant: "",
   lg_focus_areas: [],
+  group_email_role: "",
 };
 
 export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDialogProps) {
@@ -119,6 +121,11 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(contact.email_address.trim())) {
       return "Please enter a valid email address";
+    }
+
+    // Group email role validation - required for group contacts
+    if (contactType === "group" && !contact.group_email_role) {
+      return "Group email role is required for group contacts";
     }
 
     return null;
@@ -186,6 +193,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           lg_lead: opt(contact.lg_lead),
           lg_assistant: opt(contact.lg_assistant),
           group_contact: contactType === "group" ? groupName.trim() : null,
+          group_email_role: contactType === "group" ? opt(contact.group_email_role) : null,
         };
       });
 
@@ -346,7 +354,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                       />
                     </div>
 
-                    <div className="space-y-2">
+                     <div className="space-y-2">
                       <Label htmlFor={`title_${index}`}>Title</Label>
                       <Input
                         id={`title_${index}`}
@@ -355,6 +363,27 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                         placeholder="Enter job title"
                       />
                     </div>
+
+                    {/* Group Email Role - Only show for group contacts */}
+                    {contactType === "group" && (
+                      <div className="space-y-2">
+                        <Label htmlFor={`group_email_role_${index}`}>Email Role *</Label>
+                        <Select
+                          value={contact.group_email_role}
+                          onValueChange={(value) => updateContact(index, "group_email_role", value)}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="to">To (Primary Recipient)</SelectItem>
+                            <SelectItem value="cc">CC (Carbon Copy)</SelectItem>
+                            <SelectItem value="bcc">BCC (Blind Carbon Copy)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
 
                   {/* Focus Areas */}

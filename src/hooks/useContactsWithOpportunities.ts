@@ -55,6 +55,7 @@ interface ContactWithOpportunities {
   lg_lead: string | null; // Added new column
   lg_assistant: string | null; // Added new column
   group_contact: string | null;
+  group_email_role: string | null;
   most_recent_group_contact: string | null;
   intentional_no_outreach: boolean | null;
   intentional_no_outreach_date: string | null;
@@ -297,6 +298,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
             last_name: contact.last_name ?? null,
             email_address: contact.email_address ?? null,
             phone: contact.phone ?? null,
+            group_email_role: contact.group_email_role ?? null,
             title: contact.title ?? null,
             organization: contact.organization ?? null,
             areas_of_specialization: contact.areas_of_specialization ?? null,
@@ -384,6 +386,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       // Attach opportunities to each contact
       const contactsWithOpportunities = contactsData?.map(contact => ({
         ...contact,
+        group_email_role: (contact as any).group_email_role ?? null,
         opportunities: oppsMap.get(contact.id) || ''
       })) || [];
 

@@ -53,6 +53,7 @@ interface ContactRaw {
   lg_lead: string | null;
   lg_assistant: string | null;
   group_contact: string | null;
+  group_email_role: string | null;
   linkedin_url: string | null;
   x_twitter_url: string | null;
   intentional_no_outreach: boolean | null;
@@ -461,6 +462,24 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     onChange={(e) => updateField("group_contact", e.target.value)}
                     placeholder="Enter group name (optional)"
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="group_email_role">Group Email Role</Label>
+                  <Select 
+                    value={contactData.group_email_role || ""} 
+                    onValueChange={(value) => updateField("group_email_role", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="to">To (Primary Recipient)</SelectItem>
+                      <SelectItem value="cc">CC (Carbon Copy)</SelectItem>
+                      <SelectItem value="bcc">BCC (Blind Carbon Copy)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Mail, Users } from "lucide-react";
 import { buildCc } from "@/lib/buildCc";
 import type { ContactEmailComposer } from "@/types/emailComposer";
+import { useGroupMembers } from "@/hooks/useGroupMembers";
 
 interface CCPreviewCardProps {
   contactData: ContactEmailComposer | null;
@@ -10,6 +11,11 @@ interface CCPreviewCardProps {
 }
 
 export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
+  // Fetch group members if contact is part of a group
+  const { data: groupMembers, isLoading: loadingGroupMembers } = useGroupMembers(
+    (contactData as any)?.group_contact
+  );
+
   if (!contactData) {
     return (
       <Card>
@@ -29,7 +35,8 @@ export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
     );
   }
 
-  const ccList = buildCc(
+  // Build CC list from leads/assistants
+  const baseCcList = buildCc(
     contactData.lg_emails_cc,
     contactData.lead_emails,
     contactData.assistant_emails,
@@ -37,7 +44,19 @@ export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
     contactData.email
   );
 
-  const ccEmails = ccList ? ccList.split(';').map(e => e.trim()).filter(e => e) : [];
+  const baseCcEmails = baseCcList ? baseCcList.split(';').map(e => e.trim()).filter(e => e) : [];
+
+  // Add group CC members if they exist
+  const groupCcEmails = groupMembers?.cc.map(m => m.email_address) || [];
+  const allCcEmails = [...baseCcEmails, ...groupCcEmails].filter((e, i, arr) => arr.indexOf(e) === i);
+
+  // Get group BCC members
+  const groupBccEmails = groupMembers?.bcc.map(m => m.email_address) || [];
+
+  // Determine primary TO recipient(s)
+  const toEmails = groupMembers?.to.length 
+    ? groupMembers.to.map(m => m.email_address)
+    : [contactData.email];
 
   return (
     <Card>
@@ -48,14 +67,30 @@ export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {loadingGroupMembers && (
+          <div className="text-sm text-muted-foreground">Loading group members...</div>
+        )}
+
         {/* To Address */}
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="default" className="text-xs">TO</Badge>
-            <span className="text-sm font-medium">Primary Recipient</span>
+            <span className="text-sm font-medium">
+              Primary Recipient{toEmails.length > 1 ? 's' : ''}
+              {groupMembers?.to.length ? ' (Group)' : ''}
+            </span>
           </div>
           <div className="p-2 bg-muted rounded text-sm">
-            {contactData.email}
+            {toEmails.map((email, i) => (
+              <div key={i}>
+                {email}
+                {groupMembers?.to[i] && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    ({groupMembers.to[i].full_name})
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -64,16 +99,21 @@ export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="outline" className="text-xs">CC</Badge>
             <span className="text-sm font-medium">
-              Carbon Copy ({ccEmails.length})
+              Carbon Copy ({allCcEmails.length})
             </span>
             <Badge variant="secondary" className="text-xs">
               {deltaType}
             </Badge>
+            {groupCcEmails.length > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                +{groupCcEmails.length} from group
+              </Badge>
+            )}
           </div>
           
-          {ccEmails.length > 0 ? (
+          {allCcEmails.length > 0 ? (
             <div className="p-2 bg-muted rounded text-sm">
-              {ccEmails.join('; ')}
+              {allCcEmails.join('; ')}
             </div>
           ) : (
             <div className="p-2 bg-muted rounded text-sm text-muted-foreground">
@@ -81,6 +121,24 @@ export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
             </div>
           )}
         </div>
+
+        {/* BCC Addresses (Group Only) */}
+        {groupBccEmails.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="outline" className="text-xs">BCC</Badge>
+              <span className="text-sm font-medium">
+                Blind Carbon Copy ({groupBccEmails.length})
+              </span>
+              <Badge variant="secondary" className="text-xs">
+                Hidden from other recipients
+              </Badge>
+            </div>
+            <div className="p-2 bg-muted rounded text-sm">
+              {groupBccEmails.join('; ')}
+            </div>
+          </div>
+        )}
 
         {/* Debug Info (development only) */}
         {process.env.NODE_ENV === 'development' && (

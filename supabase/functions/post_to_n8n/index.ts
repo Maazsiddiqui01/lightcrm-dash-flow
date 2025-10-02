@@ -124,14 +124,41 @@ function transformToN8NPayload(enhanced: any): any {
     case_8: 'Case 8 — No GB — (3+) FAs',
   };
 
+  // Determine primary TO recipients
+  const groupMembers = enhanced.groupMembers;
+  const primaryToEmail = groupMembers?.to.length 
+    ? groupMembers.to[0].email 
+    : contact.email;
+  const primaryToName = groupMembers?.to.length
+    ? groupMembers.to[0].fullName
+    : (contact.fullName || contact.full_name);
+
+  // Build comprehensive CC list including group members
+  const groupCcEmails = groupMembers?.cc.map(m => m.email) || [];
+  const allCcEmails = uniqueEmails([
+    ...leadCC,
+    ...(routing.deltaType === 'Meeting' ? assistantCC : []),
+    ...groupCcEmails,
+  ]).filter((e: string) => e !== primaryToEmail.toLowerCase());
+
+  // Build BCC list (group BCC members only)
+  const groupBccEmails = groupMembers?.bcc.map(m => m.email) || [];
+
   // Build n8n payload
   return {
     contact: {
-      email: contact.email,
-      fullName: contact.fullName || contact.full_name,
+      email: primaryToEmail,
+      fullName: primaryToName,
       firstName: contact.firstName || contact.first_name,
       organization: contact.organization || '',
+      groupContact: contact.groupContact || null,
+      groupEmailRole: contact.groupEmailRole || null,
     },
+    groupMembers: groupMembers ? {
+      to: groupMembers.to,
+      cc: groupMembers.cc,
+      bcc: groupMembers.bcc,
+    } : null,
     focus: {
       gb_present: focusAreas.some((fa: string) => /general\s*bd/i.test(fa)),
       fa_count: focusAreas.length,
@@ -179,8 +206,10 @@ function transformToN8NPayload(enhanced: any): any {
       userSignatureName: content.signature || 'Tom Luce',
     },
     helpers: {
-      ccFinal,
-      ccFinalString: ccFinal.join('; '),
+      ccFinal: allCcEmails,
+      ccFinalString: allCcEmails.join('; '),
+      bccFinal: groupBccEmails,
+      bccFinalString: groupBccEmails.join('; '),
       descByFA,
       platformFAs,
       addonFAs,

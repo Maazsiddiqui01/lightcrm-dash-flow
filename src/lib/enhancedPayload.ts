@@ -14,6 +14,7 @@ import { pickSubject } from '@/hooks/useSubjectLibrary';
 import { pickSignature } from '@/hooks/useSignatureLibrary';
 import { fetchContactMetadata } from '@/hooks/useContextFetching';
 import { buildModuleConfiguration, buildContentFlow } from './draftGeneration';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface EnhancedDraftPayload {
   // Core contact info
@@ -23,7 +24,16 @@ export interface EnhancedDraftPayload {
     fullName: string;
     firstName: string;
     organization: string;
+    groupContact: string | null;
+    groupEmailRole: 'to' | 'cc' | 'bcc' | null;
   };
+  
+  // Group members (if contact is part of a group)
+  groupMembers: {
+    to: Array<{ email: string; fullName: string }>;
+    cc: Array<{ email: string; fullName: string }>;
+    bcc: Array<{ email: string; fullName: string }>;
+  } | null;
   
   // Focus areas with descriptions
   focusAreas: {
@@ -214,6 +224,25 @@ export async function buildEnhancedDraftPayload(
     .filter(fa => fa.platformAddon.toLowerCase().includes('add-on'))
     .map(fa => fa.focusArea);
 
+  // Fetch group members if contact is part of a group
+  let groupMembers: { to: Array<{ email: string; fullName: string }>; cc: Array<{ email: string; fullName: string }>; bcc: Array<{ email: string; fullName: string }> } | null = null;
+  
+  if ((contact as any).group_contact) {
+    const { data: membersData } = await supabase
+      .from('contacts_raw')
+      .select('email_address, full_name, group_email_role')
+      .eq('group_contact', (contact as any).group_contact)
+      .not('group_email_role', 'is', null);
+    
+    if (membersData) {
+      groupMembers = {
+        to: membersData.filter(m => m.group_email_role === 'to').map(m => ({ email: m.email_address, fullName: m.full_name })),
+        cc: membersData.filter(m => m.group_email_role === 'cc').map(m => ({ email: m.email_address, fullName: m.full_name })),
+        bcc: membersData.filter(m => m.group_email_role === 'bcc').map(m => ({ email: m.email_address, fullName: m.full_name })),
+      };
+    }
+  }
+
   return {
     contact: {
       id: contact.contact_id,
@@ -221,7 +250,10 @@ export async function buildEnhancedDraftPayload(
       fullName: contact.full_name,
       firstName: contact.first_name,
       organization: contact.organization || '',
+      groupContact: (contact as any).group_contact || null,
+      groupEmailRole: (contact as any).group_email_role || null,
     },
+    groupMembers,
     focusAreas: {
       list: metadata.focusAreas,
       descriptions: metadata.focusAreaDescriptions.map(desc => ({
@@ -317,7 +349,10 @@ function createFailedPayload(
       fullName: contact.full_name,
       firstName: contact.first_name,
       organization: contact.organization || '',
+      groupContact: (contact as any).group_contact || null,
+      groupEmailRole: (contact as any).group_email_role || null,
     },
+    groupMembers: null,
     focusAreas: {
       list: [],
       descriptions: [],

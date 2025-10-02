@@ -68,6 +68,7 @@ export const CONTACTS_RAW_COLUMNS: TableColumn[] = [
   { name: 'lg_assistant', type: 'text', nullable: true, displayName: 'LG Assistant' },
   { name: 'x_twitter_url', type: 'text', nullable: true, displayName: 'X / Twitter' },
   { name: 'group_contact', type: 'text', nullable: true, displayName: 'Group Contact' },
+  { name: 'group_email_role', type: 'text', nullable: true, displayName: 'Group Email Role' },
   { name: 'delta_type', type: 'text', nullable: true, displayName: 'Outreach Type' },
   { name: 'url_to_online_bio', type: 'text', nullable: true, displayName: 'URL To Online Bio' },
   { name: 'linkedin_url', type: 'text', nullable: true, displayName: 'LinkedIn Profile' },

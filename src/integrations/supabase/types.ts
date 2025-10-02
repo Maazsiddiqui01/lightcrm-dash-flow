@@ -278,6 +278,7 @@ export type Database = {
           first_name: string | null
           full_name: string | null
           group_contact: string | null
+          group_email_role: string | null
           id: string
           intentional_no_outreach: boolean | null
           intentional_no_outreach_date: string | null
@@ -339,6 +340,7 @@ export type Database = {
           first_name?: string | null
           full_name?: string | null
           group_contact?: string | null
+          group_email_role?: string | null
           id?: string
           intentional_no_outreach?: boolean | null
           intentional_no_outreach_date?: string | null
@@ -400,6 +402,7 @@ export type Database = {
           first_name?: string | null
           full_name?: string | null
           group_contact?: string | null
+          group_email_role?: string | null
           id?: string
           intentional_no_outreach?: boolean | null
           intentional_no_outreach_date?: string | null

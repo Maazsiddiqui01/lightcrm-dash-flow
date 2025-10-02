@@ -355,6 +355,10 @@ export const editableColumns: EditableConfig = {
     lg_lead: { type: 'text' },
     lg_assistant: { type: 'text' },
     group_contact: { type: 'text' },
+    group_email_role: {
+      type: 'select',
+      options: ['to', 'cc', 'bcc']
+    },
     city: { type: 'text' },
     state: { type: 'text' },
     intentional_no_outreach: { type: 'boolean' },
