@@ -12,10 +12,12 @@ import { CCPreviewCard } from "@/components/email-builder/CCPreviewCard";
 import { EnhancedDraftSection } from "@/components/email-builder/EnhancedDraftSection";
 import { PreviewModal } from "@/components/email-builder/PreviewModal";
 import { LivePreviewPanel } from "@/components/email-builder/LivePreviewPanel";
+import { GroupContactAlert } from "@/components/email-builder/GroupContactAlert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Save, RotateCcw } from "lucide-react";
 import { useEmailBuilderData } from "@/hooks/useEmailBuilderData";
+import { useContactGroupInfo } from "@/hooks/useContactGroupInfo";
 import { useResolvedTemplateQuery } from "@/hooks/useResolvedTemplate";
 import { useComposerRow } from "@/hooks/useComposer";
 import { useContactSettings } from "@/hooks/useContactSettings";
@@ -64,6 +66,9 @@ export function EmailBuilder() {
   
   // Get contact data from new composer view
   const { data: contactData } = useComposerRow(selectedContact?.email || null);
+  
+  // Get group contact info from contacts_raw
+  const { data: groupInfo } = useContactGroupInfo(selectedContact?.contact_id || null);
   
   // Load library data
   const { data: allPhrases = [] } = useGlobalPhrases();
@@ -267,6 +272,16 @@ ${draftResult.signature}`;
             <p className="text-muted-foreground">Generate personalized email drafts with AI</p>
           </div>
         </div>
+
+        {/* Group Contact Alert */}
+        {groupInfo?.group_contact && groupInfo?.most_recent_group_contact && (
+          <GroupContactAlert
+            groupName={groupInfo.group_contact}
+            contactFullName={groupInfo.full_name}
+            groupLastContactDate={groupInfo.most_recent_group_contact}
+            deltaDays={groupInfo.delta || 30}
+          />
+        )}
 
         {/* Main Content - Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
