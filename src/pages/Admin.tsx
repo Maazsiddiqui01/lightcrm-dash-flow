@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersManagementTable } from "@/components/admin/UsersManagementTable";
 import { UserAssignmentPanel } from "@/components/admin/UserAssignmentPanel";
-import { Shield, AlertTriangle } from "lucide-react";
+import { DataAssignmentHub } from "@/components/admin/DataAssignmentHub";
+import { Shield, AlertTriangle, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useContactDuplicates } from "@/hooks/useContactDuplicates";
@@ -56,7 +57,11 @@ export function Admin() {
             <Tabs defaultValue="users" className="w-full">
               <TabsList>
                 <TabsTrigger value="users">User Management</TabsTrigger>
-                <TabsTrigger value="assignments">Data Assignments</TabsTrigger>
+                <TabsTrigger value="assignments">Overview</TabsTrigger>
+                <TabsTrigger value="assign" className="gap-2">
+                  <Users2 className="h-4 w-4" />
+                  Assign Data
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="users" className="mt-6">
@@ -65,6 +70,10 @@ export function Admin() {
               
               <TabsContent value="assignments" className="mt-6">
                 <UserAssignmentPanel />
+              </TabsContent>
+
+              <TabsContent value="assign" className="mt-6">
+                <DataAssignmentHub />
               </TabsContent>
             </Tabs>
           </CardContent>
