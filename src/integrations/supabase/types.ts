@@ -262,10 +262,12 @@ export type Database = {
           all_emails: string | null
           all_opps: number | null
           areas_of_specialization: string | null
+          assigned_to: string | null
           category: string | null
           city: string | null
           contact_type: string | null
           created_at: string | null
+          created_by: string | null
           days_since_last_email: number | null
           days_since_last_meeting: number | null
           delta: number | null
@@ -311,6 +313,7 @@ export type Database = {
           of_emails: number | null
           of_meetings: number | null
           organization: string | null
+          organization_id: string | null
           outreach_date: string | null
           phone: string | null
           state: string | null
@@ -324,10 +327,12 @@ export type Database = {
           all_emails?: string | null
           all_opps?: number | null
           areas_of_specialization?: string | null
+          assigned_to?: string | null
           category?: string | null
           city?: string | null
           contact_type?: string | null
           created_at?: string | null
+          created_by?: string | null
           days_since_last_email?: number | null
           days_since_last_meeting?: number | null
           delta?: number | null
@@ -373,6 +378,7 @@ export type Database = {
           of_emails?: number | null
           of_meetings?: number | null
           organization?: string | null
+          organization_id?: string | null
           outreach_date?: string | null
           phone?: string | null
           state?: string | null
@@ -386,10 +392,12 @@ export type Database = {
           all_emails?: string | null
           all_opps?: number | null
           areas_of_specialization?: string | null
+          assigned_to?: string | null
           category?: string | null
           city?: string | null
           contact_type?: string | null
           created_at?: string | null
+          created_by?: string | null
           days_since_last_email?: number | null
           days_since_last_meeting?: number | null
           delta?: number | null
@@ -435,6 +443,7 @@ export type Database = {
           of_emails?: number | null
           of_meetings?: number | null
           organization?: string | null
+          organization_id?: string | null
           outreach_date?: string | null
           phone?: string | null
           state?: string | null
@@ -709,6 +718,7 @@ export type Database = {
           cc_emails: string | null
           cc_names: string | null
           created_at: string | null
+          created_by: string | null
           emails_arr: string[] | null
           end_time: string | null
           from_email: string | null
@@ -716,6 +726,7 @@ export type Database = {
           id: string
           occurred_at: string | null
           organization: string | null
+          organization_id: string | null
           quarter_text: string | null
           source: string | null
           subject: string | null
@@ -730,6 +741,7 @@ export type Database = {
           cc_emails?: string | null
           cc_names?: string | null
           created_at?: string | null
+          created_by?: string | null
           emails_arr?: string[] | null
           end_time?: string | null
           from_email?: string | null
@@ -737,6 +749,7 @@ export type Database = {
           id?: string
           occurred_at?: string | null
           organization?: string | null
+          organization_id?: string | null
           quarter_text?: string | null
           source?: string | null
           subject?: string | null
@@ -751,6 +764,7 @@ export type Database = {
           cc_emails?: string | null
           cc_names?: string | null
           created_at?: string | null
+          created_by?: string | null
           emails_arr?: string[] | null
           end_time?: string | null
           from_email?: string | null
@@ -758,6 +772,7 @@ export type Database = {
           id?: string
           occurred_at?: string | null
           organization?: string | null
+          organization_id?: string | null
           quarter_text?: string | null
           source?: string | null
           subject?: string | null
@@ -1138,7 +1153,9 @@ export type Database = {
       opportunities_raw: {
         Row: {
           acquisition_date: string | null
+          assigned_to: string | null
           created_at: string | null
+          created_by: string | null
           date_of_origination: string | null
           deal_name: string | null
           deal_source_company: string | null
@@ -1164,6 +1181,7 @@ export type Database = {
           most_recent_notes: string | null
           next_steps: string | null
           next_steps_due_date: string | null
+          organization_id: string | null
           ownership: string | null
           ownership_type: string | null
           platform_add_on: string | null
@@ -1179,7 +1197,9 @@ export type Database = {
         }
         Insert: {
           acquisition_date?: string | null
+          assigned_to?: string | null
           created_at?: string | null
+          created_by?: string | null
           date_of_origination?: string | null
           deal_name?: string | null
           deal_source_company?: string | null
@@ -1205,6 +1225,7 @@ export type Database = {
           most_recent_notes?: string | null
           next_steps?: string | null
           next_steps_due_date?: string | null
+          organization_id?: string | null
           ownership?: string | null
           ownership_type?: string | null
           platform_add_on?: string | null
@@ -1220,7 +1241,9 @@ export type Database = {
         }
         Update: {
           acquisition_date?: string | null
+          assigned_to?: string | null
           created_at?: string | null
+          created_by?: string | null
           date_of_origination?: string | null
           deal_name?: string | null
           deal_source_company?: string | null
@@ -1246,6 +1269,7 @@ export type Database = {
           most_recent_notes?: string | null
           next_steps?: string | null
           next_steps_due_date?: string | null
+          organization_id?: string | null
           ownership?: string | null
           ownership_type?: string | null
           platform_add_on?: string | null
