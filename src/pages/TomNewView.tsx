@@ -204,7 +204,7 @@ export function TomNewView() {
       let notes = (row as any).notes ?? '';
       if (!notes && row.contact_id) {
         const { data: c, error } = await supabase
-          .from('contacts_app')
+          .from('contacts_raw')
           .select('notes')
           .eq('id', row.contact_id)
           .maybeSingle();

@@ -92,7 +92,7 @@ export function Dashboard() {
     queryFn: async () => {
       // Fetch contacts count (not filtered by date)
       const { count: contactsCount } = await supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('*', { count: 'exact', head: true });
 
       // Fetch opportunities count with date filter
@@ -116,7 +116,7 @@ export function Dashboard() {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
       const { count: recentContactsCount } = await supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', thirtyDaysAgo.toISOString());
 

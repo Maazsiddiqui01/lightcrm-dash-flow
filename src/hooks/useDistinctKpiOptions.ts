@@ -6,7 +6,7 @@ export const useDistinctFocusAreas = () => {
     queryKey: ['kpi-distinct-focus-areas'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('lg_focus_areas_comprehensive_list');
       
       if (error) throw error;
@@ -33,7 +33,7 @@ export const useDistinctSectors = () => {
     queryKey: ['kpi-distinct-sectors'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('lg_sector')
         .not('lg_sector', 'is', null)
         .neq('lg_sector', '');

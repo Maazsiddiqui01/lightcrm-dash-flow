@@ -195,12 +195,12 @@ export default function SourceGreatnessPage() {
     staleTime: 60_000,
   });
 
-  // Fetch contacts headline - using contacts_app
+  // Fetch contacts headline - using contacts_raw
   const { data: contactsHeadline } = useQuery({
     queryKey: ['sourcing-contacts-headline'],
     queryFn: async () => {
       const { count: totalContacts } = await supabase
-        .from('contacts_app')
+        .from('contacts_raw')
         .select('*', { count: 'exact', head: true });
       
       // Get meetings in last 90 days
