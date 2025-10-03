@@ -25,13 +25,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useInviteUser } from "@/hooks/useInviteUser";
-import { Loader2, UserPlus } from "lucide-react";
+import { useDeleteUser } from "@/hooks/useDeleteUser";
+import { useUpdateUserProfile } from "@/hooks/useUpdateUserProfile";
+import { Loader2, UserPlus, Trash2, Edit2, Check, X } from "lucide-react";
 
 type AppRole = 'admin' | 'user' | 'viewer';
 
@@ -48,10 +60,15 @@ export function UsersManagementTable() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const inviteUser = useInviteUser();
+  const deleteUser = useDeleteUser();
+  const updateProfile = useUpdateUserProfile();
   
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteFullName, setInviteFullName] = useState("");
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
 
   // Fetch all users with their roles using edge function
   const { data: users, isLoading } = useQuery({
@@ -109,6 +126,38 @@ export function UsersManagementTable() {
         },
       }
     );
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    deleteUser.mutate(userId, {
+      onSuccess: () => {
+        setDeleteUserId(null);
+      },
+    });
+  };
+
+  const handleStartEdit = (userId: string, currentName: string) => {
+    setEditingUserId(userId);
+    setEditingName(currentName);
+  };
+
+  const handleSaveEdit = (userId: string) => {
+    if (editingName.trim()) {
+      updateProfile.mutate(
+        { userId, full_name: editingName },
+        {
+          onSuccess: () => {
+            setEditingUserId(null);
+            setEditingName("");
+          },
+        }
+      );
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUserId(null);
+    setEditingName("");
   };
 
   const getRoleBadgeVariant = (role: AppRole) => {
@@ -195,18 +244,58 @@ export function UsersManagementTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Full Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead>Change Role</TableHead>
+              <TableHead className="text-white">Full Name</TableHead>
+              <TableHead className="text-white">Email</TableHead>
+              <TableHead className="text-white">Role</TableHead>
+              <TableHead className="text-white">Status</TableHead>
+              <TableHead className="text-white">Joined</TableHead>
+              <TableHead className="text-white">Change Role</TableHead>
+              <TableHead className="text-white">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users?.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.full_name || '—'}</TableCell>
+                <TableCell className="font-medium">
+                  {editingUserId === user.id ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        className="h-8"
+                        autoFocus
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => handleSaveEdit(user.id)}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={handleCancelEdit}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span>{user.full_name || '—'}</span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => handleStartEdit(user.id, user.full_name)}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
                   <Badge variant={getRoleBadgeVariant(user.role)}>
@@ -244,6 +333,16 @@ export function UsersManagementTable() {
                     </SelectContent>
                   </Select>
                 </TableCell>
+                <TableCell>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setDeleteUserId(user.id)}
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -255,6 +354,27 @@ export function UsersManagementTable() {
           No users found
         </div>
       )}
+
+      <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user account
+              and remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteUserId && handleDeleteUser(deleteUserId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -6,6 +6,9 @@ verify_jwt = true
 [functions.invite_user]
 verify_jwt = true
 
+[functions.delete_user]
+verify_jwt = true
+
 [functions.router_llm]
 verify_jwt = true
 
