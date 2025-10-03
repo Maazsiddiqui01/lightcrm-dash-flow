@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersManagementTable } from "@/components/admin/UsersManagementTable";
+import { UserAssignmentPanel } from "@/components/admin/UserAssignmentPanel";
 import { Shield, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -55,17 +56,15 @@ export function Admin() {
             <Tabs defaultValue="users" className="w-full">
               <TabsList>
                 <TabsTrigger value="users">User Management</TabsTrigger>
-                <TabsTrigger value="roles">Role Assignment</TabsTrigger>
+                <TabsTrigger value="assignments">Data Assignments</TabsTrigger>
               </TabsList>
               
               <TabsContent value="users" className="mt-6">
                 <UsersManagementTable />
               </TabsContent>
               
-              <TabsContent value="roles" className="mt-6">
-                <div className="text-sm text-muted-foreground">
-                  Role assignment is available in the user management table
-                </div>
+              <TabsContent value="assignments" className="mt-6">
+                <UserAssignmentPanel />
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -1,24 +1,31 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { Home, Users, Target, MessageSquare, Table, Bot, Eye, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const mobileMenuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Contacts", url: "/contacts", icon: Users },
-  { title: "Opportunities", url: "/opportunities", icon: Target },
-  { title: "Interactions", url: "/interactions", icon: MessageSquare },
+  { title: "Dashboard", url: "/dashboard", icon: Home, roles: ['admin', 'user', 'viewer'] },
+  { title: "Contacts", url: "/contacts", icon: Users, roles: ['admin', 'user', 'viewer'] },
+  { title: "Opportunities", url: "/opportunities", icon: Target, roles: ['admin', 'user', 'viewer'] },
+  { title: "Interactions", url: "/interactions", icon: MessageSquare, roles: ['admin', 'user'] },
 ];
 
 export function MobileNavigation() {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { role } = useUserRole();
 
   const isActive = (path: string) => currentPath === path;
+  
+  // Filter menu items based on user role
+  const visibleMenuItems = mobileMenuItems.filter(item => 
+    !role || item.roles.includes(role)
+  );
 
   return (
     <div className="nav-mobile">
-      <div className="grid grid-cols-4 h-16">
-        {mobileMenuItems.map((item) => (
+      <div className={`grid h-16`} style={{ gridTemplateColumns: `repeat(${visibleMenuItems.length}, 1fr)` }}>
+        {visibleMenuItems.map((item) => (
           <NavLink
             key={item.title}
             to={item.url}

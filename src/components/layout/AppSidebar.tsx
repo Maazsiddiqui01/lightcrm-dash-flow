@@ -13,28 +13,29 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Target, MessageSquare, Table, Bot, LogOut, Eye, BarChart3, FileText, Mail, MailOpen, Library, Shield } from "lucide-react";
+import { Home, Users, Target, MessageSquare, Table, Bot, LogOut, Eye, BarChart3, FileText, Mail, MailOpen, Library, Shield, Settings } from "lucide-react";
 
 const menuItems = [
-  { title: "Sourcing Greatness", url: "/sourcing-greatness", icon: BarChart3 },
-  { title: "Contacts", url: "/contacts", icon: Users },
-  { title: "Pending Contacts", url: "/missing-contacts", icon: Users },
-  { title: "Opportunities", url: "/opportunities", icon: Target },
-  { title: "Interactions", url: "/interactions", icon: MessageSquare },
-  { title: "Email Builder", url: "/email-builder", icon: Mail },
-  { title: "Global Libraries", url: "/global-libraries", icon: Library },
-  { title: "Contacts Email", url: "/contacts-email", icon: MailOpen },
-  { title: "KPIs", url: "/kpis", icon: BarChart3 },
-  { title: "Tom New View", url: "/tom-new-view", icon: Eye },
-  { title: "Make Your Own View", url: "/make-your-own-view", icon: Table },
-  { title: "Ask AI", url: "/ask-ai", icon: Bot },
+  { title: "Sourcing Greatness", url: "/sourcing-greatness", icon: BarChart3, roles: ['admin', 'user'] },
+  { title: "Contacts", url: "/contacts", icon: Users, roles: ['admin', 'user', 'viewer'] },
+  { title: "Pending Contacts", url: "/missing-contacts", icon: Users, roles: ['admin', 'user'] },
+  { title: "Opportunities", url: "/opportunities", icon: Target, roles: ['admin', 'user', 'viewer'] },
+  { title: "Interactions", url: "/interactions", icon: MessageSquare, roles: ['admin', 'user'] },
+  { title: "Email Builder", url: "/email-builder", icon: Mail, roles: ['admin', 'user'] },
+  { title: "Global Libraries", url: "/global-libraries", icon: Library, roles: ['admin', 'user'] },
+  { title: "Contacts Email", url: "/contacts-email", icon: MailOpen, roles: ['admin', 'user'] },
+  { title: "KPIs", url: "/kpis", icon: BarChart3, roles: ['admin', 'user'] },
+  { title: "Tom New View", url: "/tom-new-view", icon: Eye, roles: ['admin', 'user'] },
+  { title: "Data Maintenance", url: "/data-maintenance", icon: Settings, roles: ['admin'] },
+  { title: "Make Your Own View", url: "/make-your-own-view", icon: Table, roles: ['admin'] },
+  { title: "Ask AI", url: "/ask-ai", icon: Bot, roles: ['admin', 'user'] },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const { signOut, user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, role } = useUserRole();
 
   const isActive = (path: string) => currentPath === path;
   
@@ -42,6 +43,11 @@ export function AppSidebar() {
     isActive 
       ? "bg-sidebar-accent text-sidebar-primary font-medium border-r-2 border-sidebar-primary" 
       : "hover:bg-sidebar-accent/50 text-sidebar-foreground";
+
+  // Filter menu items based on user role
+  const visibleMenuItems = menuItems.filter(item => 
+    !role || item.roles.includes(role)
+  );
 
   return (
     <Sidebar>
@@ -53,7 +59,7 @@ export function AppSidebar() {
 
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1 px-2">
-              {menuItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
@@ -101,7 +107,7 @@ export function AppSidebar() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email}</p>
-              <p className="text-xs text-sidebar-foreground/70">Authenticated User</p>
+              <p className="text-xs text-sidebar-foreground/70 capitalize">{role || 'User'}</p>
             </div>
           </div>
           

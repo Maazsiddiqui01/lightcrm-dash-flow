@@ -71,12 +71,31 @@ function App() {
                       <Route path="/kpis" element={<KPIs />} />
                       <Route path="/meetings-with-team" element={<MeetingsWithTeam />} />
                       <Route path="/tom-new-view" element={<TomNewView />} />
-                      <Route path="/make-your-own-view" element={<MakeYourOwnView />} />
-                      <Route path="/data-maintenance" element={<DataMaintenance />} />
+                      
+                      {/* Admin-only routes */}
+                      <Route path="/make-your-own-view" element={
+                        <ProtectedRoute requireAdmin>
+                          <MakeYourOwnView />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/data-maintenance" element={
+                        <ProtectedRoute requireAdmin>
+                          <DataMaintenance />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin" element={
+                        <ProtectedRoute requireAdmin>
+                          <Admin />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/duplicates" element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminDuplicates />
+                        </ProtectedRoute>
+                      } />
+                      
                       <Route path="/datatable-test" element={<DataTableTest />} />
                       <Route path="/ask-ai" element={<AskAI />} />
-                      <Route path="/admin" element={<Admin />} />
-                      <Route path="/admin/duplicates" element={<AdminDuplicates />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </PageTransition>
