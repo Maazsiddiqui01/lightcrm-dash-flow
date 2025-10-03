@@ -4,18 +4,19 @@ import { Building2, Menu, LogOut, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { cn } from "@/lib/utils";
 import { NotificationBadge } from "@/components/contacts/NotificationBadge";
 
 const navItems = [
-  { title: "Dashboard", url: "/dashboard" },
-  { title: "Contacts", url: "/contacts" },
-  { title: "Pending Contacts", url: "/missing-contacts" },
-  { title: "Opportunities", url: "/opportunities" },
-  { title: "Interactions", url: "/interactions" },
-  { title: "Email Builder", url: "/email-builder" },
-  { title: "AI Agent", url: "/make-your-own-view" },
-  { title: "Data Maintenance", url: "/data-maintenance" },
+  { title: "Dashboard", url: "/dashboard", roles: ['admin', 'user', 'viewer'] },
+  { title: "Contacts", url: "/contacts", roles: ['admin', 'user', 'viewer'] },
+  { title: "Opportunities", url: "/opportunities", roles: ['admin', 'user', 'viewer'] },
+  { title: "Email Builder", url: "/email-builder", roles: ['admin', 'user', 'viewer'] },
+  { title: "Pending Contacts", url: "/missing-contacts", roles: ['admin'] },
+  { title: "Interactions", url: "/interactions", roles: ['admin', 'user'] },
+  { title: "AI Agent", url: "/make-your-own-view", roles: ['admin'] },
+  { title: "Data Maintenance", url: "/data-maintenance", roles: ['admin'] },
 ];
 
 const filterPages = ["/contacts", "/missing-contacts", "/opportunities", "/interactions", "/kpis"];
@@ -28,9 +29,15 @@ export function TopNav({ onFiltersClick }: TopNavProps) {
   const location = useLocation();
   const currentPath = location.pathname;
   const { signOut, user } = useAuth();
+  const { role } = useUserRole();
   const [mobileOpen, setMobileOpen] = useState(false);
   
   const showFilters = filterPages.includes(currentPath) && onFiltersClick;
+  
+  // Filter navigation items based on user role
+  const visibleNavItems = navItems.filter(item => 
+    !role || item.roles.includes(role)
+  );
 
   const getNavCls = (path: string) =>
     currentPath === path 
@@ -39,7 +46,7 @@ export function TopNav({ onFiltersClick }: TopNavProps) {
 
   const NavItems = () => (
     <>
-      {navItems.map((item) => (
+      {visibleNavItems.map((item) => (
         <NavLink
           key={item.title}
           to={item.url}
@@ -129,7 +136,7 @@ export function TopNav({ onFiltersClick }: TopNavProps) {
                   </div>
                   <div>
                     <p className="font-medium">{user?.email}</p>
-                    <p className="text-sm text-muted-foreground">Authenticated User</p>
+                    <p className="text-sm text-muted-foreground capitalize">{role || 'User'}</p>
                   </div>
                 </div>
                 
