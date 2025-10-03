@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { NotificationBadge } from "@/components/contacts/NotificationBadge";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard" },
@@ -72,6 +73,9 @@ export function TopNav({ onFiltersClick }: TopNavProps) {
 
         {/* Right Side */}
         <div className="flex items-center space-x-3">
+          {/* Notifications */}
+          <NotificationBadge />
+          
           {/* Filters Button */}
           {showFilters && (
             <Button

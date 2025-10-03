@@ -24,6 +24,8 @@ import { useContactOpps } from "@/hooks/useContactOpps";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { useSectors, useFocusAreasBySector, findMatchingOption } from "@/hooks/useLookups";
+import { DuplicateWarningBanner } from "./DuplicateWarningBanner";
+import { ContactLockBanner } from "./ContactLockBanner";
 
 interface ContactRaw {
   id: string;
@@ -288,6 +290,12 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full sm:w-[560px] sm:max-w-[560px] overflow-y-auto">
         <SheetHeader>
+          {contactData?.email_address && (
+            <>
+              <DuplicateWarningBanner email={contactData.email_address} />
+              <ContactLockBanner contactId={contactData.id} />
+            </>
+          )}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className="h-10 w-10 rounded-full bg-primary-light flex items-center justify-center">

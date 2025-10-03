@@ -21,6 +21,7 @@ import { ContactsEmail } from "@/pages/ContactsEmail";
 import { DataMaintenance } from "@/pages/DataMaintenance";
 import { GlobalLibraries } from "@/pages/GlobalLibraries";
 import { Admin } from "@/pages/Admin";
+import { AdminDuplicates } from "@/pages/AdminDuplicates";
 import { Auth } from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
@@ -73,6 +74,7 @@ function App() {
                       <Route path="/datatable-test" element={<DataTableTest />} />
                       <Route path="/ask-ai" element={<AskAI />} />
                       <Route path="/admin" element={<Admin />} />
+                      <Route path="/admin/duplicates" element={<AdminDuplicates />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </PageTransition>

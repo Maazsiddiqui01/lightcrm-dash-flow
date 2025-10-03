@@ -47,6 +47,48 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_duplicates: {
+        Row: {
+          contact_ids: string[]
+          email_address: string
+          first_detected_at: string
+          id: string
+          last_updated_at: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          user_count: number
+          user_ids: string[]
+        }
+        Insert: {
+          contact_ids: string[]
+          email_address: string
+          first_detected_at?: string
+          id?: string
+          last_updated_at?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          user_count: number
+          user_ids: string[]
+        }
+        Update: {
+          contact_ids?: string[]
+          email_address?: string
+          first_detected_at?: string
+          id?: string
+          last_updated_at?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          user_count?: number
+          user_ids?: string[]
+        }
+        Relationships: []
+      }
       contact_email_builder_settings: {
         Row: {
           contact_id: string
@@ -209,6 +251,137 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_notifications: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          duplicate_id: string | null
+          id: string
+          message: string
+          notification_type: string
+          read: boolean
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          duplicate_id?: string | null
+          id?: string
+          message: string
+          notification_type: string
+          read?: boolean
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          duplicate_id?: string | null
+          id?: string
+          message?: string
+          notification_type?: string
+          read?: boolean
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_duplicate_id_fkey"
+            columns: ["duplicate_id"]
+            isOneToOne: false
+            referencedRelation: "contact_duplicates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_duplicate_id_fkey"
+            columns: ["duplicate_id"]
+            isOneToOne: false
+            referencedRelation: "contact_duplicates_detailed"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts_dismissed_emails: {
         Row: {
           dismissed_at: string | null
@@ -301,6 +474,9 @@ export type Database = {
           lg_lead: string | null
           lg_sector: string | null
           linkedin_url: string | null
+          lock_reason: string | null
+          locked_by: string | null
+          locked_until: string | null
           meeting_cc: string | null
           meeting_from: string | null
           meeting_title: string | null
@@ -366,6 +542,9 @@ export type Database = {
           lg_lead?: string | null
           lg_sector?: string | null
           linkedin_url?: string | null
+          lock_reason?: string | null
+          locked_by?: string | null
+          locked_until?: string | null
           meeting_cc?: string | null
           meeting_from?: string | null
           meeting_title?: string | null
@@ -431,6 +610,9 @@ export type Database = {
           lg_lead?: string | null
           lg_sector?: string | null
           linkedin_url?: string | null
+          lock_reason?: string | null
+          locked_by?: string | null
+          locked_until?: string | null
           meeting_cc?: string | null
           meeting_from?: string | null
           meeting_title?: string | null
@@ -1494,6 +1676,20 @@ export type Database = {
       }
     }
     Views: {
+      contact_duplicates_detailed: {
+        Row: {
+          contacts: Json | null
+          email_address: string | null
+          first_detected_at: string | null
+          id: string | null
+          last_updated_at: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          status: string | null
+          user_count: number | null
+        }
+        Relationships: []
+      }
       contact_inbox_candidates: {
         Row: {
           email: string | null
@@ -2684,6 +2880,10 @@ export type Database = {
           contact_id: string
         }[]
       }
+      detect_contact_duplicates: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       dismiss_contact_candidate: {
         Args: { p_email: string; p_note?: string }
         Returns: undefined
@@ -2905,6 +3105,14 @@ export type Database = {
           to_emails: string
         }[]
       }
+      lock_contact: {
+        Args: {
+          p_contact_id: string
+          p_duration_minutes?: number
+          p_reason?: string
+        }
+        Returns: Json
+      }
       map_lg_lead_name: {
         Args: { input: string }
         Returns: string
@@ -2956,6 +3164,10 @@ export type Database = {
         Args: { p_email: string }
         Returns: undefined
       }
+      release_expired_locks: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       set_intentional_no_outreach: {
         Args: { p_action_type?: string; p_contact_id: string; p_note?: string }
         Returns: undefined
@@ -2971,6 +3183,10 @@ export type Database = {
       show_trgm: {
         Args: { "": string }
         Returns: string[]
+      }
+      unlock_contact: {
+        Args: { p_contact_id: string }
+        Returns: Json
       }
       util_quarter_text: {
         Args: { t: string }
