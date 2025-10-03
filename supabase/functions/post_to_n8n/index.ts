@@ -1,9 +1,31 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Verify authentication
+async function verifyAuth(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    throw new Error('Missing authorization header');
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    throw new Error('Invalid authentication');
+  }
+
+  return { user, supabase };
+}
 
 const N8N_WEBHOOK_URL = 'https://inverisllc.app.n8n.cloud/webhook/Email-Builder';
 
@@ -235,6 +257,10 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const { user } = await verifyAuth(req);
+    console.log(`Authenticated user: ${user.id}`);
+
     const { payload } = await req.json();
     console.log('Received EnhancedDraftPayload:', JSON.stringify(payload, null, 2));
 
@@ -268,6 +294,15 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('post_to_n8n error:', error);
+    
+    // Return 401 for authentication errors
+    if (error.message?.includes('authorization') || error.message?.includes('authentication')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error',

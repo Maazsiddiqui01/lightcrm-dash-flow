@@ -6,6 +6,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Verify authentication and check if admin
+async function verifyAuth(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    throw new Error('Missing authorization header');
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    throw new Error('Invalid authentication');
+  }
+
+  // Check if user is admin (schema operations should be admin-only)
+  const { data: isAdmin } = await supabase.rpc('is_admin', { _user_id: user.id });
+  if (!isAdmin) {
+    throw new Error('Admin access required');
+  }
+
+  return { user, supabase };
+}
+
 interface ColumnOperation {
   action: 'add' | 'edit' | 'delete' | 'rename';
   tableName: string;
@@ -24,6 +51,10 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication - Admin only for schema operations
+    const { user } = await verifyAuth(req);
+    console.log(`Admin user authenticated: ${user.id}`);
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -48,6 +79,22 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Schema manager error:', error);
+    
+    // Return 401 for authentication errors, 403 for authorization errors
+    if (error.message?.includes('authorization') || error.message?.includes('authentication')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (error.message?.includes('Admin access required')) {
+      return new Response(
+        JSON.stringify({ error: 'Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     const errorDetails = error instanceof Error ? error.toString() : String(error);
     

@@ -6,6 +6,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Verify authentication
+async function verifyAuth(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    throw new Error('Missing authorization header');
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    throw new Error('Invalid authentication');
+  }
+
+  return { user, supabase };
+}
+
 interface FocusAreaMapping {
   focus_area: string;
   sector: string;
@@ -49,6 +70,10 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const { user } = await verifyAuth(req);
+    console.log(`Authenticated user: ${user.id}`);
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -77,6 +102,15 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error:', error);
+    
+    // Return 401 for authentication errors
+    if (error.message?.includes('authorization') || error.message?.includes('authentication')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
