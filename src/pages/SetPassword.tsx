@@ -18,54 +18,91 @@ export function SetPassword() {
   const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    // Extract token from URL hash
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const token = hashParams.get('token');
-    const type = hashParams.get('type');
-    const error = hashParams.get('error');
-    const errorDescription = hashParams.get('error_description');
-
-    if (error) {
-      toast({
-        title: "Invalid or Expired Link",
-        description: errorDescription || "The invitation link is invalid or has expired. Please request a new invitation.",
-        variant: "destructive",
-      });
-      setIsVerifying(false);
-      return;
-    }
-
-    if (!token || type !== 'invite') {
-      toast({
-        title: "Invalid Link",
-        description: "This link is not valid. Please use the invitation link from your email.",
-        variant: "destructive",
-      });
-      setIsVerifying(false);
-      return;
-    }
-
-    // Verify the OTP token and get user email
-    const verifyInvite = async () => {
+    const verifyAndSetEmail = async () => {
       try {
-        const { data, error } = await supabase.auth.verifyOtp({
-          token_hash: token,
-          type: 'invite',
-        });
+        // Parse hash parameters
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const token = hashParams.get('token');
+        const type = hashParams.get('type');
+        const error = hashParams.get('error');
+        const errorDescription = hashParams.get('error_description');
 
-        if (error) throw error;
-
-        // After successful verification, get the session to extract email
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userEmail = data.user?.email || sessionData?.session?.user?.email;
-
-        if (userEmail) {
-          setEmail(userEmail);
-        } else {
-          throw new Error("Unable to retrieve email from invitation");
+        // Handle errors in the URL
+        if (error) {
+          toast({
+            title: "Invalid or Expired Link",
+            description: errorDescription || "The invitation link is invalid or has expired. Please request a new invitation.",
+            variant: "destructive",
+          });
+          setIsVerifying(false);
+          return;
         }
-        
+
+        // Handle modern flow: access_token + refresh_token in hash
+        if (accessToken && refreshToken) {
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (sessionError) throw sessionError;
+
+          const userEmail = sessionData.session?.user?.email;
+          if (userEmail) {
+            setEmail(userEmail);
+            // Clear the hash
+            window.history.replaceState(null, '', window.location.pathname);
+          } else {
+            throw new Error("Unable to retrieve email from session");
+          }
+          
+          setIsVerifying(false);
+          return;
+        }
+
+        // Handle legacy flow: token + type=invite in hash
+        if (token && type === 'invite') {
+          const { data, error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'invite',
+          });
+
+          if (verifyError) throw verifyError;
+
+          // Get the session after verification
+          const { data: sessionData } = await supabase.auth.getSession();
+          const userEmail = data.user?.email || sessionData?.session?.user?.email;
+
+          if (userEmail) {
+            setEmail(userEmail);
+            // Clear the hash
+            window.history.replaceState(null, '', window.location.pathname);
+          } else {
+            throw new Error("Unable to retrieve email from invitation");
+          }
+          
+          setIsVerifying(false);
+          return;
+        }
+
+        // If no valid tokens found, check if there's already a session
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session?.user?.email) {
+          setEmail(sessionData.session.user.email);
+          setIsVerifying(false);
+          return;
+        }
+
+        // No valid authentication found
+        toast({
+          title: "Invalid Link",
+          description: "This link is not valid. Please use the invitation link from your email.",
+          variant: "destructive",
+        });
         setIsVerifying(false);
+
       } catch (error: any) {
         console.error("Error verifying invite:", error);
         toast({
@@ -77,7 +114,7 @@ export function SetPassword() {
       }
     };
 
-    verifyInvite();
+    verifyAndSetEmail();
   }, [toast]);
 
   const handleSetPassword = async (e: React.FormEvent) => {
