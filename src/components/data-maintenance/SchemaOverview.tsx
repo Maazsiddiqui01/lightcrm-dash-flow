@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Building, Database, FileText, Library, ArrowRight } from "lucide-react";
+import { Users, Building, Database, FileText, Library, ArrowRight, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,7 +147,7 @@ export function SchemaOverview() {
       </Card>
 
       {/* Quick Access Links */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link to="/articles" className="group">
           <Card className="transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer h-full">
             <CardHeader className="pb-3">
@@ -181,6 +181,27 @@ export function SchemaOverview() {
                     <CardTitle className="text-lg">Global Libraries</CardTitle>
                     <CardDescription className="text-sm mt-1">
                       Manage templates, phrases, and content
+                    </CardDescription>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link to="/admin" className="group">
+          <Card className="transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer h-full">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <Shield className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Admin Panel</CardTitle>
+                    <CardDescription className="text-sm mt-1">
+                      Manage users and data assignments
                     </CardDescription>
                   </div>
                 </div>
