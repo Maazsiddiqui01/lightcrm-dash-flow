@@ -1,5 +1,11 @@
 project_id = "wjghdqkxwuyptxzdidtf"
 
+[functions.list_users]
+verify_jwt = true
+
+[functions.invite_user]
+verify_jwt = true
+
 [functions.router_llm]
 verify_jwt = true
 
