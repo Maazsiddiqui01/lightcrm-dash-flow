@@ -86,6 +86,8 @@ interface ResponsiveAdvancedTableProps<T = any> {
   enableRowSelection?: boolean;
   onSelectedRowsChange?: (selectedRows: T[]) => void;
   selectedRowExportFn?: (selectedRows: T[]) => void;
+  selectedRows?: string[];
+  onSelectionChange?: (rows: string[]) => void;
   idKey?: string;
   showTopPagination?: boolean;
   hideColumnsButton?: boolean;
@@ -122,6 +124,8 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   enableRowSelection = false,
   onSelectedRowsChange,
   selectedRowExportFn,
+  selectedRows: externalSelectedRows,
+  onSelectionChange: externalOnSelectionChange,
   idKey = 'id',
   showTopPagination = true,
   hideColumnsButton = false,
@@ -140,12 +144,71 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   // Column visibility persistence with table-specific storage
   const columnVisibilityHook = useColumnVisibility(`${tableType}-${tableId}`, initialColumns);
   
-  // Row selection
-  const rowSelection = useSelectedRows({ 
+  // Row selection - use external control if provided, otherwise use internal
+  const internalRowSelection = useSelectedRows({ 
     tableId, 
     data, 
     idKey 
   });
+  
+  const rowSelection = externalOnSelectionChange ? {
+    selectedRowIds: externalSelectedRows || [],
+    selectedCount: externalSelectedRows?.length || 0,
+    selectRow: (rowId: string) => {
+      if (!externalOnSelectionChange) return;
+      externalOnSelectionChange([...(externalSelectedRows || []), rowId]);
+    },
+    deselectRow: (rowId: string) => {
+      if (!externalOnSelectionChange || !externalSelectedRows) return;
+      externalOnSelectionChange(externalSelectedRows.filter(id => id !== rowId));
+    },
+    toggleRow: (rowId: string) => {
+      if (!externalSelectedRows || !externalOnSelectionChange) return;
+      if (externalSelectedRows.includes(rowId)) {
+        externalOnSelectionChange(externalSelectedRows.filter(id => id !== rowId));
+      } else {
+        externalOnSelectionChange([...externalSelectedRows, rowId]);
+      }
+    },
+    selectAll: (pageData: any[]) => {
+      if (!externalOnSelectionChange) return;
+      const pageIds = pageData.map(row => String(row[idKey]));
+      const allIds = new Set([...(externalSelectedRows || []), ...pageIds]);
+      externalOnSelectionChange(Array.from(allIds));
+    },
+    deselectAll: (pageData?: any[]) => {
+      if (!externalOnSelectionChange || !externalSelectedRows) return;
+      if (pageData) {
+        const pageIds = new Set(pageData.map(row => String(row[idKey])));
+        externalOnSelectionChange(externalSelectedRows.filter(id => !pageIds.has(id)));
+      } else {
+        externalOnSelectionChange([]);
+      }
+    },
+    toggleSelectAll: (pageData: any[]) => {
+      if (!externalOnSelectionChange) return;
+      const pageIds = pageData.map(row => String(row[idKey]));
+      const allPageSelected = pageIds.every(id => externalSelectedRows?.includes(id));
+      if (allPageSelected) {
+        const pageIdsSet = new Set(pageIds);
+        externalOnSelectionChange((externalSelectedRows || []).filter(id => !pageIdsSet.has(id)));
+      } else {
+        const allIds = new Set([...(externalSelectedRows || []), ...pageIds]);
+        externalOnSelectionChange(Array.from(allIds));
+      }
+    },
+    clearAll: () => externalOnSelectionChange?.([]),
+    isRowSelected: (rowId: string) => externalSelectedRows?.includes(rowId) || false,
+    isAllPageSelected: (pageData: any[]) => {
+      if (pageData.length === 0) return false;
+      return pageData.every(row => externalSelectedRows?.includes(String(row[idKey])));
+    },
+    isSomePageSelected: (pageData: any[]) => {
+      return pageData.some(row => externalSelectedRows?.includes(String(row[idKey])));
+    },
+    getSelectedRows: () => data.filter(row => externalSelectedRows?.includes(String(row[idKey]))),
+    getSelectedRowIds: () => externalSelectedRows || [],
+  } : internalRowSelection;
 
   // Column resizing
   const resizing = useColumnResizing({
@@ -156,12 +219,12 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     }, {} as Record<string, number>),
   });
   
-  // Notify parent when selection changes
+  // Notify parent when selection changes (only for internal selection)
   useEffect(() => {
-    if (onSelectedRowsChange && enableRowSelection) {
-      onSelectedRowsChange(rowSelection.getSelectedRows());
+    if (onSelectedRowsChange && enableRowSelection && !externalOnSelectionChange) {
+      onSelectedRowsChange(internalRowSelection.getSelectedRows());
     }
-  }, [rowSelection.selectedCount, onSelectedRowsChange, enableRowSelection]);
+  }, [internalRowSelection.selectedCount, onSelectedRowsChange, enableRowSelection, externalOnSelectionChange]);
   
   // Use the table layout hook for dynamic height calculation
   const { availableHeight, containerRef: layoutContainerRef, maxTableHeight } = useTableLayout({

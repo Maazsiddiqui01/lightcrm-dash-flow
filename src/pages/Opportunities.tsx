@@ -4,14 +4,26 @@ import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useOpportunityStats } from "@/hooks/useOpportunityStats";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { Plus, Target, TrendingUp, Users, DollarSign } from "lucide-react";
+import { Plus, Target, TrendingUp, Users, DollarSign, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { AddOpportunityDialog } from "@/components/opportunities/AddOpportunityDialog";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useUsersList } from "@/hooks/useUsersList";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 
 export function Opportunities() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const { data: users } = useUsersList();
+  const { toast } = useToast();
 
   const { filters: rawFilters, updateFilters: rawUpdateFilters, clearFilters } = useUrlFilters({
     focusArea: [],
@@ -58,19 +70,75 @@ export function Opportunities() {
     rawUpdateFilters(newFilters);
   };
 
+  const handleBulkAssignment = async (userId: string) => {
+    if (selectedRows.length === 0) {
+      toast({
+        title: "No opportunities selected",
+        description: "Please select opportunities to assign",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('opportunities_raw')
+        .update({ assigned_to: userId })
+        .in('id', selectedRows);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Assigned ${selectedRows.length} opportunities`,
+      });
+      
+      setSelectedRows([]);
+    } catch (error) {
+      console.error('Bulk assignment error:', error);
+      toast({
+        title: "Assignment failed",
+        description: "Failed to assign opportunities",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-0 flex-1">
       <ResponsiveContainer className="flex flex-col gap-6 py-6">
         {/* Header */}
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start gap-4">
           <div>
             <h1 className="text-2xl font-bold">Opportunities</h1>
             <p className="text-muted-foreground">Track sales opportunities and business development</p>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Add Opportunity</span>
-          </Button>
+          <div className="flex gap-2">
+            {selectedRows.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="touch-target">
+                    <UserPlus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Assign ({selectedRows.length})</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {users?.map((user) => (
+                    <DropdownMenuItem
+                      key={user.id}
+                      onClick={() => handleBulkAssignment(user.id)}
+                    >
+                      {user.full_name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Opportunity</span>
+            </Button>
+          </div>
         </div>
 
         {/* Filter Bar */}
@@ -104,7 +172,11 @@ export function Opportunities() {
           />
         </div>
 
-        <OpportunitiesTable filters={filters} />
+        <OpportunitiesTable 
+          filters={filters}
+          selectedRows={selectedRows}
+          onSelectionChange={setSelectedRows}
+        />
 
         <AddOpportunityDialog 
           open={isAddDialogOpen} 

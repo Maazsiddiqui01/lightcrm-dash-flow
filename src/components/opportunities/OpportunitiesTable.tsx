@@ -99,9 +99,11 @@ interface OpportunityFilters {
 
 interface OpportunitiesTableProps {
   filters: OpportunityFilters;
+  selectedRows?: string[];
+  onSelectionChange?: (rows: string[]) => void;
 }
 
-export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
+export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChange }: OpportunitiesTableProps) {
   const [opportunities, setOpportunities] = useState<OpportunityRaw[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -552,6 +554,8 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
           description: "Try adjusting your search or filters to find opportunities.",
         }}
         enableRowSelection={true}
+        selectedRows={selectedRows}
+        onSelectionChange={onSelectionChange}
         idKey="id"
         initialPageSize={50}
         tableId="opportunities-table"
