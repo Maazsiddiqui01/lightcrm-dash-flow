@@ -55,12 +55,17 @@ export function SetPassword() {
 
         if (error) throw error;
 
-        if (data.user?.email) {
-          setEmail(data.user.email);
-          setIsVerifying(false);
+        // After successful verification, get the session to extract email
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userEmail = data.user?.email || sessionData?.session?.user?.email;
+
+        if (userEmail) {
+          setEmail(userEmail);
         } else {
           throw new Error("Unable to retrieve email from invitation");
         }
+        
+        setIsVerifying(false);
       } catch (error: any) {
         console.error("Error verifying invite:", error);
         toast({
@@ -172,7 +177,7 @@ export function SetPassword() {
                 placeholder="Enter your password"
                 required
                 minLength={6}
-                disabled={isLoading || !email}
+                disabled={isLoading}
               />
               <p className="text-xs text-muted-foreground">
                 Must be at least 6 characters long
@@ -189,7 +194,7 @@ export function SetPassword() {
                 placeholder="Confirm your password"
                 required
                 minLength={6}
-                disabled={isLoading || !email}
+                disabled={isLoading}
               />
             </div>
 
