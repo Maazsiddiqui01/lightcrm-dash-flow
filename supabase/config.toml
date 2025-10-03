@@ -1,25 +1,25 @@
 project_id = "wjghdqkxwuyptxzdidtf"
 
 [functions.router_llm]
-verify_jwt = false
+verify_jwt = true
 
 [functions.template_preview_llm]
-verify_jwt = false
+verify_jwt = true
 
 [functions.resolve_template]
-verify_jwt = false
+verify_jwt = true
 
 [functions.schema_manager]
-verify_jwt = false
+verify_jwt = true
 
 [functions.data_normalization]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate_email_draft]
-verify_jwt = false
+verify_jwt = true
 
 [functions.post_to_n8n]
-verify_jwt = false
+verify_jwt = true
 
 [functions.suggest_contact_groups]
-verify_jwt = false
+verify_jwt = true

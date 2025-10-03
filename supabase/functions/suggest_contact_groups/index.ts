@@ -6,6 +6,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Verify authentication and return user
+async function verifyAuth(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    throw new Error('Missing authorization header');
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    throw new Error('Invalid authentication');
+  }
+
+  return { user, supabase };
+}
+
 interface GroupSuggestion {
   id: string;
   suggestedName: string;
@@ -131,6 +152,11 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const { user, supabase: authSupabase } = await verifyAuth(req);
+    console.log(`Authenticated user: ${user.id}`);
+
+    // Use service role key for data access (bypasses RLS for admin-level analysis)
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -424,6 +450,15 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in suggest_contact_groups:', error);
+    
+    // Return 401 for authentication errors
+    if (error.message?.includes('authorization') || error.message?.includes('authentication')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
