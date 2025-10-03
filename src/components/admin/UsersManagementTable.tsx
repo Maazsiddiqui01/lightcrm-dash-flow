@@ -16,51 +16,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { useInviteUser } from "@/hooks/useInviteUser";
+import { Loader2, UserPlus } from "lucide-react";
 
 type AppRole = 'admin' | 'user' | 'viewer';
 
 interface UserWithRole {
   id: string;
   email: string;
+  full_name: string;
   created_at: string;
   role: AppRole;
+  confirmed_at?: string;
 }
 
 export function UsersManagementTable() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const inviteUser = useInviteUser();
+  
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteFullName, setInviteFullName] = useState("");
 
-  // Fetch all users with their roles
+  // Fetch all users with their roles using edge function
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      // Get all users from auth.users
-      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
+      const { data, error } = await supabase.functions.invoke('list_users');
       
-      if (authError) throw authError;
-
-      // Get all user roles
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-      
-      if (rolesError) throw rolesError;
-
-      // Map users with their roles
-      const usersWithRoles: UserWithRole[] = authUsers.map(user => {
-        const userRole = roles?.find(r => r.user_id === user.id);
-        return {
-          id: user.id,
-          email: user.email || 'No email',
-          created_at: user.created_at,
-          role: (userRole?.role as AppRole) || 'user',
-        };
-      });
-
-      return usersWithRoles;
+      if (error) throw error;
+      return data.users as UserWithRole[];
     },
   });
 
@@ -98,6 +98,19 @@ export function UsersManagementTable() {
     },
   });
 
+  const handleInviteUser = () => {
+    inviteUser.mutate(
+      { email: inviteEmail, full_name: inviteFullName },
+      {
+        onSuccess: () => {
+          setIsInviteDialogOpen(false);
+          setInviteEmail("");
+          setInviteFullName("");
+        },
+      }
+    );
+  };
+
   const getRoleBadgeVariant = (role: AppRole) => {
     switch (role) {
       case 'admin':
@@ -121,24 +134,95 @@ export function UsersManagementTable() {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Invite New User
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Invite New User</DialogTitle>
+              <DialogDescription>
+                Send an invitation email to a new user. They will receive a secure link to set their password.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Full Name</Label>
+                <Input
+                  id="full_name"
+                  value={inviteFullName}
+                  onChange={(e) => setInviteFullName(e.target.value)}
+                  placeholder="John Doe"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="john@example.com"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsInviteDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleInviteUser}
+                disabled={!inviteEmail || !inviteFullName || inviteUser.isPending}
+              >
+                {inviteUser.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Send Invitation
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Full Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Current Role</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>Change Role</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users?.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.email}</TableCell>
+                <TableCell className="font-medium">{user.full_name || '—'}</TableCell>
+                <TableCell>{user.email}</TableCell>
                 <TableCell>
                   <Badge variant={getRoleBadgeVariant(user.role)}>
                     {user.role}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  {user.confirmed_at ? (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      Active
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                      Pending
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell>
                   {new Date(user.created_at).toLocaleDateString()}
