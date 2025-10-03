@@ -23,6 +23,7 @@ import { GlobalLibraries } from "@/pages/GlobalLibraries";
 import { Admin } from "@/pages/Admin";
 import { AdminDuplicates } from "@/pages/AdminDuplicates";
 import { Auth } from "@/pages/Auth";
+import { SetPassword } from "@/pages/SetPassword";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/providers/QueryProvider";
@@ -40,8 +41,9 @@ function App() {
         <AuthProvider>
         <Router>
           <Routes>
-            {/* Auth route - public */}
+            {/* Auth routes - public */}
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/set-password" element={<SetPassword />} />
             
             {/* Protected routes */}
             <Route path="/" element={

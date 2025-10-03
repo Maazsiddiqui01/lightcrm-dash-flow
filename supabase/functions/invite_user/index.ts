@@ -84,7 +84,7 @@ serve(async (req) => {
       email,
       {
         data: { full_name },
-        redirectTo: `${req.headers.get('origin')}/auth`
+        redirectTo: 'https://sourcingreatness.inverisllc.com/auth/set-password'
       }
     );
 
