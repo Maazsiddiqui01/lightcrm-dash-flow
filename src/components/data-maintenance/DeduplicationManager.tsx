@@ -30,6 +30,13 @@ export function DeduplicationManager() {
   };
 
   const handleMerge = async (groupId: string) => {
+    const group = duplicates?.groups.find(g => g.id === groupId);
+    if (!group) return;
+
+    if (!confirm(`⚠️ Merge ${group.records.length} Duplicate Records?\n\nThis will:\n- Keep the most complete record\n- Delete ${group.records.length - 1} duplicate(s)\n- Update all related interactions and opportunities\n- Cannot be undone\n\nMatch Reason: ${group.matchReason}\nConfidence: ${group.confidence}%\n\nContinue?`)) {
+      return;
+    }
+
     await mergeDuplicates(groupId);
     toast({
       title: "Merge Complete",

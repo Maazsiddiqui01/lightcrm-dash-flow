@@ -89,23 +89,63 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
     let successful = 0;
     let failed = 0;
+    let skipped = 0;
     const errors: Array<{ row: number; error: string }> = [];
 
     try {
       for (let i = 0; i < batches; i++) {
         const batch = validRows.slice(i * batchSize, (i + 1) * batchSize);
         
-        const { error } = await supabase
-          .from(tableName)
-          .insert(batch);
+        // Check for duplicates before inserting
+        if (entityType === 'contacts') {
+          const emails = batch.map(row => row.email_address).filter(Boolean);
+          const { data: existing } = await supabase
+            .from('contacts_raw')
+            .select('email_address')
+            .in('email_address', emails);
 
-        if (error) {
-          failed += batch.length;
-          batch.forEach(row => {
-            errors.push({ row: row._rowNumber, error: error.message });
+          const existingEmails = new Set(existing?.map(r => r.email_address) || []);
+          
+          // Filter out duplicates
+          const nonDuplicates = batch.filter(row => {
+            if (existingEmails.has(row.email_address)) {
+              skipped++;
+              return false;
+            }
+            return true;
           });
+
+          if (nonDuplicates.length === 0) {
+            setProgress(Math.round(((i + 1) / batches) * 100));
+            continue;
+          }
+
+          const { error } = await supabase
+            .from(tableName)
+            .insert(nonDuplicates);
+
+          if (error) {
+            failed += nonDuplicates.length;
+            nonDuplicates.forEach(row => {
+              errors.push({ row: row._rowNumber || 0, error: error.message });
+            });
+          } else {
+            successful += nonDuplicates.length;
+          }
         } else {
-          successful += batch.length;
+          // For opportunities, insert directly (can have duplicate deal names)
+          const { error } = await supabase
+            .from(tableName)
+            .insert(batch);
+
+          if (error) {
+            failed += batch.length;
+            batch.forEach(row => {
+              errors.push({ row: row._rowNumber || 0, error: error.message });
+            });
+          } else {
+            successful += batch.length;
+          }
         }
 
         setProgress(Math.round(((i + 1) / batches) * 100));
@@ -118,12 +158,16 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         errors
       });
 
-      if (successful > 0) {
-        toast({
-          title: "Import Completed",
-          description: `Successfully imported ${successful} ${entityType}`,
-        });
-      }
+      const messages = [
+        `Successfully imported ${successful} ${entityType}`,
+        skipped > 0 ? `Skipped ${skipped} duplicates` : null,
+        failed > 0 ? `Failed ${failed}` : null
+      ].filter(Boolean);
+
+      toast({
+        title: "Import Completed",
+        description: messages.join(', '),
+      });
     } catch (error) {
       console.error('Import error:', error);
       toast({

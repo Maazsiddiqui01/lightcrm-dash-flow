@@ -676,6 +676,39 @@ export type Database = {
         }
         Relationships: []
       }
+      duplicate_merge_log: {
+        Row: {
+          data_preserved: Json | null
+          entity_type: string
+          id: string
+          merge_reason: string | null
+          merged_at: string
+          merged_by: string | null
+          merged_record_ids: string[]
+          primary_record_id: string
+        }
+        Insert: {
+          data_preserved?: Json | null
+          entity_type: string
+          id?: string
+          merge_reason?: string | null
+          merged_at?: string
+          merged_by?: string | null
+          merged_record_ids: string[]
+          primary_record_id: string
+        }
+        Update: {
+          data_preserved?: Json | null
+          entity_type?: string
+          id?: string
+          merge_reason?: string | null
+          merged_at?: string
+          merged_by?: string | null
+          merged_record_ids?: string[]
+          primary_record_id?: string
+        }
+        Relationships: []
+      }
       email_template_settings: {
         Row: {
           days_range_config: Json | null
@@ -1640,6 +1673,30 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      protected_columns: {
+        Row: {
+          column_name: string
+          created_at: string
+          id: string
+          reason: string
+          table_name: string
+        }
+        Insert: {
+          column_name: string
+          created_at?: string
+          id?: string
+          reason: string
+          table_name: string
+        }
+        Update: {
+          column_name?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          table_name?: string
         }
         Relationships: []
       }
@@ -3126,6 +3183,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_column_protected: {
+        Args: { p_column: string; p_table: string }
+        Returns: boolean
+      }
       is_valid_email: {
         Args: { p: string }
         Returns: boolean
@@ -3285,6 +3346,15 @@ export type Database = {
       release_expired_locks: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      replace_text_in_column: {
+        Args: {
+          p_column: string
+          p_new_text: string
+          p_old_text: string
+          p_table: string
+        }
+        Returns: number
       }
       set_intentional_no_outreach: {
         Args: { p_action_type?: string; p_contact_id: string; p_note?: string }

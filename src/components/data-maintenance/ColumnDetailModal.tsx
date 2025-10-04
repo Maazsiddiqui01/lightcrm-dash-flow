@@ -146,7 +146,39 @@ export function ColumnDetailModal({
   const handleDelete = async () => {
     if (!columnName) return;
     
-    if (!confirm(`Are you sure you want to delete the column "${columnName}"? This action cannot be undone.`)) {
+    // Check if column is protected
+    const { data: isProtected } = await supabase.rpc('is_column_protected', {
+      p_table: tableName,
+      p_column: columnName
+    });
+
+    if (isProtected) {
+      // Get the reason why it's protected
+      const { data: protectionInfo } = await supabase
+        .from('protected_columns')
+        .select('reason')
+        .eq('table_name', tableName)
+        .eq('column_name', columnName)
+        .single();
+
+      toast({
+        title: "Cannot Delete Protected Column",
+        description: protectionInfo?.reason || "This column is protected and cannot be deleted.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!confirm(`⚠️ WARNING: Are you sure you want to delete the column "${columnName}"?\n\nThis will:\n- Permanently delete all data in this column\n- Cannot be undone\n- May break existing functionality\n\nType the column name to confirm.`)) {
+      return;
+    }
+
+    const userInput = prompt(`Type "${columnName}" to confirm deletion:`);
+    if (userInput !== columnName) {
+      toast({
+        title: "Deletion Cancelled",
+        description: "Column name did not match",
+      });
       return;
     }
 
@@ -168,7 +200,7 @@ export function ColumnDetailModal({
       });
 
       onOpenChange(false);
-      window.location.reload();
+      onSuccess?.();
     } catch (error) {
       console.error('Error deleting column:', error);
       toast({

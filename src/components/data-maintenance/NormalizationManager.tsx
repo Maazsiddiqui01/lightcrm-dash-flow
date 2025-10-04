@@ -28,6 +28,12 @@ export function NormalizationManager() {
   };
 
   const handleApply = async () => {
+    if (!scanResults || scanResults.totalIssues === 0) return;
+
+    if (!confirm(`⚠️ Apply Normalization?\n\nThis will update ${scanResults.totalIssues} records in the database.\n\nChanges:\n- ${scanResults.focusAreaIssues} focus area normalizations\n- ${scanResults.nameVariations} name standardizations\n- ${scanResults.companyVariations} company suffix corrections\n\nContinue?`)) {
+      return;
+    }
+
     await applyNormalization();
     toast({
       title: "Normalization Applied",
