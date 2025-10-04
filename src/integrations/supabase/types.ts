@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      column_configurations: {
+        Row: {
+          column_name: string
+          created_at: string | null
+          display_name: string
+          field_type: string
+          id: string
+          is_editable: boolean | null
+          is_required: boolean | null
+          table_name: string
+          updated_at: string | null
+          validation_rules: Json | null
+        }
+        Insert: {
+          column_name: string
+          created_at?: string | null
+          display_name: string
+          field_type: string
+          id?: string
+          is_editable?: boolean | null
+          is_required?: boolean | null
+          table_name: string
+          updated_at?: string | null
+          validation_rules?: Json | null
+        }
+        Update: {
+          column_name?: string
+          created_at?: string | null
+          display_name?: string
+          field_type?: string
+          id?: string
+          is_editable?: boolean | null
+          is_required?: boolean | null
+          table_name?: string
+          updated_at?: string | null
+          validation_rules?: Json | null
+        }
+        Relationships: []
+      }
       contact_duplicates: {
         Row: {
           contact_ids: string[]
@@ -1122,6 +1161,42 @@ export type Database = {
         }
         Relationships: []
       }
+      lookup_values: {
+        Row: {
+          created_at: string | null
+          field_name: string
+          id: string
+          is_active: boolean | null
+          label: string | null
+          scope: string
+          sort_order: number | null
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          field_name: string
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          scope: string
+          sort_order?: number | null
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          field_name?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          scope?: string
+          sort_order?: number | null
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       master_template_defaults: {
         Row: {
           created_at: string | null
@@ -1565,6 +1640,45 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      schema_change_log: {
+        Row: {
+          column_name: string | null
+          error_message: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          operation: string
+          performed_at: string | null
+          performed_by: string | null
+          success: boolean | null
+          table_name: string
+        }
+        Insert: {
+          column_name?: string | null
+          error_message?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          operation: string
+          performed_at?: string | null
+          performed_by?: string | null
+          success?: boolean | null
+          table_name: string
+        }
+        Update: {
+          column_name?: string | null
+          error_message?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          operation?: string
+          performed_at?: string | null
+          performed_by?: string | null
+          success?: boolean | null
+          table_name?: string
         }
         Relationships: []
       }
@@ -2891,6 +3005,10 @@ export type Database = {
       dismiss_missing_contact: {
         Args: { p_email: string }
         Returns: boolean
+      }
+      execute_admin_sql: {
+        Args: { sql_statement: string }
+        Returns: Json
       }
       get_article_age_in_days: {
         Args: { added_date: string }

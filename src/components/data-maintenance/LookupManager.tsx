@@ -1,300 +1,396 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, List, Search } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Search, Plus, Edit, Trash2, Database } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface LookupGroup {
-  name: string;
-  description: string;
-  field: string;
-  table: string;
-  values: string[];
-}
-
 interface LookupManagerProps {
-  tableScope?: "contacts" | "opportunities" | "global";
+  tableScope?: 'contacts' | 'opportunities' | 'global';
 }
 
-export function LookupManager({ tableScope = "global" }: LookupManagerProps) {
+interface LookupValue {
+  id: string;
+  scope: string;
+  field_name: string;
+  value: string;
+  label: string | null;
+  sort_order: number;
+  is_active: boolean;
+}
+
+interface LookupGroup {
+  field_name: string;
+  scope: string;
+  values: LookupValue[];
+  count: number;
+}
+
+export function LookupManager({ tableScope }: LookupManagerProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [lookupGroups, setLookupGroups] = useState<LookupGroup[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [newValue, setNewValue] = useState("");
+  const [editingValue, setEditingValue] = useState<LookupValue | null>(null);
   const { toast } = useToast();
 
-  // Mock lookup data - in real implementation, this would come from database
-  const lookupGroups: LookupGroup[] = [
-    {
-      name: "LG Sectors",
-      description: "Main business sectors",
-      field: "lg_sector", 
-      table: "contacts_raw",
-      values: ["Services", "Industrials", "Healthcare", "General"]
-    },
-    {
-      name: "Contact Types",
-      description: "Contact classification",
-      field: "contact_type",
-      table: "contacts_raw", 
-      values: ["Primary", "Secondary", "Referral"]
-    },
-    {
-      name: "Delta Types",
-      description: "Interaction types",
-      field: "delta_type",
-      table: "contacts_raw",
-      values: ["Email", "Meeting", "Call", "Event"]
-    },
-    {
-      name: "Opportunity Status",
-      description: "Deal pipeline status",
-      field: "status",
-      table: "opportunities_raw",
-      values: ["Active", "On Hold", "Closed Won", "Closed Lost", "Pipeline"]
-    },
-    {
-      name: "Opportunity Tiers",
-      description: "Deal priority levels",
-      field: "tier", 
-      table: "opportunities_raw",
-      values: ["1-Active", "2-Longer Term", "3-For Review", "4-Likely Pass", "5-Passed"]
-    },
-    {
-      name: "Ownership Types",
-      description: "Company ownership structure",
-      field: "ownership_type",
-      table: "opportunities_raw",
-      values: ["Family Owned", "Founder Owned", "PE Owned", "Public", "Other"]
-    },
-    {
-      name: "Platform/Add-on",
-      description: "Investment type classification",
-      field: "platform_add_on",
-      table: "opportunities_raw", 
-      values: ["Platform", "Add-on", "Add-on: Aspire Bakeries", "Add-on: Creation Technologies", "Add-on: GSF", "Add-on: Kleinfelder", "Add-on: Lightwave", "Add-on: MMS", "Both"]
-    },
-    {
-      name: "Focus Areas",
-      description: "LG investment focus areas",
-      field: "lg_focus_area_1",
-      table: "contacts_raw",
-      values: [
-        "HC: Payor & Employer Services",
-        "HC: Revenue Cycle Management", 
-        "HC: Services (Non-Clinical)",
-        "HC: Clinical Services",
-        "HC: Tech Enablement",
-        "HC: Pharma & Biotech Services",
-        "Capital Goods / Equipment",
-        "Aerospace & Defense",
-        "Automotive & Transportation",
-        "Chemicals & Materials",
-        "Energy & Utilities",
-        "Construction & Infrastructure",
-        "Waste & Environmental Services",
-        "Business Services",
-        "Financial Services",
-        "Technology Services",
-        "Education & Training",
-        "Media & Marketing",
-        "Logistics & Supply Chain",
-        "Real Estate & Facilities",
-        "Distribution",
-        "Consumer & Retail",
-        "Food & Beverage",
-        "Telecommunications",
-        "Government Services",
-        "Non-Profit",
-        "Other"
-      ]
+  useEffect(() => {
+    loadLookupValues();
+  }, [tableScope]);
+
+  const loadLookupValues = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('lookup_values')
+        .select('*')
+        .eq('is_active', true)
+        .order('field_name')
+        .order('sort_order');
+
+      if (tableScope) {
+        query = query.eq('scope', tableScope);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      // Group by field_name
+      const grouped = (data || []).reduce((acc, item) => {
+        const key = `${item.scope}_${item.field_name}`;
+        if (!acc[key]) {
+          acc[key] = {
+            field_name: item.field_name,
+            scope: item.scope,
+            values: [],
+            count: 0
+          };
+        }
+        acc[key].values.push(item);
+        acc[key].count++;
+        return acc;
+      }, {} as Record<string, LookupGroup>);
+
+      setLookupGroups(Object.values(grouped));
+    } catch (error) {
+      console.error('Error loading lookup values:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load lookup values",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  const filteredGroups = lookupGroups.filter(group => {
-    const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      group.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesScope = tableScope === "global" || 
-      (tableScope === "contacts" && group.table === "contacts_raw") ||
-      (tableScope === "opportunities" && group.table === "opportunities_raw");
-    
-    return matchesSearch && matchesScope;
-  });
-
-  const handleAddValue = (groupName: string) => {
-    toast({
-      title: "Add Value",
-      description: `Adding new value to ${groupName}. This will update all related dropdowns.`,
-    });
   };
 
-  const handleEditValue = (groupName: string, value: string) => {
-    toast({
-      title: "Edit Value", 
-      description: `Editing "${value}" in ${groupName}. This will update existing data references.`,
-    });
+  const filteredGroups = lookupGroups.filter(group =>
+    group.field_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    group.values.some(v => v.value.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const selectedGroupData = lookupGroups.find(
+    g => `${g.scope}_${g.field_name}` === selectedGroup
+  );
+
+  const handleAddValue = async () => {
+    if (!selectedGroupData || !newValue.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('lookup_values')
+        .insert({
+          scope: selectedGroupData.scope,
+          field_name: selectedGroupData.field_name,
+          value: newValue.trim(),
+          label: newValue.trim(),
+          sort_order: selectedGroupData.values.length
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Value added successfully"
+      });
+
+      setNewValue("");
+      setIsAddDialogOpen(false);
+      loadLookupValues();
+    } catch (error: any) {
+      console.error('Error adding value:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add value",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDeleteValue = (groupName: string, value: string) => {
-    toast({
-      title: "Delete Value",
-      description: `Deleting "${value}" from ${groupName}. This will require data migration for existing references.`,
-      variant: "destructive"
-    });
+  const handleEditValue = async () => {
+    if (!editingValue) return;
+
+    try {
+      const { error } = await supabase
+        .from('lookup_values')
+        .update({
+          value: editingValue.value,
+          label: editingValue.label || editingValue.value,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingValue.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Value updated successfully"
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingValue(null);
+      loadLookupValues();
+    } catch (error) {
+      console.error('Error updating value:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update value",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteValue = async (valueId: string) => {
+    if (!confirm("Are you sure you want to delete this value?")) return;
+
+    try {
+      const { error } = await supabase
+        .from('lookup_values')
+        .update({ is_active: false })
+        .eq('id', valueId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Value deleted successfully"
+      });
+
+      loadLookupValues();
+    } catch (error) {
+      console.error('Error deleting value:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete value",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
-      {/* Lookup Groups List */}
-      <Card className="lg:col-span-1">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+      {/* Left: Lookup Groups */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <List className="h-5 w-5" />
+            <Database className="h-5 w-5" />
             Lookup Groups
           </CardTitle>
-          <div className="relative">
+          <CardDescription>
+            Select a field to manage its dropdown values
+          </CardDescription>
+          <div className="relative mt-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search groups..."
+              placeholder="Search lookup groups..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 max-h-96 overflow-auto">
-          {filteredGroups.map((group) => (
-            <button
-              key={group.name}
-              onClick={() => setSelectedGroup(group.name)}
-              className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                selectedGroup === group.name
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:bg-muted/50'
-              }`}
-            >
-              <div className="font-medium">{group.name}</div>
-              <div className="text-xs text-muted-foreground mb-2">{group.description}</div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  {group.table}
-                </Badge>
-                <Badge variant="secondary" className="text-xs">
-                  {group.values.length} values
-                </Badge>
-              </div>
-            </button>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Values Management */}
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>
-                {selectedGroup ? `${selectedGroup} Values` : 'Select a Lookup Group'}
-              </CardTitle>
-              {selectedGroup && (
-                <CardDescription>
-                  Manage dropdown values for {selectedGroup.toLowerCase()}
-                </CardDescription>
-              )}
-            </div>
-            {selectedGroup && (
-              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Value
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Value</DialogTitle>
-                    <DialogDescription>
-                      Add a new option to {selectedGroup}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <AddValueForm 
-                    groupName={selectedGroup}
-                    onSubmit={() => {
-                      handleAddValue(selectedGroup);
-                      setIsAddDialogOpen(false);
-                    }}
-                  />
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {selectedGroup ? (
-            <div className="space-y-3 max-h-96 overflow-auto">
-              {lookupGroups
-                .find(g => g.name === selectedGroup)
-                ?.values.map((value) => (
-                  <div
-                    key={value}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium">{value}</div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditValue(selectedGroup, value)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteValue(selectedGroup, value)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-            </div>
+        <CardContent className="space-y-2 max-h-[500px] overflow-auto">
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          ) : filteredGroups.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No lookup groups found</p>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              Select a lookup group from the left to manage its values
-            </div>
+            filteredGroups.map((group) => {
+              const groupKey = `${group.scope}_${group.field_name}`;
+              return (
+                <div
+                  key={groupKey}
+                  onClick={() => setSelectedGroup(groupKey)}
+                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                    selectedGroup === groupKey
+                      ? "bg-primary/10 border-primary"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium capitalize">
+                        {group.field_name.replace(/_/g, ' ')}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        {group.scope} • {group.count} values
+                      </p>
+                    </div>
+                    <Badge variant="outline">{group.count}</Badge>
+                  </div>
+                </div>
+              );
+            })
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
 
-function AddValueForm({ groupName, onSubmit }: { groupName: string; onSubmit: () => void }) {
-  const [value, setValue] = useState("");
+      {/* Right: Values for Selected Group */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Dropdown Values</CardTitle>
+              <CardDescription>
+                {selectedGroupData
+                  ? `Managing values for ${selectedGroupData.field_name}`
+                  : "Select a group to view its values"}
+              </CardDescription>
+            </div>
+            {selectedGroupData && (
+              <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Value
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2 max-h-[500px] overflow-auto">
+          {!selectedGroupData ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Database className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>Select a lookup group to manage its values</p>
+            </div>
+          ) : selectedGroupData.values.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No values yet</p>
+              <Button
+                onClick={() => setIsAddDialogOpen(true)}
+                variant="outline"
+                className="mt-4"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Value
+              </Button>
+            </div>
+          ) : (
+            selectedGroupData.values.map((value) => (
+              <div
+                key={value.id}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
+                <div className="flex-1">
+                  <p className="font-medium">{value.label || value.value}</p>
+                  {value.label !== value.value && (
+                    <p className="text-sm text-muted-foreground">{value.value}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingValue(value);
+                      setIsEditDialogOpen(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDeleteValue(value.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
-  return (
-    <div className="space-y-4">
-      <div>
-        <Label htmlFor="new-value">New Value</Label>
-        <Input
-          id="new-value"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={`Enter new ${groupName.toLowerCase()} option`}
-        />
-      </div>
-      <Button onClick={onSubmit} className="w-full" disabled={!value.trim()}>
-        Add Value
-      </Button>
+      {/* Add Value Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Value</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Input
+              placeholder="Enter new value..."
+              value={newValue}
+              onChange={(e) => setNewValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddValue();
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddValue} disabled={!newValue.trim()}>
+              Add Value
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Value Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Value</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium">Value</label>
+              <Input
+                value={editingValue?.value || ""}
+                onChange={(e) =>
+                  setEditingValue(prev =>
+                    prev ? { ...prev, value: e.target.value } : null
+                  )
+                }
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Label (Display Name)</label>
+              <Input
+                value={editingValue?.label || ""}
+                onChange={(e) =>
+                  setEditingValue(prev =>
+                    prev ? { ...prev, label: e.target.value } : null
+                  )
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditValue}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

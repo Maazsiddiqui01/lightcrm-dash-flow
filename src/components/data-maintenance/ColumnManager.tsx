@@ -1,17 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings, Database, Search, Filter, Plus } from "lucide-react";
-import { editableColumns, type EditableConfig } from "@/config/editableColumns";
-import { getTableColumns } from "@/lib/supabase/getTableColumns";
+import { supabase } from "@/integrations/supabase/client";
 import { ColumnDetailModal } from "./ColumnDetailModal";
 import { useToast } from "@/hooks/use-toast";
 
 interface ColumnManagerProps {
-  tableName: keyof EditableConfig;
+  tableName: 'contacts_raw' | 'opportunities_raw';
 }
 
 interface ColumnInfo {
@@ -30,26 +29,48 @@ export function ColumnManager({ tableName }: ColumnManagerProps) {
   const [filterType, setFilterType] = useState<"all" | "editable" | "system">("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState<{ name: string; displayName: string } | null>(null);
+  const [allColumns, setAllColumns] = useState<ColumnInfo[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Get table columns with display names
-  const tableColumns = getTableColumns(tableName);
-  const currentConfig = editableColumns[tableName] || {};
-  
-  // Combine database columns with editable config
-  const allColumns: ColumnInfo[] = tableColumns.map(col => {
-    const config = currentConfig[col.name];
-    return {
-      column_name: col.name,
-      data_type: col.type,
-      is_nullable: col.nullable,
-      column_default: null,
-      is_editable: !!config,
-      field_type: config?.type || col.type,
-      options: config?.options,
-      display_name: col.displayName
-    };
-  });
+  // Fetch columns from database
+  useEffect(() => {
+    loadColumns();
+  }, [tableName]);
+
+  const loadColumns = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('column_configurations')
+        .select('*')
+        .eq('table_name', tableName)
+        .order('column_name');
+
+      if (error) throw error;
+
+      const columns: ColumnInfo[] = (data || []).map(config => ({
+        column_name: config.column_name,
+        data_type: config.field_type,
+        is_nullable: !config.is_required,
+        column_default: null,
+        is_editable: config.is_editable,
+        field_type: config.field_type,
+        display_name: config.display_name
+      }));
+
+      setAllColumns(columns);
+    } catch (error) {
+      console.error('Error loading columns:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load column configurations",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredColumns = allColumns.filter(col => {
     const matchesSearch = (col.display_name || col.column_name).toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -70,6 +91,13 @@ export function ColumnManager({ tableName }: ColumnManagerProps) {
   const handleAddColumn = () => {
     setSelectedColumn(null);
     setIsModalOpen(true);
+  };
+
+  const handleModalClose = (changed: boolean) => {
+    setIsModalOpen(false);
+    if (changed) {
+      loadColumns(); // Reload columns if changes were made
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -182,7 +210,10 @@ export function ColumnManager({ tableName }: ColumnManagerProps) {
 
       <ColumnDetailModal
         open={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        onOpenChange={(open) => {
+          if (!open) handleModalClose(false);
+        }}
+        onSuccess={() => handleModalClose(true)}
         tableName={tableName}
         columnName={selectedColumn?.name || null}
         displayName={selectedColumn?.displayName || null}

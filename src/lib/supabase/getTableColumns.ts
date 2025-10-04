@@ -2,11 +2,37 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface TableColumn {
   name: string;
+  displayName: string;
   type: string;
   nullable: boolean;
-  displayName: string;
+  isEditable?: boolean;
+  options?: string[];
 }
 
+// Get all columns for a table from database configurations (async version)
+export async function getTableColumnsAsync(tableName: string): Promise<TableColumn[]> {
+  const { data, error } = await supabase
+    .from('column_configurations')
+    .select('*')
+    .eq('table_name', tableName)
+    .order('column_name');
+
+  if (error) {
+    console.error('Error fetching column configurations:', error);
+    return tableName === 'contacts_raw' ? CONTACTS_RAW_COLUMNS : OPPORTUNITIES_RAW_COLUMNS;
+  }
+
+  return (data || []).map(config => ({
+    name: config.column_name,
+    displayName: config.display_name,
+    type: config.field_type,
+    nullable: !config.is_required,
+    isEditable: config.is_editable,
+    options: config.field_type === 'select' ? [] : undefined
+  }));
+}
+
+// Sync version for backward compatibility
 export const getTableColumns = (tableName: string): TableColumn[] => {
   if (tableName === 'contacts_raw') {
     return CONTACTS_RAW_COLUMNS;
@@ -24,7 +50,7 @@ export const formatColumnName = (columnName: string): string => {
     .join(' ');
 };
 
-// Hardcoded column metadata for better performance
+// Hardcoded column metadata for better performance (sync fallback)
 export const CONTACTS_RAW_COLUMNS: TableColumn[] = [
   { name: 'full_name', type: 'text', nullable: true, displayName: 'Full Name' },
   { name: 'first_name', type: 'text', nullable: true, displayName: 'First Name' },

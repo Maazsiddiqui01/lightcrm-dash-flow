@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface ColumnDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
   tableName: 'contacts_raw' | 'opportunities_raw';
   columnName: string | null;
   displayName: string | null;
@@ -39,12 +40,13 @@ interface ValidationRule {
   message: string;
 }
 
-export function ColumnDetailModal({ 
-  open, 
-  onOpenChange, 
-  tableName, 
-  columnName, 
-  displayName 
+export function ColumnDetailModal({
+  open,
+  onOpenChange,
+  onSuccess,
+  tableName,
+  columnName,
+  displayName
 }: ColumnDetailModalProps) {
   const [activeTab, setActiveTab] = useState("general");
   const [columnDetails, setColumnDetails] = useState<ColumnDetails>({
