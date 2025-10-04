@@ -28,7 +28,7 @@ export function ExportButtons({ opportunities, filters }: ExportButtonsProps) {
       'Platform',
       'Add-on',
       'Family/Founder',
-      'EBITDA (Ms)',
+      'EBITDA (M$)',
       'IP1',
       'IP2',
       'Date of Origination',
@@ -37,23 +37,31 @@ export function ExportButtons({ opportunities, filters }: ExportButtonsProps) {
       'Referral Company'
     ];
 
-    const csvData = opportunities.map(opp => [
-      opp.deal_name || '',
-      opp.status || '',
-      opp.tier || '',
-      opp.sector || '',
-      opp.lg_focus_area || '',
-      opp.is_platform ? 'Yes' : 'No',
-      opp.is_addon ? 'Yes' : 'No',
-      opp.is_family_founder ? 'Yes' : 'No',
-      opp.ebitda_m || '',
-      opp.ip1 || '',
-      opp.ip2 || '',
-      opp.date_of_origination_raw || '',
-      opp.referral_contact_1 || '',
-      opp.referral_contact_2 || '',
-      opp.referral_company || ''
-    ]);
+    const csvData = opportunities.map(opp => {
+      // Calculate derived values from actual database fields
+      const isPlatform = opp.platform_add_on?.toLowerCase().includes('platform') ? 'Yes' : 'No';
+      const isAddon = opp.platform_add_on?.toLowerCase().includes('add') ? 'Yes' : 'No';
+      const isFamilyFounder = (opp.ownership_type?.toLowerCase().includes('family') || 
+                               opp.ownership_type?.toLowerCase().includes('founder')) ? 'Yes' : 'No';
+      
+      return [
+        opp.deal_name || '',
+        opp.status || '',
+        opp.tier || '',
+        opp.sector || '',
+        opp.lg_focus_area || '',
+        isPlatform,
+        isAddon,
+        isFamilyFounder,
+        opp.ebitda_in_ms || '',
+        opp.investment_professional_point_person_1 || '',
+        opp.investment_professional_point_person_2 || '',
+        opp.date_of_origination || '',
+        opp.deal_source_individual_1 || '',
+        opp.deal_source_individual_2 || '',
+        opp.deal_source_company || ''
+      ];
+    });
 
     const csvContent = [headers, ...csvData]
       .map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))

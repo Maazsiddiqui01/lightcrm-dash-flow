@@ -52,14 +52,23 @@ export default function SourceGreatnessPage() {
     queryFn: async () => {
       let query = supabase.from('opportunities_raw').select('*');
       
-      // Apply date filter using text matching (simple approach)
+      // Apply date filter with improved matching for various formats
       if (filterState.dateRange !== 'all') {
-        if (filterState.dateRange.includes('Q')) {
-          // Quarter filter - match exact quarter string
-          query = query.ilike('date_of_origination', `%${filterState.dateRange}%`);
+        const dateValue = filterState.dateRange;
+        if (dateValue.includes('Q')) {
+          // Quarter filter - match various quarter formats: "2024 Q4", "Q4 2024", "2024Q4"
+          const parts = dateValue.match(/(\d{4}).*?Q([1-4])/i);
+          if (parts) {
+            const year = parts[1];
+            const quarter = parts[2];
+            // Match any format containing this year and quarter
+            query = query.or(`date_of_origination.ilike.%${year}%Q${quarter}%,date_of_origination.ilike.%Q${quarter}%${year}%`);
+          } else {
+            query = query.ilike('date_of_origination', `%${dateValue}%`);
+          }
         } else {
           // Year filter - match any occurrence of the year
-          query = query.ilike('date_of_origination', `%${filterState.dateRange}%`);
+          query = query.ilike('date_of_origination', `%${dateValue}%`);
         }
       }
       // Note: When dateRange === 'all', no date filter is applied (includes null dates)
@@ -113,15 +122,42 @@ export default function SourceGreatnessPage() {
     staleTime: 60_000,
   });
 
-  // Fetch meetings data - using interactions_app instead
+  // Fetch meetings data - filtered by date range if applicable
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery({
-    queryKey: ['sourcing-meetings'],
+    queryKey: ['sourcing-meetings', filterState.dateRange],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('interactions_app')
         .select('occurred_at')
         .ilike('source', '%meeting%')
         .order('occurred_at');
+      
+      // Apply date range filter to meetings if not 'all'
+      if (filterState.dateRange !== 'all') {
+        const dateValue = filterState.dateRange;
+        if (dateValue.includes('Q')) {
+          // Quarter filter
+          const parts = dateValue.match(/(\d{4}).*?Q([1-4])/i);
+          if (parts) {
+            const year = parseInt(parts[1]);
+            const quarter = parseInt(parts[2]);
+            const startMonth = (quarter - 1) * 3;
+            const startDate = new Date(year, startMonth, 1);
+            const endDate = new Date(year, startMonth + 3, 0, 23, 59, 59);
+            query = query.gte('occurred_at', startDate.toISOString()).lte('occurred_at', endDate.toISOString());
+          }
+        } else {
+          // Year filter
+          const year = parseInt(dateValue);
+          if (!isNaN(year)) {
+            const startDate = new Date(year, 0, 1);
+            const endDate = new Date(year, 11, 31, 23, 59, 59);
+            query = query.gte('occurred_at', startDate.toISOString()).lte('occurred_at', endDate.toISOString());
+          }
+        }
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       
       // Group by month
@@ -141,14 +177,23 @@ export default function SourceGreatnessPage() {
     staleTime: 60_000,
   });
 
-  // Fetch referral data - simplified from opportunities
+  // Fetch referral data - using filtered opportunities from opportunities_raw
   const { data: referralContacts = [] } = useQuery({
-    queryKey: ['sourcing-referral-contacts'],
+    queryKey: ['sourcing-referral-contacts', filters],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('opportunities_app')
-        .select('deal_source_individual_1, deal_source_individual_2')
-        .not('deal_source_individual_1', 'is', null);
+      let query = supabase
+        .from('opportunities_raw')
+        .select('deal_source_individual_1, deal_source_individual_2, ebitda_in_ms');
+      
+      // Apply EBITDA filters to match main opportunities query
+      if (filterState.ebitdaMin !== null && filterState.ebitdaMin !== undefined) {
+        query = query.gte('ebitda_in_ms', filterState.ebitdaMin);
+      }
+      if (filterState.ebitdaMax !== null && filterState.ebitdaMax !== undefined) {
+        query = query.lte('ebitda_in_ms', filterState.ebitdaMax);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       
       // Count referrals
@@ -171,12 +216,21 @@ export default function SourceGreatnessPage() {
   });
 
   const { data: referralCompanies = [] } = useQuery({
-    queryKey: ['sourcing-referral-companies'],
+    queryKey: ['sourcing-referral-companies', filters],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('opportunities_app')
-        .select('deal_source_company')
-        .not('deal_source_company', 'is', null);
+      let query = supabase
+        .from('opportunities_raw')
+        .select('deal_source_company, ebitda_in_ms');
+      
+      // Apply EBITDA filters to match main opportunities query
+      if (filterState.ebitdaMin !== null && filterState.ebitdaMin !== undefined) {
+        query = query.gte('ebitda_in_ms', filterState.ebitdaMin);
+      }
+      if (filterState.ebitdaMax !== null && filterState.ebitdaMax !== undefined) {
+        query = query.lte('ebitda_in_ms', filterState.ebitdaMax);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       
       // Count companies
@@ -251,8 +305,7 @@ export default function SourceGreatnessPage() {
     };
   }, [opportunities, filterState]);
 
-  // Meetings are not filtered by date range in this context
-  // They show the full communication timeline regardless of opportunity date filtering
+  // Meetings are now filtered by date range to match opportunity filtering
   const filteredMeetings = meetings;
 
   const totalMeetings = filteredMeetings.reduce((sum, m) => sum + (Number(m.meeting_count) || 0), 0);

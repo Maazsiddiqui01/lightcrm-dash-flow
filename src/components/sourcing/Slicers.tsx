@@ -140,19 +140,16 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
     queryKey: ['distinct-tiers'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('opportunities_app')
+        .from('opportunities_raw')
         .select('tier')
         .not('tier', 'is', null);
       if (error) throw error;
       
-      // Get existing tiers from database
+      // Get existing tiers from database - only show tiers that actually exist
       const dbTiers = [...new Set(data.map(row => row.tier).filter(Boolean))];
       
-      // Ensure tiers 1-5 are always available
-      const allTiers = new Set([...dbTiers, '1', '2', '3', '4', '5']);
-      
       // Convert to display values and sort
-      return Array.from(allTiers).sort((a, b) => {
+      return dbTiers.sort((a, b) => {
         // Sort numerically if both are numbers, otherwise alphabetically
         const numA = parseInt(a);
         const numB = parseInt(b);
