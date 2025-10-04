@@ -135,8 +135,16 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
   const editMode = useEditMode('opportunities_raw', opportunities, setOpportunities);
   const columnVisibility = useColumnVisibility('columns:opportunities_raw');
   
-  // Get table columns metadata
-  const tableColumns = useMemo(() => getTableColumns('opportunities_raw'), []);
+  // Get table columns metadata - ensure it's always an array
+  const tableColumns = useMemo(() => {
+    const columns = getTableColumns('opportunities_raw');
+    // Defensive check: ensure we always return an array
+    if (!Array.isArray(columns)) {
+      console.error('getTableColumns did not return an array, falling back to hardcoded columns');
+      return OPPORTUNITIES_RAW_COLUMNS;
+    }
+    return columns;
+  }, []);
   
   // Create dynamic columns with edit support + Send Email action
   const dynamicColumns = useMemo(() => {
