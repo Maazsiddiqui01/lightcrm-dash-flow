@@ -9,6 +9,7 @@ import { LookupManager } from "@/components/data-maintenance/LookupManager";
 import { SchemaOverview } from "@/components/data-maintenance/SchemaOverview";
 import { DataHygienePanel } from "@/components/data-maintenance/DataHygienePanel";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
+import { AuditLogViewer } from "@/components/data-maintenance/AuditLogViewer";
 
 export function DataMaintenance() {
   const [activeContactsTab, setActiveContactsTab] = useState<string>("columns");
@@ -34,7 +35,7 @@ export function DataMaintenance() {
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-hidden">
         <Tabs defaultValue="overview" className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-6 mb-6">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Eye className="h-4 w-4" />
               System Overview
@@ -54,6 +55,10 @@ export function DataMaintenance() {
             <TabsTrigger value="global" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Global Settings
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Audit Logs
             </TabsTrigger>
           </TabsList>
 
@@ -241,6 +246,11 @@ export function DataMaintenance() {
               </div>
 
             </div>
+          </TabsContent>
+
+          {/* Audit Logs */}
+          <TabsContent value="audit" className="flex-1 mt-0">
+            <AuditLogViewer />
           </TabsContent>
         </Tabs>
       </div>

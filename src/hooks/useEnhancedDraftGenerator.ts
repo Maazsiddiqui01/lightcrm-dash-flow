@@ -44,7 +44,7 @@ export function useEnhancedDraftGenerator() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        throw new Error('Not authenticated');
+        throw new Error('Authentication required. Please log in again to continue.');
       }
 
       // POST to n8n via edge function with streaming support
@@ -61,18 +61,28 @@ export function useEnhancedDraftGenerator() {
       );
 
       if (!response.ok) {
-        let errorMessage = 'Failed to generate draft via n8n';
+        let errorMessage = 'Failed to connect to the email generation service';
+        let errorDetails = '';
         
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
+          
+          // Provide specific guidance based on error type
+          if (response.status === 401 || response.status === 403) {
+            errorDetails = 'Your session may have expired. Please refresh the page and try again.';
+          } else if (response.status >= 500) {
+            errorDetails = 'The service is temporarily unavailable. Please try again in a few moments.';
+          } else if (response.status === 429) {
+            errorDetails = 'Too many requests. Please wait a moment before trying again.';
+          }
         } catch {
-          // Use default error message
+          errorDetails = 'Unable to connect to the generation service. Please check your internet connection and try again.';
         }
 
         toast({
           title: 'Generation Failed',
-          description: errorMessage,
+          description: errorDetails || errorMessage,
           variant: 'destructive',
         });
 
@@ -153,9 +163,26 @@ export function useEnhancedDraftGenerator() {
       return result;
     } catch (error) {
       console.error('Draft generation error:', error);
+      
+      let errorTitle = 'Draft Generation Failed';
+      let errorDescription = 'An unexpected error occurred';
+      
+      if (error instanceof Error) {
+        errorDescription = error.message;
+        
+        // Provide helpful context for common errors
+        if (error.message.includes('Authentication')) {
+          errorTitle = 'Authentication Error';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorDescription = 'Network connection issue. Please check your internet connection and try again.';
+        } else if (error.message.includes('timeout')) {
+          errorDescription = 'Request timed out. The service may be busy. Please try again.';
+        }
+      }
+      
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to generate draft',
+        title: errorTitle,
+        description: errorDescription,
         variant: 'destructive',
       });
       setIsGenerating(false);

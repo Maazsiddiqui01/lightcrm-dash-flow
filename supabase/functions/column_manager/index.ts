@@ -144,6 +144,66 @@ serve(async (req) => {
       );
     }
 
+    if (action === 'update_type') {
+      // Validate data type change before applying
+      const { data: validation, error: validationError } = await supabaseClient.rpc('validate_column_type_change', {
+        p_table: tableName,
+        p_column: columnName,
+        p_new_type: mapDataTypeToSQL(data_type)
+      });
+
+      if (validationError || !validation?.valid) {
+        const errorMsg = validation?.error || validationError?.message || 'Data type change validation failed';
+        console.error('Type change validation failed:', errorMsg);
+        return new Response(
+          JSON.stringify({ 
+            error: `Cannot change column type: ${errorMsg}`,
+            details: 'Some existing data cannot be converted to the new type. Please clean the data first or choose a compatible type.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+
+      // Apply the type change
+      const sql = `ALTER TABLE public.${tableName} ALTER COLUMN ${columnName} TYPE ${mapDataTypeToSQL(data_type)} USING ${columnName}::${mapDataTypeToSQL(data_type)}`;
+      
+      const { error: sqlError } = await supabaseClient.rpc('execute_admin_sql', {
+        sql_statement: sql
+      });
+
+      if (sqlError) {
+        console.error('Type change SQL error:', sqlError);
+        throw new Error(`Failed to change column type: ${sqlError.message}`);
+      }
+
+      // Update configuration
+      await supabaseClient
+        .from('column_configurations')
+        .update({
+          field_type: data_type,
+          updated_at: new Date().toISOString()
+        })
+        .eq('table_name', tableName)
+        .eq('column_name', columnName);
+
+      // Log the change
+      await supabaseClient
+        .from('schema_change_log')
+        .insert({
+          table_name: tableName,
+          operation: 'ALTER_COLUMN_TYPE',
+          column_name: columnName,
+          old_value: validation.old_type,
+          new_value: mapDataTypeToSQL(data_type),
+          success: true
+        });
+
+      return new Response(
+        JSON.stringify({ success: true, message: `Column type changed successfully. ${validation.message || ''}` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (action === 'rename') {
       // Rename the actual column in the database
       const sql = `ALTER TABLE public.${tableName} RENAME COLUMN ${columnName} TO ${new_column_name}`;
@@ -152,7 +212,10 @@ serve(async (req) => {
         sql_statement: sql
       });
 
-      if (sqlError) throw sqlError;
+      if (sqlError) {
+        console.error('Rename SQL error:', sqlError);
+        throw new Error(`Failed to rename column: ${sqlError.message}`);
+      }
 
       // Update configuration entry
       await supabaseClient
