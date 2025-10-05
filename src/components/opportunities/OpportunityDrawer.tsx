@@ -661,26 +661,22 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
           <OpportunityNotesSection
             title="Next Steps"
             field="next_steps"
-            currentValue={currentNotes.nextSteps}
-            currentDueDate={currentNotes.nextStepsDueDate}
-            placeholder="What are the next steps for this opportunity?"
+            currentValue={currentNotes.next_steps}
+            currentDueDate={currentNotes.next_steps_due_date}
             onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
             isSaving={isSavingNextSteps}
-            isLoading={isLoadingCurrent}
+            isLoadingCurrent={isLoadingCurrent}
             timeline={timeline.filter(n => n.field === 'next_steps')}
             isLoadingTimeline={isLoadingTimeline}
-            showDueDate
-            showAddToToDo
           />
 
           <OpportunityNotesSection
             title="Most Recent Notes"
             field="most_recent_notes"
-            currentValue={currentNotes.mostRecentNotes}
-            placeholder="Add notes about recent conversations or developments..."
+            currentValue={currentNotes.most_recent_notes}
             onSave={(content) => saveMostRecentNotes(content)}
             isSaving={isSavingNotes}
-            isLoading={isLoadingCurrent}
+            isLoadingCurrent={isLoadingCurrent}
             timeline={timeline.filter(n => n.field === 'most_recent_notes')}
             isLoadingTimeline={isLoadingTimeline}
           />
