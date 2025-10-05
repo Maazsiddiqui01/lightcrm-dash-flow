@@ -1281,6 +1281,48 @@ export type Database = {
         }
         Relationships: []
       }
+      operation_retry_queue: {
+        Row: {
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string
+          error_message: string | null
+          id: string
+          max_retries: number | null
+          next_retry_at: string | null
+          operation_type: string
+          payload: Json
+          retry_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type: string
+          error_message?: string | null
+          id?: string
+          max_retries?: number | null
+          next_retry_at?: string | null
+          operation_type: string
+          payload: Json
+          retry_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          error_message?: string | null
+          id?: string
+          max_retries?: number | null
+          next_retry_at?: string | null
+          operation_type?: string
+          payload?: Json
+          retry_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       opportunities_raw: {
         Row: {
           acquisition_date: string | null
@@ -3387,6 +3429,10 @@ export type Database = {
       util_year_text: {
         Args: { t: string }
         Returns: string
+      }
+      validate_column_type_change: {
+        Args: { p_column: string; p_new_type: string; p_table: string }
+        Returns: Json
       }
     }
     Enums: {

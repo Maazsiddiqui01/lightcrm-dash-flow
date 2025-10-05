@@ -200,20 +200,23 @@ export async function buildEnhancedDraftPayload(
     !!generation.inquiry
   );
 
-  // Build CC list
-  const leadEmails = metadata.lgLeads.map(lead => {
-    // Convert lead name to email format (simplified)
-    const lastName = lead.split(' ').pop()?.toLowerCase();
-    return `${lastName}@lindsaygoldbergllc.com`;
-  });
+  // Build CC list from team directory (fetch emails from database)
+  const leadEmails: string[] = [];
+  const assistantEmails: string[] = [];
   
-  const assistantEmails = metadata.lgAssistants.map(assistant => {
-    // Convert assistant name to email format (simplified)
-    const nameParts = assistant.split(' ');
-    const firstName = nameParts[0]?.toLowerCase();
-    const lastName = nameParts[1]?.toLowerCase();
-    return `${firstName}.${lastName}@lindsaygoldbergllc.com`;
-  });
+  for (const focusArea of metadata.focusAreas) {
+    const { data: teamDataArray } = await supabase
+      .from('lg_focus_area_directory' as any)
+      .select('lead1_email, lead2_email, assistant_email')
+      .eq('focus_area', focusArea);
+    
+    if (teamDataArray && Array.isArray(teamDataArray) && teamDataArray.length > 0) {
+      const teamData = teamDataArray[0] as { lead1_email?: string; lead2_email?: string; assistant_email?: string };
+      if (teamData.lead1_email) leadEmails.push(teamData.lead1_email);
+      if (teamData.lead2_email) leadEmails.push(teamData.lead2_email);
+      if (teamData.assistant_email) assistantEmails.push(teamData.assistant_email);
+    }
+  }
 
   // Categorize focus areas into platforms and addons
   const platforms = metadata.focusAreaDescriptions

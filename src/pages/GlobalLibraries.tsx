@@ -16,6 +16,7 @@ import { EditPhraseModal } from '@/components/global-libraries/EditPhraseModal';
 import { EditInquiryModal } from '@/components/global-libraries/EditInquiryModal';
 import { TriStateApplyModal } from '@/components/global-libraries/TriStateApplyModal';
 import { TeamDirectoryManager } from '@/components/global-libraries/TeamDirectoryManager';
+import { SubjectLibraryManager } from '@/components/global-libraries/SubjectLibraryManager';
 import { useRealtimeLibrarySync } from '@/hooks/useRealtimeSync';
 import { useSubjectLibrary } from '@/hooks/useSubjectLibrary';
 import { useQuery } from '@tanstack/react-query';
@@ -253,49 +254,11 @@ export function GlobalLibraries() {
               <CardHeader>
                 <CardTitle>Subject Line Library</CardTitle>
                 <CardDescription>
-                  Manage subject line templates organized by style. Includes token replacement for [My Org], [Their Org], [Focus Area].
+                  Manage subject line templates organized by style. Includes token replacement for [My Org], [Their Org], [Focus Area], [Sector].
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Style</Label>
-                  <Select
-                    value={selectedSubjectStyle}
-                    onValueChange={(val) => setSelectedSubjectStyle(val as 'formal' | 'hybrid' | 'casual')}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="formal">Formal</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
-                      <SelectItem value="casual">Casual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="capitalize">{selectedSubjectStyle} Subjects ({subjects.length})</Label>
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {subjects.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">No subjects in this style</div>
-                    ) : (
-                      subjects.map((subject) => (
-                        <Card key={subject.id}>
-                          <CardContent className="p-3">
-                            <div className="flex items-center justify-between">
-                              <div className="font-mono text-sm">{subject.subject_template}</div>
-                              <Badge variant="outline" className="capitalize">{subject.style}</Badge>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-2">
-                    <strong>Tokens:</strong> [My Org], [Their Org], [Focus Area], (Send with no subject)
-                  </div>
-                </div>
+              <CardContent>
+                <SubjectLibraryManager subjects={subjects} />
               </CardContent>
             </Card>
           </TabsContent>

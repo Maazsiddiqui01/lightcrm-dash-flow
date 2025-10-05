@@ -133,18 +133,40 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             successful += nonDuplicates.length;
           }
         } else {
-          // For opportunities, insert directly (can have duplicate deal names)
+          // For opportunities, check for duplicates based on deal_name
+          const dealNames = batch.map(row => row.deal_name).filter(Boolean);
+          const { data: existing } = await supabase
+            .from('opportunities_raw')
+            .select('deal_name')
+            .in('deal_name', dealNames);
+
+          const existingDeals = new Set(existing?.map(r => r.deal_name) || []);
+          
+          // Filter out duplicates
+          const nonDuplicates = batch.filter(row => {
+            if (existingDeals.has(row.deal_name)) {
+              skipped++;
+              return false;
+            }
+            return true;
+          });
+
+          if (nonDuplicates.length === 0) {
+            setProgress(Math.round(((i + 1) / batches) * 100));
+            continue;
+          }
+
           const { error } = await supabase
             .from(tableName)
-            .insert(batch);
+            .insert(nonDuplicates);
 
           if (error) {
-            failed += batch.length;
-            batch.forEach(row => {
+            failed += nonDuplicates.length;
+            nonDuplicates.forEach(row => {
               errors.push({ row: row._rowNumber || 0, error: error.message });
             });
           } else {
-            successful += batch.length;
+            successful += nonDuplicates.length;
           }
         }
 
