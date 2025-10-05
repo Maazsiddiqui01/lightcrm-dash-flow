@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { EnhancedDraftPayload } from '@/lib/enhancedPayload';
 import { logPayloadUsage } from '@/lib/enhancedPayload';
 import { buildEmailBody, formatCompleteEmail } from '@/lib/bodyBuilder';
@@ -39,17 +40,25 @@ export function useEnhancedDraftGenerator() {
     setStreamedContent('');
 
     try {
-      // POST to n8n via edge function with streaming support
-      const FUNCTION_URL = `https://wjghdqkxwuyptxzdidtf.supabase.co/functions/v1/post_to_n8n`;
+      // Get current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
 
-      const response = await fetch(FUNCTION_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqZ2hkcWt4d3V5cHR4emRpZHRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwNjA0NDEsImV4cCI6MjA3MTYzNjQ0MX0._zZEVM4XENutH8AxM_4Sh_DSGDGbFOTy6kC5-UGLFIs`,
-        },
-        body: JSON.stringify({ payload }),
-      });
+      // POST to n8n via edge function with streaming support
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/post_to_n8n`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ payload }),
+        }
+      );
 
       if (!response.ok) {
         let errorMessage = 'Failed to generate draft via n8n';

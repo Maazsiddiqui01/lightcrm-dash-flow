@@ -79,17 +79,36 @@ serve(async (req) => {
       );
     }
 
+    // Get origin from request or use SUPABASE_URL
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || Deno.env.get('SUPABASE_URL');
+    const redirectUrl = `${origin}/auth/set-password`;
+
     // Invite user by email with metadata
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email,
       {
         data: { full_name },
-        redirectTo: 'https://sourcingreatness.inverisllc.com/auth/set-password'
+        redirectTo: redirectUrl
       }
     );
 
     if (inviteError) {
       throw inviteError;
+    }
+
+    // Assign default 'user' role to new user
+    if (inviteData.user?.id) {
+      const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({
+          user_id: inviteData.user.id,
+          role: 'user'
+        });
+
+      if (roleError) {
+        console.error('Error assigning default role:', roleError);
+        // Don't fail the invite if role assignment fails, just log it
+      }
     }
 
     console.log('User invited successfully:', inviteData);
