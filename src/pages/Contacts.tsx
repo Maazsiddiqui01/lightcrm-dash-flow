@@ -53,20 +53,23 @@ export function Contacts() {
   };
 
   // Stabilize filters object to prevent infinite re-renders
-  const stableContactFilters = useMemo(() => ({
-    ...filters,
-    opportunityFilters: {
-      tier: (filters.opportunityTier as string[]) || [],
-      platformAddon: (filters.opportunityPlatformAddon as string[]) || [],
-      ownershipType: (filters.opportunityOwnershipType as string[]) || [],
-      status: (filters.opportunityStatus as string[]) || [],
-      lgLead: (filters.opportunityLgLead as string[]) || [],
-      dateRangeStart: filters.opportunityDateRangeStart as string,
-      dateRangeEnd: filters.opportunityDateRangeEnd as string,
-      ebitdaMin: getNumericValue(filters.opportunityEbitdaMin),
-      ebitdaMax: getNumericValue(filters.opportunityEbitdaMax)
-    }
-  }), [
+  const stableContactFilters = useMemo(() => {
+    const toArray = (v: any): string[] => Array.isArray(v) ? v : (v ? [String(v)] : []);
+    return {
+      ...filters,
+      opportunityFilters: {
+        tier: toArray(filters.opportunityTier),
+        platformAddon: toArray(filters.opportunityPlatformAddon),
+        ownershipType: toArray(filters.opportunityOwnershipType),
+        status: toArray(filters.opportunityStatus),
+        lgLead: toArray(filters.opportunityLgLead),
+        dateRangeStart: filters.opportunityDateRangeStart as string,
+        dateRangeEnd: filters.opportunityDateRangeEnd as string,
+        ebitdaMin: getNumericValue(filters.opportunityEbitdaMin),
+        ebitdaMax: getNumericValue(filters.opportunityEbitdaMax)
+      }
+    };
+  }, [
     filters.focusAreas, filters.sectors, filters.areasOfSpecialization, filters.organizations,
     filters.titles, filters.categories, filters.deltaType, filters.hasOpportunities,
     filters.lgLead, filters.groupContacts,

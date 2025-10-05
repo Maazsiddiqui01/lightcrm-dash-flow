@@ -143,6 +143,20 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         opportunityFilters = {}
       } = filters;
 
+      // Normalize opportunity filters to arrays (URL may provide single strings)
+      const rawOppFilters: any = opportunityFilters || {};
+      const normalizedOppFilters = {
+        tier: Array.isArray(rawOppFilters.tier) ? rawOppFilters.tier : (rawOppFilters.tier ? [String(rawOppFilters.tier)] : []),
+        platformAddon: Array.isArray(rawOppFilters.platformAddon) ? rawOppFilters.platformAddon : (rawOppFilters.platformAddon ? [String(rawOppFilters.platformAddon)] : []),
+        ownershipType: Array.isArray(rawOppFilters.ownershipType) ? rawOppFilters.ownershipType : (rawOppFilters.ownershipType ? [String(rawOppFilters.ownershipType)] : []),
+        status: Array.isArray(rawOppFilters.status) ? rawOppFilters.status : (rawOppFilters.status ? [String(rawOppFilters.status)] : []),
+        lgLead: Array.isArray(rawOppFilters.lgLead) ? rawOppFilters.lgLead : (rawOppFilters.lgLead ? [String(rawOppFilters.lgLead)] : []),
+        dateRangeStart: rawOppFilters.dateRangeStart || null,
+        dateRangeEnd: rawOppFilters.dateRangeEnd || null,
+        ebitdaMin: rawOppFilters.ebitdaMin ?? null,
+        ebitdaMax: rawOppFilters.ebitdaMax ?? null,
+      } as const;
+
       // Pre-filter by focus areas using RPC if provided
       let contactIdsFromFocusAreas: string[] | null = null;
       let contactIdsFromOpportunityFilters: string[] | null = null;
@@ -246,29 +260,29 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
       // Determine if opportunity filters are applied to adjust result size early
       const hasOpportunityFilters =
-        (Array.isArray((opportunityFilters as any).tier) && (opportunityFilters as any).tier.length > 0) ||
-        (Array.isArray((opportunityFilters as any).platformAddon) && (opportunityFilters as any).platformAddon.length > 0) ||
-        (Array.isArray((opportunityFilters as any).ownershipType) && (opportunityFilters as any).ownershipType.length > 0) ||
-        (Array.isArray((opportunityFilters as any).status) && (opportunityFilters as any).status.length > 0) ||
-        (Array.isArray((opportunityFilters as any).lgLead) && (opportunityFilters as any).lgLead.length > 0) ||
-        !!(opportunityFilters as any).dateRangeStart ||
-        !!(opportunityFilters as any).dateRangeEnd ||
-        (opportunityFilters as any).ebitdaMin !== null && (opportunityFilters as any).ebitdaMin !== undefined ||
-        (opportunityFilters as any).ebitdaMax !== null && (opportunityFilters as any).ebitdaMax !== undefined;
+        (normalizedOppFilters.tier?.length || 0) > 0 ||
+        (normalizedOppFilters.platformAddon?.length || 0) > 0 ||
+        (normalizedOppFilters.ownershipType?.length || 0) > 0 ||
+        (normalizedOppFilters.status?.length || 0) > 0 ||
+        (normalizedOppFilters.lgLead?.length || 0) > 0 ||
+        !!normalizedOppFilters.dateRangeStart ||
+        !!normalizedOppFilters.dateRangeEnd ||
+        (normalizedOppFilters.ebitdaMin !== null && normalizedOppFilters.ebitdaMin !== undefined) ||
+        (normalizedOppFilters.ebitdaMax !== null && normalizedOppFilters.ebitdaMax !== undefined);
 
       // If opportunity filters are active, pre-filter contacts by matching opportunity set via RPC
       if (hasOpportunityFilters) {
         console.log('🔎 Using backend RPC to pre-filter contacts by opportunity filters');
         const { data: idRows, error: rpcError } = await (supabase as any).rpc('contacts_ids_by_opportunity_filters', {
-          p_tier: (opportunityFilters as any).tier?.length ? (opportunityFilters as any).tier : null,
-          p_platform_add_on: (opportunityFilters as any).platformAddon?.length ? (opportunityFilters as any).platformAddon : null,
-          p_ownership_type: (opportunityFilters as any).ownershipType?.length ? (opportunityFilters as any).ownershipType : null,
-          p_status: (opportunityFilters as any).status?.length ? (opportunityFilters as any).status : null,
-          p_lg_lead: (opportunityFilters as any).lgLead?.length ? (opportunityFilters as any).lgLead : null,
-          p_date_start: (opportunityFilters as any).dateRangeStart || null,
-          p_date_end: (opportunityFilters as any).dateRangeEnd || null,
-          p_ebitda_min: (opportunityFilters as any).ebitdaMin ?? null,
-          p_ebitda_max: (opportunityFilters as any).ebitdaMax ?? null,
+          p_tier: normalizedOppFilters.tier?.length ? normalizedOppFilters.tier : null,
+          p_platform_add_on: normalizedOppFilters.platformAddon?.length ? normalizedOppFilters.platformAddon : null,
+          p_ownership_type: normalizedOppFilters.ownershipType?.length ? normalizedOppFilters.ownershipType : null,
+          p_status: normalizedOppFilters.status?.length ? normalizedOppFilters.status : null,
+          p_lg_lead: normalizedOppFilters.lgLead?.length ? normalizedOppFilters.lgLead : null,
+          p_date_start: normalizedOppFilters.dateRangeStart || null,
+          p_date_end: normalizedOppFilters.dateRangeEnd || null,
+          p_ebitda_min: normalizedOppFilters.ebitdaMin ?? null,
+          p_ebitda_max: normalizedOppFilters.ebitdaMax ?? null,
         });
 
         if (rpcError) {
