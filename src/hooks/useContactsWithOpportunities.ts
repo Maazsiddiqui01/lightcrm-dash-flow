@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ContactWithOpportunities {
@@ -99,14 +99,17 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
-    if (isFetching) return; // Prevent overlapping fetches
+    // Allow new fetches to supersede old ones - "last write wins"
     fetchContactsWithOpportunities();
   }, [JSON.stringify(filters)]);
 
   const fetchContactsWithOpportunities = async () => {
-    if (isFetching) return; // Prevent overlapping fetches
+    // Increment request ID - each new fetch gets a unique ID
+    const reqId = ++requestIdRef.current;
+    console.log(`[Contacts#${reqId}] Starting fetch with filters:`, JSON.stringify(filters).slice(0, 200));
     
     try {
       setIsFetching(true);
@@ -180,10 +183,13 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           contactsQuery = contactsQuery.in('id', contactIdsFromFocusAreas);
         } else {
           // No contacts match focus area filters, return empty result
-          setContacts([]);
-          setLoading(false);
-          setIsRefreshing(false);
-          setIsFetching(false);
+          console.log(`[Contacts#${reqId}] No contacts match focus areas, returning empty`);
+          if (reqId === requestIdRef.current) {
+            setContacts([]);
+            setLoading(false);
+            setIsRefreshing(false);
+            setIsFetching(false);
+          }
           return;
         }
       }
@@ -272,7 +278,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
       // If opportunity filters are active, pre-filter contacts by matching opportunity set via RPC
       if (hasOpportunityFilters) {
-        console.log('🔎 Using backend RPC to pre-filter contacts by opportunity filters');
+        console.log(`[Contacts#${reqId}] Using backend RPC to pre-filter contacts by opportunity filters`);
         const { data: idRows, error: rpcError } = await (supabase as any).rpc('contacts_ids_by_opportunity_filters', {
           p_tier: normalizedOppFilters.tier?.length ? normalizedOppFilters.tier : null,
           p_platform_add_on: normalizedOppFilters.platformAddon?.length ? normalizedOppFilters.platformAddon : null,
@@ -286,16 +292,19 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         });
 
         if (rpcError) {
-          console.error('RPC contacts_ids_by_opportunity_filters error:', rpcError);
+          console.error(`[Contacts#${reqId}] RPC contacts_ids_by_opportunity_filters error:`, rpcError);
         } else {
           const ids = (idRows || []).map((r: any) => r.contact_id).filter(Boolean);
           contactIdsFromOpportunityFilters = ids; // Store in function scope for fallback
-          console.log('✅ RPC returned matching contact IDs:', ids.length);
+          console.log(`[Contacts#${reqId}] RPC returned ${ids.length} matching contact IDs`);
           if (ids.length === 0) {
-            setContacts([]);
-            setLoading(false);
-            setIsRefreshing(false);
-            setIsFetching(false);
+            console.log(`[Contacts#${reqId}] No contacts match opportunity filters, returning empty`);
+            if (reqId === requestIdRef.current) {
+              setContacts([]);
+              setLoading(false);
+              setIsRefreshing(false);
+              setIsFetching(false);
+            }
             return;
           }
           contactsQuery = contactsQuery.in('id', ids);
@@ -310,11 +319,11 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       const { data: contactsData, error: contactsError } = await contactsQuery;
 
       if (contactsError) {
-        console.error("Error fetching contacts:", contactsError);
+        console.error(`[Contacts#${reqId}] Error fetching contacts:`, contactsError);
         
         // Fallback to contacts_raw if dynamic view fails (ensures group fields exist)
         try {
-          console.log("🔄 Falling back to contacts_raw table with filters applied...");
+          console.log(`[Contacts#${reqId}] Falling back to contacts_raw table with filters applied...`);
           let fallbackQuery = supabase
             .from("contacts_raw")
             .select("*");
@@ -324,25 +333,31 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
             if (contactIdsFromFocusAreas.length > 0) {
               fallbackQuery = fallbackQuery.in('id', contactIdsFromFocusAreas);
             } else {
-              setContacts([]);
-              setLoading(false);
-              setIsRefreshing(false);
-              setIsFetching(false);
+              console.log(`[Contacts#${reqId}] No contacts match focus areas in fallback, returning empty`);
+              if (reqId === requestIdRef.current) {
+                setContacts([]);
+                setLoading(false);
+                setIsRefreshing(false);
+                setIsFetching(false);
+              }
               return;
             }
           }
 
           // Apply opportunity filter IDs to fallback
           if (contactIdsFromOpportunityFilters !== null) {
-            console.log('🔄 Applying opportunity filter IDs to fallback query:', contactIdsFromOpportunityFilters.length);
+            console.log(`[Contacts#${reqId}] Applying opportunity filter IDs to fallback query:`, contactIdsFromOpportunityFilters.length);
             if (contactIdsFromOpportunityFilters.length > 0) {
               fallbackQuery = fallbackQuery.in('id', contactIdsFromOpportunityFilters);
             } else {
               // No contacts match opportunity filters, return empty
-              setContacts([]);
-              setLoading(false);
-              setIsRefreshing(false);
-              setIsFetching(false);
+              console.log(`[Contacts#${reqId}] No contacts match opportunity filters in fallback, returning empty`);
+              if (reqId === requestIdRef.current) {
+                setContacts([]);
+                setLoading(false);
+                setIsRefreshing(false);
+                setIsFetching(false);
+              }
               return;
             }
           }
@@ -376,7 +391,13 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           const { data: fallbackData, error: fallbackError } = await fallbackQuery;
           
           if (fallbackError) {
-            console.error("Fallback query (contacts_raw) failed:", fallbackError);
+            console.error(`[Contacts#${reqId}] Fallback query (contacts_raw) failed:`, fallbackError);
+            return;
+          }
+
+          // Check if this request is still the latest before updating state
+          if (reqId !== requestIdRef.current) {
+            console.log(`[Contacts#${reqId}] ⚠️ Discarding stale fallback result. Current request is #${requestIdRef.current}`);
             return;
           }
           
@@ -443,23 +464,26 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
             opportunities: ''
           }));
           
+          console.log(`[Contacts#${reqId}] ✅ Fallback result:`, fallbackContacts.length, 'contacts');
           setContacts(fallbackContacts);
           return;
         } catch (fallbackErr) {
-          console.error("Fallback failed:", fallbackErr);
+          console.error(`[Contacts#${reqId}] Fallback failed:`, fallbackErr);
           return;
         }
       }
 
-      // Fetch opportunities directly from the view - simplified approach
-      console.log('📊 Fetching opportunities from view...');
+      // Optimize: Fetch opportunities only for the filtered contact IDs
+      const contactIds = (contactsData || []).map(c => c.id);
+      console.log(`[Contacts#${reqId}] Fetching opportunities for ${contactIds.length} filtered contacts...`);
       
       const { data: oppsData, error: oppsError } = await supabase
         .from('contacts_with_opportunities_v')
-        .select('id, opportunities');
+        .select('id, opportunities')
+        .in('id', contactIds);
       
       if (oppsError) {
-        console.error('❌ Error fetching opportunities from view:', oppsError);
+        console.error(`[Contacts#${reqId}] Error fetching opportunities:`, oppsError);
       }
 
       // Build a simple map: contact id -> opportunities string
@@ -470,8 +494,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         }
       });
 
-      console.log('✅ Opportunities map built:', oppsMap.size, 'contacts have opportunities');
-      console.log('🔍 Sample opportunities:', Array.from(oppsMap.entries()).slice(0, 3));
+      console.log(`[Contacts#${reqId}] Opportunities map built:`, oppsMap.size, 'contacts have opportunities');
 
       // Attach opportunities to each contact with proper null handling for group fields
       const contactsWithOpportunities = contactsData?.map(contact => ({
@@ -482,17 +505,27 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         opportunities: oppsMap.get(contact.id) || ''
       })) || [];
 
+      // Check if this request is still the latest before updating state
+      if (reqId !== requestIdRef.current) {
+        console.log(`[Contacts#${reqId}] ⚠️ Discarding stale result. Current request is #${requestIdRef.current}`);
+        return;
+      }
+
       const withOpps = contactsWithOpportunities.filter(c => c.opportunities).length;
-      console.log('✅ Final result:', contactsWithOpportunities.length, 'total contacts,', withOpps, 'with opportunities');
-      console.log('🔍 Sample contact with opportunities:', contactsWithOpportunities.find(c => c.opportunities));
+      console.log(`[Contacts#${reqId}] ✅ Final result:`, contactsWithOpportunities.length, 'total contacts,', withOpps, 'with opportunities');
 
       setContacts(contactsWithOpportunities);
     } catch (error) {
-      console.error("Unexpected error:", error);
+      console.error(`[Contacts#${reqId}] Unexpected error:`, error);
     } finally {
-      setLoading(false);
-      setIsRefreshing(false);
-      setIsFetching(false);
+      // Only clear loading flags if this is still the current request
+      if (reqId === requestIdRef.current) {
+        setLoading(false);
+        setIsRefreshing(false);
+        setIsFetching(false);
+      } else {
+        console.log(`[Contacts#${reqId}] ⚠️ Not clearing loading flags - superseded by #${requestIdRef.current}`);
+      }
     }
   };
 
