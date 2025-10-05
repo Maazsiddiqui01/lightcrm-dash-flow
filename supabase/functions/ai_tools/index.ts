@@ -2,7 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,32 +38,25 @@ serve(async (req) => {
       systemPrompt += ` When returning data, format it as CSV with headers. Return JSON with {"csv": "header1,header2\\nrow1col1,row1col2\\n..."}.`;
     }
 
-    // Determine max_completion_tokens vs max_tokens based on model
-    const isNewModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
+    // Use Lovable AI Gateway with Gemini (FREE until Oct 6, 2025!)
+    const aiModel = model.startsWith('google/') ? model : 'google/gemini-2.5-flash';
     
-    const requestBody: any = {
-      model,
+    const requestBody = {
+      model: aiModel,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ],
+      max_tokens: 2000,
+      temperature: 0.7,
     };
 
-    // Use appropriate token parameter based on model
-    if (isNewModel) {
-      requestBody.max_completion_tokens = 2000;
-      // Note: temperature is not supported in newer models
-    } else {
-      requestBody.max_tokens = 2000;
-      requestBody.temperature = 0.7;
-    }
+    console.log('Calling Lovable AI with:', { model: aiModel });
 
-    console.log('Calling OpenAI with:', { model, isNewModel });
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
@@ -71,12 +64,21 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('OpenAI API Error:', response.status, errorData);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+      console.error('Lovable AI Error:', response.status, errorData);
+      
+      // Handle rate limit errors
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a moment.');
+      }
+      if (response.status === 402) {
+        throw new Error('AI credits depleted. Please add credits to your workspace.');
+      }
+      
+      throw new Error(`AI Gateway error: ${response.status} - ${errorData}`);
     }
 
     const data = await response.json();
-    console.log('OpenAI response received');
+    console.log('Lovable AI response received');
 
     const aiResponse = data.choices[0].message.content;
 

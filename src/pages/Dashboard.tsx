@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
+import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
 
 interface Stats {
   totalContacts: number;
@@ -246,6 +247,9 @@ export function Dashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* AI Insights Widget */}
+          <AIInsightsWidget />
 
           {/* Quick Actions */}
           <Card>

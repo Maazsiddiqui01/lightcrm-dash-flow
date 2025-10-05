@@ -45,7 +45,7 @@ export function AskAI() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
+  const [selectedModel, setSelectedModel] = useState("google/gemini-2.5-flash");
   const [selectedOutput, setSelectedOutput] = useState("json");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
@@ -65,9 +65,14 @@ export function AskAI() {
     setIsLoading(true);
 
     try {
+      // Use Lovable AI with Gemini models (FREE until Oct 6!)
+      const aiModel = selectedModel.startsWith('google/') 
+        ? selectedModel 
+        : 'google/gemini-2.5-flash';
+        
       const body = { 
         message: prompt, 
-        model: selectedModel || "gpt-4o-mini", 
+        model: aiModel, 
         output: selectedOutput || "json" 
       };
       
@@ -578,10 +583,20 @@ export function AskAI() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                    <SelectItem value="gpt-4.1-2025-04-14">GPT-4.1</SelectItem>
+                    <SelectItem value="google/gemini-2.5-flash">
+                      Gemini 2.5 Flash (FREE) ⚡
+                    </SelectItem>
+                    <SelectItem value="google/gemini-2.5-pro">
+                      Gemini 2.5 Pro (FREE) 🚀
+                    </SelectItem>
+                    <SelectItem value="google/gemini-2.5-flash-lite">
+                      Gemini 2.5 Flash Lite (FREE) 💨
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  All Gemini models are FREE until Oct 6, 2025!
+                </p>
               </div>
 
               <div className="space-y-2">
