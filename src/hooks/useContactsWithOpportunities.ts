@@ -143,14 +143,23 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         opportunityFilters = {}
       } = filters;
 
-      // Focus Areas - use exact comma-separated matching to avoid false positives
+      // Focus Areas - use safe patterns without commas to avoid PostgREST parsing errors
       if (focusAreas.length > 0) {
-        const focusAreaConditions = focusAreas.map(area => {
-          // Match: "area," or ", area," or ", area" (start, middle, or end of list)
-          const escaped = area.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          return `lg_focus_areas_comprehensive_list.ilike.${escaped},%,lg_focus_areas_comprehensive_list.ilike.%, ${escaped},%,lg_focus_areas_comprehensive_list.ilike.%, ${escaped}`;
-        }).join(',');
-        contactsQuery = contactsQuery.or(focusAreaConditions);
+        const orConditions: string[] = [];
+        
+        focusAreas.forEach(area => {
+          // Match at start (followed by comma-space): "Area%"
+          orConditions.push(`lg_focus_areas_comprehensive_list.ilike.${area}%`);
+          // Match in middle/end (preceded by comma-space): "% Area%"
+          orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}%`);
+          // Match at end only (preceded by comma-space, no trailing): "% ${area}"
+          orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}`);
+          // Match as only value (exact match): "Area"
+          orConditions.push(`lg_focus_areas_comprehensive_list.eq.${area}`);
+        });
+        
+        console.log('🔍 Focus area OR conditions:', orConditions.join(','));
+        contactsQuery = contactsQuery.or(orConditions.join(','));
       }
 
       // Sectors
@@ -278,11 +287,47 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         
         // Fallback to contacts_raw if dynamic view fails (ensures group fields exist)
         try {
-          console.log("Falling back to contacts_raw table...");
-          const fallbackQuery = supabase
+          console.log("🔄 Falling back to contacts_raw table with filters applied...");
+          let fallbackQuery = supabase
             .from("contacts_raw")
-            .select("*")
-            .order('updated_at', { ascending: false, nullsFirst: false })
+            .select("*");
+          
+          // Apply the same filters to fallback query
+          if (focusAreas.length > 0) {
+            const orConditions: string[] = [];
+            focusAreas.forEach(area => {
+              orConditions.push(`lg_focus_areas_comprehensive_list.ilike.${area}%`);
+              orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}%`);
+              orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}`);
+              orConditions.push(`lg_focus_areas_comprehensive_list.eq.${area}`);
+            });
+            fallbackQuery = fallbackQuery.or(orConditions.join(','));
+          }
+          if (sectors.length > 0) fallbackQuery = fallbackQuery.in('lg_sector', sectors);
+          if (areasOfSpecialization.length > 0) {
+            const areasQuery = areasOfSpecialization.map(area => `areas_of_specialization.ilike.%${area}%`).join(',');
+            fallbackQuery = fallbackQuery.or(areasQuery);
+          }
+          if (organizations.length > 0) fallbackQuery = fallbackQuery.in('organization', organizations);
+          if (titles.length > 0) fallbackQuery = fallbackQuery.in('title', titles);
+          if (categories.length > 0) fallbackQuery = fallbackQuery.in('category', categories);
+          if (deltaType.length > 0) fallbackQuery = fallbackQuery.in('delta_type', deltaType);
+          if (hasOpportunities.length > 0) {
+            if (hasOpportunities.includes('Yes')) fallbackQuery = fallbackQuery.gt('all_opps', 0);
+            if (hasOpportunities.includes('No')) fallbackQuery = fallbackQuery.or('all_opps.is.null,all_opps.eq.0');
+          }
+          if (mostRecentContactStart) fallbackQuery = fallbackQuery.gte('most_recent_contact', mostRecentContactStart);
+          if (mostRecentContactEnd) fallbackQuery = fallbackQuery.lte('most_recent_contact', mostRecentContactEnd);
+          if (deltaMin !== null && deltaMin !== undefined) fallbackQuery = fallbackQuery.gte('delta', deltaMin);
+          if (deltaMax !== null && deltaMax !== undefined) fallbackQuery = fallbackQuery.lte('delta', deltaMax);
+          if (lgLead.length > 0) {
+            const leadConditions = lgLead.map(lead => `lg_lead.ilike.%${lead}%`).join(',');
+            fallbackQuery = fallbackQuery.or(leadConditions);
+          }
+          if (groupContacts.length > 0) fallbackQuery = fallbackQuery.in('group_contact', groupContacts);
+          
+          fallbackQuery = fallbackQuery
+            .order('most_recent_contact', { ascending: false, nullsFirst: false })
             .limit(1000);
           
           const { data: fallbackData, error: fallbackError } = await fallbackQuery;

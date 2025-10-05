@@ -63,18 +63,18 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
   const applyFilters = (query: any) => {
     if (!filters) return query;
 
-    // Focus areas filter - exact comma-separated matching
+    // Focus areas filter - use safe patterns without commas to avoid PostgREST parsing errors
     if (filters.focusAreas && filters.focusAreas.length > 0) {
       const orConditions: string[] = [];
       
       filters.focusAreas.forEach(area => {
-        // Match at start: "Area, "
-        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.${area},%`);
-        // Match in middle: ", Area, "
-        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.%, ${area},%`);
-        // Match at end: ", Area"
-        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.%, ${area}`);
-        // Match as only value: "Area"
+        // Match at start (followed by comma-space): "Area%"
+        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.${area}%`);
+        // Match in middle/end (preceded by comma-space): "% Area%"
+        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}%`);
+        // Match at end only (preceded by comma-space): "% Area"
+        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}`);
+        // Match as only value (exact match): "Area"
         orConditions.push(`lg_focus_areas_comprehensive_list.eq.${area}`);
       });
       
