@@ -63,10 +63,22 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
   const applyFilters = (query: any) => {
     if (!filters) return query;
 
-    // Focus areas filter - use comprehensive list only for exact matching
+    // Focus areas filter - exact comma-separated matching
     if (filters.focusAreas && filters.focusAreas.length > 0) {
-      const focusAreaConditions = filters.focusAreas.map(area => `lg_focus_areas_comprehensive_list.ilike.*${area}*`);
-      query = query.or(focusAreaConditions.join(','));
+      const orConditions: string[] = [];
+      
+      filters.focusAreas.forEach(area => {
+        // Match at start: "Area, "
+        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.${area},%`);
+        // Match in middle: ", Area, "
+        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.%, ${area},%`);
+        // Match at end: ", Area"
+        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.%, ${area}`);
+        // Match as only value: "Area"
+        orConditions.push(`lg_focus_areas_comprehensive_list.eq.${area}`);
+      });
+      
+      query = query.or(orConditions.join(','));
     }
 
     // Sectors filter
