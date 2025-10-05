@@ -145,6 +145,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
 
       // Pre-filter by focus areas using RPC if provided
       let contactIdsFromFocusAreas: string[] | null = null;
+      let contactIdsFromOpportunityFilters: string[] | null = null;
       if (focusAreas.length > 0) {
         console.log('[Contacts] Pre-filtering by focus areas via RPC:', focusAreas);
         const { data: faContactIds, error: faError } = await supabase.rpc(
@@ -274,6 +275,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           console.error('RPC contacts_ids_by_opportunity_filters error:', rpcError);
         } else {
           const ids = (idRows || []).map((r: any) => r.contact_id).filter(Boolean);
+          contactIdsFromOpportunityFilters = ids; // Store in function scope for fallback
           console.log('✅ RPC returned matching contact IDs:', ids.length);
           if (ids.length === 0) {
             setContacts([]);
@@ -308,6 +310,21 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
             if (contactIdsFromFocusAreas.length > 0) {
               fallbackQuery = fallbackQuery.in('id', contactIdsFromFocusAreas);
             } else {
+              setContacts([]);
+              setLoading(false);
+              setIsRefreshing(false);
+              setIsFetching(false);
+              return;
+            }
+          }
+
+          // Apply opportunity filter IDs to fallback
+          if (contactIdsFromOpportunityFilters !== null) {
+            console.log('🔄 Applying opportunity filter IDs to fallback query:', contactIdsFromOpportunityFilters.length);
+            if (contactIdsFromOpportunityFilters.length > 0) {
+              fallbackQuery = fallbackQuery.in('id', contactIdsFromOpportunityFilters);
+            } else {
+              // No contacts match opportunity filters, return empty
               setContacts([]);
               setLoading(false);
               setIsRefreshing(false);
