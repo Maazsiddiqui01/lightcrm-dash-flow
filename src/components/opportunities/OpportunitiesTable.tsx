@@ -548,6 +548,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
       {/* Dynamic Table */}
       <ResponsiveAdvancedTable
         data={filteredOpportunities}
+        hideExportButton={true}
         columns={dynamicColumns}
         loading={loading}
         searchValue={searchTerm}
