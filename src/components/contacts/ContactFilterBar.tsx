@@ -306,7 +306,6 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
                   selected={endDate}
                   onSelect={(date) => handleDateChange('end', date)}
                   initialFocus
-                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>

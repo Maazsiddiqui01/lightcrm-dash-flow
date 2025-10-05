@@ -143,12 +143,14 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         opportunityFilters = {}
       } = filters;
 
-      // Focus Areas - use comprehensive list only for exact matching
+      // Focus Areas - use exact comma-separated matching to avoid false positives
       if (focusAreas.length > 0) {
-        console.log('Filtering contacts with focus areas:', focusAreas);
-        const focusAreaConditions = focusAreas.map(area => `lg_focus_areas_comprehensive_list.ilike.*${area}*`);
-        console.log('Focus area query conditions:', focusAreaConditions);
-        contactsQuery = contactsQuery.or(focusAreaConditions.join(','));
+        const focusAreaConditions = focusAreas.map(area => {
+          // Match: "area," or ", area," or ", area" (start, middle, or end of list)
+          const escaped = area.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          return `lg_focus_areas_comprehensive_list.ilike.${escaped},%,lg_focus_areas_comprehensive_list.ilike.%, ${escaped},%,lg_focus_areas_comprehensive_list.ilike.%, ${escaped}`;
+        }).join(',');
+        contactsQuery = contactsQuery.or(focusAreaConditions);
       }
 
       // Sectors

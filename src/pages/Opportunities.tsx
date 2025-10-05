@@ -71,14 +71,7 @@ export function Opportunities() {
   };
 
   const handleBulkAssignment = async (userId: string) => {
-    if (selectedRows.length === 0) {
-      toast({
-        title: "No opportunities selected",
-        description: "Please select opportunities to assign",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (selectedRows.length === 0) return;
 
     try {
       const { error } = await supabase
@@ -90,14 +83,16 @@ export function Opportunities() {
 
       toast({
         title: "Success",
-        description: `Assigned ${selectedRows.length} opportunities`,
+        description: `Assigned ${selectedRows.length} opportunities to user`,
       });
-      
       setSelectedRows([]);
+      
+      // Force page reload to refresh table and stats
+      window.location.reload();
     } catch (error) {
-      console.error('Bulk assignment error:', error);
+      console.error('Error in bulk assignment:', error);
       toast({
-        title: "Assignment failed",
+        title: "Error",
         description: "Failed to assign opportunities",
         variant: "destructive",
       });

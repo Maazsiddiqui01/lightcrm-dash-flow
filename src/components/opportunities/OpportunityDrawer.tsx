@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail } from "lucide-react";
+import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail, Loader2 } from "lucide-react";
 import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
 import { OpportunityNotesSection } from "./OpportunityNotesSection";
 import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
@@ -658,16 +658,32 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
 
           <Separator />
 
-          {/* Metadata */}
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-4 w-4" />
-              <span>Date of Origination: {opportunity.date_of_origination || "—"}</span>
-            </div>
-            <p>Platform Add-On: {opportunity.platform_add_on || "—"}</p>
-            <p>Created: {formatDate(opportunity.created_at)}</p>
-            <p>Updated: {formatDate(opportunity.updated_at)}</p>
-          </div>
+          <OpportunityNotesSection
+            title="Next Steps"
+            field="next_steps"
+            currentValue={currentNotes.nextSteps}
+            currentDueDate={currentNotes.nextStepsDueDate}
+            placeholder="What are the next steps for this opportunity?"
+            onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
+            isSaving={isSavingNextSteps}
+            isLoading={isLoadingCurrent}
+            timeline={timeline.filter(n => n.field === 'next_steps')}
+            isLoadingTimeline={isLoadingTimeline}
+            showDueDate
+            showAddToToDo
+          />
+
+          <OpportunityNotesSection
+            title="Most Recent Notes"
+            field="most_recent_notes"
+            currentValue={currentNotes.mostRecentNotes}
+            placeholder="Add notes about recent conversations or developments..."
+            onSave={(content) => saveMostRecentNotes(content)}
+            isSaving={isSavingNotes}
+            isLoading={isLoadingCurrent}
+            timeline={timeline.filter(n => n.field === 'most_recent_notes')}
+            isLoadingTimeline={isLoadingTimeline}
+          />
         </div>
       </SheetContent>
     </Sheet>

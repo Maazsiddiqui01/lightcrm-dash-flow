@@ -42,9 +42,12 @@ export function useOpportunityStats(filters?: OpportunityFilters): OpportunitySt
   const applyFilters = (query: any) => {
     if (!filters) return query;
 
-    // Apply filters
+    // Apply focus area filter - use pattern matching for comma-separated values
     if (filters.focusArea && filters.focusArea.length > 0) {
-      query = query.in('lg_focus_area', filters.focusArea);
+      const focusAreaConditions = filters.focusArea.map(area => 
+        `lg_focus_area.ilike.%${area}%`
+      ).join(',');
+      query = query.or(focusAreaConditions);
     }
 
     if (filters.sector && filters.sector.length > 0) {

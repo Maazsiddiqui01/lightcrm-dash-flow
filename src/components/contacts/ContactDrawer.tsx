@@ -310,8 +310,18 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
         </SheetHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
+          <div className="space-y-4 py-8">
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+            <p className="text-center text-sm text-muted-foreground">Loading contact details...</p>
+          </div>
+        ) : saving ? (
+          <div className="space-y-4 py-8">
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+            <p className="text-center text-sm text-muted-foreground">Saving changes...</p>
           </div>
         ) : contactData ? (
           <div className="mt-6 space-y-6">
