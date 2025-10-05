@@ -143,23 +143,34 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         opportunityFilters = {}
       } = filters;
 
-      // Focus Areas - use safe patterns without commas to avoid PostgREST parsing errors
+      // Pre-filter by focus areas using RPC if provided
+      let contactIdsFromFocusAreas: string[] | null = null;
       if (focusAreas.length > 0) {
-        const orConditions: string[] = [];
-        
-        focusAreas.forEach(area => {
-          // Match at start (followed by comma-space): "Area%"
-          orConditions.push(`lg_focus_areas_comprehensive_list.ilike.${area}%`);
-          // Match in middle/end (preceded by comma-space): "% Area%"
-          orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}%`);
-          // Match at end only (preceded by comma-space, no trailing): "% ${area}"
-          orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}`);
-          // Match as only value (exact match): "Area"
-          orConditions.push(`lg_focus_areas_comprehensive_list.eq.${area}`);
-        });
-        
-        console.log('🔍 Focus area OR conditions:', orConditions.join(','));
-        contactsQuery = contactsQuery.or(orConditions.join(','));
+        console.log('[Contacts] Pre-filtering by focus areas via RPC:', focusAreas);
+        const { data: faContactIds, error: faError } = await supabase.rpc(
+          "contacts_ids_by_focus_areas",
+          { p_focus_areas: focusAreas }
+        );
+        if (faError) {
+          console.error("[Contacts] Error fetching contact IDs by focus areas:", faError);
+        } else {
+          contactIdsFromFocusAreas = faContactIds?.map((r: { contact_id: string }) => r.contact_id) || [];
+          console.log(`[Contacts] Focus area RPC returned ${contactIdsFromFocusAreas.length} contact IDs`);
+        }
+      }
+
+      // Apply focus area filter via contact IDs if available
+      if (contactIdsFromFocusAreas !== null) {
+        if (contactIdsFromFocusAreas.length > 0) {
+          contactsQuery = contactsQuery.in('id', contactIdsFromFocusAreas);
+        } else {
+          // No contacts match focus area filters, return empty result
+          setContacts([]);
+          setLoading(false);
+          setIsRefreshing(false);
+          setIsFetching(false);
+          return;
+        }
       }
 
       // Sectors
@@ -292,16 +303,17 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
             .from("contacts_raw")
             .select("*");
           
-          // Apply the same filters to fallback query
-          if (focusAreas.length > 0) {
-            const orConditions: string[] = [];
-            focusAreas.forEach(area => {
-              orConditions.push(`lg_focus_areas_comprehensive_list.ilike.${area}%`);
-              orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}%`);
-              orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}`);
-              orConditions.push(`lg_focus_areas_comprehensive_list.eq.${area}`);
-            });
-            fallbackQuery = fallbackQuery.or(orConditions.join(','));
+          // Apply focus area filter via contact IDs to fallback
+          if (contactIdsFromFocusAreas !== null) {
+            if (contactIdsFromFocusAreas.length > 0) {
+              fallbackQuery = fallbackQuery.in('id', contactIdsFromFocusAreas);
+            } else {
+              setContacts([]);
+              setLoading(false);
+              setIsRefreshing(false);
+              setIsFetching(false);
+              return;
+            }
           }
           if (sectors.length > 0) fallbackQuery = fallbackQuery.in('lg_sector', sectors);
           if (areasOfSpecialization.length > 0) {

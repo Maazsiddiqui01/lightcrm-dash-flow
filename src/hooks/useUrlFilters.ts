@@ -24,9 +24,14 @@ export function useUrlFilters(defaultValues: FilterValues = {}) {
         } catch {
           // If JSON parsing fails, treat as string array (comma-separated)
           if (value.includes(',')) {
-            urlFilters[filterKey] = value.split(',');
+            // Normalize array values: replace +, trim, filter empty, remove HC: (All)
+            urlFilters[filterKey] = value
+              .split(',')
+              .map(v => decodeURIComponent(v.replace(/\+/g, ' ')).trim())
+              .filter(v => v && v !== 'HC: (All)');
           } else {
-            urlFilters[filterKey] = value || null;
+            const normalized = decodeURIComponent(value.replace(/\+/g, ' ')).trim();
+            urlFilters[filterKey] = (normalized === '' || normalized === 'HC: (All)') ? null : normalized;
           }
         }
       }

@@ -60,25 +60,12 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
     fetchStats();
   }, [filters]);
 
-  const applyFilters = (query: any) => {
+  const applyFilters = (query: any, contactIds?: string[] | null) => {
     if (!filters) return query;
 
-    // Focus areas filter - use safe patterns without commas to avoid PostgREST parsing errors
-    if (filters.focusAreas && filters.focusAreas.length > 0) {
-      const orConditions: string[] = [];
-      
-      filters.focusAreas.forEach(area => {
-        // Match at start (followed by comma-space): "Area%"
-        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.${area}%`);
-        // Match in middle/end (preceded by comma-space): "% Area%"
-        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}%`);
-        // Match at end only (preceded by comma-space): "% Area"
-        orConditions.push(`lg_focus_areas_comprehensive_list.ilike.% ${area}`);
-        // Match as only value (exact match): "Area"
-        orConditions.push(`lg_focus_areas_comprehensive_list.eq.${area}`);
-      });
-      
-      query = query.or(orConditions.join(','));
+    // If we have pre-filtered contact IDs, apply them
+    if (contactIds && contactIds.length > 0) {
+      query = query.in("id", contactIds);
     }
 
     // Sectors filter
@@ -154,6 +141,22 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
 
   const fetchStats = async () => {
     try {
+      // Pre-filter by focus areas using RPC if provided
+      let contactIdsFromFocusAreas: string[] | null = null;
+      if (filters?.focusAreas && filters.focusAreas.length > 0) {
+        console.log('[ContactStats] Pre-filtering by focus areas via RPC:', filters.focusAreas);
+        const { data: faContactIds, error: faError } = await supabase.rpc(
+          "contacts_ids_by_focus_areas",
+          { p_focus_areas: filters.focusAreas }
+        );
+        if (faError) {
+          console.error("[ContactStats] Error fetching contact IDs by focus areas:", faError);
+        } else {
+          contactIdsFromFocusAreas = faContactIds?.map((r: { contact_id: string }) => r.contact_id) || [];
+          console.log(`[ContactStats] Focus area RPC returned ${contactIdsFromFocusAreas.length} contact IDs`);
+        }
+      }
+
       // Check if opportunity filters are applied
       const opportunityFilters = filters?.opportunityFilters || {};
       const hasOpportunityFilters = opportunityFilters.tier?.length > 0 || 
@@ -166,7 +169,7 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
         (opportunityFilters.ebitdaMin !== null && opportunityFilters.ebitdaMin !== undefined) ||
         (opportunityFilters.ebitdaMax !== null && opportunityFilters.ebitdaMax !== undefined);
 
-      let filteredContactIds: string[] | null = null;
+      let contactIdsFromOpps: string[] | null = null;
 
       // If opportunity filters are applied, get matching contact IDs first
       if (hasOpportunityFilters) {
@@ -227,53 +230,58 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
               .select("id")
               .or(nameQueries);
             
-            filteredContactIds = matchingContacts?.map(c => c.id) || [];
+            contactIdsFromOpps = matchingContacts?.map(c => c.id) || [];
           } else {
-            filteredContactIds = [];
+            contactIdsFromOpps = [];
           }
         } else {
-          filteredContactIds = [];
+          contactIdsFromOpps = [];
         }
+      }
+
+      // Merge both ID filters if both exist
+      let finalContactIds: string[] | null = null;
+      if (contactIdsFromOpps !== null && contactIdsFromFocusAreas !== null) {
+        // Intersection: only contacts that match both filters
+        finalContactIds = contactIdsFromOpps.filter(id => contactIdsFromFocusAreas!.includes(id));
+        console.log(`[ContactStats] Intersection of opp and focus area filters: ${finalContactIds.length} contact IDs`);
+      } else if (contactIdsFromOpps !== null) {
+        finalContactIds = contactIdsFromOpps;
+      } else if (contactIdsFromFocusAreas !== null) {
+        finalContactIds = contactIdsFromFocusAreas;
+      }
+
+      // Early exit if filters result in zero contacts
+      if (finalContactIds !== null && finalContactIds.length === 0) {
+        setStats({
+          totalContacts: 0,
+          activeContacts: 0,
+          totalEmails: 0,
+          totalMeetings: 0,
+          contactsWithCadenceData: 0,
+          overdueContacts: 0,
+          overdueRate: 0,
+          intentionallySkippedContacts: 0,
+          loading: false,
+        });
+        return;
       }
 
       // Build base queries with contact filters - use contacts_raw for consistency
       let totalQuery = supabase
         .from("contacts_raw")
         .select("*", { count: "exact", head: true });
-      totalQuery = applyFilters(totalQuery);
+      totalQuery = applyFilters(totalQuery, finalContactIds);
 
       let activeQuery = supabase
         .from("contacts_raw")
         .select("*", { count: "exact", head: true });
-      activeQuery = applyFilters(activeQuery);
+      activeQuery = applyFilters(activeQuery, finalContactIds);
 
       let statsQuery = supabase
         .from("contacts_raw")
         .select("of_emails, of_meetings, most_recent_contact, delta, intentional_no_outreach");
-      statsQuery = applyFilters(statsQuery);
-
-      // Apply opportunity-based contact filtering if needed
-      if (filteredContactIds !== null) {
-        if (filteredContactIds.length > 0) {
-          totalQuery = totalQuery.in('id', filteredContactIds);
-          activeQuery = activeQuery.in('id', filteredContactIds);
-          statsQuery = statsQuery.in('id', filteredContactIds);
-        } else {
-          // No contacts match opportunity filters, return zero stats
-          setStats({
-            totalContacts: 0,
-            activeContacts: 0,
-            totalEmails: 0,
-            totalMeetings: 0,
-            contactsWithCadenceData: 0,
-            overdueContacts: 0,
-            overdueRate: 0,
-            intentionallySkippedContacts: 0,
-            loading: false,
-          });
-          return;
-        }
-      }
+      statsQuery = applyFilters(statsQuery, finalContactIds);
 
       // Apply active contacts date filter
       const ninetyDaysAgo = new Date();
