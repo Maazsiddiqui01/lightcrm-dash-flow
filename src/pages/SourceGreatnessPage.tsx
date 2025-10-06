@@ -7,6 +7,7 @@ import { Slicers } from '@/components/sourcing/Slicers';
 import { MeetingsChart } from '@/components/sourcing/MeetingsChart';
 import { OppsChart } from '@/components/sourcing/OppsChart';
 import { ExportButtons } from '@/components/sourcing/ExportButtons';
+import { AIInsightsWidget } from '@/components/dashboard/AIInsightsWidget';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { useToast } from '@/hooks/use-toast';
 
@@ -389,6 +390,9 @@ export default function SourceGreatnessPage() {
             loading={loading}
           />
         </div>
+
+        {/* AI Insights Widget */}
+        <AIInsightsWidget />
 
         {/* Primary Charts Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

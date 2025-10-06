@@ -7,6 +7,7 @@ import { useState, useMemo } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { SuggestGroupsModal } from "@/components/contacts/SuggestGroupsModal";
 import { ContactFilterBar } from "@/components/contacts/ContactFilterBar";
+import { AIContactSearch } from "@/components/contacts/AIContactSearch";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 
@@ -101,6 +102,17 @@ export function Contacts() {
             </Button>
           </div>
         </div>
+
+        {/* AI Contact Search */}
+        <AIContactSearch 
+          onSearchResults={(query, aiFilters) => {
+            // Update filters based on AI interpretation
+            updateFilters({
+              ...filters,
+              ...aiFilters
+            });
+          }}
+        />
 
         {/* Filters */}
         <ContactFilterBar 
