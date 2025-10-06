@@ -269,17 +269,17 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
 
       // Build base queries with contact filters - use the same view as the table to avoid RLS mismatches
       let totalQuery = supabase
-        .from("contacts_with_dynamic_interactions")
+        .from("contacts_raw")
         .select("*", { count: "exact", head: true });
       totalQuery = applyFilters(totalQuery, finalContactIds);
 
       let activeQuery = supabase
-        .from("contacts_with_dynamic_interactions")
+        .from("contacts_raw")
         .select("*", { count: "exact", head: true });
       activeQuery = applyFilters(activeQuery, finalContactIds);
 
       let statsQuery = supabase
-        .from("contacts_with_dynamic_interactions")
+        .from("contacts_raw")
         .select("of_emails, of_meetings, most_recent_contact, delta, intentional_no_outreach");
       statsQuery = applyFilters(statsQuery, finalContactIds);
 
