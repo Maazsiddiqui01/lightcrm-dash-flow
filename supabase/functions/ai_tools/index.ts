@@ -114,45 +114,55 @@ Example for analytics query:
 
     const aiResponse = data.choices[0].message.content;
 
-    // Try to parse as JSON first (strip fenced code blocks if present)
-    let parsedResponse;
+    // Try to parse as JSON - strip markdown code fences first
+    let cleanResponse = aiResponse.trim();
+    if (cleanResponse.startsWith('```json')) {
+      cleanResponse = cleanResponse.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+    } else if (cleanResponse.startsWith('```')) {
+      cleanResponse = cleanResponse.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+    }
+
+    let parsedResponse: any;
     try {
-      const sanitized = typeof aiResponse === 'string'
-        ? aiResponse.replace(/```json\n?|```\n?/g, '').trim()
-        : aiResponse;
-      parsedResponse = typeof sanitized === 'string' ? JSON.parse(sanitized) : sanitized;
-      
-      // Normalize the response structure for consistent frontend handling
-      if (output === 'table') {
-        // If AI used different field names, normalize them
-        const normalized: any = {};
-        
-        // Extract text content from various possible field names
-        const textFields = ['result', 'message', 'summary', 'text', 'answer', 'response'];
-        const textContent = textFields.map(f => parsedResponse[f]).filter(Boolean).join('\n\n');
-        if (textContent) {
-          normalized.result = textContent;
-          normalized.text = textContent;
-        }
-        
-        // Extract array data and normalize to 'data' field
-        const arrayFields = ['data', 'rows', 'results', 'contacts', 'opportunities', 'items', 'records'];
-        const arrayField = arrayFields.find(f => Array.isArray(parsedResponse[f]) && parsedResponse[f].length > 0);
-        if (arrayField) {
-          normalized.data = parsedResponse[arrayField];
-          // Also keep 'rows' for backward compatibility
-          normalized.rows = parsedResponse[arrayField];
-        }
-        
-        // Merge normalized fields back into parsed response
-        parsedResponse = { ...parsedResponse, ...normalized };
-      }
+      parsedResponse = JSON.parse(cleanResponse);
     } catch {
-      // If not JSON, wrap in a response object
-      parsedResponse = {
-        text: aiResponse,
-        format: 'text'
-      };
+      parsedResponse = null;
+    }
+
+    // Normalize response structure - ALWAYS extract text and data fields
+    let normalized: any = {};
+    
+    if (parsedResponse) {
+      // Extract text fields (result, summary, text, etc.)
+      const textFields = ['result', 'summary', 'text', 'message', 'answer', 'response'];
+      const textContent = textFields.map(f => parsedResponse[f]).filter(Boolean).join('\n\n');
+      if (textContent) {
+        normalized.result = textContent;
+        normalized.summary = textContent;
+        normalized.text = textContent;
+      }
+      
+      // Extract array data and normalize to both 'data' and 'rows' fields
+      const arrayFields = ['data', 'rows', 'results', 'items', 'contacts', 'opportunities', 'records'];
+      for (const field of arrayFields) {
+        if (Array.isArray(parsedResponse[field]) && parsedResponse[field].length > 0) {
+          normalized.data = parsedResponse[field];
+          normalized.rows = parsedResponse[field];
+          break;
+        }
+      }
+      
+      // If the entire response is an array, use it
+      if (Array.isArray(parsedResponse)) {
+        normalized.data = parsedResponse;
+        normalized.rows = parsedResponse;
+      }
+      
+      // Merge normalized fields with original
+      parsedResponse = { ...parsedResponse, ...normalized };
+    } else {
+      // Not JSON, return as plain text
+      parsedResponse = { text: aiResponse, result: aiResponse };
     }
 
     // Add metadata about the response format

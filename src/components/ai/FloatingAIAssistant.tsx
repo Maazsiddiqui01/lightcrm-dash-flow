@@ -6,12 +6,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface ChatMessage {
   id: string;
   type: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  data?: any;
 }
 
 const QUICK_PROMPTS = [
@@ -19,6 +28,63 @@ const QUICK_PROMPTS = [
   "What are my top opportunities?",
   "Recent interaction summary"
 ];
+
+// AI Response Renderer Component
+function AIResponseRenderer({ message }: { message: ChatMessage }) {
+  const data = message.data;
+  
+  // Extract text content
+  const textContent = data?.result || data?.summary || data?.text || message.content;
+  
+  // Extract table data
+  const tableData = data?.data || data?.rows || null;
+  
+  // Detect if we have array data for table
+  const hasTableData = Array.isArray(tableData) && tableData.length > 0;
+  
+  return (
+    <div className="space-y-3">
+      {/* Render text content */}
+      {textContent && textContent !== "Here are your results" && (
+        <div className="whitespace-pre-wrap break-words text-sm">
+          {textContent.split('\n').map((line: string, i: number) => (
+            <p key={i} className={line.trim() ? "mb-2" : "mb-1"}>
+              {line || '\u00A0'}
+            </p>
+          ))}
+        </div>
+      )}
+      
+      {/* Render table if we have array data */}
+      {hasTableData && (
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {Object.keys(tableData[0]).map((header) => (
+                  <TableHead key={header} className="text-xs font-semibold">
+                    {header.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tableData.map((row: any, idx: number) => (
+                <TableRow key={idx}>
+                  {Object.values(row).map((cell: any, cellIdx: number) => (
+                    <TableCell key={cellIdx} className="text-xs py-2">
+                      {cell !== null && cell !== undefined ? String(cell) : '—'}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function FloatingAIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,17 +114,20 @@ export function FloatingAIAssistant() {
         body: { 
           message: prompt,
           model: 'google/gemini-2.5-flash',
-          output: 'json'
+          output: 'table'
         }
       });
 
       if (error) throw error;
 
+      console.info('[FloatingAI] Received response:', data);
+
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: data.text || "Response received",
-        timestamp: new Date()
+        content: data.result || data.summary || data.text || "Here are your results",
+        timestamp: new Date(),
+        data: data
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -160,19 +229,21 @@ export function FloatingAIAssistant() {
                     msg.type === 'user' ? "flex justify-end" : "flex justify-start"
                   )}
                 >
-                  <div
-                    className={cn(
-                      "rounded-lg px-3 py-2 max-w-[80%] text-sm",
-                      msg.type === 'user'
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    )}
-                  >
-                    <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                    <span className="text-xs opacity-70 block mt-1">
-                      {msg.timestamp.toLocaleTimeString()}
-                    </span>
-                  </div>
+                  {msg.type === 'user' ? (
+                    <div className="rounded-lg px-3 py-2 max-w-[80%] text-sm bg-primary text-primary-foreground">
+                      <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                      <span className="text-xs opacity-70 block mt-1">
+                        {msg.timestamp.toLocaleTimeString()}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg px-3 py-2 max-w-[90%] text-sm bg-muted">
+                      <AIResponseRenderer message={msg} />
+                      <span className="text-xs opacity-70 block mt-1">
+                        {msg.timestamp.toLocaleTimeString()}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))
             )}

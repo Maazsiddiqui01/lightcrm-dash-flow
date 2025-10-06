@@ -32,3 +32,6 @@ verify_jwt = true
 
 [functions.suggest_contact_groups]
 verify_jwt = true
+
+[functions.ai_tools]
+verify_jwt = true
