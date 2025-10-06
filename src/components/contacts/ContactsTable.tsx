@@ -6,12 +6,13 @@ import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
 import { IntentionalNoOutreachModal } from "./IntentionalNoOutreachModal";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { sendContactEmail } from "@/features/contacts/sendEmail";
+import { supabase } from "@/integrations/supabase/client";
 
 // Dynamic column imports
 import { CONTACTS_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -152,6 +153,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   }>({ open: false, contactId: "", contactName: "", isCurrentlySkipped: false });
   const [showBulkGroupModal, setShowBulkGroupModal] = useState(false);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [isRefreshingInteractions, setIsRefreshingInteractions] = useState(false);
   const { toast } = useToast();
   
   // Load sort state on mount
@@ -376,6 +378,35 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     setSortDirection(direction);
   };
 
+  // Refresh all contact interactions from database
+  const handleRefreshInteractions = async () => {
+    setIsRefreshingInteractions(true);
+    try {
+      const { data, error } = await supabase.rpc('refresh_all_contact_interactions');
+      
+      if (error) throw error;
+      
+      const updatedCount = data?.[0]?.contacts_updated || 0;
+      
+      toast({
+        title: "Interactions Refreshed",
+        description: `Successfully updated ${updatedCount} contact${updatedCount !== 1 ? 's' : ''} with latest interaction dates.`,
+      });
+      
+      // Refetch contacts to show updated data
+      await refetch();
+    } catch (error) {
+      console.error('Error refreshing interactions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh interactions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshingInteractions(false);
+    }
+  };
+
   // Simplified export function - exports visible columns of filtered rows
   const handleExport = async () => {
     setIsExporting(true);
@@ -470,7 +501,18 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
             disabled={loading || isRefreshing}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
-            Refresh
+            Refresh View
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshInteractions}
+            disabled={isRefreshingInteractions || loading}
+            title="Recalculate all contact interaction dates from the database"
+          >
+            <Database className={`h-4 w-4 mr-2 ${isRefreshingInteractions ? 'animate-spin' : ''}`} />
+            Sync Interactions
           </Button>
           
           <ColumnsMenu
