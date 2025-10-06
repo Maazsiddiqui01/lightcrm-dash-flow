@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Download, FileJson } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ExportButtonsProps {
@@ -79,35 +79,6 @@ export function ExportButtons({ opportunities, filters }: ExportButtonsProps) {
     });
   };
 
-  const exportToJson = () => {
-    if (opportunities.length === 0) {
-      toast({
-        title: "No data to export",
-        description: "Apply filters to get opportunities data.",
-      });
-      return;
-    }
-
-    const exportData = {
-      timestamp: new Date().toISOString(),
-      filters: filters,
-      count: opportunities.length,
-      opportunities: opportunities
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-      type: 'application/json;charset=utf-8;' 
-    });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `sourcing-greatness-opportunities-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-
-    toast({
-      title: "Export successful",
-      description: `Exported ${opportunities.length} opportunities to JSON.`,
-    });
-  };
 
   return (
     <div className="flex items-center space-x-2">
@@ -119,15 +90,6 @@ export function ExportButtons({ opportunities, filters }: ExportButtonsProps) {
       >
         <Download className="h-4 w-4" />
         <span>CSV</span>
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={exportToJson}
-        className="flex items-center space-x-2"
-      >
-        <FileJson className="h-4 w-4" />
-        <span>JSON</span>
       </Button>
       <span className="text-sm text-muted-foreground">
         {opportunities.length} opportunities
