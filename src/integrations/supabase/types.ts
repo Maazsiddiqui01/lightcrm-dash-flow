@@ -3267,6 +3267,12 @@ export type Database = {
           tier: string
         }[]
       }
+      refresh_all_contact_interactions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          contacts_updated: number
+        }[]
+      }
       refresh_all_contact_leads_assistants: {
         Args: Record<PropertyKey, never>
         Returns: number
