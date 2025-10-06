@@ -7,7 +7,7 @@ import { Slicers } from '@/components/sourcing/Slicers';
 import { MeetingsChart } from '@/components/sourcing/MeetingsChart';
 import { OppsChart } from '@/components/sourcing/OppsChart';
 import { ExportButtons } from '@/components/sourcing/ExportButtons';
-import { AIInsightsWidget } from '@/components/dashboard/AIInsightsWidget';
+import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
 import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { useToast } from '@/hooks/use-toast';
 
