@@ -100,42 +100,43 @@ export function AskAI() {
     }
   };
 
-  const renderAIResponse = (data: any) => {
-    // First check if we have pre-rendered content
-    if (data.rendered) {
-      if (data.format === 'table') {
-        return (
-          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.rendered }} />
-        );
-      } else if (data.format === 'csv') {
-        return (
-          <div className="my-2">
-            <div className="flex items-center justify-between p-4 border rounded-md bg-muted/30">
-              <div>
-                <h4 className="font-medium">CSV Data Ready</h4>
-                <p className="text-sm text-muted-foreground">Click to download the generated CSV file</p>
-              </div>
-              <Button 
-                onClick={() => downloadCSV(data.rendered)}
-                variant="default"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download CSV
-              </Button>
-            </div>
-          </div>
-        );
-      }
-      return (
-        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.rendered }} />
-      );
-    }
+  // Smart JSON parser to extract text and table data from various possible structures
+  const parseAIResponse = (response: any) => {
+    // Find text content from common field names
+    const textFields = ['result', 'message', 'summary', 'text', 'answer', 'response'];
+    const textContent = textFields
+      .map(field => response[field])
+      .filter(Boolean)
+      .join('\n\n');
+    
+    // Find array data from common field names
+    const arrayFields = ['data', 'rows', 'results', 'contacts', 'opportunities', 'items', 'records'];
+    const rowsData = arrayFields
+      .map(field => response[field])
+      .find(arr => Array.isArray(arr) && arr.length > 0);
+    
+    return { text: textContent, rows: rowsData };
+  };
 
-    // Check if we have structured rows data
-    if (Array.isArray(data.rows)) {
-      const headers = data.rows.length > 0 ? Object.keys(data.rows[0]) : [];
+  const renderAIResponse = (data: any) => {
+    // Smart parse the AI response to extract text and table data
+    const { text, rows } = parseAIResponse(data);
+
+    // If we have table data, render it as a table
+    if (rows && Array.isArray(rows) && rows.length > 0) {
+      const headers = Object.keys(rows[0]);
       return (
-        <div className="my-2">
+        <div className="my-2 space-y-3">
+          {/* Show text content if available */}
+          {text && (
+            <div className="prose prose-sm max-w-none">
+              {text.split('\n\n').map((paragraph, idx) => (
+                <p key={idx} className="text-foreground mb-2">{paragraph}</p>
+              ))}
+            </div>
+          )}
+
+          {/* Render table */}
           <div className="rounded-md border overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
@@ -149,7 +150,7 @@ export function AskAI() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.rows.slice(0, 50).map((row: any, index: number) => (
+                  {rows.slice(0, 50).map((row: any, index: number) => (
                     <TableRow key={index}>
                       {headers.map((header) => (
                         <TableCell key={header} className="max-w-[200px]">
@@ -164,29 +165,45 @@ export function AskAI() {
               </Table>
             </div>
           </div>
-          <div className="flex items-center justify-between mt-2">
+          
+          <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Showing {Math.min(50, data.rows.length)} of {data.rows.length} rows
+              Showing {Math.min(50, rows.length)} of {rows.length} rows
             </p>
-            {data.rows.length > 0 && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  const csvContent = convertToCSV(data.rows);
-                  downloadCSV(csvContent);
-                }}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
-              </Button>
-            )}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                const csvContent = convertToCSV(rows);
+                downloadCSV(csvContent);
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
           </div>
         </div>
       );
     }
 
-    // Check if we have CSV data directly
+    // If we have text but no table, display as readable paragraphs
+    if (text) {
+      return (
+        <div className="prose prose-sm max-w-none">
+          {text.split('\n\n').map((paragraph, idx) => (
+            <p key={idx} className="text-foreground mb-2">{paragraph}</p>
+          ))}
+        </div>
+      );
+    }
+
+    // Fallback: if data has format hints, handle them
+    if (data.rendered) {
+      return (
+        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.rendered }} />
+      );
+    }
+
     if (data.csv) {
       return (
         <div className="my-2">
@@ -207,31 +224,15 @@ export function AskAI() {
       );
     }
 
-    // Try to parse text as JSON
-    if (data.text) {
-      const sanitizedText = data.text.replace(/```json\n?|```\n?/g, '').trim();
-      
-      try {
-        const parsed = JSON.parse(sanitizedText);
-        
-        // If parsed JSON has rows array, render as table
-        if (Array.isArray(parsed.rows) && parsed.rows.length > 0) {
-          return renderAIResponse({ rows: parsed.rows });
-        }
-        
-        // Otherwise render as JSON viewer
-        return <JSONViewer data={parsed} />;
-      } catch {
-        // If not valid JSON, render as wrapped text
-        return (
-          <div className="max-w-[70ch]">
-            <p className="text-sm whitespace-pre-wrap break-words">{data.text}</p>
-          </div>
-        );
-      }
+    // Last resort: show as plain text or JSON viewer
+    if (typeof data === 'string') {
+      return (
+        <div className="max-w-[70ch]">
+          <p className="text-sm whitespace-pre-wrap break-words">{data}</p>
+        </div>
+      );
     }
 
-    // Fallback to JSON viewer
     return <JSONViewer data={data} />;
   };
 
