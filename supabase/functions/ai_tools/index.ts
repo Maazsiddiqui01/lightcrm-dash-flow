@@ -114,10 +114,13 @@ Example for analytics query:
 
     const aiResponse = data.choices[0].message.content;
 
-    // Try to parse as JSON first
+    // Try to parse as JSON first (strip fenced code blocks if present)
     let parsedResponse;
     try {
-      parsedResponse = JSON.parse(aiResponse);
+      const sanitized = typeof aiResponse === 'string'
+        ? aiResponse.replace(/```json\n?|```\n?/g, '').trim()
+        : aiResponse;
+      parsedResponse = typeof sanitized === 'string' ? JSON.parse(sanitized) : sanitized;
       
       // Normalize the response structure for consistent frontend handling
       if (output === 'table') {

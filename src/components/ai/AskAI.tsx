@@ -120,7 +120,25 @@ export function AskAI() {
 
   const renderAIResponse = (data: any) => {
     // Smart parse the AI response to extract text and table data
-    const { text, rows } = parseAIResponse(data);
+    let { text, rows } = parseAIResponse(data);
+
+    // If no rows found, try to parse JSON from a text payload (including ```json fenced blocks)
+    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+      const extractAndParse = (raw?: string) => {
+        if (!raw || typeof raw !== 'string') return null;
+        const sanitized = raw.replace(/```json\n?|```\n?/g, '').trim();
+        try { return JSON.parse(sanitized); } catch { return null; }
+      };
+
+      const parsedFromText = extractAndParse(typeof data === 'string' ? data : data?.text);
+      if (parsedFromText) {
+        const parsed = parseAIResponse(parsedFromText);
+        if (parsed.rows && Array.isArray(parsed.rows) && parsed.rows.length > 0) {
+          rows = parsed.rows;
+        }
+        if (!text && parsed.text) text = parsed.text;
+      }
+    }
 
     // If we have table data, render it as a table
     if (rows && Array.isArray(rows) && rows.length > 0) {
@@ -198,13 +216,13 @@ export function AskAI() {
     }
 
     // Fallback: if data has format hints, handle them
-    if (data.rendered) {
+    if (data?.rendered) {
       return (
         <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.rendered }} />
       );
     }
 
-    if (data.csv) {
+    if (data?.csv) {
       return (
         <div className="my-2">
           <div className="flex items-center justify-between p-4 border rounded-md bg-muted/30">
@@ -224,7 +242,22 @@ export function AskAI() {
       );
     }
 
-    // Last resort: show as plain text or JSON viewer
+    // Last resort: render key-value pairs as readable text (never raw JSON viewer)
+    if (typeof data === 'object' && data) {
+      const entries = Object.entries(data)
+        .filter(([_, v]) => ['string','number','boolean'].includes(typeof v))
+        .slice(0, 20);
+      if (entries.length) {
+        return (
+          <div className="prose prose-sm max-w-none">
+            {entries.map(([k, v]) => (
+              <p key={k} className="text-foreground mb-1"><strong>{k}:</strong> {String(v)}</p>
+            ))}
+          </div>
+        );
+      }
+    }
+
     if (typeof data === 'string') {
       return (
         <div className="max-w-[70ch]">
@@ -233,7 +266,11 @@ export function AskAI() {
       );
     }
 
-    return <JSONViewer data={data} />;
+    return (
+      <div className="prose prose-sm max-w-none">
+        <p className="text-muted-foreground">AI returned a response, but no structured data to display.</p>
+      </div>
+    );
   };
 
   const JSONViewer = ({ data }: { data: any }) => {
