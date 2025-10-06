@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Bot, X, Minimize2, Maximize2, Send, Loader2, Sparkles } from "lucide-react";
+import { Bot, X, Minimize2, Maximize2, Send, Loader2, Sparkles, Maximize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -57,12 +57,12 @@ function AIResponseRenderer({ message }: { message: ChatMessage }) {
       
       {/* Render table if we have array data */}
       {hasTableData && (
-        <div className="overflow-x-auto rounded-md border">
+        <div className="overflow-x-auto rounded-md border bg-background">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-muted hover:bg-muted">
                 {Object.keys(tableData[0]).map((header) => (
-                  <TableHead key={header} className="text-xs font-semibold">
+                  <TableHead key={header} className="text-xs font-semibold text-foreground">
                     {header.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </TableHead>
                 ))}
@@ -89,6 +89,7 @@ function AIResponseRenderer({ message }: { message: ChatMessage }) {
 export function FloatingAIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -166,7 +167,9 @@ export function FloatingAIAssistant() {
     <div
       className={cn(
         "fixed bottom-6 right-6 bg-background border rounded-lg shadow-2xl z-50 flex flex-col transition-all",
-        isMinimized ? "w-80 h-14" : "w-96 h-[600px]"
+        isMinimized && "w-80 h-14",
+        !isMinimized && !isExpanded && "w-96 h-[600px]",
+        !isMinimized && isExpanded && "w-[calc(100vw-3rem)] h-[calc(100vh-3rem)] max-w-7xl"
       )}
     >
       {/* Header */}
@@ -176,6 +179,17 @@ export function FloatingAIAssistant() {
           <span className="font-semibold text-sm">AI Assistant</span>
         </div>
         <div className="flex items-center gap-1">
+          {!isMinimized && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setIsExpanded(!isExpanded)}
+              title={isExpanded ? "Restore size" : "Maximize"}
+            >
+              <Maximize className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
