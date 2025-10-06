@@ -9,6 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { useDistinctOrganizations } from '@/hooks/useDistinctOrganizations';
 
 interface InteractionFilters {
   source?: string[];
@@ -43,11 +44,8 @@ export function InteractionFilterBar({
     { value: 'Meeting', label: 'Meeting' }
   ];
 
-  // Static organization options (you can extend this with dynamic data)
-  const organizationOptions = [
-    { value: 'Internal', label: 'Internal' },
-    { value: 'External', label: 'External' }
-  ];
+  // Dynamic organization options from database
+  const { data: organizationOptions = [] } = useDistinctOrganizations();
 
   const handleFilterChange = (key: keyof InteractionFilters, value: any) => {
     onFiltersChange({
