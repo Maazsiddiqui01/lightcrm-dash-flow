@@ -46,7 +46,6 @@ export function AskAI() {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState("google/gemini-2.5-flash");
-  const [selectedOutput, setSelectedOutput] = useState("json");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
@@ -73,7 +72,7 @@ export function AskAI() {
       const body = { 
         message: prompt, 
         model: aiModel, 
-        output: selectedOutput || "json" 
+        output: "table" // Always use table format
       };
       
       const { data, error } = await supabase.functions.invoke("ai_tools", { body });
@@ -601,16 +600,9 @@ export function AskAI() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Output Format</label>
-                <Select value={selectedOutput} onValueChange={setSelectedOutput}>
-                  <SelectTrigger className="focus-ring">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="json">JSON</SelectItem>
-                    <SelectItem value="table">Table</SelectItem>
-                    <SelectItem value="csv">CSV</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="text-sm text-muted-foreground bg-muted/30 rounded-md p-3 border border-border">
+                  Results will always be displayed as interactive tables
+                </div>
               </div>
 
               <Separator />

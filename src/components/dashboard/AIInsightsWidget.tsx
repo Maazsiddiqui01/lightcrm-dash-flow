@@ -5,6 +5,7 @@ import { Sparkles, RefreshCw, TrendingUp, Users, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
 interface AIInsight {
   title: string;
@@ -17,6 +18,7 @@ export function AIInsightsWidget() {
   const [insights, setInsights] = useState<AIInsight[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const generateInsights = async () => {
     setIsLoading(true);
@@ -122,13 +124,34 @@ Focus on: engagement trends, follow-up opportunities, pipeline health, and relat
     }
   };
 
+  const handleInsightClick = (type: string) => {
+    switch (type) {
+      case 'opportunity':
+        navigate('/opportunities');
+        break;
+      case 'contact':
+        navigate('/contacts');
+        break;
+      case 'activity':
+        navigate('/interactions');
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          AI Insights
-        </CardTitle>
+        <div className="space-y-1">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            AI Insights
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            AI-generated recommendations based on your CRM data
+          </p>
+        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -149,14 +172,23 @@ Focus on: engagement trends, follow-up opportunities, pipeline health, and relat
           insights.map((insight, index) => (
             <div
               key={index}
-              className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+              onClick={() => handleInsightClick(insight.type)}
+              className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleInsightClick(insight.type);
+                }
+              }}
             >
               <div className="flex items-start gap-3">
                 <div className={`mt-0.5 ${getIconColor(insight.type)}`}>
                   {getIcon(insight.type)}
                 </div>
                 <div className="flex-1 space-y-1">
-                  <h4 className="font-medium text-sm text-foreground">
+                  <h4 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">
                     {insight.title}
                   </h4>
                   <p className="text-sm text-muted-foreground">
