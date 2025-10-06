@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export interface DraftPayload {
   contact: any;
@@ -23,7 +24,7 @@ export function useDraftGenerator() {
 
   return useMutation({
     mutationFn: async (payload: DraftPayload): Promise<DraftResult> => {
-      console.log('Making request to N8N webhook:', N8N_WEBHOOK_URL, payload);
+      logger.log('Making request to N8N webhook:', N8N_WEBHOOK_URL, payload);
       
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
@@ -33,16 +34,16 @@ export function useDraftGenerator() {
         body: JSON.stringify(payload),
       });
 
-      console.log('N8N webhook response status:', response.status);
+      logger.log('N8N webhook response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('N8N webhook error response:', errorText);
+        logger.error('N8N webhook error response:', errorText);
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const raw = await response.json();
-      console.log('N8N Webhook raw response data:', raw);
+      logger.log('N8N Webhook raw response data:', raw);
 
       // Normalize various possible n8n shapes into a DraftResult
       const coerceToDraft = (obj: any): DraftResult | null => {
@@ -65,7 +66,7 @@ export function useDraftGenerator() {
         const first = raw[0];
         const fromArray = coerceToDraft(first.output ?? first);
         if (fromArray) {
-          console.log('Parsed N8N array response -> DraftResult:', fromArray);
+          logger.log('Parsed N8N array response -> DraftResult:', fromArray);
           return fromArray;
         }
         // If output is a stringified JSON or HTML
@@ -76,7 +77,7 @@ export function useDraftGenerator() {
             const asDraft = coerceToDraft(parsed);
             if (asDraft) return asDraft;
           } catch (e) {
-            console.warn('Array output is string but not JSON, attempting HTML/text parse');
+            logger.warn('Array output is string but not JSON, attempting HTML/text parse');
             // fall through to text/HTML parsing below
             const text = output as string;
             const tempDiv = document.createElement('div');
@@ -122,11 +123,11 @@ export function useDraftGenerator() {
         }
       }
 
-      console.warn('N8N response did not match known formats, coercing to string');
+      logger.warn('N8N response did not match known formats, coercing to string');
       return { subject: 'Draft', body: typeof raw === 'string' ? raw : JSON.stringify(raw, null, 2), cc: [], send: true } as DraftResult;
     },
     onSuccess: (data) => {
-      console.log('Draft generation successful:', data);
+      logger.log('Draft generation successful:', data);
       toast({
         title: "Draft Generated",
         description: "Email draft has been generated successfully",
@@ -134,7 +135,7 @@ export function useDraftGenerator() {
       });
     },
     onError: (error: any) => {
-      console.error('Draft generation error:', error);
+      logger.error('Draft generation error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to generate draft",

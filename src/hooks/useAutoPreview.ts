@@ -7,6 +7,7 @@ import { useGlobalPhrases } from './usePhraseLibrary';
 import { useGlobalInquiries } from './useInquiryLibrary';
 import { useSubjectLibrary, pickSubject } from './useSubjectLibrary';
 import { useMasterTemplates } from './useMasterTemplates';
+import { logger } from '@/lib/logger';
 
 interface PreviewData {
   subject: string;
@@ -42,7 +43,7 @@ export function useAutoPreview(
     let cancelled = false;
 
     const generatePreview = async () => {
-      console.log('🔍 Preview generation starting:', { 
+      logger.log('🔍 Preview generation starting:', { 
         hasContactData: !!contactData, 
         hasMasterTemplate: !!masterTemplate,
         contactEmail: contactData?.email,
@@ -51,14 +52,14 @@ export function useAutoPreview(
       });
 
       if (!contactData || !masterTemplate) {
-        console.log('❌ Missing contactData or masterTemplate');
+        logger.log('❌ Missing contactData or masterTemplate');
         setPreviewData(null);
         return;
       }
 
       // Check if we have the minimum required data
       if (!contactData.email || !contactData.first_name) {
-        console.log('❌ Missing contact email or first_name');
+        logger.log('❌ Missing contact email or first_name');
         setPreviewData(null);
         return;
       }
@@ -69,12 +70,12 @@ export function useAutoPreview(
         // Get master template defaults
         const masterDefaults = masterTemplates?.find(mt => mt.master_key === masterTemplate.master_key);
         if (!masterDefaults) {
-          console.log('❌ Master defaults not found');
+          logger.log('❌ Master defaults not found');
           setIsGenerating(false);
           return;
         }
 
-        console.log('✅ Building module configuration...');
+        logger.log('✅ Building module configuration...');
         
         // Calculate days since most recent contact
         const daysSinceContact = contactData.most_recent_contact 
@@ -100,7 +101,7 @@ export function useAutoPreview(
           subjects: subjectLibrary,
         });
 
-        console.log('✅ Selected subject:', selectedSubject);
+        logger.log('✅ Selected subject:', selectedSubject);
 
         // Build body preview using selected phrases
         const bodyParts: string[] = [];
@@ -173,13 +174,13 @@ export function useAutoPreview(
           bodyPreview: bodyParts.join('\n'),
         };
 
-        console.log('✅ Preview generated:', preview);
+        logger.log('✅ Preview generated:', preview);
 
         if (!cancelled) {
           setPreviewData(preview);
         }
       } catch (error) {
-        console.error('❌ Preview generation error:', error);
+        logger.error('❌ Preview generation error:', error);
       } finally {
         if (!cancelled) {
           setIsGenerating(false);

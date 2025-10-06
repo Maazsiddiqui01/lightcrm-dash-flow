@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 import type { ContactEmailComposer, FocusAreaDescription, Opportunity, Article } from '@/types/emailComposer';
 
 export function useSearchContacts(term: string) {
@@ -20,7 +21,7 @@ export function useSearchContacts(term: string) {
         .limit(50);
 
       if (error) {
-        console.error('Search contacts error:', error);
+        logger.error('Search contacts error:', error);
         toast({
           title: "Search Error",
           description: "Failed to search contacts",
@@ -57,7 +58,7 @@ export function useComposerRow(email: string | null) {
         .maybeSingle();
 
       if (error) {
-        console.error('Get composer row error:', error);
+        logger.error('Get composer row error:', error);
         toast({
           title: "Load Error",
           description: "Failed to load contact details",

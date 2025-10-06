@@ -16,6 +16,7 @@ import { useContactEnriched, EnrichedContact } from "@/hooks/useContactEnriched"
 import { useEmailTemplatesQuery } from "@/hooks/useEmailTemplates";
 import { useDraftGenerator, DraftResult } from "@/hooks/useDraftGenerator";
 import { useRouterLLM, RouterLLMInput, RouterLLMResult } from "@/hooks/useRouterLLM";
+import { logger } from "@/lib/logger";
 
 export function DraftSection() {
   const [selectedContact, setSelectedContact] = useState<ContactSearchResult | null>(null);
@@ -77,7 +78,7 @@ export function DraftSection() {
       const expectedTemplateName = caseTemplateMap[result.case_id];
       return templates.find(t => t.name === expectedTemplateName) || templates[0];
     } catch (error) {
-      console.error('RouterLLM failed, using fallback:', error);
+      logger.error('RouterLLM failed, using fallback:', error);
       setRouterResult(null); // Clear previous router result when failing
       // Fallback to simple logic
       if (contact.has_opps && contact.focusAreas.length >= 3) {
@@ -130,14 +131,14 @@ export function DraftSection() {
       selectedArticle: selectedArticle, // Add selected article to payload
     };
 
-    console.log('Sending draft generation request to N8N webhook:', payload);
+    logger.log('Sending draft generation request to N8N webhook:', payload);
 
     try {
       const result = await draftMutation.mutateAsync(payload);
-      console.log('Draft generation result received:', result);
+      logger.log('Draft generation result received:', result);
       setDraftResult(result);
     } catch (error) {
-      console.error('Failed to generate draft:', error);
+      logger.error('Failed to generate draft:', error);
       // Set error result to display in UI
       setDraftResult({
         subject: 'Error',

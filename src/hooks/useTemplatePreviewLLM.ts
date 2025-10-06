@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { FocusAreaArticle } from './useArticlesByFocusAreas';
+import { logger } from '@/lib/logger';
 
 export interface TemplatePreviewInput {
   firstName: string;
@@ -31,14 +32,14 @@ export function useTemplatePreviewLLM() {
       });
 
       if (error) {
-        console.error('TemplatePreviewLLM error:', error);
+        logger.error('TemplatePreviewLLM error:', error);
         throw error;
       }
 
       return data as string;
     },
     onError: (error: any) => {
-      console.error('TemplatePreviewLLM mutation error:', error);
+      logger.error('TemplatePreviewLLM mutation error:', error);
       toast({
         title: "Preview Error",
         description: error.message || "Failed to generate template preview",

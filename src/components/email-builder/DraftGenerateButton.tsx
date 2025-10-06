@@ -19,6 +19,7 @@ import { useLogPhraseUsage, useLogInquiryUsage } from "@/hooks/useRotationTracki
 import { useMasterTemplates } from "@/hooks/useMasterTemplates";
 import { logInquiryUse } from "@/hooks/useInquiryLibrary";
 import { DebugResolvedLibraries, type DebugData } from "./DebugResolvedLibraries";
+import { logger } from "@/lib/logger";
 
 // Response type from n8n Email-Builder webhook
 export interface DraftBuilderResult {
@@ -76,7 +77,7 @@ export function DraftGenerateButton({
 
   const handleGenerateDraft = async () => {
     if (!contactData || !canGenerate || !masterTemplate) {
-      console.error('❌ Cannot generate - missing required data:', { 
+      logger.error('❌ Cannot generate - missing required data:', { 
         hasContactData: !!contactData,
         canGenerate,
         hasMasterTemplate: !!masterTemplate 
@@ -84,8 +85,8 @@ export function DraftGenerateButton({
       return;
     }
 
-    console.log('🚀 Starting draft generation for:', contactData.email);
-    console.log('📊 Contact data structure:', {
+    logger.log('🚀 Starting draft generation for:', contactData.email);
+    logger.log('📊 Contact data structure:', {
       contact_id: contactData.contact_id,
       email: contactData.email,
       first_name: contactData.first_name,
@@ -105,7 +106,7 @@ export function DraftGenerateButton({
         throw new Error('Master template defaults not found for: ' + masterTemplate.master_key);
       }
 
-      console.log('✅ Master template defaults found:', masterDefaults.master_key);
+      logger.log('✅ Master template defaults found:', masterDefaults.master_key);
 
       // Calculate days since most recent contact
       const daysSinceContact = contactData.most_recent_contact 
@@ -113,7 +114,7 @@ export function DraftGenerateButton({
         : 0;
 
       // Build module configuration with tri-state logic and rotation
-      console.log('🔧 Building module configuration...');
+      logger.log('🔧 Building module configuration...');
       const moduleConfig = await buildModuleConfiguration({
         contact: contactData,
         masterTemplate: masterDefaults,
@@ -123,7 +124,7 @@ export function DraftGenerateButton({
         daysSinceContact,
       });
 
-      console.log('✅ Module config built:', {
+      logger.log('✅ Module config built:', {
         modules: Object.keys(moduleConfig.modules).filter(k => moduleConfig.modules[k as keyof typeof moduleConfig.modules]),
         hasInquiry: !!moduleConfig.inquiry,
         hasSignature: !!moduleConfig.signature,
@@ -131,7 +132,7 @@ export function DraftGenerateButton({
 
       // Check quality control
       if (!moduleConfig.qualityCheck.pass) {
-        console.warn('⚠️ Quality check failed:', moduleConfig.qualityCheck.reason);
+        logger.warn('⚠️ Quality check failed:', moduleConfig.qualityCheck.reason);
         toast({
           title: "Quality Check Failed",
           description: moduleConfig.qualityCheck.reason,
@@ -141,10 +142,10 @@ export function DraftGenerateButton({
         return;
       }
 
-      console.log('✅ Quality check passed');
+      logger.log('✅ Quality check passed');
 
       // Select subject from library with token replacement
-      console.log('📧 Selecting subject from library...');
+      logger.log('📧 Selecting subject from library...');
       const selectedSubject = await pickSubject({
         tone: subjectStyle,
         org: contactData.organization || '',
@@ -153,7 +154,7 @@ export function DraftGenerateButton({
         subjects: subjectLibrary,
       });
 
-      console.log('✅ Subject selected:', selectedSubject);
+      logger.log('✅ Subject selected:', selectedSubject);
 
       // Log phrase and inquiry usage for rotation tracking (non-blocking)
       if (moduleConfig.inquiry) {
@@ -163,7 +164,7 @@ export function DraftGenerateButton({
             inquiryId: moduleConfig.inquiry.id,
           });
         } catch (e) {
-          console.warn('Non-blocking: failed to log inquiry usage', e);
+          logger.warn('Non-blocking: failed to log inquiry usage', e);
         }
       }
 
@@ -176,7 +177,7 @@ export function DraftGenerateButton({
               category,
             });
           } catch (e) {
-            console.warn('Non-blocking: failed to log phrase usage', category, e);
+            logger.warn('Non-blocking: failed to log phrase usage', category, e);
           }
         }
       }
@@ -226,8 +227,8 @@ export function DraftGenerateButton({
         },
       };
 
-      console.log('🌐 Sending payload to n8n webhook...');
-      console.log('📦 Enhanced payload:', JSON.stringify(enhancedPayload, null, 2));
+      logger.log('🌐 Sending payload to n8n webhook...');
+      logger.log('📦 Enhanced payload:', JSON.stringify(enhancedPayload, null, 2));
 
       // POST to n8n webhook
       const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Email-Builder', {
@@ -236,16 +237,16 @@ export function DraftGenerateButton({
         body: JSON.stringify(enhancedPayload),
       });
 
-      console.log('📡 Response status:', response.status, response.statusText);
+      logger.log('📡 Response status:', response.status, response.statusText);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ n8n webhook error:', errorText);
+        logger.error('❌ n8n webhook error:', errorText);
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('✅ Received draft from n8n:', result);
+      logger.log('✅ Received draft from n8n:', result);
 
       setDraftResult(result as DraftBuilderResult);
 
@@ -300,8 +301,8 @@ export function DraftGenerateButton({
           : result.skip_reason || "Draft generated but marked as do not send",
       });
     } catch (error) {
-      console.error('❌ Draft generation error:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      logger.error('❌ Draft generation error:', error);
+      logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       toast({
         title: "Generation Failed",
         description: error instanceof Error ? error.message : "Failed to generate draft",
@@ -338,7 +339,7 @@ export function DraftGenerateButton({
         description: "Email draft has been copied to your clipboard",
       });
     } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
+      logger.error('Failed to copy to clipboard:', err);
       toast({
         title: "Copy Failed",
         description: "Failed to copy to clipboard",

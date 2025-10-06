@@ -29,13 +29,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { PageTransition } from "@/components/shared/PageTransition";
 import "./App.css";
+import { logger } from "@/lib/logger";
 
 function App() {
-  console.log('App component rendering...');
-  console.log('React version check:', React?.version);
+  logger.log('App component rendering...');
+  logger.log('React version check:', React?.version);
 
   try {
-    console.log('About to render QueryProvider...');
+    logger.log('About to render QueryProvider...');
     return (
       <QueryProvider>
         <AuthProvider>
@@ -109,7 +110,7 @@ function App() {
     </QueryProvider>
   );
   } catch (error) {
-    console.error('App render error:', error);
+    logger.error('App render error:', error);
     return <div>Error loading app: {String(error)}</div>;
   }
 }

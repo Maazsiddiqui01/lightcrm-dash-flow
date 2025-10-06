@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export interface RouterLLMInput {
   gb_present: boolean;
@@ -37,14 +38,14 @@ export function useRouterLLM() {
       });
 
       if (error) {
-        console.error('RouterLLM error:', error);
+        logger.error('RouterLLM error:', error);
         throw error;
       }
 
       return data as RouterLLMResult;
     },
     onError: (error: any) => {
-      console.error('RouterLLM mutation error:', error);
+      logger.error('RouterLLM mutation error:', error);
       toast({
         title: "Routing Error",
         description: error.message || "Failed to determine template routing",

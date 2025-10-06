@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export interface ResolvedTemplate {
   tone: 'casual' | 'neutral' | 'formal';
@@ -46,14 +47,14 @@ export function useResolvedTemplate() {
       });
 
       if (error) {
-        console.error('ResolveTemplate error:', error);
+        logger.error('ResolveTemplate error:', error);
         throw error;
       }
 
       return data as ResolvedTemplate;
     },
     onError: (error: any) => {
-      console.error('ResolveTemplate mutation error:', error);
+      logger.error('ResolveTemplate mutation error:', error);
       toast({
         title: "Template Resolution Failed",
         description: error.message || "Failed to resolve template configuration",

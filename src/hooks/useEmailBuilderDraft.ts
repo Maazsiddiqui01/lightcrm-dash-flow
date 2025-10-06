@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export interface EmailBuilderPayload {
   contact: {
@@ -48,7 +49,7 @@ export function useEmailBuilderDraft() {
 
   return useMutation({
     mutationFn: async (payload: EmailBuilderPayload): Promise<EmailBuilderResult> => {
-      console.log('Sending payload to n8n:', payload);
+      logger.log('Sending payload to n8n:', payload);
       
       const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Email-Builder', {
         method: 'POST',
@@ -73,7 +74,7 @@ export function useEmailBuilderDraft() {
       });
     },
     onError: (error: any) => {
-      console.error('Draft generation error:', error);
+      logger.error('Draft generation error:', error);
       toast({
         title: "Draft Generation Failed",
         description: error.message || "Failed to generate email draft",
