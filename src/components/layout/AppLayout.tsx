@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { TopNav } from "./TopNav";
-import { FloatingAIAssistant } from "@/components/ai/FloatingAIAssistant";
+// import { FloatingAIAssistant } from "@/components/ai/FloatingAIAssistant";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -14,7 +14,7 @@ export function AppLayout({ children, onFiltersClick }: AppLayoutProps) {
       <main className="flex-1 min-w-0 min-h-0 w-full max-w-none">
         {children}
       </main>
-      <FloatingAIAssistant />
+      {/* <FloatingAIAssistant /> */}
     </div>
   );
 }
