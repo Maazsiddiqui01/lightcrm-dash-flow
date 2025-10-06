@@ -132,6 +132,7 @@ Example for analytics query:
         const textContent = textFields.map(f => parsedResponse[f]).filter(Boolean).join('\n\n');
         if (textContent) {
           normalized.result = textContent;
+          normalized.text = textContent;
         }
         
         // Extract array data and normalize to 'data' field

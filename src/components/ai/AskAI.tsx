@@ -82,11 +82,12 @@ export function AskAI() {
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: data.text || "Response received",
+        content: data.result || data.summary || data.text || "Here are your results",
         timestamp: new Date(),
-        data: data
+        data: data || {}
       };
 
+      console.info('[AskAI] Received AI response:', data);
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error calling AI:", error);
