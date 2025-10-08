@@ -47,6 +47,7 @@ export interface PhraseRotationLog {
 }
 
 export interface MasterTemplateDefaults {
+  id: string;
   master_key: 'relationship_maintenance' | 'business_development' | 'hybrid_neutral';
   days_min: number;
   days_max: number | null;

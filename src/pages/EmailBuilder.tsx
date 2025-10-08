@@ -242,12 +242,12 @@ export function EmailBuilder() {
     if (!selectedContact || !masterTemplate) return;
     
     const fullMasterTemplate = masterTemplates?.find(
-      t => (t as any).master_key === masterTemplate.master_key
+      t => t.master_key === masterTemplate.master_key
     );
 
     if (pendingSaveScope === 'contact') {
       // Validate template ID before saving
-      const templateId = (fullMasterTemplate as any)?.id || null;
+      const templateId = fullMasterTemplate?.id || null;
       const templateValidation = validateTemplateId(templateId);
       
       if (!templateValidation.isValid) {
@@ -276,7 +276,7 @@ export function EmailBuilder() {
         currentRevision: (contactSettings as any)?.revision || 0,
       });
     } else {
-      if (!(fullMasterTemplate as any)?.id) {
+      if (!fullMasterTemplate?.id) {
         toast({
           title: "Save Failed",
           description: "Master template not found",
@@ -286,7 +286,7 @@ export function EmailBuilder() {
       }
       
       saveGlobal({
-        templateId: (fullMasterTemplate as any).id,
+        templateId: fullMasterTemplate.id,
         templateName: MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key,
         toneOverride,
         lengthOverride,
