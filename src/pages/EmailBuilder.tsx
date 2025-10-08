@@ -48,6 +48,12 @@ import type { ModuleSelection, ModuleSelections } from "@/types/moduleSelections
 import { useToast } from "@/hooks/use-toast";
 import type { TeamMember } from "@/components/email-builder/EditableTeam";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffectiveSettings } from "@/hooks/useEffectiveSettings";
+import { useSaveSettings } from "@/hooks/useSaveSettings";
+import { SplitSaveButton } from "@/components/email-builder/SplitSaveButton";
+import { SourceBadge } from "@/components/email-builder/SourceBadge";
+import { ConfirmSaveDialog, type SaveScope, type AffectedField } from "@/components/email-builder/ConfirmSaveDialog";
+import { MASTER_TEMPLATES } from "@/lib/router";
 
 export function EmailBuilder() {
   // Enable real-time synchronization with Global Libraries
@@ -168,6 +174,87 @@ export function EmailBuilder() {
     isResetting,
   } = useContactSettings(selectedContact?.contact_id || null);
   const [initializedContactId, setInitializedContactId] = useState<string | null>(null);
+  
+  // Dual-scope save functionality
+  const { saveContact, saveGlobal, isSaving: isSavingSettings } = useSaveSettings();
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingSaveScope, setPendingSaveScope] = useState<SaveScope>('contact');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Save handlers
+  const handleSaveContact = () => {
+    setConfirmDialogOpen(true);
+    setPendingSaveScope('contact');
+  };
+
+  const handleSaveGlobal = () => {
+    setConfirmDialogOpen(true);
+    setPendingSaveScope('global');
+  };
+
+  const handleConfirmSave = async () => {
+    if (!selectedContact || !masterTemplate) return;
+    
+    const fullMasterTemplate = masterTemplates?.find(
+      t => (t as any).master_key === masterTemplate.master_key
+    );
+
+    if (pendingSaveScope === 'contact') {
+      saveContact({
+        contactId: selectedContact.contact_id,
+        contactName: selectedContact.full_name || 'this contact',
+        templateId: (fullMasterTemplate as any)?.id || null,
+        moduleStates,
+        deltaType,
+        moduleOrder: moduleOrder as string[],
+        moduleSelections,
+        curatedRecipients: {
+          team: curatedTeam,
+          to: curatedTo,
+          cc: curatedCc,
+        },
+        currentRevision: (contactSettings as any)?.revision || 0,
+      });
+    } else {
+      if (!(fullMasterTemplate as any)?.id) {
+        toast({
+          title: "Save Failed",
+          description: "Master template not found",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      saveGlobal({
+        templateId: (fullMasterTemplate as any).id,
+        templateName: MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key,
+        toneOverride,
+        lengthOverride,
+        moduleStates,
+        moduleOrder: moduleOrder as string[],
+        currentRevision: 0,
+      });
+    }
+    
+    setConfirmDialogOpen(false);
+  };
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleSaveGlobal();
+        } else {
+          handleSaveContact();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedContact, masterTemplate]);
 
   // Initialize team and recipients when contact changes
   useEffect(() => {
@@ -862,38 +949,16 @@ ${draftResult.signature}`;
               defaultContactEmail={selectedContact?.email || ''}
             />
 
-            {/* Settings Controls */}
-            {selectedContact && (
-              <div className="flex items-center gap-2 flex-wrap">
-                {contactSettings && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Save className="h-3 w-3" />
-                    Custom Settings
-                  </Badge>
-                )}
-                <Button
-                  onClick={handleSaveSettings}
-                  disabled={isSaving || !selectedContact}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Save className="h-4 w-4" />
-                  {isSaving ? 'Saving...' : 'Save Settings'}
-                </Button>
-                {contactSettings && (
-                  <Button
-                    onClick={handleResetSettings}
-                    disabled={isResetting}
-                    variant="ghost"
-                    size="sm"
-                    className="gap-2"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    Reset to Defaults
-                  </Button>
-                )}
-              </div>
+            {/* Save Controls with Dual Scope */}
+            {selectedContact && masterTemplate && (
+              <SplitSaveButton
+                onSaveContact={handleSaveContact}
+                onSaveGlobal={handleSaveGlobal}
+                templateName={MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key}
+                contactName={selectedContact.full_name || 'this contact'}
+                isSaving={isSavingSettings}
+                mode="individual"
+              />
             )}
             
             {/* Enhanced Draft Section - replaces old DraftGenerateButton */}
@@ -981,6 +1046,21 @@ ${draftResult.signature}`;
           onRetry={queueManager.retryItem}
           onCancelPending={queueManager.cancelPending}
           isProcessing={queueManager.isProcessing}
+        />
+        
+        {/* Confirm Save Dialog */}
+        <ConfirmSaveDialog
+          open={confirmDialogOpen}
+          onClose={() => setConfirmDialogOpen(false)}
+          scope={pendingSaveScope}
+          contactName={selectedContact?.full_name || 'this contact'}
+          templateName={masterTemplate ? MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key : 'Unknown'}
+          affectedFields={
+            pendingSaveScope === 'contact' 
+              ? ['coreSettings', 'moduleStates', 'moduleOrder', 'moduleSelections', 'team', 'recipients'] as AffectedField[]
+              : ['coreSettings', 'moduleStates'] as AffectedField[]
+          }
+          onConfirm={handleConfirmSave}
         />
       </ResponsiveContainer>
 

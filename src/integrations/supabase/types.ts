@@ -138,7 +138,10 @@ export type Database = {
           module_order: Json | null
           module_selections: Json | null
           module_states: Json
+          revision: number | null
           selected_article_id: string | null
+          template_id: string | null
+          updated_by: string | null
         }
         Insert: {
           contact_id: string
@@ -149,7 +152,10 @@ export type Database = {
           module_order?: Json | null
           module_selections?: Json | null
           module_states?: Json
+          revision?: number | null
           selected_article_id?: string | null
+          template_id?: string | null
+          updated_by?: string | null
         }
         Update: {
           contact_id?: string
@@ -160,7 +166,10 @@ export type Database = {
           module_order?: Json | null
           module_selections?: Json | null
           module_states?: Json
+          revision?: number | null
           selected_article_id?: string | null
+          template_id?: string | null
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -239,6 +248,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "v_contact_top_opps"
             referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_email_builder_settings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -718,39 +734,90 @@ export type Database = {
         }
         Relationships: []
       }
+      email_settings_audit: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          changes_after: Json
+          changes_before: Json | null
+          entity_id: string
+          entity_type: string
+          id: string
+          revision_after: number | null
+          revision_before: number | null
+          scope: string
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          changes_after: Json
+          changes_before?: Json | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          revision_after?: number | null
+          revision_before?: number | null
+          scope: string
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          changes_after?: Json
+          changes_before?: Json | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          revision_after?: number | null
+          revision_before?: number | null
+          scope?: string
+        }
+        Relationships: []
+      }
       email_template_settings: {
         Row: {
           days_range_config: Json | null
           inquiry_config: Json | null
           length_override: string | null
+          module_order: Json | null
           module_states: Json | null
           personalization_config: Json | null
           quality_rules: Json | null
+          revision: number | null
           subject_pool_override: string | null
           template_id: string
           tone_override: string | null
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           days_range_config?: Json | null
           inquiry_config?: Json | null
           length_override?: string | null
+          module_order?: Json | null
           module_states?: Json | null
           personalization_config?: Json | null
           quality_rules?: Json | null
+          revision?: number | null
           subject_pool_override?: string | null
           template_id: string
           tone_override?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           days_range_config?: Json | null
           inquiry_config?: Json | null
           length_override?: string | null
+          module_order?: Json | null
           module_states?: Json | null
           personalization_config?: Json | null
           quality_rules?: Json | null
+          revision?: number | null
           subject_pool_override?: string | null
           template_id?: string
           tone_override?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: [
           {

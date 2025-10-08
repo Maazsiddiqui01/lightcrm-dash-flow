@@ -69,7 +69,16 @@ export function useTemplateSettings(templateId: string | null) {
         return { ...DEFAULT_SETTINGS, template_id: templateId };
       }
 
-      return data as TemplateSettings;
+      return {
+        ...DEFAULT_SETTINGS,
+        ...data,
+        template_id: data.template_id || templateId,
+        personalization_config: data.personalization_config as any || DEFAULT_SETTINGS.personalization_config,
+        inquiry_config: data.inquiry_config as any || DEFAULT_SETTINGS.inquiry_config,
+        quality_rules: data.quality_rules as any || DEFAULT_SETTINGS.quality_rules,
+        days_range_config: data.days_range_config as any || DEFAULT_SETTINGS.days_range_config,
+        module_states: data.module_states as any || DEFAULT_SETTINGS.module_states,
+      } as TemplateSettings;
     },
     enabled: !!templateId,
   });
