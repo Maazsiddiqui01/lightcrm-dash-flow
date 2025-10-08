@@ -167,6 +167,7 @@ export function EmailBuilder() {
     resetSettings,
     isResetting,
   } = useContactSettings(selectedContact?.contact_id || null);
+  const [initializedContactId, setInitializedContactId] = useState<string | null>(null);
 
   // Initialize team and recipients when contact changes
   useEffect(() => {
@@ -258,56 +259,51 @@ export function EmailBuilder() {
   // Load master templates from database
   const { data: masterTemplates } = useMasterTemplates();
   
-  // Auto-load saved settings when contact changes
+  // Auto-load saved settings once per contact to avoid snapping back after drag
   useEffect(() => {
-    if (contactSettings) {
-      setModuleStates(contactSettings.module_states as ModuleStates);
-      setDeltaType(contactSettings.delta_type);
-      if (contactSettings.module_order) {
-        setModuleOrder(contactSettings.module_order as Array<keyof ModuleStates>);
-      }
-      if (contactSettings.module_selections) {
-        setModuleSelections(contactSettings.module_selections as ModuleSelections);
-      } else {
-        setModuleSelections({});
-      }
-      if (contactSettings.selected_article_id) {
-        // Could load article here if needed
-      }
-      // Load curated recipients
-      if (contactSettings.curated_recipients) {
-        setCuratedTeam(contactSettings.curated_recipients.team || []);
-        setCuratedTo(contactSettings.curated_recipients.to || selectedContact?.email || '');
-        setCuratedCc(contactSettings.curated_recipients.cc || []);
-      }
-    } else if (masterTemplate && masterTemplates) {
-      // Load defaults from database-driven master template
-      const defaults = getModuleDefaultsFromMaster(masterTemplate.master_key, masterTemplates);
-      if (defaults) {
-        setModuleStates(defaults);
-      } else {
-        // Fallback to hardcoded defaults
-        const fallback = MODULE_DEFAULTS[masterTemplate.master_key];
-        if (fallback) {
-          setModuleStates(fallback);
+    const currentId = selectedContact?.contact_id || null;
+    if (!currentId) return;
+
+    if (initializedContactId !== currentId) {
+      if (contactSettings) {
+        setModuleStates(contactSettings.module_states as ModuleStates);
+        setDeltaType(contactSettings.delta_type);
+        if (
+          contactSettings.module_order &&
+          Array.isArray(contactSettings.module_order) &&
+          contactSettings.module_order.length > 0
+        ) {
+          setModuleOrder(contactSettings.module_order as Array<keyof ModuleStates>);
         }
+        if (contactSettings.module_selections) {
+          setModuleSelections(contactSettings.module_selections as ModuleSelections);
+        } else {
+          setModuleSelections({});
+        }
+        if (contactSettings.selected_article_id) {
+          // reserved for future
+        }
+        if (contactSettings.curated_recipients) {
+          setCuratedTeam(contactSettings.curated_recipients.team || []);
+          setCuratedTo(contactSettings.curated_recipients.to || selectedContact?.email || '');
+          setCuratedCc(contactSettings.curated_recipients.cc || []);
+        }
+        setInitializedContactId(currentId);
+      } else if (masterTemplate && masterTemplates) {
+        const defaults = getModuleDefaultsFromMaster(masterTemplate.master_key, masterTemplates);
+        if (defaults) {
+          setModuleStates(defaults);
+        } else {
+          const fallback = MODULE_DEFAULTS[masterTemplate.master_key];
+          if (fallback) {
+            setModuleStates(fallback);
+          }
+        }
+        // Do NOT force-reset order here; keep current local order
+        setInitializedContactId(currentId);
       }
-      // Reset to default order when switching contacts
-      setModuleOrder([
-        'initial_greeting',
-        'self_personalization',
-        'top_opportunities',
-        'article_recommendations',
-        'platforms',
-        'addons',
-        'suggested_talking_points',
-        'general_org_update',
-        'attachments',
-        'meeting_request',
-        'ai_backup_personalization',
-      ]);
     }
-  }, [contactSettings, masterTemplate, masterTemplates, selectedContact]);
+  }, [selectedContact?.contact_id, contactSettings, masterTemplate, masterTemplates]);
 
   // Auto-preview hook
   const { previewData, isGenerating: isAutoGenerating } = useAutoPreview(
