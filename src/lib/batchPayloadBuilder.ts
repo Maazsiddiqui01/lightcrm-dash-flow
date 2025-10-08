@@ -5,6 +5,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { buildEnhancedDraftPayload } from './enhancedPayload';
+import { mergeEffectiveConfig } from './previewMerge';
 import type { ContactOverride, BatchPayload, FilterValues } from '@/types/groupEmailBuilder';
 import type { ContactEmailComposer } from '@/types/emailComposer';
 import type { MasterTemplateDefaults, PhraseLibraryItem } from '@/types/phraseLibrary';
@@ -25,8 +26,11 @@ interface SharedSettings {
   curatedTo: string;
   curatedCc: string[];
   selectedArticle?: string | null;
-  moduleOrder?: Array<any>;
-  moduleStates?: Record<string, any>;
+  moduleOrder: Array<any>;
+  moduleStates: Record<string, any>;
+  moduleSelections: Record<string, any>;
+  team: TeamMember[];
+  cc: string[];
 }
 
 export async function buildBatchPayload(
@@ -93,6 +97,13 @@ export async function buildBatchPayload(
         outreach_date: contact.outreach_date,
       };
 
+      // Merge effective config to get contact-specific module order
+      const effectiveConfig = mergeEffectiveConfig(
+        sharedSettings,
+        overrides.get(contact.id),
+        contact
+      );
+
       // Build enhanced payload using existing function
       const payload = await buildEnhancedDraftPayload(
         contactForPayload,
@@ -104,7 +115,7 @@ export async function buildBatchPayload(
         effectiveSettings.selectedArticle,
         effectiveSettings.toneOverride,
         effectiveSettings.subjectPoolOverride,
-        sharedSettings.moduleOrder, // Pass actual module order
+        effectiveConfig.moduleOrder as any, // Use merged module order from effective config
         effectiveSettings.curatedTeam,
         effectiveSettings.curatedTo,
         effectiveSettings.curatedCc,

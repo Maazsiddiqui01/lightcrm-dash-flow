@@ -58,6 +58,9 @@ export function mergeEffectiveConfig(
   // Module Selections
   const effectiveModuleSelections = contactOverride?.moduleSelections || sharedSettings.moduleSelections;
 
+  // Module Order - contact override takes priority
+  const effectiveModuleOrder = (contactOverride?.moduleOrder || sharedSettings.moduleOrder) as any;
+
   // Team
   const effectiveTeam = contactOverride?.team || sharedSettings.team;
 
@@ -81,7 +84,7 @@ export function mergeEffectiveConfig(
     },
     subjectLinePool: effectiveSubjectPool,
     moduleSelections: effectiveModuleSelections,
-    moduleOrder: sharedSettings.moduleOrder,
+    moduleOrder: effectiveModuleOrder, // Use merged module order
     moduleStates: sharedSettings.moduleStates,
     team: effectiveTeam,
     recipients: {

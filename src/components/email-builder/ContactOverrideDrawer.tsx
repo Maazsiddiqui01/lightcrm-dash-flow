@@ -98,7 +98,7 @@ export function ContactOverrideDrawer({
         setTeam(currentOverride.team || sharedSettings.team);
         setSubjectPool(currentOverride.subjectLinePool || sharedSettings.subjectLinePool);
         setModuleSelections(currentOverride.moduleSelections || {});
-        setModuleOrder(sharedSettings.moduleOrder);
+        setModuleOrder((currentOverride.moduleOrder || sharedSettings.moduleOrder) as any); // Load contact-specific order
         setModuleStates(sharedSettings.moduleStates);
       } else {
         // Load from shared settings
@@ -136,6 +136,7 @@ export function ContactOverrideDrawer({
       },
       subjectLinePool: subjectPool,
       moduleSelections,
+      moduleOrder: moduleOrder.length > 0 ? moduleOrder as string[] : undefined, // Save module order
       team,
     };
     onSave(override);
