@@ -6,6 +6,7 @@ import type { ModuleSelections } from './moduleSelections';
 import type { MasterTemplateDefaults } from './phraseLibrary';
 import type { EnhancedDraftPayload } from '@/lib/enhancedPayload';
 import type { TeamMember } from '@/components/email-builder/EditableTeam';
+import type { TriState } from '@/types/phraseLibrary';
 
 export interface GroupModeState {
   selectedContactIds: Set<string>;
@@ -18,6 +19,16 @@ export interface ContactOverride {
   recipients?: {
     to: string;
     cc: string[];
+  };
+  masterTemplate?: {
+    id: string;
+    key: string;
+    name: string;
+  };
+  coreSettings?: {
+    tone?: 'casual' | 'hybrid' | 'formal';
+    length?: 'brief' | 'standard' | 'detailed';
+    daysSince?: number;
   };
   moduleSelections?: ModuleSelections;
   subjectLinePool?: {
@@ -43,9 +54,18 @@ export interface QueueItem {
   };
 }
 
+export interface CohortSelection {
+  cohortSnapshotId: string;
+  includeAll: boolean;
+  excludedIds: string[];
+  explicitIds: string[];
+}
+
 export interface BatchPayload {
   mode: 'group';
   batchId: string;
+  cohortSnapshotId?: string;
+  selection?: CohortSelection;
   filterParams: Record<string, any>;
   sharedSettings: {
     toneOverride?: string;
@@ -84,4 +104,30 @@ export interface FilterValues {
   deltaMax?: number;
   lgLead?: string[];
   groupContacts?: string[];
+}
+
+export interface EffectiveConfig {
+  masterTemplate: MasterTemplateDefaults;
+  coreSettings: {
+    tone: string;
+    length: string;
+    daysSince: number;
+  };
+  subjectLinePool: {
+    selectedIds: string[];
+    style: 'formal' | 'hybrid' | 'casual';
+  };
+  moduleSelections: ModuleSelections;
+  moduleOrder: Array<keyof ModuleSelections>;
+  moduleStates: Record<string, TriState>;
+  team: TeamMember[];
+  recipients: {
+    to: string;
+    cc: string[];
+  };
+  contactInfo: {
+    organization: string;
+    focusAreas: string[];
+    topOpps: any[];
+  };
 }

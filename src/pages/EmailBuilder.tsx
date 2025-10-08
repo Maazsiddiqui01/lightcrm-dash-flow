@@ -800,6 +800,10 @@ ${draftResult.signature}`;
           contactName={groupContacts.find(c => c.id === activeOverrideContactId)?.full_name || ''}
           contactEmail={groupContacts.find(c => c.id === activeOverrideContactId)?.email_address || ''}
           sharedSettings={{
+            masterTemplate: masterTemplate,
+            toneOverride: toneOverride || undefined,
+            lengthOverride: (lengthOverride === 'medium' ? 'standard' : lengthOverride) || undefined,
+            daysSinceContact,
             team: curatedTeam,
             to: curatedTo,
             cc: curatedCc,
@@ -807,8 +811,14 @@ ${draftResult.signature}`;
               selectedIds: subjectPoolOverride,
               style: (toneOverride || 'hybrid') as 'formal' | 'hybrid' | 'casual',
             },
+            moduleSelections,
+            moduleOrder,
+            moduleStates,
           }}
+          allMasterTemplates={masterTemplates || []}
           allSubjects={allSubjects || []}
+          allPhrases={allPhrases || []}
+          allInquiries={allInquiries || []}
           currentOverride={contactOverrides.get(activeOverrideContactId)}
           onSave={(override) => {
             setContactOverrides(new Map(contactOverrides.set(override.contactId, override)));
