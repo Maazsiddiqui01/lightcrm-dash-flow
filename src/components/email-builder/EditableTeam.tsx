@@ -4,38 +4,28 @@ import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { X, Plus, UserPlus } from "lucide-react";
+import { X, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTeamDirectory } from "@/hooks/useTeamDirectory";
+import type { TeamMember } from "@/hooks/useTeamDirectory";
 
-export interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+export type { TeamMember };
 
 interface EditableTeamProps {
   members: TeamMember[];
   onMembersChange: (members: TeamMember[]) => void;
   onQuickAddToCC?: (member: TeamMember) => void;
+  contactEmail?: string;
 }
 
-export function EditableTeam({ members, onMembersChange, onQuickAddToCC }: EditableTeamProps) {
+export function EditableTeam({ members, onMembersChange, onQuickAddToCC, contactEmail }: EditableTeamProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Mock directory - in production, this would fetch from an API
-  const mockDirectory: TeamMember[] = [
-    { id: "p_101", name: "Peter Nürnberg", email: "nurnberg@lindsaygoldbergllc.com", role: "Lead" },
-    { id: "p_203", name: "John Cavalaris", email: "john.cavalaris@key.com", role: "AE" },
-    { id: "p_309", name: "David Cannon", email: "david.cannon@key.com", role: "Lead" },
-    { id: "p_411", name: "Sarah Mitchell", email: "mitchell@lindsaygoldbergllc.com", role: "Assistant" },
-    { id: "p_557", name: "Tom Mendez", email: "mendez@lindsaygoldbergllc.com", role: "Lead" },
-    { id: "p_992", name: "Samantha Folzenlogen", email: "samantha.folzenlogen@key.com", role: "Assistant" },
-  ];
+  const { data: directory = [], isLoading } = useTeamDirectory(contactEmail);
 
-  const availableMembers = mockDirectory.filter(
+  const availableMembers = directory.filter(
     person => !members.some(m => m.id === person.id)
   );
 
@@ -84,7 +74,7 @@ export function EditableTeam({ members, onMembersChange, onQuickAddToCC }: Edita
         return "default";
       case "Assistant":
         return "secondary";
-      case "AE":
+      case "Colleague":
         return "outline";
       default:
         return "secondary";
@@ -143,7 +133,7 @@ export function EditableTeam({ members, onMembersChange, onQuickAddToCC }: Edita
               onValueChange={setSearchQuery}
             />
             <CommandList>
-              <CommandEmpty>No people found.</CommandEmpty>
+              <CommandEmpty>{isLoading ? 'Loading...' : 'No people found.'}</CommandEmpty>
               <CommandGroup>
                 {availableMembers.map((person) => (
                   <CommandItem

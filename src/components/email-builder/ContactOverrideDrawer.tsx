@@ -330,6 +330,7 @@ export function ContactOverrideDrawer({
             <EditableTeam
               members={team}
               onMembersChange={setTeam}
+              contactEmail={contactEmail}
             />
           </TabsContent>
         </Tabs>
