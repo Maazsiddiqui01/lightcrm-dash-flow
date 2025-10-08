@@ -35,7 +35,7 @@ import type { TriState } from "@/types/phraseLibrary";
 import type { ModuleSelection, ModuleSelections } from "@/types/moduleSelections";
 import { useToast } from "@/hooks/use-toast";
 import type { TeamMember } from "@/components/email-builder/EditableTeam";
-import { buildCc } from "@/lib/buildCc";
+import { supabase } from "@/integrations/supabase/client";
 
 export function EmailBuilder() {
   // Enable real-time synchronization with Global Libraries
@@ -139,15 +139,90 @@ export function EmailBuilder() {
 
   // Initialize team and recipients when contact changes
   useEffect(() => {
-    if (contactData && selectedContact && !isLoadingSettings) {
-      if (!contactSettings?.curated_recipients) {
-        setCuratedTo(selectedContact.email || '');
-        setCuratedCc([]);
-        setCuratedTeam([]);
-        setAutoTeam([]);
+    const initializeTeamAndRecipients = async () => {
+      if (!contactData || !selectedContact) return;
+      
+      // If we have saved curated recipients, use those
+      if (contactSettings?.curated_recipients) {
+        setCuratedTeam(contactSettings.curated_recipients.team || []);
+        setCuratedTo(contactSettings.curated_recipients.to || selectedContact.email || '');
+        setCuratedCc(contactSettings.curated_recipients.cc || []);
+        return;
       }
-    }
-  }, [contactData, selectedContact, contactSettings, isLoadingSettings]);
+      
+      // Otherwise, auto-populate from contact's focus areas
+      setCuratedTo(selectedContact.email || '');
+      
+      // Fetch team members from focus area directory
+      const focusAreas = contactData.focus_areas || [];
+      const teamMembers: TeamMember[] = [];
+      const ccEmails: string[] = [];
+      
+      for (const focusArea of focusAreas) {
+        const { data: teamData } = await supabase
+          .from('lg_focus_area_directory')
+          .select('lead1_name, lead1_email, lead2_name, lead2_email, assistant_name, assistant_email')
+          .eq('focus_area', focusArea)
+          .maybeSingle();
+        
+        if (teamData) {
+          // Add lead 1
+          if (teamData.lead1_name && teamData.lead1_email) {
+            const id = `lead1_${focusArea}`;
+            if (!teamMembers.some(m => m.id === id)) {
+              teamMembers.push({
+                id,
+                name: teamData.lead1_name,
+                email: teamData.lead1_email,
+                role: 'Lead'
+              });
+              if (!ccEmails.includes(teamData.lead1_email)) {
+                ccEmails.push(teamData.lead1_email);
+              }
+            }
+          }
+          
+          // Add lead 2
+          if (teamData.lead2_name && teamData.lead2_email) {
+            const id = `lead2_${focusArea}`;
+            if (!teamMembers.some(m => m.id === id)) {
+              teamMembers.push({
+                id,
+                name: teamData.lead2_name,
+                email: teamData.lead2_email,
+                role: 'Lead'
+              });
+              if (!ccEmails.includes(teamData.lead2_email)) {
+                ccEmails.push(teamData.lead2_email);
+              }
+            }
+          }
+          
+          // Add assistant
+          if (teamData.assistant_name && teamData.assistant_email) {
+            const id = `assistant_${focusArea}`;
+            if (!teamMembers.some(m => m.id === id)) {
+              teamMembers.push({
+                id,
+                name: teamData.assistant_name,
+                email: teamData.assistant_email,
+                role: 'Assistant'
+              });
+              if (!ccEmails.includes(teamData.assistant_email)) {
+                ccEmails.push(teamData.assistant_email);
+              }
+            }
+          }
+        }
+      }
+      
+      setAutoTeam(teamMembers);
+      setCuratedTeam(teamMembers);
+      setCuratedCc(ccEmails);
+    };
+    
+    initializeTeamAndRecipients();
+  }, [contactData, selectedContact, contactSettings]);
 
   // Load master templates from database
   const { data: masterTemplates } = useMasterTemplates();
