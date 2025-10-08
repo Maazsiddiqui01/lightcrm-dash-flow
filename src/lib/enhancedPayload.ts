@@ -96,6 +96,13 @@ export interface EnhancedDraftPayload {
   // Content flow order
   flow: string[];
   
+  // Module sequence with position metadata
+  moduleSequence: Array<{
+    id: string;
+    position: number;
+    enabled: boolean;
+  }>;
+  
   // CC recipients
   cc: {
     leads: string[];
@@ -128,7 +135,8 @@ export async function buildEnhancedDraftPayload(
   daysSinceContact: number,
   selectedArticle?: string | null,
   toneOverride?: 'casual' | 'hybrid' | 'formal',
-  subjectPoolOverride?: string[]
+  subjectPoolOverride?: string[],
+  moduleOrder?: Array<string>
 ): Promise<EnhancedDraftPayload> {
   // Calculate effective tone
   const effectiveTone = toneOverride || masterTemplate.tone || 'hybrid';
@@ -199,6 +207,14 @@ export async function buildEnhancedDraftPayload(
     generation.modules,
     !!generation.inquiry
   );
+
+  // Build module sequence with position metadata
+  const orderedModules = moduleOrder || Object.keys(generation.modules);
+  const moduleSequence = orderedModules.map((moduleKey, index) => ({
+    id: moduleKey,
+    position: index + 1,
+    enabled: generation.modules[moduleKey] || false,
+  }));
 
   // Build CC list from team directory (fetch emails from database)
   const leadEmails: string[] = [];
@@ -301,6 +317,7 @@ export async function buildEnhancedDraftPayload(
     },
     modules: generation.modules,
     flow,
+    moduleSequence,
     cc: {
       leads: leadEmails,
       assistants: assistantEmails,
@@ -386,6 +403,7 @@ function createFailedPayload(
     },
     modules: {},
     flow: [],
+    moduleSequence: [],
     cc: {
       leads: [],
       assistants: [],

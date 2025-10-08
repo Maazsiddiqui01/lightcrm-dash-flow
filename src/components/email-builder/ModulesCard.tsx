@@ -1,8 +1,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { RotateCcw, Settings } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import type { MasterTemplate } from "@/lib/router";
-import { TriStateToggle } from "./TriStateToggle";
+import { DraggableModuleItem } from './DraggableModuleItem';
 import type { TriState } from "@/types/phraseLibrary";
 
 export interface ModuleStates {
@@ -22,7 +39,9 @@ export interface ModuleStates {
 interface ModulesCardProps {
   masterTemplate: MasterTemplate | null;
   moduleStates: ModuleStates;
+  moduleOrder: Array<keyof ModuleStates>;
   onModuleChange: (module: keyof ModuleStates, value: TriState) => void;
+  onModuleOrderChange: (newOrder: Array<keyof ModuleStates>) => void;
   onResetToDefaults: () => void;
 }
 
@@ -110,10 +129,36 @@ const MODULE_LABELS: Record<keyof ModuleStates, string> = {
 
 export function ModulesCard({ 
   masterTemplate, 
-  moduleStates, 
-  onModuleChange, 
+  moduleStates,
+  moduleOrder,
+  onModuleChange,
+  onModuleOrderChange,
   onResetToDefaults 
 }: ModulesCardProps) {
+  // Drag-and-drop sensors with accessibility
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = moduleOrder.indexOf(active.id as keyof ModuleStates);
+      const newIndex = moduleOrder.indexOf(over.id as keyof ModuleStates);
+
+      const newOrder = arrayMove(moduleOrder, oldIndex, newIndex);
+      onModuleOrderChange(newOrder);
+
+      // Announce to screen readers
+      const announcement = `Module moved from position ${oldIndex + 1} to position ${newIndex + 1}`;
+      announceToScreenReader(announcement);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -121,6 +166,11 @@ export function ModulesCard({
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Email Modules
+            {masterTemplate && (
+              <Badge variant="secondary" className="ml-2 text-xs">
+                Drag to Reorder
+              </Badge>
+            )}
           </CardTitle>
           <Button
             variant="outline"
@@ -130,7 +180,7 @@ export function ModulesCard({
             className="flex items-center gap-2"
           >
             <RotateCcw className="h-3 w-3" />
-            Reset to Master Defaults
+            Reset
           </Button>
         </div>
       </CardHeader>
@@ -138,35 +188,46 @@ export function ModulesCard({
         {!masterTemplate && (
           <div className="text-center py-4 text-muted-foreground">
             <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Select a contact and master template to configure modules</p>
+            <p className="text-sm">Select a contact to configure modules</p>
           </div>
         )}
 
         {masterTemplate && (
-          <div className="space-y-3">
-            {Object.entries(MODULE_LABELS).map(([moduleKey, label]) => {
-              const key = moduleKey as keyof ModuleStates;
-              const value = moduleStates[key];
-              
-              return (
-                <div 
-                  key={moduleKey} 
-                  className={`p-3 rounded-lg border transition-colors ${
-                    value === 'never' ? 'opacity-50 bg-muted/20' : 'bg-card'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-sm font-medium flex-1">{label}</span>
-                    <TriStateToggle
-                      value={value}
-                      onChange={(newValue) => onModuleChange(key, newValue)}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis]}
+          >
+            <SortableContext
+              items={moduleOrder}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2" role="list" aria-label="Email modules">
+                {moduleOrder.map((moduleKey, index) => (
+                  <DraggableModuleItem
+                    key={moduleKey}
+                    id={moduleKey}
+                    index={index}
+                    label={MODULE_LABELS[moduleKey]}
+                    value={moduleStates[moduleKey]}
+                    isDisabled={!masterTemplate}
+                    onChange={(value) => onModuleChange(moduleKey, value)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
+
+        {/* Live Region for Screen Reader Announcements */}
+        <div
+          id="module-announcer"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        />
 
         {masterTemplate && (
           <div className="text-xs text-muted-foreground pt-2 border-t">
@@ -176,4 +237,15 @@ export function ModulesCard({
       </CardContent>
     </Card>
   );
+}
+
+// Helper function for screen reader announcements
+function announceToScreenReader(message: string) {
+  const announcer = document.getElementById('module-announcer');
+  if (announcer) {
+    announcer.textContent = message;
+    setTimeout(() => {
+      announcer.textContent = '';
+    }, 1000);
+  }
 }

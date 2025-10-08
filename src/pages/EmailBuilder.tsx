@@ -63,6 +63,22 @@ export function EmailBuilder() {
     meeting_request: 'always',
     ai_backup_personalization: 'always',
   });
+  
+  // Module order state
+  const [moduleOrder, setModuleOrder] = useState<Array<keyof ModuleStates>>([
+    'initial_greeting',
+    'self_personalization',
+    'top_opportunities',
+    'article_recommendations',
+    'platforms',
+    'addons',
+    'suggested_talking_points',
+    'general_org_update',
+    'attachments',
+    'meeting_request',
+    'ai_backup_personalization',
+  ]);
+  
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   
   // Get contact data from new composer view
@@ -117,6 +133,9 @@ export function EmailBuilder() {
     if (contactSettings) {
       setModuleStates(contactSettings.module_states as ModuleStates);
       setDeltaType(contactSettings.delta_type);
+      if (contactSettings.module_order) {
+        setModuleOrder(contactSettings.module_order as Array<keyof ModuleStates>);
+      }
       if (contactSettings.selected_article_id) {
         // Could load article here if needed
       }
@@ -132,6 +151,20 @@ export function EmailBuilder() {
           setModuleStates(fallback);
         }
       }
+      // Reset to default order when switching contacts
+      setModuleOrder([
+        'initial_greeting',
+        'self_personalization',
+        'top_opportunities',
+        'article_recommendations',
+        'platforms',
+        'addons',
+        'suggested_talking_points',
+        'general_org_update',
+        'attachments',
+        'meeting_request',
+        'ai_backup_personalization',
+      ]);
     }
   }, [contactSettings, masterTemplate, masterTemplates, selectedContact]);
 
@@ -172,6 +205,7 @@ export function EmailBuilder() {
       moduleStates,
       deltaType,
       selectedArticleId: selectedArticle?.article_link,
+      moduleOrder,
     });
   };
 
@@ -219,7 +253,8 @@ export function EmailBuilder() {
         daysSinceContact,
         selectedArticle?.article_link,
         toneOverride || undefined,
-        subjectPoolOverride
+        subjectPoolOverride,
+        moduleOrder
       );
 
       // Generate draft
@@ -339,7 +374,9 @@ ${draftResult.signature}`;
             <ModulesCard
               masterTemplate={masterTemplate}
               moduleStates={moduleStates}
+              moduleOrder={moduleOrder}
               onModuleChange={handleModuleChange}
+              onModuleOrderChange={setModuleOrder}
               onResetToDefaults={handleResetToDefaults}
             />
             

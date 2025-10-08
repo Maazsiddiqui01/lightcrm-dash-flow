@@ -8,6 +8,7 @@ export interface ContactSettings {
   module_states: ModuleStates;
   delta_type: 'Email' | 'Meeting';
   selected_article_id: string | null;
+  module_order: string[] | null;
   last_updated: string;
   created_at: string;
 }
@@ -35,6 +36,7 @@ export function useContactSettings(contactId: string | null) {
         ...data,
         delta_type: data.delta_type as 'Email' | 'Meeting',
         module_states: data.module_states as unknown as ModuleStates,
+        module_order: data.module_order as string[] | null,
       };
     },
     enabled: !!contactId,
@@ -47,6 +49,7 @@ export function useContactSettings(contactId: string | null) {
       moduleStates: ModuleStates;
       deltaType: 'Email' | 'Meeting';
       selectedArticleId?: string | null;
+      moduleOrder?: Array<keyof ModuleStates>;
     }) => {
       const { data, error } = await supabase
         .from('contact_email_builder_settings')
@@ -55,6 +58,7 @@ export function useContactSettings(contactId: string | null) {
           module_states: payload.moduleStates as any,
           delta_type: payload.deltaType,
           selected_article_id: payload.selectedArticleId || null,
+          module_order: payload.moduleOrder || null,
         }])
         .select()
         .single();
@@ -65,6 +69,7 @@ export function useContactSettings(contactId: string | null) {
         ...data,
         delta_type: data.delta_type as 'Email' | 'Meeting',
         module_states: data.module_states as unknown as ModuleStates,
+        module_order: data.module_order as string[] | null,
       };
     },
     onSuccess: (data) => {

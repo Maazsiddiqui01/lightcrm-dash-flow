@@ -134,6 +134,7 @@ export type Database = {
           created_at: string | null
           delta_type: string | null
           last_updated: string | null
+          module_order: Json | null
           module_states: Json
           selected_article_id: string | null
         }
@@ -142,6 +143,7 @@ export type Database = {
           created_at?: string | null
           delta_type?: string | null
           last_updated?: string | null
+          module_order?: Json | null
           module_states?: Json
           selected_article_id?: string | null
         }
@@ -150,6 +152,7 @@ export type Database = {
           created_at?: string | null
           delta_type?: string | null
           last_updated?: string | null
+          module_order?: Json | null
           module_states?: Json
           selected_article_id?: string | null
         }
