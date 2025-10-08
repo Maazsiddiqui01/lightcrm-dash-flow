@@ -8,7 +8,7 @@ import { EmailBuilderCoreSettings } from "@/components/email-builder/EmailBuilde
 import { ModulesCard, type ModuleStates, MODULE_DEFAULTS, getModuleDefaultsFromMaster } from "@/components/email-builder/ModulesCard";
 import { useMasterTemplates } from "@/hooks/useMasterTemplates";
 import { ArticlePicker } from "@/components/email-builder/ArticlePicker";
-import { CCPreviewCard } from "@/components/email-builder/CCPreviewCard";
+import { EditableRecipients } from "@/components/email-builder/EditableRecipients";
 import { EnhancedDraftSection } from "@/components/email-builder/EnhancedDraftSection";
 import { PreviewModal } from "@/components/email-builder/PreviewModal";
 import { LivePreviewPanel } from "@/components/email-builder/LivePreviewPanel";
@@ -34,6 +34,8 @@ import type { Article } from "@/types/emailComposer";
 import type { TriState } from "@/types/phraseLibrary";
 import type { ModuleSelection, ModuleSelections } from "@/types/moduleSelections";
 import { useToast } from "@/hooks/use-toast";
+import type { TeamMember } from "@/components/email-builder/EditableTeam";
+import { buildCc } from "@/lib/buildCc";
 
 export function EmailBuilder() {
   // Enable real-time synchronization with Global Libraries
@@ -85,6 +87,12 @@ export function EmailBuilder() {
   // Module selections state
   const [moduleSelections, setModuleSelections] = useState<ModuleSelections>({});
   
+  // Curated team and recipients state
+  const [curatedTeam, setCuratedTeam] = useState<TeamMember[]>([]);
+  const [curatedTo, setCuratedTo] = useState<string>("");
+  const [curatedCc, setCuratedCc] = useState<string[]>([]);
+  const [autoTeam, setAutoTeam] = useState<TeamMember[]>([]);
+  
   // Get contact data from new composer view
   const { data: contactData } = useComposerRow(selectedContact?.email || null);
   
@@ -129,6 +137,18 @@ export function EmailBuilder() {
     isResetting,
   } = useContactSettings(selectedContact?.contact_id || null);
 
+  // Initialize team and recipients when contact changes
+  useEffect(() => {
+    if (contactData && selectedContact && !isLoadingSettings) {
+      if (!contactSettings?.curated_recipients) {
+        setCuratedTo(selectedContact.email || '');
+        setCuratedCc([]);
+        setCuratedTeam([]);
+        setAutoTeam([]);
+      }
+    }
+  }, [contactData, selectedContact, contactSettings, isLoadingSettings]);
+
   // Load master templates from database
   const { data: masterTemplates } = useMasterTemplates();
   
@@ -147,6 +167,12 @@ export function EmailBuilder() {
       }
       if (contactSettings.selected_article_id) {
         // Could load article here if needed
+      }
+      // Load curated recipients
+      if (contactSettings.curated_recipients) {
+        setCuratedTeam(contactSettings.curated_recipients.team || []);
+        setCuratedTo(contactSettings.curated_recipients.to || selectedContact?.email || '');
+        setCuratedCc(contactSettings.curated_recipients.cc || []);
       }
     } else if (masterTemplate && masterTemplates) {
       // Load defaults from database-driven master template
@@ -223,6 +249,9 @@ export function EmailBuilder() {
       selectedArticleId: selectedArticle?.article_link,
       moduleOrder,
       moduleSelections,
+      curatedTeam,
+      curatedTo,
+      curatedCc,
     });
   };
 
@@ -260,7 +289,7 @@ export function EmailBuilder() {
     }
 
     try {
-      // Build enhanced payload
+      // Build enhanced payload with curated recipients
       const payload = await buildEnhancedDraftPayload(
         contactData,
         fullMasterTemplate,
@@ -271,7 +300,11 @@ export function EmailBuilder() {
         selectedArticle?.article_link,
         toneOverride || undefined,
         subjectPoolOverride,
-        moduleOrder
+        moduleOrder,
+        curatedTeam.length > 0 ? curatedTeam : undefined,
+        curatedTo,
+        curatedCc.length > 0 ? curatedCc : undefined,
+        autoTeam.length > 0 ? autoTeam : undefined
       );
 
       // Generate draft
@@ -353,7 +386,16 @@ ${draftResult.signature}`;
               onContactSelect={setSelectedContact}
             />
             {selectedContact && (
-              <ContactInfoPanel contactId={selectedContact.contact_id} />
+              <ContactInfoPanel 
+                contactId={selectedContact.contact_id}
+                team={curatedTeam}
+                onTeamChange={setCuratedTeam}
+                onQuickAddToCC={(member) => {
+                  if (!curatedCc.includes(member.email)) {
+                    setCuratedCc([...curatedCc, member.email]);
+                  }
+                }}
+              />
             )}
 
             {/* Live Preview Section */}
@@ -402,9 +444,13 @@ ${draftResult.signature}`;
               toneOverride={toneOverride}
             />
             
-            <CCPreviewCard
-              contactData={contactData}
-              deltaType={deltaType}
+            <EditableRecipients
+              to={curatedTo}
+              cc={curatedCc}
+              onToChange={setCuratedTo}
+              onCcChange={setCuratedCc}
+              teamMembers={curatedTeam}
+              defaultContactEmail={selectedContact?.email || ''}
             />
 
             {/* Settings Controls */}

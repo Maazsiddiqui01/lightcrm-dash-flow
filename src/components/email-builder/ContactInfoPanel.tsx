@@ -5,6 +5,7 @@ import { GroupMembersBadge } from "@/components/email-builder/GroupMembersBadge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { EditableTeam, type TeamMember } from "./EditableTeam";
 import { 
   Info, 
   Building, 
@@ -18,9 +19,12 @@ import { format } from "date-fns";
 
 interface ContactInfoPanelProps {
   contactId: string;
+  team: TeamMember[];
+  onTeamChange: (members: TeamMember[]) => void;
+  onQuickAddToCC?: (member: TeamMember) => void;
 }
 
-export function ContactInfoPanel({ contactId }: ContactInfoPanelProps) {
+export function ContactInfoPanel({ contactId, team, onTeamChange, onQuickAddToCC }: ContactInfoPanelProps) {
   const { data: enrichedData, isLoading } = useContactEnriched(contactId);
   const { data: groupInfo } = useContactGroupInfo(contactId);
   const { data: groupMembers } = useGroupMembers(groupInfo?.group_contact);
@@ -143,26 +147,18 @@ export function ContactInfoPanel({ contactId }: ContactInfoPanelProps) {
           </div>
         )}
 
-        {/* Leads & Assistants */}
-        {focusMeta && focusMeta.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Team</span>
-            </div>
-            <div className="space-y-2 text-sm">
-              {Array.from(new Set(focusMeta.flatMap(meta => [
-                meta.lead1_name,
-                meta.lead2_name,
-                meta.assistant_name
-              ]).filter(Boolean))).map((name) => (
-                <div key={name} className="text-muted-foreground">
-                  {name}
-                </div>
-              ))}
-            </div>
+        {/* Team */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">Team</span>
           </div>
-        )}
+          <EditableTeam
+            members={team}
+            onMembersChange={onTeamChange}
+            onQuickAddToCC={onQuickAddToCC}
+          />
+        </div>
 
         <Separator />
 

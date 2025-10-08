@@ -35,6 +35,20 @@ export interface EnhancedDraftPayload {
     bcc: Array<{ email: string; fullName: string }>;
   } | null;
   
+  // Curated recipients (user-edited TO/CC)
+  recipients?: {
+    to: string;
+    cc: string[];
+  };
+  
+  // Team curation tracking
+  teamCuration?: {
+    initialAutoCount: number;
+    keptIds: string[];
+    removedIds: string[];
+    addedIds: string[];
+  };
+  
   // Focus areas with descriptions
   focusAreas: {
     list: string[];
@@ -136,7 +150,11 @@ export async function buildEnhancedDraftPayload(
   selectedArticle?: string | null,
   toneOverride?: 'casual' | 'hybrid' | 'formal',
   subjectPoolOverride?: string[],
-  moduleOrder?: Array<string>
+  moduleOrder?: Array<string>,
+  curatedTeam?: Array<{ id: string; name: string; email: string; role: string }>,
+  curatedTo?: string,
+  curatedCc?: string[],
+  autoTeam?: Array<{ id: string; name: string; email: string; role: string }>
 ): Promise<EnhancedDraftPayload> {
   // Calculate effective tone
   const effectiveTone = toneOverride || masterTemplate.tone || 'hybrid';
@@ -262,6 +280,19 @@ export async function buildEnhancedDraftPayload(
     }
   }
 
+  // Build recipients and team curation if provided
+  const recipients = curatedTo && curatedCc ? {
+    to: curatedTo,
+    cc: curatedCc,
+  } : undefined;
+
+  const teamCuration = curatedTeam && autoTeam ? {
+    initialAutoCount: autoTeam.length,
+    keptIds: curatedTeam.filter(m => autoTeam.some(a => a.id === m.id)).map(m => m.id),
+    removedIds: autoTeam.filter(m => !curatedTeam.some(c => c.id === m.id)).map(m => m.id),
+    addedIds: curatedTeam.filter(m => !autoTeam.some(a => a.id === m.id)).map(m => m.id),
+  } : undefined;
+
   return {
     contact: {
       id: contact.contact_id,
@@ -273,6 +304,8 @@ export async function buildEnhancedDraftPayload(
       groupEmailRole: (contact as any).group_email_role || null,
     },
     groupMembers,
+    recipients,
+    teamCuration,
     focusAreas: {
       list: metadata.focusAreas,
       descriptions: metadata.focusAreaDescriptions.map(desc => ({

@@ -132,6 +132,7 @@ export type Database = {
         Row: {
           contact_id: string
           created_at: string | null
+          curated_recipients: Json | null
           delta_type: string | null
           last_updated: string | null
           module_order: Json | null
@@ -142,6 +143,7 @@ export type Database = {
         Insert: {
           contact_id: string
           created_at?: string | null
+          curated_recipients?: Json | null
           delta_type?: string | null
           last_updated?: string | null
           module_order?: Json | null
@@ -152,6 +154,7 @@ export type Database = {
         Update: {
           contact_id?: string
           created_at?: string | null
+          curated_recipients?: Json | null
           delta_type?: string | null
           last_updated?: string | null
           module_order?: Json | null
