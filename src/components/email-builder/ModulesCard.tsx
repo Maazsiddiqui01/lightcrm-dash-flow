@@ -29,6 +29,7 @@ import type { PhraseLibraryItem } from "@/types/phraseLibrary";
 import type { InquiryLibraryItem } from "@/hooks/useInquiryLibrary";
 import type { SubjectLibraryItem } from "@/hooks/useSubjectLibrary";
 import type { ModuleSelection, ModuleSelections } from "@/types/moduleSelections";
+import { recomputePositions, announceModuleMove } from "@/lib/modulePositions";
 
 export interface ModuleStates {
   initial_greeting: TriState;
@@ -213,11 +214,13 @@ export function ModulesCard({
       const oldIndex = moduleOrder.indexOf(active.id as keyof ModuleStates);
       const newIndex = moduleOrder.indexOf(over.id as keyof ModuleStates);
 
-      const newOrder = arrayMove(moduleOrder, oldIndex, newIndex);
-      onModuleOrderChange(newOrder);
+      // Use arrayMove and recompute positions to ensure 1..N contiguity
+      const movedOrder = arrayMove(moduleOrder, oldIndex, newIndex);
+      const validOrder = recomputePositions(movedOrder);
+      onModuleOrderChange(validOrder as Array<keyof ModuleStates>);
 
       // Announce to screen readers
-      const announcement = `Module moved from position ${oldIndex + 1} to position ${newIndex + 1}`;
+      const announcement = announceModuleMove(active.id as string, newIndex + 1);
       announceToScreenReader(announcement);
     }
   };

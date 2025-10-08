@@ -4,6 +4,7 @@ import type { QueueItem } from '@/types/groupEmailBuilder';
 export function useBatchQueueManager() {
   const [queue, setQueue] = useState<Map<string, QueueItem>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   const addToQueue = useCallback((contacts: Array<{ id: string; name: string }>) => {
     const newQueue = new Map(queue);
@@ -48,20 +49,42 @@ export function useBatchQueueManager() {
   }, []);
 
   const cancelPending = useCallback(() => {
+    // Abort in-flight requests
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+    
+    // Remove queued items and mark running items as failed
     setQueue(prev => {
       const newQueue = new Map(prev);
       newQueue.forEach((item, id) => {
         if (item.status === 'queued') {
           newQueue.delete(id);
+        } else if (item.status === 'running') {
+          newQueue.set(id, {
+            ...item,
+            status: 'failed',
+            error: 'Cancelled by user',
+          });
         }
       });
       return newQueue;
     });
-  }, []);
+    
+    setIsProcessing(false);
+  }, [abortController]);
 
   const clearQueue = useCallback(() => {
     setQueue(new Map());
     setIsProcessing(false);
+  }, []);
+
+  const startProcessing = useCallback(() => {
+    const controller = new AbortController();
+    setAbortController(controller);
+    setIsProcessing(true);
+    return controller;
   }, []);
 
   return {
@@ -73,5 +96,7 @@ export function useBatchQueueManager() {
     retryItem,
     cancelPending,
     clearQueue,
+    startProcessing,
+    abortController,
   };
 }

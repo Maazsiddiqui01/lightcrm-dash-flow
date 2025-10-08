@@ -49,7 +49,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { TeamMember } from "@/components/email-builder/EditableTeam";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffectiveSettings } from "@/hooks/useEffectiveSettings";
-import { useSaveSettings } from "@/hooks/useSaveSettings";
+import { useSaveSettingsWithOCC } from "@/hooks/useSaveSettingsWithOCC";
 import { SplitSaveButton } from "@/components/email-builder/SplitSaveButton";
 import { SourceBadge } from "@/components/email-builder/SourceBadge";
 import { ConfirmSaveDialog, type SaveScope, type AffectedField } from "@/components/email-builder/ConfirmSaveDialog";
@@ -181,8 +181,8 @@ export function EmailBuilder() {
   } = useContactSettings(selectedContact?.contact_id || null);
   const [initializedContactId, setInitializedContactId] = useState<string | null>(null);
   
-  // Dual-scope save functionality
-  const { saveContact, saveGlobal, isSaving: isSavingSettings } = useSaveSettings();
+  // Dual-scope save functionality with OCC
+  const { saveContact, saveGlobal, isSaving: isSavingSettings, ConflictDialog } = useSaveSettingsWithOCC();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingSaveScope, setPendingSaveScope] = useState<SaveScope>('contact');
   const [savingWithShortcut, setSavingWithShortcut] = useState(false);
@@ -1055,7 +1055,7 @@ ${draftResult.signature}`;
                 result={draftResult}
                 onGenerate={handleGenerateDraft}
                 onCopyToClipboard={handleCopyToClipboard}
-                disabled={!contactData || subjectPoolOverride.length === 0}
+                disabled={!contactData || subjectPoolOverride.length === 0 || isSavingSettings || savingWithShortcut}
               />
             )}
             
@@ -1072,6 +1072,7 @@ ${draftResult.signature}`;
         
         {/* ARIA Live Region for Module Reorder Announcements */}
         <div
+          id="email-builder-announcer"
           role="status"
           aria-live="polite"
           aria-atomic="true"
@@ -1083,6 +1084,7 @@ ${draftResult.signature}`;
         )}
         
         {/* Dialogs */}
+        <ConflictDialog />
         <ContactOverrideDrawer
           open={overrideDrawerOpen}
           onOpenChange={setOverrideDrawerOpen}
@@ -1113,11 +1115,13 @@ ${draftResult.signature}`;
           onSave={async (override) => {
             setContactOverrides(new Map(contactOverrides.set(override.contactId, override)));
             
-            // Update focused contact for preview rail refresh
+            // Update focused contact for preview rail refresh with proper cache invalidation
             if (focusedContactId === override.contactId) {
-              // Trigger preview rail refresh by updating focused state
+              // Force immediate re-render by updating focused state
+              const currentFocused = focusedContactId;
               setFocusedContactId(null);
-              setTimeout(() => setFocusedContactId(override.contactId), 0);
+              // Use microtask to ensure state update completes
+              Promise.resolve().then(() => setFocusedContactId(currentFocused));
             }
             
             // Persist module order to DB so individual view reflects it

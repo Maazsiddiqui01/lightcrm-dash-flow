@@ -47,8 +47,8 @@ export function GroupResultsTable({
 }: GroupResultsTableProps) {
   const [selectAllChecked, setSelectAllChecked] = useState(false);
   const [focusedRowIndex, setFocusedRowIndex] = useState<number>(-1);
-  const MAX_SELECTION = 10000; // Increased from 500
-
+  // Removed MAX_SELECTION cap - using cohortSnapshotId approach instead
+  
   const hasOverride = (contactId: string) => overrides.has(contactId);
 
   const toggleRow = (contactId: string) => {
@@ -56,9 +56,6 @@ export function GroupResultsTable({
     if (newSelection.has(contactId)) {
       newSelection.delete(contactId);
     } else {
-      if (newSelection.size >= MAX_SELECTION) {
-        return; // Don't allow selection beyond cap
-      }
       newSelection.add(contactId);
     }
     onSelectionChange(newSelection);
@@ -70,10 +67,8 @@ export function GroupResultsTable({
       onSelectionChange(new Set());
       setSelectAllChecked(false);
     } else {
-      // Select all (up to cap)
-      const newSelection = new Set(
-        contacts.slice(0, MAX_SELECTION).map(c => c.id)
-      );
+      // Select all contacts (no cap)
+      const newSelection = new Set(contacts.map(c => c.id));
       onSelectionChange(newSelection);
       setSelectAllChecked(true);
     }
@@ -318,12 +313,6 @@ export function GroupResultsTable({
 
   return (
     <div className="space-y-2">
-      {selectedContactIds.size >= MAX_SELECTION && (
-        <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 text-sm">
-          <strong>Selection limit reached:</strong> Maximum {MAX_SELECTION} contacts can be selected at once.
-        </div>
-      )}
-      
       <div
         ref={parentRef}
         className="h-[500px] overflow-auto border rounded-lg bg-card"
