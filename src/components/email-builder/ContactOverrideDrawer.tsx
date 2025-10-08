@@ -83,7 +83,7 @@ export function ContactOverrideDrawer({
   const [moduleOrder, setModuleOrder] = useState<Array<keyof ModuleStates>>([]);
   const [moduleStates, setModuleStates] = useState<ModuleStates>({} as ModuleStates);
 
-  // Initialize with current override or shared settings
+  // Initialize with current override or shared settings - only when drawer opens
   useEffect(() => {
     if (open) {
       if (currentOverride) {
@@ -118,7 +118,7 @@ export function ContactOverrideDrawer({
         setModuleStates(sharedSettings.moduleStates);
       }
     }
-  }, [open, currentOverride, contactEmail, sharedSettings, allMasterTemplates]);
+  }, [open]);
 
   const handleSave = () => {
     const override: ContactOverride = {

@@ -157,6 +157,7 @@ export function ContactInfoPanel({ contactId, team, onTeamChange, onQuickAddToCC
             members={team}
             onMembersChange={onTeamChange}
             onQuickAddToCC={onQuickAddToCC}
+            contactEmail={contact.email || ''}
           />
         </div>
 

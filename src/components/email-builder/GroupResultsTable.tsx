@@ -155,9 +155,32 @@ export function GroupResultsTable({
         },
       },
       {
-        accessorKey: 'lg_lead',
-        header: 'LG Lead',
-        cell: ({ getValue }) => getValue() || '—',
+        id: 'team',
+        header: 'Team',
+        cell: ({ row }) => {
+          const contactId = row.original.id;
+          const override = overrides.get(contactId);
+          const teamMembers = override?.team || [];
+          
+          if (teamMembers.length === 0) {
+            return <span className="text-muted-foreground">—</span>;
+          }
+          
+          return (
+            <div className="flex flex-wrap gap-1">
+              {teamMembers.slice(0, 2).map((member, idx) => (
+                <Badge key={idx} variant="outline" className="text-xs">
+                  {member.name}
+                </Badge>
+              ))}
+              {teamMembers.length > 2 && (
+                <Badge variant="outline" className="text-xs">
+                  +{teamMembers.length - 2}
+                </Badge>
+              )}
+            </div>
+          );
+        },
       },
       {
         id: 'actions',
