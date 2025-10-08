@@ -261,12 +261,26 @@ serve(async (req) => {
     const { user } = await verifyAuth(req);
     console.log(`Authenticated user: ${user.id}`);
 
-    const { payload } = await req.json();
+    const requestBody = await req.json();
+    const { mode, batchId, batchIndex, batchTotal, payload } = requestBody;
+    
+    // Log batch context if present
+    if (batchId) {
+      console.log(`Batch request: ${batchId} [${(batchIndex ?? 0) + 1}/${batchTotal ?? 1}]`);
+    }
+    
     console.log('Received EnhancedDraftPayload:', JSON.stringify(payload, null, 2));
 
     // Transform to n8n format
     const n8nPayload = transformToN8NPayload(payload);
     console.log('Transformed to n8n format:', JSON.stringify(n8nPayload, null, 2));
+
+    // Add batch metadata to payload if present
+    const finalPayload = {
+      ...n8nPayload,
+      ...(mode && { mode }),
+      ...(batchId && { batchId, batchIndex, batchTotal }),
+    };
 
     // POST to n8n webhook and stream the response
     const response = await fetch(N8N_WEBHOOK_URL, {
@@ -274,7 +288,7 @@ serve(async (req) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(n8nPayload),
+      body: JSON.stringify(finalPayload),
     });
 
     if (!response.ok) {
