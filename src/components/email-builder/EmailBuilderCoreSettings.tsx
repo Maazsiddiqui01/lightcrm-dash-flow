@@ -5,9 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Settings2, Info } from "lucide-react";
 import { useMasterTemplates } from "@/hooks/useMasterTemplates";
-import { useSubjectLibrary } from "@/hooks/useSubjectLibrary";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface EmailBuilderCoreSettingsProps {
@@ -17,8 +14,6 @@ interface EmailBuilderCoreSettingsProps {
   onToneOverrideChange: (tone: 'casual' | 'hybrid' | 'formal' | null) => void;
   lengthOverride: 'brief' | 'medium' | 'detailed' | null;
   onLengthOverrideChange: (length: 'brief' | 'medium' | 'detailed' | null) => void;
-  subjectPoolOverride: string[];
-  onSubjectPoolOverrideChange: (subjects: string[]) => void;
 }
 
 export function EmailBuilderCoreSettings({
@@ -28,11 +23,8 @@ export function EmailBuilderCoreSettings({
   onToneOverrideChange,
   lengthOverride,
   onLengthOverrideChange,
-  subjectPoolOverride,
-  onSubjectPoolOverrideChange,
 }: EmailBuilderCoreSettingsProps) {
   const { data: masterTemplates } = useMasterTemplates();
-  const { data: allSubjects } = useSubjectLibrary();
   
   // Get the effective master template based on days
   const effectiveTemplate = masterTemplates?.find(t => 
@@ -43,21 +35,6 @@ export function EmailBuilderCoreSettings({
   // Determine effective values (override or default)
   const effectiveTone = toneOverride || effectiveTemplate?.tone || 'hybrid';
   const effectiveLength = lengthOverride || effectiveTemplate?.length || 'medium';
-  const effectiveSubjectStyle = effectiveTemplate?.subject_style || 'mixed';
-
-  // Filter subjects by effective style
-  const availableSubjects = allSubjects?.filter(s => {
-    if (effectiveSubjectStyle === 'mixed') return true;
-    return s.style === effectiveSubjectStyle;
-  }) || [];
-
-  const handleSubjectToggle = (subjectId: string) => {
-    if (subjectPoolOverride.includes(subjectId)) {
-      onSubjectPoolOverrideChange(subjectPoolOverride.filter(id => id !== subjectId));
-    } else {
-      onSubjectPoolOverrideChange([...subjectPoolOverride, subjectId]);
-    }
-  };
 
   const getDaysRangeLabel = () => {
     if (!effectiveTemplate) return '';
@@ -167,47 +144,6 @@ export function EmailBuilderCoreSettings({
           </Select>
         </div>
 
-        {/* Subject Pool Override */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">
-              Subject Line Pool
-            </Label>
-            <Badge variant="secondary" className="text-xs">
-              Style: {effectiveSubjectStyle}
-            </Badge>
-          </div>
-          <ScrollArea className="h-[200px] rounded-md border p-3">
-            <div className="space-y-3">
-              {availableSubjects.map((subject) => (
-                <div key={subject.id} className="flex items-start space-x-2">
-                  <Checkbox
-                    id={`subject-${subject.id}`}
-                    checked={subjectPoolOverride.length === 0 || subjectPoolOverride.includes(subject.id)}
-                    onCheckedChange={() => handleSubjectToggle(subject.id)}
-                  />
-                  <div className="flex-1 space-y-1">
-                    <label
-                      htmlFor={`subject-${subject.id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      {subject.subject_template}
-                    </label>
-                    <Badge variant="outline" className="text-xs ml-2">
-                      {subject.style}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-          <p className="text-xs text-muted-foreground">
-            {subjectPoolOverride.length === 0 
-              ? `All ${availableSubjects.length} subjects enabled`
-              : `${subjectPoolOverride.length} of ${availableSubjects.length} subjects selected`
-            }
-          </p>
-        </div>
 
         {/* Effective Settings Summary */}
         <div className="pt-3 border-t space-y-2">

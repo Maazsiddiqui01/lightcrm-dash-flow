@@ -206,7 +206,7 @@ export function EmailBuilder() {
     }
   };
 
-  const handleModuleSelectionChange = (module: keyof ModuleStates, selection: ModuleSelection | null) => {
+  const handleModuleSelectionChange = (module: keyof ModuleStates | 'subject_line_pool', selection: ModuleSelection | null) => {
     setModuleSelections(prev => ({
       ...prev,
       [module]: selection,
@@ -384,8 +384,6 @@ ${draftResult.signature}`;
               onToneOverrideChange={setToneOverride}
               lengthOverride={lengthOverride}
               onLengthOverrideChange={setLengthOverride}
-              subjectPoolOverride={subjectPoolOverride}
-              onSubjectPoolOverrideChange={setSubjectPoolOverride}
             />
             
             <ModulesCard
@@ -401,6 +399,7 @@ ${draftResult.signature}`;
               allPhrases={allPhrases}
               allInquiries={allInquiries}
               allSubjects={allSubjects}
+              toneOverride={toneOverride}
             />
             
             <CCPreviewCard

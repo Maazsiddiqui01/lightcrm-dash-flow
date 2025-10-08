@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -14,6 +14,7 @@ import { ArticleSelector } from "./ArticleSelector";
 import { GreetingSelector } from "./GreetingSelector";
 import { TalkingPointsSelector } from "./TalkingPointsSelector";
 import { AddonsSelector } from "./AddonsSelector";
+import { SubjectPoolSelector } from "./SubjectPoolSelector";
 
 interface ModuleConfigDrawerProps {
   isOpen: boolean;
@@ -26,6 +27,8 @@ interface ModuleConfigDrawerProps {
   allPhrases: PhraseLibraryItem[];
   allInquiries: InquiryLibraryItem[];
   allSubjects: SubjectLibraryItem[];
+  toneOverride?: 'casual' | 'hybrid' | 'formal' | null;
+  isSubjectPool?: boolean;
 }
 
 export function ModuleConfigDrawer({
@@ -37,6 +40,9 @@ export function ModuleConfigDrawer({
   currentSelection,
   onSave,
   allPhrases,
+  allSubjects,
+  toneOverride,
+  isSubjectPool = false,
 }: ModuleConfigDrawerProps) {
   const isMobile = useIsMobile();
   const [tempSelection, setTempSelection] = useState<ModuleSelection | null>(currentSelection);
@@ -58,6 +64,17 @@ export function ModuleConfigDrawer({
   };
 
   const renderContent = () => {
+    if (isSubjectPool) {
+      return (
+        <SubjectPoolSelector
+          allSubjects={allSubjects}
+          currentSelection={tempSelection}
+          toneOverride={toneOverride}
+          onSelectionChange={setTempSelection}
+        />
+      );
+    }
+
     switch (moduleKey) {
       case 'article_recommendations':
         return (

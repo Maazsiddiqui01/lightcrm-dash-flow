@@ -11,9 +11,14 @@ export interface ModuleSelection {
   
   // For inquiry modules
   inquiryId?: string;
+  
+  // For subject line pool (multi-select subject IDs + style)
+  subjectIds?: string[];
+  style?: 'formal' | 'hybrid' | 'casual';
 }
 
 export interface ModuleSelections {
+  subject_line_pool?: ModuleSelection;
   initial_greeting?: ModuleSelection;
   self_personalization?: ModuleSelection;
   top_opportunities?: ModuleSelection;

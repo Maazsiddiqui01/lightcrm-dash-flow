@@ -22,6 +22,7 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import type { MasterTemplate } from "@/lib/router";
 import { DraggableModuleItem } from './DraggableModuleItem';
 import { ModuleConfigDrawer } from './ModuleConfigDrawer';
+import { SubjectLinePoolCard } from './SubjectLinePoolCard';
 import type { TriState } from "@/types/phraseLibrary";
 import type { ContactEmailComposer } from "@/types/emailComposer";
 import type { PhraseLibraryItem } from "@/types/phraseLibrary";
@@ -51,11 +52,12 @@ interface ModulesCardProps {
   onModuleOrderChange: (newOrder: Array<keyof ModuleStates>) => void;
   onResetToDefaults: () => void;
   moduleSelections: ModuleSelections;
-  onModuleSelectionChange: (module: keyof ModuleStates, selection: ModuleSelection | null) => void;
+  onModuleSelectionChange: (module: keyof ModuleStates | 'subject_line_pool', selection: ModuleSelection | null) => void;
   contactData: ContactEmailComposer | null;
   allPhrases: PhraseLibraryItem[];
   allInquiries: InquiryLibraryItem[];
   allSubjects: SubjectLibraryItem[];
+  toneOverride?: 'casual' | 'hybrid' | 'formal' | null;
 }
 
 /**
@@ -148,8 +150,8 @@ const CONFIGURABLE_MODULES: Set<keyof ModuleStates> = new Set([
   'addons',
 ]);
 
-export function ModulesCard({ 
-  masterTemplate, 
+export function ModulesCard({
+  masterTemplate,
   moduleStates,
   moduleOrder,
   onModuleChange,
@@ -161,8 +163,9 @@ export function ModulesCard({
   allPhrases,
   allInquiries,
   allSubjects,
+  toneOverride,
 }: ModulesCardProps) {
-  const [activeDrawer, setActiveDrawer] = useState<keyof ModuleStates | null>(null);
+  const [activeDrawer, setActiveDrawer] = useState<keyof ModuleStates | 'subject_line_pool' | null>(null);
   // Drag-and-drop sensors with accessibility
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -171,7 +174,7 @@ export function ModulesCard({
     })
   );
 
-  const handleOpenDrawer = (moduleKey: keyof ModuleStates) => {
+  const handleOpenDrawer = (moduleKey: keyof ModuleStates | 'subject_line_pool') => {
     setActiveDrawer(moduleKey);
   };
 
@@ -186,15 +189,22 @@ export function ModulesCard({
     setActiveDrawer(null);
   };
 
-  const getSelectedItemsCount = (moduleKey: keyof ModuleStates): number => {
-    const selection = moduleSelections[moduleKey];
+  const getSelectedItemsCount = (moduleKey: keyof ModuleStates | 'subject_line_pool'): number => {
+    const selection = moduleSelections[moduleKey as keyof ModuleSelections];
     if (!selection) return 0;
-    
+
     if (selection.articleId) return 1;
     if (selection.greetingId) return 1;
     if (selection.phraseIds) return selection.phraseIds.length;
+    if (selection.subjectIds) return selection.subjectIds.length;
     return 0;
   };
+  
+  // Get subject pool data for preview
+  const subjectPoolSelection = moduleSelections.subject_line_pool;
+  const selectedSubjectIds = subjectPoolSelection?.subjectIds || [];
+  const selectedSubjects = allSubjects.filter(s => selectedSubjectIds.includes(s.id));
+  const previewSubjects = selectedSubjects.map(s => s.subject_template);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -237,7 +247,7 @@ export function ModulesCard({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {!masterTemplate && (
           <div className="text-center py-4 text-muted-foreground">
             <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -246,34 +256,55 @@ export function ModulesCard({
         )}
 
         {masterTemplate && (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-            modifiers={[restrictToVerticalAxis]}
-          >
-            <SortableContext
-              items={moduleOrder}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-2" role="list" aria-label="Email modules">
-                {moduleOrder.map((moduleKey, index) => (
-                  <DraggableModuleItem
-                    key={moduleKey}
-                    id={moduleKey}
-                    index={index}
-                    label={MODULE_LABELS[moduleKey]}
-                    value={moduleStates[moduleKey]}
-                    isDisabled={!masterTemplate}
-                    onChange={(value) => onModuleChange(moduleKey, value)}
-                    hasConfiguration={CONFIGURABLE_MODULES.has(moduleKey)}
-                    onConfigure={() => handleOpenDrawer(moduleKey)}
-                    selectedItemsCount={getSelectedItemsCount(moduleKey)}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+          <>
+            {/* Initial Module (Always On) */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Initial Module (Always On)
+              </h3>
+              <SubjectLinePoolCard
+                selectedCount={selectedSubjectIds.length}
+                totalCount={allSubjects.length}
+                previewItems={previewSubjects}
+                onConfigure={() => handleOpenDrawer('subject_line_pool')}
+              />
+            </div>
+
+            {/* Content Modules */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Content Modules
+              </h3>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+                modifiers={[restrictToVerticalAxis]}
+              >
+                <SortableContext
+                  items={moduleOrder}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2" role="list" aria-label="Email modules">
+                    {moduleOrder.map((moduleKey, index) => (
+                      <DraggableModuleItem
+                        key={moduleKey}
+                        id={moduleKey}
+                        index={index}
+                        label={MODULE_LABELS[moduleKey]}
+                        value={moduleStates[moduleKey]}
+                        isDisabled={!masterTemplate}
+                        onChange={(value) => onModuleChange(moduleKey, value)}
+                        hasConfiguration={CONFIGURABLE_MODULES.has(moduleKey)}
+                        onConfigure={() => handleOpenDrawer(moduleKey)}
+                        selectedItemsCount={getSelectedItemsCount(moduleKey)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </div>
+          </>
         )}
 
         {/* Live Region for Screen Reader Announcements */}
@@ -297,14 +328,16 @@ export function ModulesCard({
         <ModuleConfigDrawer
           isOpen={true}
           onClose={handleCloseDrawer}
-          moduleKey={activeDrawer}
-          moduleLabel={MODULE_LABELS[activeDrawer]}
+          moduleKey={activeDrawer === 'subject_line_pool' ? 'initial_greeting' : activeDrawer}
+          moduleLabel={activeDrawer === 'subject_line_pool' ? 'Subject Line Pool' : MODULE_LABELS[activeDrawer]}
           contactData={contactData}
-          currentSelection={moduleSelections[activeDrawer] || null}
+          currentSelection={moduleSelections[activeDrawer as keyof ModuleSelections] || null}
           onSave={handleSaveSelection}
           allPhrases={allPhrases}
           allInquiries={allInquiries}
           allSubjects={allSubjects}
+          toneOverride={toneOverride}
+          isSubjectPool={activeDrawer === 'subject_line_pool'}
         />
       )}
     </Card>
