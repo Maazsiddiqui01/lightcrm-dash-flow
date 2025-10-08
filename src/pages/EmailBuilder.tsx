@@ -425,7 +425,10 @@ export function EmailBuilder() {
         curatedTeam.length > 0 ? curatedTeam : undefined,
         curatedTo,
         curatedCc.length > 0 ? curatedCc : undefined,
-        autoTeam.length > 0 ? autoTeam : undefined
+        autoTeam.length > 0 ? autoTeam : undefined,
+        deltaType as 'Email' | 'Meeting' || 'Email', // deltaType
+        moduleStates, // Pass module states
+        moduleSelections // Pass module selections
       );
 
       // Generate draft
@@ -494,6 +497,16 @@ ${draftResult.signature}`;
   const handleBatchGenerate = async () => {
     if (selectedContactIds.size === 0) return;
     
+    // Validation: ensure required settings exist
+    if (!masterTemplate) {
+      toast({
+        title: 'Configuration Error',
+        description: 'Please select a master template before generating',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       // Build batch payload
       const contactsToProcess = groupContacts.filter(c => selectedContactIds.has(c.id));
@@ -539,9 +552,22 @@ ${draftResult.signature}`;
             outreach_date: contact.outreach_date,
           };
           
+          // Get effective module order (override or shared)
+          const effectiveModuleOrder = override?.moduleOrder || moduleOrder;
+          
+          // Get full master template from database
+          const fullMasterTemplate = masterTemplates?.find(
+            t => t.master_key === masterTemplate.master_key
+          );
+          
+          if (!fullMasterTemplate) {
+            throw new Error('Master template not found in database');
+          }
+          
+          // Build comprehensive payload with all UI state
           const payload = await buildEnhancedDraftPayload(
             contactForPayload,
-            masterTemplate || MODULE_DEFAULTS[0] as any,
+            fullMasterTemplate,
             allPhrases || [],
             allInquiries || [],
             allSubjects || [],
@@ -549,25 +575,39 @@ ${draftResult.signature}`;
             selectedArticle?.article_link || null,
             toneOverride,
             subjectPoolOverride,
-            moduleOrder,
+            effectiveModuleOrder, // Use effective module order
             override?.team || curatedTeam,
             override?.recipients?.to || contact.email_address || '',
             override?.recipients?.cc || curatedCc,
-            autoTeam
+            autoTeam,
+            contact.delta_type as 'Email' | 'Meeting' || 'Email', // deltaType
+            moduleStates, // Pass module states
+            moduleSelections // Pass module selections
           );
           
-          // Call edge function
+          // Validate payload before sending
+          if (!payload.contact.email || !payload.routing.masterKey) {
+            throw new Error('Invalid payload: missing required fields');
+          }
+          
+          queueManager.updateQueueItem(contact.id, { progress: 30 });
+          
+          // Call edge function with correct mode
           const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            throw new Error('Authentication required. Please refresh and try again.');
+          }
+          
           const response = await fetch(
             'https://wjghdqkxwuyptxzdidtf.supabase.co/functions/v1/post_to_n8n',
             {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session?.access_token}`,
+                'Authorization': `Bearer ${session.access_token}`,
               },
               body: JSON.stringify({
-                mode: 'individual',
+                mode: 'group', // Correct mode flag
                 batchId: `b_${Date.now()}`,
                 batchIndex: contactsToProcess.indexOf(contact),
                 batchTotal: contactsToProcess.length,
@@ -576,22 +616,36 @@ ${draftResult.signature}`;
             }
           );
           
-          if (!response.ok) throw new Error('Generation failed');
+          queueManager.updateQueueItem(contact.id, { progress: 70 });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Server error: ${response.status}`);
+          }
           
           queueManager.updateQueueItem(contact.id, { status: 'succeeded', progress: 100 });
         } catch (error: any) {
+          console.error(`Failed to generate for contact ${contact.id}:`, error);
           queueManager.updateQueueItem(contact.id, {
             status: 'failed',
             progress: 0,
-            error: error.message,
+            error: error.message || 'Unknown error',
           });
         }
       }
       
       queueManager.setIsProcessing(false);
-      toast({ title: 'Batch generation complete' });
+      toast({ 
+        title: 'Batch Generation Complete',
+        description: `Processed ${contactsToProcess.length} contact${contactsToProcess.length > 1 ? 's' : ''}`,
+      });
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      console.error('Batch generation error:', error);
+      toast({ 
+        title: 'Batch Generation Error', 
+        description: error.message || 'An unexpected error occurred', 
+        variant: 'destructive' 
+      });
       queueManager.setIsProcessing(false);
     }
   };

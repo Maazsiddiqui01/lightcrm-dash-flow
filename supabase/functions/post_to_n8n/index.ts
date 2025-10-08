@@ -63,9 +63,12 @@ function transformToN8NPayload(enhanced: any): any {
   
   const leadCC = uniqueEmails(leadEmails);
   const assistantCC = uniqueEmails(assistantEmails);
+  
+  // Use deltaType from routing to determine CC logic
+  const deltaType = routing.deltaType || 'Email';
   const ccFinal = cc.final || uniqueEmails([
     ...leadCC,
-    ...(routing.deltaType === 'Meeting' ? assistantCC : []),
+    ...(deltaType === 'Meeting' ? assistantCC : []),
   ]).filter((e: string) => e !== contact.email?.toLowerCase());
 
   const descByFA: Record<string, string> = {};
@@ -129,7 +132,7 @@ function transformToN8NPayload(enhanced: any): any {
   };
   const blackout = computeBlackout(new Date().toISOString());
 
-  const assistantClause = (routing.deltaType === 'Meeting' && assistantNames.length)
+  const assistantClause = (deltaType === 'Meeting' && assistantNames.length)
     ? `${joinOxford(assistantNames)}, copied here, can assist with scheduling on our end.`
     : '';
 
@@ -159,7 +162,7 @@ function transformToN8NPayload(enhanced: any): any {
   const groupCcEmails = groupMembers?.cc.map(m => m.email) || [];
   const allCcEmails = uniqueEmails([
     ...leadCC,
-    ...(routing.deltaType === 'Meeting' ? assistantCC : []),
+    ...(deltaType === 'Meeting' ? assistantCC : []),
     ...groupCcEmails,
   ]).filter((e: string) => e !== primaryToEmail.toLowerCase());
 
@@ -216,11 +219,13 @@ function transformToN8NPayload(enhanced: any): any {
       master_key: routing.masterKey || routing.master_key || 'hybrid_neutral',
       tone: routing.tone || 'hybrid',
       subject_style: routing.subjectStyle || routing.subject_style || 'mixed',
+      deltaType: deltaType, // Pass through deltaType
       modules: modules,
       flow: enhanced.flow || [],
+      moduleSequence: enhanced.moduleSequence || [], // Pass module sequence
     },
     custom: {
-      deltaType: 'Email',
+      deltaType: deltaType, // Pass deltaType to custom as well for backward compat
       subjectMode: 'lg_first',
       maxOpps: 3,
       chosenArticle: articlesObj.selected || articles[0]?.link || null,

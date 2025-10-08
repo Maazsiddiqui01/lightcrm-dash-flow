@@ -89,6 +89,7 @@ export interface EnhancedDraftPayload {
     tone: 'casual' | 'hybrid' | 'formal';
     subjectStyle: 'casual' | 'mixed' | 'formal';
     daysSinceContact: number;
+    deltaType: 'Email' | 'Meeting';
   };
   
   // Resolved content from libraries
@@ -154,7 +155,10 @@ export async function buildEnhancedDraftPayload(
   curatedTeam?: Array<{ id: string; name: string; email: string; role: string }>,
   curatedTo?: string,
   curatedCc?: string[],
-  autoTeam?: Array<{ id: string; name: string; email: string; role: string }>
+  autoTeam?: Array<{ id: string; name: string; email: string; role: string }>,
+  deltaType?: 'Email' | 'Meeting',
+  moduleStates?: Record<string, any>,
+  moduleSelections?: Record<string, any>
 ): Promise<EnhancedDraftPayload> {
   // Calculate effective tone
   const effectiveTone = toneOverride || masterTemplate.tone || 'hybrid';
@@ -339,6 +343,7 @@ export async function buildEnhancedDraftPayload(
       tone: effectiveTone,
       subjectStyle: masterTemplate.subject_style || 'mixed',
       daysSinceContact,
+      deltaType: deltaType || 'Email',
     },
     content: {
       subject,
@@ -425,6 +430,7 @@ function createFailedPayload(
       tone: 'hybrid',
       subjectStyle: 'mixed',
       daysSinceContact: 0,
+      deltaType: 'Email',
     },
     content: {
       subject: '',

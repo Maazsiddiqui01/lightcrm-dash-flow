@@ -104,7 +104,7 @@ export async function buildBatchPayload(
         contact
       );
 
-      // Build enhanced payload using existing function
+      // Build enhanced payload using existing function with all params
       const payload = await buildEnhancedDraftPayload(
         contactForPayload,
         effectiveSettings.masterTemplate,
@@ -119,7 +119,10 @@ export async function buildBatchPayload(
         effectiveSettings.curatedTeam,
         effectiveSettings.curatedTo,
         effectiveSettings.curatedCc,
-        [] // autoTeam
+        [], // autoTeam
+        contact.delta_type as 'Email' | 'Meeting' || 'Email', // deltaType
+        effectiveConfig.moduleStates, // moduleStates
+        effectiveConfig.moduleSelections // moduleSelections
       );
 
       return {
