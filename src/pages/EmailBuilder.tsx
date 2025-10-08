@@ -895,14 +895,31 @@ ${draftResult.signature}`;
             setContactOverrides(new Map(contactOverrides.set(override.contactId, override)));
             // Persist module order to DB so individual view reflects it
             if (override.moduleOrder && override.moduleOrder.length > 0) {
-              await supabase
+              // Load any existing row to preserve required fields
+              const { data: existing } = await supabase
                 .from('contact_email_builder_settings')
-                .upsert([
-                  {
-                    contact_id: override.contactId,
-                    module_order: override.moduleOrder,
-                  },
-                ]);
+                .select('*')
+                .eq('contact_id', override.contactId)
+                .maybeSingle();
+
+              const payload = {
+                contact_id: override.contactId,
+                module_order: override.moduleOrder,
+                // Preserve or provide sane defaults for NOT NULL columns
+                module_states: (existing?.module_states as any) || (moduleStates as any),
+                delta_type: (existing?.delta_type as string) || (deltaType as string) || 'Email',
+                selected_article_id: existing?.selected_article_id || null,
+                module_selections: existing?.module_selections || (moduleSelections as any) || null,
+                curated_recipients: existing?.curated_recipients || null,
+              } as any;
+
+              const { error: upsertErr } = await supabase
+                .from('contact_email_builder_settings')
+                .upsert([payload]);
+
+              if (upsertErr) {
+                console.error('Failed to save module order override', upsertErr);
+              }
             }
           }}
         />
