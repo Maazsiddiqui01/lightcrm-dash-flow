@@ -15,6 +15,7 @@ import { pickSignature } from '@/hooks/useSignatureLibrary';
 import { fetchContactMetadata } from '@/hooks/useContextFetching';
 import { buildModuleConfiguration, buildContentFlow } from './draftGeneration';
 import { supabase } from '@/integrations/supabase/client';
+import { buildModuleSequence } from './modulePositions';
 
 export interface EnhancedDraftPayload {
   // Core contact info
@@ -230,12 +231,16 @@ export async function buildEnhancedDraftPayload(
     !!generation.inquiry
   );
 
-  // Build module sequence with position metadata
+  // Build module sequence with position metadata using validated utility
   const orderedModules = moduleOrder || Object.keys(generation.modules);
-  const moduleSequence = orderedModules.map((moduleKey, index) => ({
-    id: moduleKey,
-    position: index + 1,
-    enabled: generation.modules[moduleKey] || false,
+  const moduleSequence = buildModuleSequence(
+    orderedModules,
+    moduleStates || {}
+  ).map(item => ({
+    id: item.key,
+    position: item.position,
+    enabled: generation.modules[item.key] || false,
+    mode: item.mode,
   }));
 
   // Build CC list from team directory (fetch emails from database)

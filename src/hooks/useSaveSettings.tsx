@@ -42,6 +42,21 @@ const undoStack: UndoEntry[] = [];
 const UNDO_TIMEOUT = 10000; // 10 seconds
 
 /**
+ * Prunes expired entries from undo stack to prevent memory leak
+ */
+function pruneUndoStack() {
+  const cutoff = new Date(Date.now() - UNDO_TIMEOUT);
+  const validIndex = undoStack.findIndex(entry => entry.timestamp > cutoff);
+  
+  if (validIndex > 0) {
+    undoStack.splice(0, validIndex);
+  } else if (validIndex === -1 && undoStack.length > 0) {
+    // All entries expired
+    undoStack.length = 0;
+  }
+}
+
+/**
  * Hook providing save operations for both contact-specific and global template settings
  * Supports undo functionality with 10-second window
  */
@@ -52,6 +67,14 @@ export function useSaveSettings() {
   // Save for specific contact only
   const saveContactMutation = useMutation({
     mutationFn: async (payload: ContactSavePayload) => {
+      // Validate template ID is present
+      if (!payload.templateId) {
+        throw new Error('Template ID is required for saving contact settings');
+      }
+      
+      // Prune expired undo entries before adding new one
+      pruneUndoStack();
+      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -134,6 +157,9 @@ export function useSaveSettings() {
   // Save to Global (template-level) - Only Core Settings + Email Modules
   const saveGlobalMutation = useMutation({
     mutationFn: async (payload: GlobalSavePayload) => {
+      // Prune expired undo entries before adding new one
+      pruneUndoStack();
+      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       

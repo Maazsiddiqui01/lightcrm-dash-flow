@@ -54,6 +54,8 @@ import { SplitSaveButton } from "@/components/email-builder/SplitSaveButton";
 import { SourceBadge } from "@/components/email-builder/SourceBadge";
 import { ConfirmSaveDialog, type SaveScope, type AffectedField } from "@/components/email-builder/ConfirmSaveDialog";
 import { MASTER_TEMPLATES } from "@/lib/router";
+import { recomputePositions, buildModuleSequence, announceModuleMove } from "@/lib/modulePositions";
+import { validateDraftPayload, validateSubjectPool, validateTemplateId } from "@/lib/emailBuilderValidation";
 
 export function EmailBuilder() {
   // Enable real-time synchronization with Global Libraries
@@ -151,6 +153,9 @@ export function EmailBuilder() {
   
   const [draftResult, setDraftResult] = useState<any | null>(null);
   
+  // ARIA live region for module reorder announcements
+  const [ariaAnnouncement, setAriaAnnouncement] = useState<string>('');
+  
   // Auto-set days since contact when contact changes
   useEffect(() => {
     if (contactData?.most_recent_contact) {
@@ -191,6 +196,28 @@ export function EmailBuilder() {
     setConfirmDialogOpen(true);
     setPendingSaveScope('global');
   };
+  
+  // Handle module change
+  const handleModuleChange = (key: string, value: TriState) => {
+    setModuleStates(prev => ({ ...prev, [key]: value }));
+  };
+  
+  // Handle module reorder with position recalculation
+  const handleModuleOrderChange = (newOrder: (string | number)[]) => {
+    // Recompute positions to ensure 1..N contiguity
+    const recomputed = recomputePositions(newOrder);
+    setModuleOrder(recomputed as Array<keyof ModuleStates>);
+    
+    // Announce for screen readers
+    if (recomputed.length > 0) {
+      const lastMoved = recomputed[recomputed.length - 1];
+      const announcement = announceModuleMove(lastMoved, recomputed.length);
+      setAriaAnnouncement(announcement);
+      
+      // Clear announcement after screen reader reads it
+      setTimeout(() => setAriaAnnouncement(''), 1000);
+    }
+  };
 
   const handleConfirmSave = async () => {
     if (!selectedContact || !masterTemplate) return;
@@ -200,13 +227,27 @@ export function EmailBuilder() {
     );
 
     if (pendingSaveScope === 'contact') {
+      // Validate template ID before saving
+      const templateId = (fullMasterTemplate as any)?.id || null;
+      const templateValidation = validateTemplateId(templateId);
+      
+      if (!templateValidation.isValid) {
+        toast({
+          title: "Validation Error",
+          description: templateValidation.errors.join(', '),
+          variant: "destructive",
+        });
+        setConfirmDialogOpen(false);
+        return;
+      }
+      
       saveContact({
         contactId: selectedContact.contact_id,
         contactName: selectedContact.full_name || 'this contact',
-        templateId: (fullMasterTemplate as any)?.id || null,
+        templateId,
         moduleStates,
         deltaType,
-        moduleOrder: moduleOrder as string[],
+        moduleOrder: recomputePositions(moduleOrder) as string[],
         moduleSelections,
         curatedRecipients: {
           team: curatedTeam,
@@ -231,7 +272,7 @@ export function EmailBuilder() {
         toneOverride,
         lengthOverride,
         moduleStates,
-        moduleOrder: moduleOrder as string[],
+        moduleOrder: recomputePositions(moduleOrder) as string[],
         currentRevision: 0,
       });
     }
@@ -400,10 +441,6 @@ export function EmailBuilder() {
     selectedArticle,
     masterTemplate
   );
-  
-  const handleModuleChange = (module: keyof ModuleStates, value: TriState) => {
-    setModuleStates(prev => ({ ...prev, [module]: value }));
-  };
   
   const handleResetToDefaults = () => {
     if (masterTemplate && masterTemplates) {
@@ -589,6 +626,17 @@ ${draftResult.signature}`;
       toast({
         title: 'Configuration Error',
         description: 'Please select a master template before generating',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Validate subject pool
+    const subjectValidation = validateSubjectPool(subjectPoolOverride);
+    if (!subjectValidation.isValid) {
+      toast({
+        title: 'Subject Pool Error',
+        description: subjectValidation.errors.join(', '),
         variant: 'destructive',
       });
       return;
@@ -929,7 +977,7 @@ ${draftResult.signature}`;
               moduleStates={moduleStates}
               moduleOrder={moduleOrder}
               onModuleChange={handleModuleChange}
-              onModuleOrderChange={setModuleOrder}
+              onModuleOrderChange={handleModuleOrderChange}
               onResetToDefaults={handleResetToDefaults}
               moduleSelections={moduleSelections}
               onModuleSelectionChange={handleModuleSelectionChange}
@@ -970,10 +1018,29 @@ ${draftResult.signature}`;
                 result={draftResult}
                 onGenerate={handleGenerateDraft}
                 onCopyToClipboard={handleCopyToClipboard}
-                disabled={!contactData}
+                disabled={!contactData || subjectPoolOverride.length === 0}
               />
             )}
+            
+            {/* Subject Pool Validation Warning */}
+            {subjectPoolOverride.length === 0 && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive font-medium">
+                  ⚠️ Subject Line Pool must have at least one enabled subject
+                </p>
+              </div>
+            )}
           </div>
+        </div>
+        
+        {/* ARIA Live Region for Module Reorder Announcements */}
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {ariaAnnouncement}
         </div>
         </>
         )}
