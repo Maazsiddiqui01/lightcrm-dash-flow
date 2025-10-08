@@ -3,15 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle2, XCircle, Loader2, Clock, X, RotateCcw } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Clock, X, RotateCcw, AlertCircle } from 'lucide-react';
 import type { QueueItem } from '@/types/groupEmailBuilder';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface QueueDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   queue: Map<string, QueueItem>;
   onRetry: (contactId: string) => void;
+  onRetryAll: () => void; // NEW: Retry all failed items
   onCancelPending: () => void;
   isProcessing: boolean;
 }
@@ -21,6 +23,7 @@ export function QueueDialog({
   onOpenChange,
   queue,
   onRetry,
+  onRetryAll,
   onCancelPending,
   isProcessing,
 }: QueueDialogProps) {
@@ -108,6 +111,25 @@ export function QueueDialog({
               </span>
             </div>
           </div>
+          
+          {/* Retry All Failed Button */}
+          {failedCount > 0 && (
+            <Alert className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>{failedCount} draft{failedCount > 1 ? 's' : ''} failed to generate</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onRetryAll}
+                  className="ml-4"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Retry All Failed
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Items List */}
           <ScrollArea className="flex-1 border rounded-lg">
@@ -116,6 +138,8 @@ export function QueueDialog({
                 <div
                   key={item.contactId}
                   className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  role="listitem"
+                  aria-label={`${item.contactName}: ${item.status}`}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {getStatusIcon(item.status)}
@@ -136,6 +160,7 @@ export function QueueDialog({
                         variant="outline"
                         onClick={() => onRetry(item.contactId)}
                         className="h-7 text-xs"
+                        aria-label={`Retry ${item.contactName}`}
                       >
                         <RotateCcw className="h-3 w-3 mr-1" />
                         Retry ({item.retryCount}/3)

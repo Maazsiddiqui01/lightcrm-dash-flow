@@ -7,12 +7,15 @@ import type {
 
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
+const TOAST_DEFAULT_DURATION = 5000 // Default 5 seconds
+const TOAST_UNDO_DURATION = 10000 // 10 seconds for undo toasts
 
 type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  duration?: number // Custom duration per toast
 }
 
 const actionTypes = {
@@ -142,10 +145,14 @@ type Toast = Omit<ToasterToast, "id">
 function toast({ ...props }: Toast) {
   const id = genId()
 
+  // Determine duration: use custom duration, or 10s for undo toasts, or default 5s
+  const duration = props.duration || 
+                   (props.action ? TOAST_UNDO_DURATION : TOAST_DEFAULT_DURATION);
+
   const update = (props: ToasterToast) =>
     dispatch({
       type: "UPDATE_TOAST",
-      toast: { ...props, id },
+      toast: { ...props, id, duration },
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
@@ -154,6 +161,7 @@ function toast({ ...props }: Toast) {
     toast: {
       ...props,
       id,
+      duration,
       open: true,
       onOpenChange: (open) => {
         if (!open) dismiss()

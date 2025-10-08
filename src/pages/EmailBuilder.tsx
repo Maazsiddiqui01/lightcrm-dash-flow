@@ -1156,6 +1156,12 @@ ${draftResult.signature}`;
           onOpenChange={setQueueDialogOpen}
           queue={queueManager.queue}
           onRetry={queueManager.retryItem}
+          onRetryAll={() => {
+            // Retry all failed items
+            Array.from(queueManager.queue.values())
+              .filter(item => item.status === 'failed' && item.retryCount < 3)
+              .forEach(item => queueManager.retryItem(item.contactId));
+          }}
           onCancelPending={queueManager.cancelPending}
           isProcessing={queueManager.isProcessing}
         />

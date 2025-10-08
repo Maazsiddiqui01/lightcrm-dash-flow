@@ -134,6 +134,7 @@ export function useSaveSettings() {
       toast({
         title: "Saved for this contact",
         description: `Settings saved only for ${payload.contactName}`,
+        duration: 10000, // 10 seconds for undo
         action: (
           <ToastAction 
             altText="Undo" 
@@ -218,6 +219,7 @@ export function useSaveSettings() {
       toast({
         title: "Global defaults updated",
         description: `Updated defaults for ${payload.templateName}. Affects Core Settings + Email Modules only.`,
+        duration: 10000, // 10 seconds for undo
         action: (
           <ToastAction 
             altText="Undo" 
