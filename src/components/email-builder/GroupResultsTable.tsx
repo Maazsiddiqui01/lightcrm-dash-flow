@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -29,6 +29,8 @@ interface GroupResultsTableProps {
   selectedContactIds: Set<string>;
   onSelectionChange: (ids: Set<string>) => void;
   onCustomize: (contactId: string) => void;
+  onFocusChange: (contactId: string | null) => void;
+  focusedContactId: string | null;
   overrides: Map<string, ContactOverride>;
   loading?: boolean;
 }
@@ -38,11 +40,14 @@ export function GroupResultsTable({
   selectedContactIds,
   onSelectionChange,
   onCustomize,
+  onFocusChange,
+  focusedContactId,
   overrides,
   loading = false,
 }: GroupResultsTableProps) {
   const [selectAllChecked, setSelectAllChecked] = useState(false);
-  const MAX_SELECTION = 500;
+  const [focusedRowIndex, setFocusedRowIndex] = useState<number>(-1);
+  const MAX_SELECTION = 10000; // Increased from 500
 
   const hasOverride = (contactId: string) => overrides.has(contactId);
 
@@ -238,13 +243,56 @@ export function GroupResultsTable({
   const { rows } = table.getRowModel();
 
   // Virtualization setup
-  const parentRef = useState<HTMLDivElement | null>(null);
+  const parentRef = useRef<HTMLDivElement | null>(null);
   const virtualizer = useVirtualizer({
     count: rows.length,
-    getScrollElement: () => parentRef[0],
+    getScrollElement: () => parentRef.current,
     estimateSize: () => 50,
     overscan: 10,
   });
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (contacts.length === 0) return;
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedRowIndex(prev => Math.min(prev + 1, contacts.length - 1));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedRowIndex(prev => Math.max(prev - 1, 0));
+          break;
+        case ' ':
+        case 'Enter':
+          e.preventDefault();
+          if (focusedRowIndex >= 0 && focusedRowIndex < contacts.length) {
+            const contactId = contacts[focusedRowIndex].id;
+            toggleRow(contactId);
+          }
+          break;
+        case 'c':
+        case 'C':
+          if (focusedRowIndex >= 0 && focusedRowIndex < contacts.length) {
+            const contactId = contacts[focusedRowIndex].id;
+            onCustomize(contactId);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [focusedRowIndex, contacts]);
+
+  // Update focus callback when row index changes
+  useEffect(() => {
+    if (focusedRowIndex >= 0 && focusedRowIndex < contacts.length) {
+      onFocusChange(contacts[focusedRowIndex].id);
+    }
+  }, [focusedRowIndex, contacts, onFocusChange]);
 
   if (loading) {
     return (
@@ -277,8 +325,9 @@ export function GroupResultsTable({
       )}
       
       <div
-        ref={(el) => (parentRef[0] = el)}
+        ref={parentRef}
         className="h-[500px] overflow-auto border rounded-lg bg-card"
+        tabIndex={0}
       >
         <table className="w-full">
           <thead className="bg-muted/50 sticky top-0 z-10">
@@ -299,13 +348,27 @@ export function GroupResultsTable({
           <tbody>
             {virtualizer.getVirtualItems().map((virtualRow) => {
               const row = rows[virtualRow.index];
+              const contactId = row.original.id;
+              const isFocused = focusedContactId === contactId;
+              const isKeyboardFocused = focusedRowIndex === virtualRow.index;
+              
               return (
                 <tr
                   key={row.id}
-                  className="border-b hover:bg-muted/30 transition-colors"
+                  className={`border-b transition-colors cursor-pointer ${
+                    isFocused 
+                      ? 'bg-primary/10 ring-2 ring-primary ring-inset' 
+                      : isKeyboardFocused
+                      ? 'bg-muted/50'
+                      : 'hover:bg-muted/30'
+                  }`}
                   style={{
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                  onClick={() => {
+                    setFocusedRowIndex(virtualRow.index);
+                    onFocusChange(contactId);
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (
@@ -320,9 +383,20 @@ export function GroupResultsTable({
         </table>
       </div>
       
-      <p className="text-sm text-muted-foreground">
-        Showing {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
-      </p>
+      {/* Keyboard shortcuts hint */}
+      <div className="text-xs text-muted-foreground space-y-1">
+        <p>
+          <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">↑↓</kbd> Navigate •{' '}
+          <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Space/Enter</kbd> Select •{' '}
+          <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">C</kbd> Customize •{' '}
+          <span className="text-xs">Click row to preview</span>
+        </p>
+      </div>
+      
+      <div className="text-sm text-muted-foreground">
+        Showing {contacts.length.toLocaleString()} contacts
+        {selectedContactIds.size > 0 && ` • ${selectedContactIds.size} selected`}
+      </div>
     </div>
   );
 }

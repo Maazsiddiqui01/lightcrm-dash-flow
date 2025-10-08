@@ -20,11 +20,14 @@ import { ArticlePicker } from "@/components/email-builder/ArticlePicker";
 import { EditableRecipients } from "@/components/email-builder/EditableRecipients";
 import { EnhancedDraftSection } from "@/components/email-builder/EnhancedDraftSection";
 import { PreviewModal } from "@/components/email-builder/PreviewModal";
+import { PreviewPanel } from "@/components/email-builder/PreviewPanel";
 import { LivePreviewPanel } from "@/components/email-builder/LivePreviewPanel";
 import { GroupContactAlert } from "@/components/email-builder/GroupContactAlert";
 import { IndividualContactAlert } from "@/components/email-builder/IndividualContactAlert";
+import { mergeEffectiveConfig } from "@/lib/previewMerge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Save, RotateCcw } from "lucide-react";
 import { useEmailBuilderData } from "@/hooks/useEmailBuilderData";
 import { useContactGroupInfo } from "@/hooks/useContactGroupInfo";
@@ -67,6 +70,7 @@ export function EmailBuilder() {
   const [activeOverrideContactId, setActiveOverrideContactId] = useState<string>('');
   const [groupContacts, setGroupContacts] = useState<any[]>([]);
   const [loadingGroupContacts, setLoadingGroupContacts] = useState(false);
+  const [focusedContactId, setFocusedContactId] = useState<string | null>(null); // Track focused contact for preview
   
   // Queue management for Group mode
   const queueManager = useBatchQueueManager();
@@ -621,16 +625,63 @@ ${draftResult.signature}`;
                     setActiveOverrideContactId(contactId);
                     setOverrideDrawerOpen(true);
                   }}
+                  onFocusChange={setFocusedContactId}
+                  focusedContactId={focusedContactId}
                   overrides={contactOverrides}
                   loading={loadingGroupContacts}
                 />
               </div>
               
               <div className="lg:col-span-4">
-                {/* Shared settings preview */}
-                <div className="text-sm text-muted-foreground">
-                  Group mode shared settings configured
-                </div>
+                {/* Preview Panel for focused contact */}
+                {focusedContactId && (() => {
+                  const focusedContact = groupContacts.find(c => c.id === focusedContactId);
+                  if (!focusedContact) return null;
+                  
+                  const effectiveConfig = mergeEffectiveConfig(
+                    {
+                      toneOverride,
+                      lengthOverride,
+                      daysSinceContact,
+                      masterTemplate: masterTemplates?.find(t => t.master_key === masterTemplate?.master_key) || {} as any,
+                      moduleSelections,
+                      moduleOrder,
+                      moduleStates: moduleStates as Record<string, any>,
+                      subjectLinePool: {
+                        selectedIds: subjectPoolOverride,
+                        style: 'hybrid',
+                      },
+                      team: curatedTeam,
+                      cc: curatedCc,
+                    },
+                    contactOverrides.get(focusedContactId),
+                    focusedContact
+                  );
+                  
+                  return (
+                    <PreviewPanel
+                      config={effectiveConfig}
+                      contactName={focusedContact.full_name || focusedContact.email_address || 'Unknown'}
+                      onEdit={() => {
+                        setActiveOverrideContactId(focusedContactId);
+                        setOverrideDrawerOpen(true);
+                      }}
+                    />
+                  );
+                })()}
+                
+                {!focusedContactId && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Preview</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        Click on a contact row to preview their effective settings
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
             
