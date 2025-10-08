@@ -293,7 +293,7 @@ export function ModulesCard({
                         index={index}
                         label={MODULE_LABELS[moduleKey]}
                         value={moduleStates[moduleKey]}
-                        isDisabled={!masterTemplate}
+                        isDisabled={false}
                         onChange={(value) => onModuleChange(moduleKey, value)}
                         hasConfiguration={CONFIGURABLE_MODULES.has(moduleKey)}
                         onConfigure={() => handleOpenDrawer(moduleKey)}

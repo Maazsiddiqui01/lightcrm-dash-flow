@@ -345,6 +345,25 @@ export function EmailBuilder() {
     }));
   };
 
+  // Auto-save module order on change in Individual mode (debounced)
+  useEffect(() => {
+    if (mode !== 'individual' || !selectedContact?.contact_id) return;
+    const t = setTimeout(() => {
+      saveSettings({
+        contactId: selectedContact.contact_id,
+        moduleStates,
+        deltaType,
+        selectedArticleId: selectedArticle?.article_link,
+        moduleOrder,
+        moduleSelections,
+        curatedTeam,
+        curatedTo,
+        curatedCc,
+      });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [moduleOrder]);
+
   const handleSaveSettings = () => {
     if (!selectedContact?.contact_id) return;
     
@@ -872,8 +891,19 @@ ${draftResult.signature}`;
           allPhrases={allPhrases || []}
           allInquiries={allInquiries || []}
           currentOverride={contactOverrides.get(activeOverrideContactId)}
-          onSave={(override) => {
+          onSave={async (override) => {
             setContactOverrides(new Map(contactOverrides.set(override.contactId, override)));
+            // Persist module order to DB so individual view reflects it
+            if (override.moduleOrder && override.moduleOrder.length > 0) {
+              await supabase
+                .from('contact_email_builder_settings')
+                .upsert([
+                  {
+                    contact_id: override.contactId,
+                    module_order: override.moduleOrder,
+                  },
+                ]);
+            }
           }}
         />
         
