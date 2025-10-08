@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ContactPicker } from "./ContactPicker";
-import { ArticleSelector, Article } from "./ArticleSelector";
+import type { Article } from "@/types/emailComposer";
 import { VariablesModal } from "./VariablesModal";
 import { ContactSummaryCard } from "./ContactSummaryCard";
 import { CCPreviewCard } from "./CCPreviewCard";
@@ -166,11 +166,7 @@ export function DraftSection() {
         onContactSelect={setSelectedContact}
       />
 
-      {/* Article Selector */}
-      <ArticleSelector
-        selectedArticle={selectedArticle}
-        onArticleSelect={setSelectedArticle}
-      />
+      {/* Article Selector - Deprecated, moved to EmailBuilder */}
 
       {selectedContact && enrichedContact && (
         <>

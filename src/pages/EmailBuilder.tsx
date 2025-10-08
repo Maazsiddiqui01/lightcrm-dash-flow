@@ -32,6 +32,7 @@ import { routeMaster } from "@/lib/router";
 import type { EmailTemplate } from "@/hooks/useEmailTemplates";
 import type { Article } from "@/types/emailComposer";
 import type { TriState } from "@/types/phraseLibrary";
+import type { ModuleSelection, ModuleSelections } from "@/types/moduleSelections";
 import { useToast } from "@/hooks/use-toast";
 
 export function EmailBuilder() {
@@ -79,7 +80,10 @@ export function EmailBuilder() {
     'ai_backup_personalization',
   ]);
   
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null); // Deprecated - keep for backward compat
+  
+  // Module selections state
+  const [moduleSelections, setModuleSelections] = useState<ModuleSelections>({});
   
   // Get contact data from new composer view
   const { data: contactData } = useComposerRow(selectedContact?.email || null);
@@ -135,6 +139,11 @@ export function EmailBuilder() {
       setDeltaType(contactSettings.delta_type);
       if (contactSettings.module_order) {
         setModuleOrder(contactSettings.module_order as Array<keyof ModuleStates>);
+      }
+      if (contactSettings.module_selections) {
+        setModuleSelections(contactSettings.module_selections as ModuleSelections);
+      } else {
+        setModuleSelections({});
       }
       if (contactSettings.selected_article_id) {
         // Could load article here if needed
@@ -197,6 +206,13 @@ export function EmailBuilder() {
     }
   };
 
+  const handleModuleSelectionChange = (module: keyof ModuleStates, selection: ModuleSelection | null) => {
+    setModuleSelections(prev => ({
+      ...prev,
+      [module]: selection,
+    }));
+  };
+
   const handleSaveSettings = () => {
     if (!selectedContact?.contact_id) return;
     
@@ -206,6 +222,7 @@ export function EmailBuilder() {
       deltaType,
       selectedArticleId: selectedArticle?.article_link,
       moduleOrder,
+      moduleSelections,
     });
   };
 
@@ -378,12 +395,12 @@ ${draftResult.signature}`;
               onModuleChange={handleModuleChange}
               onModuleOrderChange={setModuleOrder}
               onResetToDefaults={handleResetToDefaults}
-            />
-            
-            <ArticlePicker
+              moduleSelections={moduleSelections}
+              onModuleSelectionChange={handleModuleSelectionChange}
               contactData={contactData}
-              selectedArticle={selectedArticle}
-              onArticleSelect={setSelectedArticle}
+              allPhrases={allPhrases}
+              allInquiries={allInquiries}
+              allSubjects={allSubjects}
             />
             
             <CCPreviewCard

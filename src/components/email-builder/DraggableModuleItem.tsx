@@ -1,7 +1,9 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Settings } from 'lucide-react';
 import { TriStateToggle } from './TriStateToggle';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { TriState } from '@/types/phraseLibrary';
 
 interface DraggableModuleItemProps {
@@ -11,6 +13,9 @@ interface DraggableModuleItemProps {
   value: TriState;
   isDisabled: boolean;
   onChange: (value: TriState) => void;
+  hasConfiguration?: boolean;
+  onConfigure?: () => void;
+  selectedItemsCount?: number;
 }
 
 export function DraggableModuleItem({
@@ -20,6 +25,9 @@ export function DraggableModuleItem({
   value,
   isDisabled,
   onChange,
+  hasConfiguration = false,
+  onConfigure,
+  selectedItemsCount = 0,
 }: DraggableModuleItemProps) {
   const {
     attributes,
@@ -68,10 +76,33 @@ export function DraggableModuleItem({
         </button>
 
         {/* Module Label */}
-        <span className="text-sm font-medium flex-1">{label}</span>
+        <div className="flex-1 flex items-center gap-2">
+          <span className="text-sm font-medium">{label}</span>
+          {selectedItemsCount > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              {selectedItemsCount} selected
+            </Badge>
+          )}
+        </div>
 
         {/* Tri-State Toggle */}
         <TriStateToggle value={value} onChange={onChange} />
+
+        {/* Configure Button */}
+        {hasConfiguration && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onConfigure?.();
+            }}
+            className="ml-2"
+            aria-label={`Configure ${label}`}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,13 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import type { MasterTemplate } from "@/lib/router";
 import { DraggableModuleItem } from './DraggableModuleItem';
+import { ModuleConfigDrawer } from './ModuleConfigDrawer';
 import type { TriState } from "@/types/phraseLibrary";
+import type { ContactEmailComposer } from "@/types/emailComposer";
+import type { PhraseLibraryItem } from "@/types/phraseLibrary";
+import type { InquiryLibraryItem } from "@/hooks/useInquiryLibrary";
+import type { SubjectLibraryItem } from "@/hooks/useSubjectLibrary";
+import type { ModuleSelection, ModuleSelections } from "@/types/moduleSelections";
 
 export interface ModuleStates {
   initial_greeting: TriState;
@@ -43,6 +50,12 @@ interface ModulesCardProps {
   onModuleChange: (module: keyof ModuleStates, value: TriState) => void;
   onModuleOrderChange: (newOrder: Array<keyof ModuleStates>) => void;
   onResetToDefaults: () => void;
+  moduleSelections: ModuleSelections;
+  onModuleSelectionChange: (module: keyof ModuleStates, selection: ModuleSelection | null) => void;
+  contactData: ContactEmailComposer | null;
+  allPhrases: PhraseLibraryItem[];
+  allInquiries: InquiryLibraryItem[];
+  allSubjects: SubjectLibraryItem[];
 }
 
 /**
@@ -127,14 +140,29 @@ const MODULE_LABELS: Record<keyof ModuleStates, string> = {
   ai_backup_personalization: "AI Backup Personalization",
 };
 
+// Modules that have configuration drawers
+const CONFIGURABLE_MODULES: Set<keyof ModuleStates> = new Set([
+  'initial_greeting',
+  'article_recommendations',
+  'suggested_talking_points',
+  'addons',
+]);
+
 export function ModulesCard({ 
   masterTemplate, 
   moduleStates,
   moduleOrder,
   onModuleChange,
   onModuleOrderChange,
-  onResetToDefaults 
+  onResetToDefaults,
+  moduleSelections,
+  onModuleSelectionChange,
+  contactData,
+  allPhrases,
+  allInquiries,
+  allSubjects,
 }: ModulesCardProps) {
+  const [activeDrawer, setActiveDrawer] = useState<keyof ModuleStates | null>(null);
   // Drag-and-drop sensors with accessibility
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -142,6 +170,31 @@ export function ModulesCard({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const handleOpenDrawer = (moduleKey: keyof ModuleStates) => {
+    setActiveDrawer(moduleKey);
+  };
+
+  const handleCloseDrawer = () => {
+    setActiveDrawer(null);
+  };
+
+  const handleSaveSelection = (selection: ModuleSelection | null) => {
+    if (activeDrawer) {
+      onModuleSelectionChange(activeDrawer, selection);
+    }
+    setActiveDrawer(null);
+  };
+
+  const getSelectedItemsCount = (moduleKey: keyof ModuleStates): number => {
+    const selection = moduleSelections[moduleKey];
+    if (!selection) return 0;
+    
+    if (selection.articleId) return 1;
+    if (selection.greetingId) return 1;
+    if (selection.phraseIds) return selection.phraseIds.length;
+    return 0;
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -213,6 +266,9 @@ export function ModulesCard({
                     value={moduleStates[moduleKey]}
                     isDisabled={!masterTemplate}
                     onChange={(value) => onModuleChange(moduleKey, value)}
+                    hasConfiguration={CONFIGURABLE_MODULES.has(moduleKey)}
+                    onConfigure={() => handleOpenDrawer(moduleKey)}
+                    selectedItemsCount={getSelectedItemsCount(moduleKey)}
                   />
                 ))}
               </div>
@@ -235,6 +291,22 @@ export function ModulesCard({
           </div>
         )}
       </CardContent>
+
+      {/* Module Configuration Drawer */}
+      {activeDrawer && (
+        <ModuleConfigDrawer
+          isOpen={true}
+          onClose={handleCloseDrawer}
+          moduleKey={activeDrawer}
+          moduleLabel={MODULE_LABELS[activeDrawer]}
+          contactData={contactData}
+          currentSelection={moduleSelections[activeDrawer] || null}
+          onSave={handleSaveSelection}
+          allPhrases={allPhrases}
+          allInquiries={allInquiries}
+          allSubjects={allSubjects}
+        />
+      )}
     </Card>
   );
 }
