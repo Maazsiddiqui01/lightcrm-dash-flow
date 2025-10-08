@@ -34,7 +34,7 @@ export function EmailBuilderCoreSettings({
 
   // Determine effective values (override or default)
   const effectiveTone = toneOverride || effectiveTemplate?.tone || 'hybrid';
-  const effectiveLength = lengthOverride || effectiveTemplate?.length || 'medium';
+  const effectiveLength = lengthOverride || effectiveTemplate?.length || 'standard';
 
   const getDaysRangeLabel = () => {
     if (!effectiveTemplate) return '';
@@ -136,9 +136,9 @@ export function EmailBuilderCoreSettings({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">Use Default ({effectiveTemplate?.length || 'medium'})</SelectItem>
+              <SelectItem value="default">Use Default ({effectiveTemplate?.length || 'standard'})</SelectItem>
               <SelectItem value="brief">Brief</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="standard">Standard</SelectItem>
               <SelectItem value="detailed">Detailed</SelectItem>
             </SelectContent>
           </Select>

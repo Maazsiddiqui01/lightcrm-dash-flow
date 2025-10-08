@@ -21,6 +21,7 @@ interface ContactRaw {
   lg_focus_areas_comprehensive_list: string | null;
   most_recent_contact: string | null;
   lg_lead: string | null;
+  lg_assistant: string | null;
 }
 
 interface GroupResultsTableProps {
@@ -160,7 +161,33 @@ export function GroupResultsTable({
         cell: ({ row }) => {
           const contactId = row.original.id;
           const override = overrides.get(contactId);
-          const teamMembers = override?.team || [];
+          
+          // Use override team if exists, otherwise parse from contact's lg_lead and lg_assistant
+          let teamMembers = override?.team || [];
+          
+          // If no override, build team from contact data
+          if (teamMembers.length === 0) {
+            const contact = row.original;
+            const tempTeam: any[] = [];
+            
+            // Parse LG Leads
+            if (contact.lg_lead) {
+              const leads = contact.lg_lead.split(',').map((l: string) => l.trim()).filter(Boolean);
+              leads.forEach((leadName: string) => {
+                tempTeam.push({ name: leadName, role: 'Lead' });
+              });
+            }
+            
+            // Parse LG Assistants
+            if (contact.lg_assistant) {
+              const assistants = contact.lg_assistant.split(',').map((a: string) => a.trim()).filter(Boolean);
+              assistants.forEach((assistantName: string) => {
+                tempTeam.push({ name: assistantName, role: 'Assistant' });
+              });
+            }
+            
+            teamMembers = tempTeam;
+          }
           
           if (teamMembers.length === 0) {
             return <span className="text-muted-foreground">—</span>;

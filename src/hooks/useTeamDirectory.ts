@@ -17,66 +17,81 @@ export const useTeamDirectory = (contactEmail?: string) => {
       const emailDomain = contactEmail.split('@')[1]?.toLowerCase();
       if (!emailDomain) return [];
 
-      // Fetch all contacts to build directory
-      const { data: contacts, error } = await supabase
-        .from('contacts_raw')
-        .select('id, full_name, email_address, lg_lead, lg_assistant')
-        .not('email_address', 'is', null);
-
-      if (error) throw error;
-
       const teamMembers: TeamMember[] = [];
       const seen = new Set<string>();
 
+      // Fetch LG Focus Area Directory for Leads and Assistants with emails
+      const { data: directory, error: dirError } = await supabase
+        .from('lg_focus_area_directory')
+        .select('focus_area, lead1_name, lead1_email, lead2_name, lead2_email, assistant_name, assistant_email');
+
+      if (dirError) throw dirError;
+
+      // Process directory data to get unique leads and assistants
+      directory?.forEach(entry => {
+        // Add Lead 1
+        if (entry.lead1_name && entry.lead1_email) {
+          const key = `lead_${entry.lead1_email.toLowerCase()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            teamMembers.push({
+              id: key,
+              name: entry.lead1_name,
+              email: entry.lead1_email,
+              role: 'Lead'
+            });
+          }
+        }
+
+        // Add Lead 2
+        if (entry.lead2_name && entry.lead2_email) {
+          const key = `lead_${entry.lead2_email.toLowerCase()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            teamMembers.push({
+              id: key,
+              name: entry.lead2_name,
+              email: entry.lead2_email,
+              role: 'Lead'
+            });
+          }
+        }
+
+        // Add Assistant
+        if (entry.assistant_name && entry.assistant_email) {
+          const key = `assistant_${entry.assistant_email.toLowerCase()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            teamMembers.push({
+              id: key,
+              name: entry.assistant_name,
+              email: entry.assistant_email,
+              role: 'Assistant'
+            });
+          }
+        }
+      });
+
+      // Fetch colleagues from same email domain
+      const { data: contacts, error } = await supabase
+        .from('contacts_raw')
+        .select('id, full_name, email_address')
+        .not('email_address', 'is', null)
+        .ilike('email_address', `%@${emailDomain}`);
+
+      if (error) throw error;
+
       contacts?.forEach(contact => {
-        // Parse LG Leads (comma-separated)
-        if (contact.lg_lead) {
-          const leads = contact.lg_lead.split(',').map(l => l.trim()).filter(Boolean);
-          leads.forEach(leadName => {
-            const key = `lead_${leadName.toLowerCase()}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              teamMembers.push({
-                id: `lead_${leadName.replace(/\s+/g, '_').toLowerCase()}`,
-                name: leadName,
-                email: '', // LG Leads don't have email in directory
-                role: 'Lead'
-              });
-            }
-          });
-        }
-
-        // Parse LG Assistants (comma-separated)
-        if (contact.lg_assistant) {
-          const assistants = contact.lg_assistant.split(',').map(a => a.trim()).filter(Boolean);
-          assistants.forEach(assistantName => {
-            const key = `assistant_${assistantName.toLowerCase()}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              teamMembers.push({
-                id: `assistant_${assistantName.replace(/\s+/g, '_').toLowerCase()}`,
-                name: assistantName,
-                email: '', // LG Assistants don't have email in directory
-                role: 'Assistant'
-              });
-            }
-          });
-        }
-
-        // Add colleagues from same email domain
-        if (contact.email_address) {
-          const contactDomain = contact.email_address.split('@')[1]?.toLowerCase();
-          if (contactDomain === emailDomain && contact.full_name) {
-            const key = `colleague_${contact.email_address.toLowerCase()}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              teamMembers.push({
-                id: contact.id,
-                name: contact.full_name,
-                email: contact.email_address,
-                role: 'Colleague'
-              });
-            }
+        if (contact.full_name && contact.email_address) {
+          const key = `colleague_${contact.email_address.toLowerCase()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            teamMembers.push({
+              id: contact.id,
+              name: contact.full_name,
+              email: contact.email_address,
+              role: 'Colleague'
+            });
           }
         }
       });

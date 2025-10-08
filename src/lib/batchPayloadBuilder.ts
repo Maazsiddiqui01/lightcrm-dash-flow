@@ -25,6 +25,8 @@ interface SharedSettings {
   curatedTo: string;
   curatedCc: string[];
   selectedArticle?: string | null;
+  moduleOrder?: Array<any>;
+  moduleStates?: Record<string, any>;
 }
 
 export async function buildBatchPayload(
@@ -102,7 +104,7 @@ export async function buildBatchPayload(
         effectiveSettings.selectedArticle,
         effectiveSettings.toneOverride,
         effectiveSettings.subjectPoolOverride,
-        undefined, // module order
+        sharedSettings.moduleOrder, // Pass actual module order
         effectiveSettings.curatedTeam,
         effectiveSettings.curatedTo,
         effectiveSettings.curatedCc,
@@ -126,6 +128,8 @@ export async function buildBatchPayload(
       daysSinceContact: sharedSettings.daysSinceContact,
       masterTemplate: sharedSettings.masterTemplate,
       moduleSelections: {}, // Simplified for MVP
+      moduleOrder: sharedSettings.moduleOrder || [],
+      moduleStates: sharedSettings.moduleStates || {},
       subjectLinePool: sharedSettings.subjectLinePool,
     },
     items,

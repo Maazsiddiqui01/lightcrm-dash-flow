@@ -73,6 +73,8 @@ export interface BatchPayload {
     daysSinceContact: number;
     masterTemplate: MasterTemplateDefaults;
     moduleSelections: ModuleSelections;
+    moduleOrder?: Array<any>;
+    moduleStates?: Record<string, any>;
     subjectLinePool: {
       selectedIds: string[];
       style: 'formal' | 'hybrid' | 'casual';

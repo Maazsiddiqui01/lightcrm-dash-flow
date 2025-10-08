@@ -444,7 +444,7 @@ ${draftResult.signature}`;
     });
   };
   
-  // Fetch group contacts when filters change
+  // Fetch group contacts when filters change (NO LIMIT)
   useEffect(() => {
     if (mode === 'group') {
       const fetchGroupContacts = async () => {
@@ -459,7 +459,8 @@ ${draftResult.signature}`;
           query = query.in('lg_lead', groupFilters.lgLead);
         }
         
-        const { data, error } = await query.limit(500);
+        // NO LIMIT - fetch all matching contacts
+        const { data, error } = await query;
         if (!error && data) {
           setGroupContacts(data);
         }
@@ -636,7 +637,7 @@ ${draftResult.signature}`;
             <SelectionTray
               selectedCount={selectedContactIds.size}
               totalCount={groupContacts.length}
-              onSelectAll={() => setSelectedContactIds(new Set(groupContacts.slice(0, 500).map(c => c.id)))}
+              onSelectAll={() => setSelectedContactIds(new Set(groupContacts.map(c => c.id)))}
               onClear={() => setSelectedContactIds(new Set())}
               onGenerate={handleBatchGenerate}
               isGenerating={queueManager.isProcessing}

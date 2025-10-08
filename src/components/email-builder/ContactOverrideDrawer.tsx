@@ -87,25 +87,23 @@ export function ContactOverrideDrawer({
   useEffect(() => {
     if (open) {
       if (currentOverride) {
-        // Load from override
-        setSelectedMasterTemplate(
-          currentOverride.masterTemplate
-            ? allMasterTemplates.find(t => t.master_key === currentOverride.masterTemplate?.key) || sharedSettings.masterTemplate
-            : sharedSettings.masterTemplate
-        );
+        // Load from existing override
+        const masterFromOverride = allMasterTemplates.find(t => t.master_key === currentOverride.masterTemplate?.key);
+        setSelectedMasterTemplate(masterFromOverride || null);
         setToneOverride(currentOverride.coreSettings?.tone || sharedSettings.toneOverride || 'hybrid');
         setLengthOverride(currentOverride.coreSettings?.length || sharedSettings.lengthOverride || 'standard');
         setDaysSince(currentOverride.coreSettings?.daysSince ?? sharedSettings.daysSinceContact);
         setTo(currentOverride.recipients?.to || contactEmail);
-        setCc(currentOverride.recipients?.cc || sharedSettings.cc);
+        setCc(currentOverride.recipients?.cc || []);
         setTeam(currentOverride.team || sharedSettings.team);
         setSubjectPool(currentOverride.subjectLinePool || sharedSettings.subjectLinePool);
-        setModuleSelections(currentOverride.moduleSelections || sharedSettings.moduleSelections);
+        setModuleSelections(currentOverride.moduleSelections || {});
         setModuleOrder(sharedSettings.moduleOrder);
         setModuleStates(sharedSettings.moduleStates);
       } else {
-        // Inherit from shared settings
-        setSelectedMasterTemplate(sharedSettings.masterTemplate);
+        // Load from shared settings
+        const masterFromShared = allMasterTemplates.find(t => t.master_key === sharedSettings.masterTemplate.master_key);
+        setSelectedMasterTemplate(masterFromShared || null);
         setToneOverride(sharedSettings.toneOverride || 'hybrid');
         setLengthOverride(sharedSettings.lengthOverride || 'standard');
         setDaysSince(sharedSettings.daysSinceContact);
@@ -113,12 +111,12 @@ export function ContactOverrideDrawer({
         setCc(sharedSettings.cc);
         setTeam(sharedSettings.team);
         setSubjectPool(sharedSettings.subjectLinePool);
-        setModuleSelections(sharedSettings.moduleSelections);
+        setModuleSelections({});
         setModuleOrder(sharedSettings.moduleOrder);
         setModuleStates(sharedSettings.moduleStates);
       }
     }
-  }, [open]);
+  }, [open, contactId, contactEmail]); // Add contactId and contactEmail to re-initialize when switching contacts
 
   const handleSave = () => {
     const override: ContactOverride = {
