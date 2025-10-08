@@ -59,12 +59,27 @@ export async function buildBatchPayload(
       const override = overrides.get(contact.id);
 
       // Merge shared settings with per-contact overrides
+      // CRITICAL: Include module order from override if present
       const effectiveSettings = {
         ...sharedSettings,
+        // Module order override takes precedence
+        ...(override?.moduleOrder && override.moduleOrder.length > 0 && {
+          moduleOrder: override.moduleOrder,
+        }),
+        // Module states override
+        ...(override?.moduleStates && {
+          moduleStates: override.moduleStates,
+        }),
+        // Module selections override
+        ...(override?.moduleSelections && {
+          moduleSelections: override.moduleSelections,
+        }),
+        // Recipients override
         ...(override?.recipients && {
           curatedTo: override.recipients.to,
           curatedCc: override.recipients.cc,
         }),
+        // Subject pool override
         ...(override?.subjectLinePool && {
           subjectPoolOverride: override.subjectLinePool.selectedIds,
         }),

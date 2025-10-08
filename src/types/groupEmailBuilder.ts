@@ -31,7 +31,8 @@ export interface ContactOverride {
     daysSince?: number;
   };
   moduleSelections?: ModuleSelections;
-  moduleOrder?: Array<string>; // Add module order override support
+  moduleOrder?: Array<string>; // Module order override support
+  moduleStates?: Record<string, TriState>; // Module states override support
   subjectLinePool?: {
     selectedIds: string[];
     style: 'formal' | 'hybrid' | 'casual';

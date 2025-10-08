@@ -56,6 +56,7 @@ import { ConfirmSaveDialog, type SaveScope, type AffectedField } from "@/compone
 import { MASTER_TEMPLATES } from "@/lib/router";
 import { recomputePositions, buildModuleSequence, announceModuleMove } from "@/lib/modulePositions";
 import { validateDraftPayload, validateSubjectPool, validateTemplateId } from "@/lib/emailBuilderValidation";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 export function EmailBuilder() {
   // Enable real-time synchronization with Global Libraries
@@ -184,17 +185,35 @@ export function EmailBuilder() {
   const { saveContact, saveGlobal, isSaving: isSavingSettings } = useSaveSettings();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingSaveScope, setPendingSaveScope] = useState<SaveScope>('contact');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [savingWithShortcut, setSavingWithShortcut] = useState(false);
   
-  // Save handlers
+  // Unsaved changes detection
+  const {
+    hasUnsavedChanges,
+    markAsSaved,
+    reset: resetUnsavedChanges,
+  } = useUnsavedChanges({
+    toneOverride,
+    lengthOverride,
+    moduleStates,
+    moduleOrder,
+    moduleSelections,
+    curatedTo,
+    curatedCc,
+    subjectPoolOverride,
+  });
+  
+  // Save handlers with keyboard shortcut feedback
   const handleSaveContact = () => {
     setConfirmDialogOpen(true);
     setPendingSaveScope('contact');
+    setSavingWithShortcut(false);
   };
 
   const handleSaveGlobal = () => {
     setConfirmDialogOpen(true);
     setPendingSaveScope('global');
+    setSavingWithShortcut(false);
   };
   
   // Handle module change
@@ -999,14 +1018,32 @@ ${draftResult.signature}`;
 
             {/* Save Controls with Dual Scope */}
             {selectedContact && masterTemplate && (
-              <SplitSaveButton
-                onSaveContact={handleSaveContact}
-                onSaveGlobal={handleSaveGlobal}
-                templateName={MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key}
-                contactName={selectedContact.full_name || 'this contact'}
-                isSaving={isSavingSettings}
-                mode="individual"
-              />
+              <div className="space-y-2">
+                {/* Unsaved Changes Indicator */}
+                {hasUnsavedChanges && (
+                  <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
+                    <div className="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500 animate-pulse" />
+                    <span>Unsaved changes</span>
+                  </div>
+                )}
+                
+                {/* Keyboard Shortcut Feedback */}
+                {savingWithShortcut && isSavingSettings && (
+                  <div className="flex items-center gap-2 text-sm text-primary">
+                    <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </div>
+                )}
+                
+                <SplitSaveButton
+                  onSaveContact={handleSaveContact}
+                  onSaveGlobal={handleSaveGlobal}
+                  templateName={MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key}
+                  contactName={selectedContact.full_name || 'this contact'}
+                  isSaving={isSavingSettings}
+                  mode="individual"
+                />
+              </div>
             )}
             
             {/* Enhanced Draft Section - replaces old DraftGenerateButton */}
@@ -1075,6 +1112,14 @@ ${draftResult.signature}`;
           currentOverride={contactOverrides.get(activeOverrideContactId)}
           onSave={async (override) => {
             setContactOverrides(new Map(contactOverrides.set(override.contactId, override)));
+            
+            // Update focused contact for preview rail refresh
+            if (focusedContactId === override.contactId) {
+              // Trigger preview rail refresh by updating focused state
+              setFocusedContactId(null);
+              setTimeout(() => setFocusedContactId(override.contactId), 0);
+            }
+            
             // Persist module order to DB so individual view reflects it
             if (override.moduleOrder && override.moduleOrder.length > 0) {
               // Load any existing row to preserve required fields

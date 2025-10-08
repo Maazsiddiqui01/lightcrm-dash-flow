@@ -4,6 +4,7 @@ import { useContactSettings } from './useContactSettings';
 import type { ModuleStates } from '@/components/email-builder/ModulesCard';
 import type { TemplateSettings } from '@/types/phraseLibrary';
 import type { ContactSettings } from './useContactSettings';
+import { deepMerge } from '@/lib/deepMerge';
 
 export type SettingSource = 'global' | 'contact';
 
@@ -73,7 +74,7 @@ export function useEffectiveSettings(
       contactOverrideRevision: undefined,
     };
 
-    // Apply contact overrides if they exist
+    // Apply contact overrides if they exist (DEEP MERGE for nested objects)
     if (contactOverride) {
       // Core Settings - only tone/length can be overridden at contact level
       if (contactOverride.delta_type) {
@@ -81,27 +82,41 @@ export function useEffectiveSettings(
         effective._sources.coreSettings = 'contact';
       }
 
-      // Module States
+      // Module States - shallow override is fine (no nesting)
       if (contactOverride.module_states) {
         effective.moduleStates = contactOverride.module_states;
         effective._sources.moduleStates = 'contact';
       }
 
-      // Module Order
+      // Module Order - array replacement
       if (contactOverride.module_order) {
         effective.moduleOrder = contactOverride.module_order;
         effective._sources.moduleOrder = 'contact';
       }
 
-      // Module Selections
+      // Module Selections - DEEP MERGE for nested selections
       if (contactOverride.module_selections) {
-        effective.moduleSelections = contactOverride.module_selections;
+        if (effective.moduleSelections) {
+          effective.moduleSelections = deepMerge(
+            effective.moduleSelections,
+            contactOverride.module_selections
+          );
+        } else {
+          effective.moduleSelections = contactOverride.module_selections;
+        }
         effective._sources.moduleSelections = 'contact';
       }
 
-      // Recipients & Team
+      // Recipients & Team - DEEP MERGE for nested structure
       if (contactOverride.curated_recipients) {
-        effective.curatedRecipients = contactOverride.curated_recipients;
+        if (effective.curatedRecipients) {
+          effective.curatedRecipients = deepMerge(
+            effective.curatedRecipients,
+            contactOverride.curated_recipients
+          );
+        } else {
+          effective.curatedRecipients = contactOverride.curated_recipients;
+        }
         effective._sources.recipients = 'contact';
         if (contactOverride.curated_recipients.team) {
           effective._sources.team = 'contact';
