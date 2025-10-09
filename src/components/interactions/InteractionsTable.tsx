@@ -52,12 +52,15 @@ export function InteractionsTable() {
       setLoading(true);
       setIsRefreshing(true);
       
+      console.log('Fetching interactions with limit:', limit);
+      
       // Get total count first
       const { count } = await supabase
         .from("interactions_app")
         .select("*", { count: 'exact', head: true });
       
       setTotalCount(count);
+      console.log('Total count:', count);
       
       // Build query with sort first, then limit
       let query = supabase
@@ -71,15 +74,21 @@ export function InteractionsTable() {
         });
       }
 
-      if (limit) {
+      // Only apply limit if it's a number (not null)
+      if (limit !== null) {
+        console.log('Applying limit:', limit);
         query = query.limit(limit);
+      } else {
+        console.log('No limit applied - fetching all records');
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
+      console.log('Fetched interactions:', data?.length);
       setInteractions(data || []);
     } catch (error) {
+      console.error('Error fetching interactions:', error);
       toast({
         title: "Error",
         description: "Failed to load interactions",
@@ -101,6 +110,7 @@ export function InteractionsTable() {
         return;
       }
     }
+    console.log('Setting limit to null to load all interactions');
     setLimit(null);
   };
 
