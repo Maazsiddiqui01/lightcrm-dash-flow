@@ -22,11 +22,19 @@ export function DeduplicationManager() {
   } = useDeduplication(activeTab as "contacts" | "opportunities");
 
   const handleScan = async () => {
-    await scanForDuplicates();
-    toast({
-      title: "Scan Complete",
-      description: `Found ${duplicates?.groups.length || 0} duplicate groups`,
-    });
+    try {
+      await scanForDuplicates();
+      toast({
+        title: "Scan Complete",
+        description: `Found ${duplicates?.groups.length || 0} duplicate groups`,
+      });
+    } catch (error) {
+      toast({
+        title: "Scan Failed",
+        description: error instanceof Error ? error.message : "Failed to scan for duplicates",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleMerge = async (groupId: string) => {
@@ -37,24 +45,44 @@ export function DeduplicationManager() {
       return;
     }
 
-    await mergeDuplicates(groupId);
-    toast({
-      title: "Merge Complete",
-      description: "Duplicate records have been merged successfully",
-    });
+    try {
+      await mergeDuplicates(groupId);
+      toast({
+        title: "Merge Complete",
+        description: "Duplicate records have been merged successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Merge Failed",
+        description: error instanceof Error ? error.message : "Failed to merge duplicates",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleMergeAll = async () => {
     if (!duplicates?.groups.length) return;
     
-    for (const group of duplicates.groups) {
-      await mergeDuplicates(group.id);
+    if (!confirm(`⚠️ Merge All ${duplicates.groups.length} Duplicate Groups?\n\nThis cannot be undone. Continue?`)) {
+      return;
     }
-    
-    toast({
-      title: "All Merges Complete",
-      description: `Merged ${duplicates.groups.length} duplicate groups`,
-    });
+
+    try {
+      for (const group of duplicates.groups) {
+        await mergeDuplicates(group.id);
+      }
+      
+      toast({
+        title: "All Merges Complete",
+        description: `Merged ${duplicates.groups.length} duplicate groups`,
+      });
+    } catch (error) {
+      toast({
+        title: "Merge Failed",
+        description: error instanceof Error ? error.message : "Failed to merge all duplicates",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

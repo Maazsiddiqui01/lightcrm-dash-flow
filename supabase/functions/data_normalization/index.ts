@@ -217,20 +217,103 @@ async function scanForNormalization(supabase: any) {
 async function applyNormalization(supabase: any, changes: any) {
   console.log('Applying normalization...');
 
+  let totalUpdates = 0;
+
   // Apply focus area normalizations
   for (const change of changes.focusAreaChanges || []) {
-    await supabase.rpc('replace_text_in_column', {
+    const { data, error } = await supabase.rpc('replace_text_in_column', {
       p_table: 'contacts_raw',
       p_column: 'lg_focus_areas_comprehensive_list',
       p_old_text: change.from,
       p_new_text: change.to
     });
+
+    if (error) {
+      console.error('Focus area normalization error:', error);
+    } else {
+      totalUpdates += data || 0;
+      console.log(`Updated ${data || 0} records for focus area: ${change.from} → ${change.to}`);
+    }
   }
 
-  console.log('Normalization complete');
+  // Apply name normalizations
+  for (const change of changes.nameChanges || []) {
+    const { data: contacts, error: fetchError } = await supabase
+      .from('contacts_raw')
+      .select('id, full_name')
+      .ilike('full_name', `${change.from}%`);
+
+    if (fetchError) {
+      console.error('Name fetch error:', fetchError);
+      continue;
+    }
+
+    for (const contact of contacts || []) {
+      const nameParts = contact.full_name.split(' ');
+      const firstName = nameParts[0]?.toLowerCase();
+      
+      if (firstName === change.from.toLowerCase()) {
+        const newFullName = [change.to, ...nameParts.slice(1)].join(' ');
+        
+        const { error: updateError } = await supabase
+          .from('contacts_raw')
+          .update({ full_name: newFullName })
+          .eq('id', contact.id);
+
+        if (updateError) {
+          console.error('Name update error:', updateError);
+        } else {
+          totalUpdates++;
+          console.log(`Updated name: ${contact.full_name} → ${newFullName}`);
+        }
+      }
+    }
+  }
+
+  // Apply company suffix normalizations
+  for (const change of changes.companyChanges || []) {
+    const { data: contacts, error: fetchError } = await supabase
+      .from('contacts_raw')
+      .select('id, organization')
+      .not('organization', 'is', null)
+      .ilike('organization', `%${change.from}`);
+
+    if (fetchError) {
+      console.error('Company fetch error:', fetchError);
+      continue;
+    }
+
+    for (const contact of contacts || []) {
+      const words = contact.organization.split(' ');
+      const lastWord = words[words.length - 1]?.toLowerCase().replace(/[.,]/g, '');
+      
+      if (lastWord === change.from.toLowerCase()) {
+        // Replace last word with standardized suffix
+        const newOrganization = [...words.slice(0, -1), change.to].join(' ');
+        
+        const { error: updateError } = await supabase
+          .from('contacts_raw')
+          .update({ organization: newOrganization })
+          .eq('id', contact.id);
+
+        if (updateError) {
+          console.error('Company update error:', updateError);
+        } else {
+          totalUpdates++;
+          console.log(`Updated organization: ${contact.organization} → ${newOrganization}`);
+        }
+      }
+    }
+  }
+
+  console.log(`Normalization complete: ${totalUpdates} total updates`);
 
   return new Response(
-    JSON.stringify({ success: true }),
+    JSON.stringify({ 
+      success: true, 
+      totalUpdates,
+      message: `Successfully normalized ${totalUpdates} records` 
+    }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }

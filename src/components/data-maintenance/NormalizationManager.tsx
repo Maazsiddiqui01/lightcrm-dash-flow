@@ -20,11 +20,19 @@ export function NormalizationManager() {
   } = useNormalization();
 
   const handleScan = async () => {
-    await startScan();
-    toast({
-      title: "Scan Complete",
-      description: "Data normalization opportunities have been identified",
-    });
+    try {
+      await startScan();
+      toast({
+        title: "Scan Complete",
+        description: "Data normalization opportunities have been identified",
+      });
+    } catch (error) {
+      toast({
+        title: "Scan Failed",
+        description: error instanceof Error ? error.message : "Failed to scan for normalization issues",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleApply = async () => {
@@ -34,11 +42,19 @@ export function NormalizationManager() {
       return;
     }
 
-    await applyNormalization();
-    toast({
-      title: "Normalization Applied",
-      description: "Database has been successfully normalized",
-    });
+    try {
+      await applyNormalization();
+      toast({
+        title: "Normalization Applied",
+        description: "Database has been successfully normalized",
+      });
+    } catch (error) {
+      toast({
+        title: "Normalization Failed",
+        description: error instanceof Error ? error.message : "Failed to apply normalization",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
