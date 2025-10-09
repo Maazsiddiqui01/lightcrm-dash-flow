@@ -24,15 +24,19 @@ export function AIContactSearch({ onSearchResults }: AIContactSearchProps) {
     try {
       const prompt = `Convert this natural language query into specific contact search filters: "${query}"
 
+CRITICAL: Return filter values as ARRAYS, not strings!
+
 Return JSON format:
 {
   "filters": {
-    "fullName": "partial name if mentioned",
-    "organization": "company name if mentioned",
-    "sectors": ["sector if mentioned"],
-    "focusAreas": ["focus area if mentioned"],
-    "deltaType": ["email" or "meeting" if mentioned],
-    "hasOpportunities": ["Yes"] if contacts with opportunities mentioned
+    "sectors": ["Healthcare"] (if sector mentioned),
+    "focusAreas": ["focus area"] (if mentioned),
+    "organizations": ["company name"] (if mentioned),
+    "titles": ["title"] (if mentioned),
+    "categories": ["category"] (if mentioned),
+    "deltaType": ["email" or "meeting"] (if mentioned),
+    "hasOpportunities": ["Yes"] (if opportunities mentioned),
+    "lgLead": ["name"] (if LG lead mentioned)
   },
   "explanation": "Brief explanation of search"
 }
@@ -40,7 +44,8 @@ Return JSON format:
 Examples:
 - "contacts in healthcare" → {"filters": {"sectors": ["Healthcare"]}, "explanation": "Searching healthcare sector"}
 - "people I haven't emailed recently" → {"filters": {"deltaType": ["email"]}, "explanation": "Contacts needing email follow-up"}
-- "contacts with active opportunities" → {"filters": {"hasOpportunities": ["Yes"]}, "explanation": "Contacts with pipeline"}`;
+- "contacts with active opportunities" → {"filters": {"hasOpportunities": ["Yes"]}, "explanation": "Contacts with pipeline"}
+- "investment bankers" → {"filters": {"categories": ["Investment Banker"]}, "explanation": "Searching investment banker category"}`;
 
       console.log('Invoking ai_tools function...');
       const { data, error } = await supabase.functions.invoke('ai_tools', {
