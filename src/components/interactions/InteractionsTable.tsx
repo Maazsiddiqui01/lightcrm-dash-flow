@@ -62,31 +62,51 @@ export function InteractionsTable() {
       setTotalCount(count);
       console.log('Total count:', count);
       
-      // Build query with sort first, then limit
-      let query = supabase
+      // Build base query with sort first
+      const base = supabase
         .from("interactions_app")
         .select("*");
 
-      if (sortKey && sortDirection) {
-        query = query.order(sortKey, { 
-          ascending: sortDirection === 'asc',
-          nullsFirst: false 
-        });
-      }
+      const applySort = (q: typeof base) =>
+        (sortKey && sortDirection)
+          ? q.order(sortKey, { ascending: sortDirection === 'asc', nullsFirst: false })
+          : q;
 
-      // Only apply limit if it's a number (not null)
-      if (limit !== null) {
-        console.log('Applying limit:', limit);
-        query = query.limit(limit);
+      let dataAccum: Interaction[] = [];
+
+      if (limit === null) {
+        // Client-side load-all: fetch in 1000-row chunks to avoid PostgREST max row limit
+        const total = count ?? 0;
+        const pageSize = 1000;
+
+        if (total <= pageSize) {
+          const { data, error } = await applySort(base);
+          if (error) throw error;
+          dataAccum = data || [];
+        } else {
+          const pages = Math.ceil(total / pageSize);
+          for (let p = 0; p < pages; p++) {
+            const from = p * pageSize;
+            const to = Math.min(from + pageSize - 1, total - 1);
+            console.log(`Fetching range ${from}-${to}`);
+            const { data, error } = await applySort(base).range(from, to);
+            if (error) throw error;
+            dataAccum = dataAccum.concat(data || []);
+          }
+        }
       } else {
-        console.log('No limit applied - fetching all records');
+        // Limited fetch (default 1000)
+        let q = applySort(base);
+        if (typeof limit === 'number') {
+          q = q.limit(limit);
+        }
+        const { data, error } = await q;
+        if (error) throw error;
+        dataAccum = data || [];
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      console.log('Fetched interactions:', data?.length);
-      setInteractions(data || []);
+      console.log('Fetched interactions total:', dataAccum.length);
+      setInteractions(dataAccum);
     } catch (error) {
       console.error('Error fetching interactions:', error);
       toast({
@@ -402,7 +422,7 @@ export function InteractionsTable() {
             <h3 className="text-lg font-semibold text-foreground">All Interactions</h3>
             <p className="text-sm text-muted-foreground">
               Showing {filteredInteractions?.length || 0} of {interactions.length} loaded
-              {totalCount && limit && interactions.length < totalCount && (
+              {totalCount && interactions.length < totalCount && (
                 <span className="text-amber-600 ml-1">
                   ({(totalCount - interactions.length).toLocaleString()} more available)
                 </span>
@@ -421,7 +441,7 @@ export function InteractionsTable() {
               Refresh
             </Button>
             
-            {limit && totalCount && interactions.length < totalCount && (
+            {totalCount && interactions.length < totalCount && (
               <Button
                 variant="outline"
                 size="sm"
