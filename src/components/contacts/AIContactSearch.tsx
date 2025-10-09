@@ -19,6 +19,8 @@ export function AIContactSearch({ onSearchResults }: AIContactSearchProps) {
     if (!query.trim() || isSearching) return;
 
     setIsSearching(true);
+    console.log('AI Search starting with query:', query);
+    
     try {
       const prompt = `Convert this natural language query into specific contact search filters: "${query}"
 
@@ -27,19 +29,20 @@ Return JSON format:
   "filters": {
     "fullName": "partial name if mentioned",
     "organization": "company name if mentioned",
-    "sector": "sector if mentioned",
-    "focusArea": "focus area if mentioned",
-    "deltaType": "email or meeting if mentioned",
-    "hasOpportunities": true/false if relevant
+    "sectors": ["sector if mentioned"],
+    "focusAreas": ["focus area if mentioned"],
+    "deltaType": ["email" or "meeting" if mentioned],
+    "hasOpportunities": ["Yes"] if contacts with opportunities mentioned
   },
   "explanation": "Brief explanation of search"
 }
 
 Examples:
-- "contacts in healthcare" → {"filters": {"sector": "Healthcare"}, "explanation": "Searching healthcare sector"}
-- "people I haven't emailed recently" → {"filters": {"deltaType": "email"}, "explanation": "Contacts needing email follow-up"}
-- "contacts with active opportunities" → {"filters": {"hasOpportunities": true}, "explanation": "Contacts with pipeline"}`;
+- "contacts in healthcare" → {"filters": {"sectors": ["Healthcare"]}, "explanation": "Searching healthcare sector"}
+- "people I haven't emailed recently" → {"filters": {"deltaType": ["email"]}, "explanation": "Contacts needing email follow-up"}
+- "contacts with active opportunities" → {"filters": {"hasOpportunities": ["Yes"]}, "explanation": "Contacts with pipeline"}`;
 
+      console.log('Invoking ai_tools function...');
       const { data, error } = await supabase.functions.invoke('ai_tools', {
         body: { 
           message: prompt,
@@ -48,25 +51,36 @@ Examples:
         }
       });
 
-      if (error) throw error;
+      console.log('AI Tools response:', { data, error });
+
+      if (error) {
+        console.error('AI Tools error:', error);
+        throw error;
+      }
 
       let filters = {};
       let explanation = "Searching...";
 
-      if (data.filters) {
+      if (data?.filters) {
         filters = data.filters;
         explanation = data.explanation || "AI-powered search";
-      } else if (data.text) {
+      } else if (data?.text) {
         try {
           const parsed = JSON.parse(data.text);
           filters = parsed.filters || {};
           explanation = parsed.explanation || "AI-powered search";
-        } catch {
-          // Fallback to basic text search
+        } catch (parseError) {
+          console.error('Failed to parse AI response:', parseError);
           filters = { fullName: query };
           explanation = `Searching for "${query}"`;
         }
+      } else {
+        console.warn('Unexpected AI response format:', data);
+        filters = { fullName: query };
+        explanation = `Searching for "${query}"`;
       }
+
+      console.log('Applying filters:', filters);
 
       toast({
         title: "AI Search Applied",
