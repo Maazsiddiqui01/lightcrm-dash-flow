@@ -244,11 +244,19 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "—";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+    try {
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) return "—";
+      return date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (error) {
+      console.error("Invalid date format:", dateString);
+      return "—";
+    }
   };
 
   if (!opportunity) {

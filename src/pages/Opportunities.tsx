@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 export function Opportunities() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
   const { data: users } = useUsersList();
   const { toast } = useToast();
 
@@ -73,6 +74,7 @@ export function Opportunities() {
   const handleBulkAssignment = async (userId: string) => {
     if (selectedRows.length === 0) return;
 
+    setIsAssigning(true);
     try {
       const { error } = await supabase
         .from('opportunities_raw')
@@ -96,6 +98,8 @@ export function Opportunities() {
         description: "Failed to assign opportunities",
         variant: "destructive",
       });
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -112,9 +116,11 @@ export function Opportunities() {
             {selectedRows.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="touch-target">
+                  <Button variant="outline" className="touch-target" disabled={isAssigning}>
                     <UserPlus className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Assign ({selectedRows.length})</span>
+                    <span className="hidden sm:inline">
+                      {isAssigning ? "Assigning..." : `Assign (${selectedRows.length})`}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -122,6 +128,7 @@ export function Opportunities() {
                     <DropdownMenuItem
                       key={user.id}
                       onClick={() => handleBulkAssignment(user.id)}
+                      disabled={isAssigning}
                     >
                       {user.full_name}
                     </DropdownMenuItem>
