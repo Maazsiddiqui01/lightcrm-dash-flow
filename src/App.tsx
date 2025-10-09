@@ -21,6 +21,7 @@ import { DataMaintenance } from "@/pages/DataMaintenance";
 import { GlobalLibraries } from "@/pages/GlobalLibraries";
 import { Admin } from "@/pages/Admin";
 import { AdminDuplicates } from "@/pages/AdminDuplicates";
+import ImportInteractions from "@/pages/ImportInteractions";
 import { Auth } from "@/pages/Auth";
 import { SetPassword } from "@/pages/SetPassword";
 import NotFound from "@/pages/NotFound";
@@ -91,6 +92,11 @@ function App() {
                       <Route path="/admin/duplicates" element={
                         <ProtectedRoute requireAdmin>
                           <AdminDuplicates />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/import-interactions" element={
+                        <ProtectedRoute requireAdmin>
+                          <ImportInteractions />
                         </ProtectedRoute>
                       } />
                       
