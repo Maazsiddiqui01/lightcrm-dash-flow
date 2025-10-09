@@ -167,6 +167,22 @@ export function EmailBuilder() {
     }
   }, [contactData?.most_recent_contact]);
   
+  // Sync subject pool selection to subjectPoolOverride for validation
+  useEffect(() => {
+    const ids = moduleSelections.subject_line_pool?.subjectIds || [];
+    setSubjectPoolOverride(ids);
+  }, [moduleSelections.subject_line_pool]);
+  
+  // Dev-only debug log for subject pool sync
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('📋 Subject Pool Sync:', {
+        subjectPoolOverride: subjectPoolOverride.length,
+        moduleSelections: moduleSelections.subject_line_pool?.subjectIds?.length || 0,
+      });
+    }
+  }, [subjectPoolOverride, moduleSelections.subject_line_pool]);
+  
   // Auto-set module defaults when master template changes
   const masterTemplate = contactData ? routeMaster(contactData.most_recent_contact) : null;
   
@@ -244,10 +260,21 @@ export function EmailBuilder() {
     const fullMasterTemplate = masterTemplates?.find(
       t => t.master_key === masterTemplate.master_key
     );
+    
+    // Guard against missing template ID
+    if (!fullMasterTemplate?.id) {
+      toast({
+        title: "Template Not Found",
+        description: "Master template is still loading. Please try again.",
+        variant: "destructive",
+      });
+      setConfirmDialogOpen(false);
+      return;
+    }
 
     if (pendingSaveScope === 'contact') {
       // Validate template ID before saving
-      const templateId = fullMasterTemplate?.id || null;
+      const templateId = fullMasterTemplate.id;
       const templateValidation = validateTemplateId(templateId);
       
       if (!templateValidation.isValid) {
@@ -276,15 +303,7 @@ export function EmailBuilder() {
         currentRevision: (contactSettings as any)?.revision || 0,
       });
     } else {
-      if (!fullMasterTemplate?.id) {
-        toast({
-          title: "Save Failed",
-          description: "Master template not found",
-          variant: "destructive",
-        });
-        return;
-      }
-      
+      // Global save path - template ID already validated above
       saveGlobal({
         templateId: fullMasterTemplate.id,
         templateName: MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key,
@@ -533,6 +552,17 @@ export function EmailBuilder() {
       toast({
         title: 'Missing Data',
         description: 'Please select a contact first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate subject pool before generation
+    const subjectValidation = validateSubjectPool(subjectPoolOverride);
+    if (!subjectValidation.isValid) {
+      toast({
+        title: 'Subject Pool Required',
+        description: subjectValidation.errors.join(', '),
         variant: 'destructive',
       });
       return;
