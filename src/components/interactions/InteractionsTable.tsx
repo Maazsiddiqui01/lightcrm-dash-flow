@@ -59,20 +59,20 @@ export function InteractionsTable() {
       
       setTotalCount(count);
       
-      // Build query with optional limit
+      // Build query with sort first, then limit
       let query = supabase
         .from("interactions_app")
         .select("*");
-
-      if (limit) {
-        query = query.limit(limit);
-      }
 
       if (sortKey && sortDirection) {
         query = query.order(sortKey, { 
           ascending: sortDirection === 'asc',
           nullsFirst: false 
         });
+      }
+
+      if (limit) {
+        query = query.limit(limit);
       }
 
       const { data, error } = await query;
