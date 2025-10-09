@@ -127,6 +127,9 @@ export function EmailBuilder() {
   // Module selections state
   const [moduleSelections, setModuleSelections] = useState<ModuleSelections>({});
   
+  // Custom module labels
+  const [customModuleLabels, setCustomModuleLabels] = useState<Record<string, string>>({});
+  
   // Curated team and recipients state
   const [curatedTeam, setCuratedTeam] = useState<TeamMember[]>([]);
   const [curatedTo, setCuratedTo] = useState<string>("");
@@ -454,6 +457,9 @@ export function EmailBuilder() {
           setCuratedTo(contactSettings.curated_recipients.to || selectedContact?.email || '');
           setCuratedCc(contactSettings.curated_recipients.cc || []);
         }
+        if (contactSettings.custom_module_labels) {
+          setCustomModuleLabels(contactSettings.custom_module_labels);
+        }
         setInitializedContactId(currentId);
       } else if (masterTemplate && masterTemplates) {
         const defaults = getModuleDefaultsFromMaster(masterTemplate.master_key, masterTemplates);
@@ -517,10 +523,11 @@ export function EmailBuilder() {
         curatedTeam,
         curatedTo,
         curatedCc,
+        customModuleLabels,
       });
     }, 500);
     return () => clearTimeout(t);
-  }, [moduleOrder]);
+  }, [moduleOrder, customModuleLabels]);
 
   const handleSaveSettings = () => {
     if (!selectedContact?.contact_id) return;
@@ -535,6 +542,7 @@ export function EmailBuilder() {
       curatedTeam,
       curatedTo,
       curatedCc,
+      customModuleLabels,
     });
   };
 
@@ -1035,6 +1043,10 @@ ${draftResult.signature}`;
               allInquiries={allInquiries}
               allSubjects={allSubjects}
               toneOverride={toneOverride}
+              customModuleLabels={customModuleLabels}
+              onCustomModuleLabelChange={(moduleKey, newLabel) => {
+                setCustomModuleLabels(prev => ({ ...prev, [moduleKey]: newLabel }));
+              }}
             />
             
             <EditableRecipients

@@ -15,6 +15,7 @@ export interface ContactSettings {
     to?: string;
     cc?: string[];
   } | null;
+  custom_module_labels?: Record<string, string>;
   last_updated: string;
   created_at: string;
 }
@@ -45,6 +46,7 @@ export function useContactSettings(contactId: string | null) {
         module_order: data.module_order as string[] | null,
         module_selections: data.module_selections as Record<string, any> | null,
         curated_recipients: data.curated_recipients as any || null,
+        custom_module_labels: data.custom_module_labels as Record<string, string> | undefined,
       };
     },
     enabled: !!contactId,
@@ -62,6 +64,7 @@ export function useContactSettings(contactId: string | null) {
       curatedTeam?: Array<{ id: string; name: string; email: string; role: string }>;
       curatedTo?: string;
       curatedCc?: string[];
+      customModuleLabels?: Record<string, string>;
     }) => {
       const curatedRecipients = (payload.curatedTeam || payload.curatedTo || payload.curatedCc) ? {
         team: payload.curatedTeam || [],
@@ -79,6 +82,7 @@ export function useContactSettings(contactId: string | null) {
           module_order: payload.moduleOrder || null,
           module_selections: payload.moduleSelections || null,
           curated_recipients: curatedRecipients as any,
+          custom_module_labels: payload.customModuleLabels || null,
         }])
         .select()
         .single();
@@ -92,6 +96,7 @@ export function useContactSettings(contactId: string | null) {
         module_order: data.module_order as string[] | null,
         module_selections: data.module_selections as Record<string, any> | null,
         curated_recipients: data.curated_recipients as any || null,
+        custom_module_labels: data.custom_module_labels as Record<string, string> | undefined,
       };
     },
     onSuccess: (data) => {

@@ -40,6 +40,7 @@ const DEFAULT_SETTINGS: Omit<TemplateSettings, 'template_id'> = {
     min_personalization_score: 0.3,
     ebitda_threshold: 35,
   },
+  custom_module_labels: {},
 };
 
 export function useNewTemplateSettings(templateId: string | null) {

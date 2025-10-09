@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Settings } from 'lucide-react';
+import { GripVertical, Settings, Pencil, Check, X } from 'lucide-react';
 import { TriStateToggle } from './TriStateToggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import type { TriState } from '@/types/phraseLibrary';
 
 interface DraggableModuleItemProps {
@@ -16,6 +18,7 @@ interface DraggableModuleItemProps {
   hasConfiguration?: boolean;
   onConfigure?: () => void;
   selectedItemsCount?: number;
+  onLabelChange?: (newLabel: string) => void;
 }
 
 export function DraggableModuleItem({
@@ -28,7 +31,10 @@ export function DraggableModuleItem({
   hasConfiguration = false,
   onConfigure,
   selectedItemsCount = 0,
+  onLabelChange,
 }: DraggableModuleItemProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(label);
   const {
     attributes,
     listeners,
@@ -48,11 +54,36 @@ export function DraggableModuleItem({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const handleStartEdit = () => {
+    setEditValue(label);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (editValue.trim() && onLabelChange) {
+      onLabelChange(editValue.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditValue(label);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`p-3 rounded-lg border transition-all ${
+      className={`group p-3 rounded-lg border transition-all ${
         value === 'never' ? 'opacity-50 bg-muted/20' : 'bg-card'
       } ${isDragging ? 'shadow-lg z-50' : ''}`}
       role="listitem"
@@ -77,11 +108,62 @@ export function DraggableModuleItem({
 
         {/* Module Label */}
         <div className="flex-1 flex items-center gap-2">
-          <span className="text-sm font-medium">{label}</span>
-          {selectedItemsCount > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {selectedItemsCount} selected
-            </Badge>
+          {isEditing ? (
+            <div className="flex items-center gap-1 flex-1">
+              <Input
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="h-7 text-sm flex-1"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSaveEdit();
+                }}
+                className="h-7 w-7 p-0"
+              >
+                <Check className="h-3 w-3 text-green-600" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCancelEdit();
+                }}
+                className="h-7 w-7 p-0"
+              >
+                <X className="h-3 w-3 text-red-600" />
+              </Button>
+            </div>
+          ) : (
+            <>
+              <span className="text-sm font-medium">{label}</span>
+              {onLabelChange && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStartEdit();
+                  }}
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label={`Edit ${label} name`}
+                >
+                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              )}
+              {selectedItemsCount > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {selectedItemsCount} selected
+                </Badge>
+              )}
+            </>
           )}
         </div>
 

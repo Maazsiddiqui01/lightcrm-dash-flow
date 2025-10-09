@@ -133,6 +133,7 @@ export type Database = {
           contact_id: string
           created_at: string | null
           curated_recipients: Json | null
+          custom_module_labels: Json | null
           delta_type: string | null
           last_updated: string | null
           module_order: Json | null
@@ -147,6 +148,7 @@ export type Database = {
           contact_id: string
           created_at?: string | null
           curated_recipients?: Json | null
+          custom_module_labels?: Json | null
           delta_type?: string | null
           last_updated?: string | null
           module_order?: Json | null
@@ -161,6 +163,7 @@ export type Database = {
           contact_id?: string
           created_at?: string | null
           curated_recipients?: Json | null
+          custom_module_labels?: Json | null
           delta_type?: string | null
           last_updated?: string | null
           module_order?: Json | null

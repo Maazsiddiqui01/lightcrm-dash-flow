@@ -59,6 +59,8 @@ interface ModulesCardProps {
   allInquiries: InquiryLibraryItem[];
   allSubjects: SubjectLibraryItem[];
   toneOverride?: 'casual' | 'hybrid' | 'formal' | null;
+  customModuleLabels?: Record<string, string>;
+  onCustomModuleLabelChange?: (moduleKey: string, newLabel: string) => void;
 }
 
 /**
@@ -165,6 +167,8 @@ export function ModulesCard({
   allInquiries,
   allSubjects,
   toneOverride,
+  customModuleLabels = {},
+  onCustomModuleLabelChange,
 }: ModulesCardProps) {
   const [activeDrawer, setActiveDrawer] = useState<keyof ModuleStates | 'subject_line_pool' | null>(null);
   // Drag-and-drop sensors with accessibility
@@ -294,13 +298,14 @@ export function ModulesCard({
                         key={moduleKey}
                         id={moduleKey}
                         index={index}
-                        label={MODULE_LABELS[moduleKey]}
+                        label={customModuleLabels[moduleKey] || MODULE_LABELS[moduleKey]}
                         value={moduleStates[moduleKey]}
                         isDisabled={false}
                         onChange={(value) => onModuleChange(moduleKey, value)}
                         hasConfiguration={CONFIGURABLE_MODULES.has(moduleKey)}
                         onConfigure={() => handleOpenDrawer(moduleKey)}
                         selectedItemsCount={getSelectedItemsCount(moduleKey)}
+                        onLabelChange={onCustomModuleLabelChange ? (newLabel) => onCustomModuleLabelChange(moduleKey, newLabel) : undefined}
                       />
                     ))}
                   </div>

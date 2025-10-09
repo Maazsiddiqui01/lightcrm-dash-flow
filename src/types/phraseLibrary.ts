@@ -87,6 +87,7 @@ export interface TemplateSettings {
     min_personalization_score: number;
     ebitda_threshold: number;
   };
+  custom_module_labels?: Record<string, string>;
 }
 
 export const PHRASE_CATEGORIES: Record<PhraseCategory, string> = {
