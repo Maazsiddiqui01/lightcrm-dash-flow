@@ -39,33 +39,9 @@ export function useNormalization() {
       setProgress(100);
     } catch (error) {
       console.error("Scan error:", error);
-      // Fallback to mock data for development
-      const mockResults: ScanResults = {
-        totalIssues: 12,
-        focusAreaIssues: 5,
-        nameVariations: 4,
-        companyVariations: 3,
-        focusAreaChanges: [
-          { from: "F&B", to: "Food Manufacturing", count: 8 },
-          { from: "A&D", to: "Aerospace & Defense", count: 5 },
-          { from: "HC", to: "Healthcare", count: 12 },
-          { from: "Tech", to: "Technology Services", count: 6 },
-          { from: "Mfg", to: "Manufacturing", count: 4 },
-        ],
-        nameChanges: [
-          { from: "Jeff", to: "Jeffrey", count: 3 },
-          { from: "Bob", to: "Robert", count: 2 },
-          { from: "Mike", to: "Michael", count: 4 },
-          { from: "Liz", to: "Elizabeth", count: 1 },
-        ],
-        companyChanges: [
-          { from: "Corp", to: "Corporation", count: 15 },
-          { from: "Inc", to: "Incorporated", count: 8 },
-          { from: "LLC", to: "Limited Liability Company", count: 12 },
-        ],
-      };
-      setScanResults(mockResults);
-      setProgress(100);
+      setScanResults(null);
+      setProgress(0);
+      throw error;
     } finally {
       setIsScanning(false);
     }
@@ -79,7 +55,7 @@ export function useNormalization() {
 
     try {
       // Call edge function to apply normalization
-      const { error } = await supabase.functions.invoke('data_normalization', {
+      const { data, error } = await supabase.functions.invoke('data_normalization', {
         body: { 
           action: 'normalize',
           changes: scanResults
@@ -93,12 +69,8 @@ export function useNormalization() {
       setScanResults(null);
     } catch (error) {
       console.error("Normalization error:", error);
-      // Simulate progress for development
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        setProgress(i);
-      }
-      setScanResults(null);
+      setProgress(0);
+      throw error;
     } finally {
       setIsNormalizing(false);
     }

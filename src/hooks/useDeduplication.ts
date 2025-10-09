@@ -49,80 +49,9 @@ export function useDeduplication(entityType: "contacts" | "opportunities") {
       setProgress(100);
     } catch (error) {
       console.error("Duplicate scan error:", error);
-      // Fallback to mock data for development
-      const mockData: DuplicatesResult = entityType === "contacts" 
-        ? {
-            groups: [
-              {
-                id: "group-1",
-                confidence: 100,
-                matchReason: "Exact email match",
-                records: [
-                  {
-                    id: "1",
-                    full_name: "John Smith",
-                    email: "john.smith@example.com",
-                    organization: "ABC Corp"
-                  },
-                  {
-                    id: "2",
-                    full_name: "J. Smith",
-                    email: "john.smith@example.com",
-                    organization: "ABC Corporation"
-                  }
-                ]
-              },
-              {
-                id: "group-2",
-                confidence: 92,
-                matchReason: "Name + organization fuzzy match",
-                records: [
-                  {
-                    id: "3",
-                    full_name: "Sarah Johnson",
-                    email: "sjohnson@xyz.com",
-                    organization: "XYZ Inc"
-                  },
-                  {
-                    id: "4",
-                    full_name: "Sarah A. Johnson",
-                    email: "sarah.johnson@xyz.com",
-                    organization: "XYZ Incorporated"
-                  }
-                ]
-              }
-            ],
-            totalDuplicates: 4,
-            avgConfidence: 96
-          }
-        : {
-            groups: [
-              {
-                id: "opp-1",
-                confidence: 95,
-                matchReason: "Deal name similarity + sector match",
-                records: [
-                  {
-                    id: "1",
-                    deal_name: "ABC Manufacturing Acquisition",
-                    sector: "Industrials",
-                    ebitda_in_ms: 45
-                  },
-                  {
-                    id: "2",
-                    deal_name: "ABC Mfg Acquisition",
-                    sector: "Industrials",
-                    ebitda_in_ms: 45
-                  }
-                ]
-              }
-            ],
-            totalDuplicates: 2,
-            avgConfidence: 95
-          };
-      
-      setDuplicates(mockData);
-      setProgress(100);
+      setDuplicates(null);
+      setProgress(0);
+      throw error;
     } finally {
       setIsScanning(false);
     }
@@ -134,7 +63,7 @@ export function useDeduplication(entityType: "contacts" | "opportunities") {
 
     try {
       // Call edge function to merge duplicates
-      const { error } = await supabase.functions.invoke('data_normalization', {
+      const { data, error } = await supabase.functions.invoke('data_normalization', {
         body: { 
           action: 'merge_duplicates',
           groupId,
@@ -146,29 +75,22 @@ export function useDeduplication(entityType: "contacts" | "opportunities") {
 
       // Remove merged group from results
       if (duplicates) {
+        const mergedGroup = duplicates.groups.find(g => g.id === groupId);
+        const recordsCount = mergedGroup ? mergedGroup.records.length : 0;
+        
         setDuplicates({
           ...duplicates,
           groups: duplicates.groups.filter(g => g.id !== groupId),
-          totalDuplicates: duplicates.totalDuplicates - duplicates.groups.find(g => g.id === groupId)!.records.length
+          totalDuplicates: duplicates.totalDuplicates - recordsCount
         });
       }
       
       setProgress(100);
+      return data;
     } catch (error) {
       console.error("Merge error:", error);
-      // Simulate progress for development
-      for (let i = 0; i <= 100; i += 20) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        setProgress(i);
-      }
-      
-      // Remove from mock data
-      if (duplicates) {
-        setDuplicates({
-          ...duplicates,
-          groups: duplicates.groups.filter(g => g.id !== groupId)
-        });
-      }
+      setProgress(0);
+      throw error;
     } finally {
       setIsMerging(false);
     }

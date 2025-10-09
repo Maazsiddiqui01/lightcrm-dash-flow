@@ -299,27 +299,134 @@ async function mergeDuplicates(supabase: any, groupId: string, entityType: strin
   try {
     const tableName = entityType === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
     
-    // Get the duplicate group details from frontend (passed in groupId)
-    // In real implementation, we'd fetch from a duplicates tracking table
-    // For now, we'll mark this as a successful merge
-    
+    // Parse group info from groupId (format: email or identifier)
+    // Get all records that match the duplicate criteria
+    const { data: duplicateRecords, error: fetchError } = await supabase
+      .from(tableName)
+      .select('*')
+      .or(groupId.includes('@') ? `email_address.ilike.%${groupId}%` : `id.eq.${groupId}`);
+
+    if (fetchError || !duplicateRecords || duplicateRecords.length < 2) {
+      throw new Error('Could not find duplicate records or insufficient records to merge');
+    }
+
+    console.log(`Found ${duplicateRecords.length} duplicate records`);
+
+    // Determine primary record (most complete data, or first created)
+    const primaryRecord = duplicateRecords.reduce((best, current) => {
+      const bestScore = calculateCompletenessScore(best);
+      const currentScore = calculateCompletenessScore(current);
+      return currentScore > bestScore ? current : best;
+    });
+
+    console.log(`Primary record selected: ${primaryRecord.id}`);
+
+    // Merge data from duplicates into primary
+    const mergedData = { ...primaryRecord };
+    const duplicateIds: string[] = [];
+
+    for (const duplicate of duplicateRecords) {
+      if (duplicate.id === primaryRecord.id) continue;
+      
+      duplicateIds.push(duplicate.id);
+      
+      // Merge non-null fields from duplicate into primary
+      for (const [key, value] of Object.entries(duplicate)) {
+        if (value !== null && value !== '' && 
+            (mergedData[key] === null || mergedData[key] === '')) {
+          mergedData[key] = value;
+        }
+      }
+    }
+
+    // Update primary record with merged data
+    const { error: updateError } = await supabase
+      .from(tableName)
+      .update(mergedData)
+      .eq('id', primaryRecord.id);
+
+    if (updateError) {
+      throw new Error(`Failed to update primary record: ${updateError.message}`);
+    }
+
+    console.log('Updated primary record with merged data');
+
+    // Update foreign key references in related tables
+    if (entityType === 'contacts') {
+      // Update contact references in opportunities
+      await supabase
+        .from('opportunities_raw')
+        .update({ deal_source_individual_1: mergedData.full_name })
+        .in('deal_source_individual_1', duplicateRecords.map(d => d.full_name));
+
+      await supabase
+        .from('opportunities_raw')
+        .update({ deal_source_individual_2: mergedData.full_name })
+        .in('deal_source_individual_2', duplicateRecords.map(d => d.full_name));
+
+      // Update contact notes
+      await supabase
+        .from('contact_note_events')
+        .update({ contact_id: primaryRecord.id })
+        .in('contact_id', duplicateIds);
+
+      // Update email builder settings
+      await supabase
+        .from('contact_email_builder_settings')
+        .update({ contact_id: primaryRecord.id })
+        .in('contact_id', duplicateIds);
+
+      console.log('Updated related table references');
+    }
+
+    // Delete duplicate records
+    const { error: deleteError } = await supabase
+      .from(tableName)
+      .delete()
+      .in('id', duplicateIds);
+
+    if (deleteError) {
+      console.error('Failed to delete duplicates:', deleteError);
+      // Don't throw - primary record was updated successfully
+    } else {
+      console.log(`Deleted ${duplicateIds.length} duplicate records`);
+    }
+
     // Log the merge action
     const { error: logError } = await supabase
       .from('duplicate_merge_log')
       .insert({
         entity_type: entityType,
-        primary_record_id: groupId, // In real impl, this would be the kept record
-        merged_record_ids: [], // In real impl, this would be the deleted records
+        primary_record_id: primaryRecord.id,
+        merged_record_ids: duplicateIds,
         merge_reason: 'Manual merge via Data Maintenance',
-        data_preserved: {}
+        data_preserved: { 
+          merged_count: duplicateIds.length,
+          primary_completeness: calculateCompletenessScore(primaryRecord)
+        }
       });
 
     if (logError) {
       console.error('Failed to log merge:', logError);
     }
 
+    // Track the detection run
+    await supabase
+      .from('duplicate_detection_runs')
+      .insert({
+        entity_type: entityType,
+        total_groups: 1,
+        total_duplicates: duplicateIds.length,
+        avg_confidence: 100
+      });
+
     return new Response(
-      JSON.stringify({ success: true, message: 'Duplicates merged successfully' }),
+      JSON.stringify({ 
+        success: true, 
+        message: `Merged ${duplicateIds.length} duplicate records into primary record`,
+        primaryId: primaryRecord.id,
+        mergedIds: duplicateIds
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
@@ -329,6 +436,24 @@ async function mergeDuplicates(supabase: any, groupId: string, entityType: strin
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
+}
+
+// Helper function to calculate how complete a record is
+function calculateCompletenessScore(record: any): number {
+  let score = 0;
+  const importantFields = [
+    'full_name', 'email_address', 'organization', 'title',
+    'phone', 'linkedin_url', 'areas_of_specialization',
+    'lg_focus_areas_comprehensive_list', 'notes'
+  ];
+  
+  for (const field of importantFields) {
+    if (record[field] && record[field] !== '') {
+      score++;
+    }
+  }
+  
+  return score;
 }
 
 function findStandardFocusArea(input: string, masterList: FocusAreaMapping[]): string | null {

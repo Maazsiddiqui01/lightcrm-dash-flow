@@ -701,6 +701,36 @@ export type Database = {
         }
         Relationships: []
       }
+      duplicate_detection_runs: {
+        Row: {
+          avg_confidence: number | null
+          entity_type: string
+          id: string
+          run_at: string | null
+          run_by: string | null
+          total_duplicates: number
+          total_groups: number
+        }
+        Insert: {
+          avg_confidence?: number | null
+          entity_type: string
+          id?: string
+          run_at?: string | null
+          run_by?: string | null
+          total_duplicates?: number
+          total_groups?: number
+        }
+        Update: {
+          avg_confidence?: number | null
+          entity_type?: string
+          id?: string
+          run_at?: string | null
+          run_by?: string | null
+          total_duplicates?: number
+          total_groups?: number
+        }
+        Relationships: []
+      }
       duplicate_merge_log: {
         Row: {
           data_preserved: Json | null
