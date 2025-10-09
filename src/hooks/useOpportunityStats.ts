@@ -124,52 +124,36 @@ export function useOpportunityStats(filters?: OpportunityFilters): OpportunitySt
 
   const fetchStats = async () => {
     try {
-      // Total opportunities with filters
-      let totalQuery = supabase
+      // Optimized: Fetch all data in a single query instead of 4 separate queries
+      let query = supabase
         .from("opportunities_raw")
-        .select("*", { count: "exact", head: true });
-      totalQuery = applyFilters(totalQuery);
-      const { count: totalOpportunities } = await totalQuery;
+        .select("ownership_type, ebitda_in_ms, status");
+      query = applyFilters(query);
+      const { data: opportunities, error } = await query;
 
-      // Active deals (not closed) with filters
-      let activeQuery = supabase
-        .from("opportunities_raw")
-        .select("*", { count: "exact", head: true })
-        .not("status", "ilike", "%closed%")
-        .not("status", "ilike", "%won%")
-        .not("status", "ilike", "%lost%");
-      activeQuery = applyFilters(activeQuery);
-      const { count: activeDeals } = await activeQuery;
+      if (error) throw error;
 
-      // Family/founder owned percentage with filters
-      let familyFounderQuery = supabase
-        .from("opportunities_raw")
-        .select("ownership_type");
-      familyFounderQuery = applyFilters(familyFounderQuery);
-      const { data: allOpps } = await familyFounderQuery;
-
-      const familyFounderCount = allOpps?.filter(opp => 
-        opp.ownership_type && (
-          opp.ownership_type.toLowerCase().includes('family') || 
-          opp.ownership_type.toLowerCase().includes('founder')
-        )
-      ).length || 0;
+      // Calculate all stats from the single query result
+      const totalOpportunities = opportunities?.length || 0;
       
-      const familyFounderPercentage = allOpps && allOpps.length > 0 
-        ? `${Math.round((familyFounderCount / allOpps.length) * 100)}%`
+      const activeDeals = opportunities?.filter(opp => {
+        const status = opp.status?.toLowerCase() || '';
+        return !status.includes('closed') && !status.includes('won') && !status.includes('lost');
+      }).length || 0;
+
+      const familyFounderCount = opportunities?.filter(opp => {
+        const ownership = opp.ownership_type?.toLowerCase() || '';
+        return ownership.includes('family') || ownership.includes('founder');
+      }).length || 0;
+      
+      const familyFounderPercentage = totalOpportunities > 0 
+        ? `${Math.round((familyFounderCount / totalOpportunities) * 100)}%`
         : "0%";
 
-      // Average EBITDA calculation with filters
-      let ebitdaQuery = supabase
-        .from("opportunities_raw")
-        .select("ebitda_in_ms")
-        .not("ebitda_in_ms", "is", null);
-      ebitdaQuery = applyFilters(ebitdaQuery);
-      const { data: ebitdaOpps } = await ebitdaQuery;
-
-      const totalEbitda = ebitdaOpps?.reduce((sum, opp) => sum + (opp.ebitda_in_ms || 0), 0) || 0;
-      const averageEbitdaNum = ebitdaOpps && ebitdaOpps.length > 0 
-        ? totalEbitda / ebitdaOpps.length 
+      const oppsWithEbitda = opportunities?.filter(opp => opp.ebitda_in_ms != null) || [];
+      const totalEbitda = oppsWithEbitda.reduce((sum, opp) => sum + (opp.ebitda_in_ms || 0), 0);
+      const averageEbitdaNum = oppsWithEbitda.length > 0 
+        ? totalEbitda / oppsWithEbitda.length 
         : 0;
       
       const averageEbitda = averageEbitdaNum > 0 
@@ -177,8 +161,8 @@ export function useOpportunityStats(filters?: OpportunityFilters): OpportunitySt
         : "$0M";
 
       setStats({
-        totalOpportunities: totalOpportunities || 0,
-        activeDeals: activeDeals || 0,
+        totalOpportunities,
+        activeDeals,
         familyFounderPercentage,
         averageEbitda,
         loading: false,

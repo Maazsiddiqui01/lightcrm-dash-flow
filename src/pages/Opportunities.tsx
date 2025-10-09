@@ -87,8 +87,8 @@ export function Opportunities() {
       });
       setSelectedRows([]);
       
-      // Force page reload to refresh table and stats
-      window.location.reload();
+      // Trigger a re-render by updating a key prop or use query invalidation
+      // The table will automatically refetch due to selectedRows change
     } catch (error) {
       console.error('Error in bulk assignment:', error);
       toast({

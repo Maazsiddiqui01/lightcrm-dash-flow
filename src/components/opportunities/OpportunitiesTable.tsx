@@ -322,16 +322,21 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         query = query.lte('ebitda_in_ms', filters.ebitdaMax);
       }
 
-      // Date of origination filter
+      // Date of origination filter - now using proper date type
       if (filters.dateOfOrigination.length > 0) {
-        const dateQueries = filters.dateOfOrigination.map(dateRange => {
+        const dateConditions = filters.dateOfOrigination.map(dateRange => {
           const [start, end] = dateRange.split(' to ');
           if (end) {
             return `date_of_origination.gte.${start},date_of_origination.lte.${end}`;
           }
           return `date_of_origination.gte.${start}`;
         });
-        query = query.or(dateQueries.join(','));
+        query = query.or(dateConditions.join(','));
+      }
+
+      // Process Timeline filter - now optimized on backend
+      if (filters.processTimeline.length > 0) {
+        query = query.in('process_timeline', filters.processTimeline);
       }
 
       // Apply multi-sort (server-side for non-custom orders)
@@ -369,15 +374,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
       }
 
       // Apply client-side sorting for custom orders
-      let sortedData = applyClientSort(data || [], sortLevels);
-      
-      // Apply Process Timeline filter on client side to avoid TS inference issues
-      if (filters.processTimeline?.length > 0) {
-        sortedData = sortedData.filter(opportunity => {
-          const processTimeline = (opportunity as any).process_timeline;
-          return filters.processTimeline.includes(processTimeline || '');
-        });
-      }
+      const sortedData = applyClientSort(data || [], sortLevels);
       
       setOpportunities(sortedData as OpportunityRaw[]);
     } catch (error) {
