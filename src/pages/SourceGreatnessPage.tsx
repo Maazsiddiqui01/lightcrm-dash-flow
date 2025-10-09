@@ -53,22 +53,32 @@ export default function SourceGreatnessPage() {
     queryFn: async () => {
       let query = supabase.from('opportunities_raw').select('*');
       
-      // Apply date filter with improved matching for various formats
+      // Apply date filter with proper date range queries
       if (filterState.dateRange !== 'all') {
         const dateValue = filterState.dateRange;
         if (dateValue.includes('Q')) {
-          // Quarter filter - match various quarter formats: "2024 Q4", "Q4 2024", "2024Q4"
+          // Quarter filter with proper date range parsing
           const parts = dateValue.match(/(\d{4}).*?Q([1-4])/i);
           if (parts) {
-            const year = parts[1];
-            const quarter = parts[2];
-            // Match any format containing this year and quarter
-            query = query.or(`date_of_origination.ilike.%${year}%Q${quarter}%,date_of_origination.ilike.%Q${quarter}%${year}%`);
+            const year = parseInt(parts[1]);
+            const quarter = parseInt(parts[2]);
+            const startMonth = (quarter - 1) * 3 + 1;
+            const endMonth = quarter * 3;
+            const startDate = `${year}-${String(startMonth).padStart(2, '0')}-01`;
+            const endDate = `${year}-${String(endMonth).padStart(2, '0')}-${new Date(year, endMonth, 0).getDate()}`;
+            
+            // Use proper date range comparison
+            query = query.gte('date_of_origination', startDate).lte('date_of_origination', endDate);
           } else {
+            // Fallback to text matching
             query = query.ilike('date_of_origination', `%${dateValue}%`);
           }
+        } else if (/^\d{4}$/.test(dateValue)) {
+          // Year filter - use proper date range
+          const year = parseInt(dateValue);
+          query = query.gte('date_of_origination', `${year}-01-01`).lte('date_of_origination', `${year}-12-31`);
         } else {
-          // Year filter - match any occurrence of the year
+          // Fallback to text matching for other formats
           query = query.ilike('date_of_origination', `%${dateValue}%`);
         }
       }

@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Dashboard } from "@/pages/Dashboard";
 import SourceGreatnessPage from "@/pages/SourceGreatnessPage";
 import { Contacts } from "@/pages/Contacts";
 import { Opportunities } from "@/pages/Opportunities";
