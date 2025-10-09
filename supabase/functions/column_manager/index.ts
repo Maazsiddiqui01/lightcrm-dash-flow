@@ -1,12 +1,27 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+interface ColumnOperation {
+  action: 'get_details' | 'create' | 'update' | 'delete' | 'rename';
+  tableName: string;
+  columnName?: string;
+  newColumnName?: string;
+  dataType?: string;
+  isNullable?: boolean;
+  defaultValue?: string;
+  displayName?: string;
+  isEditable?: boolean;
+  isRequired?: boolean;
+  validationRules?: any[];
+  fieldType?: string;
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -22,254 +37,321 @@ serve(async (req) => {
       }
     );
 
-    const body = await req.json();
-    const { action, tableName, columnDetails, columnName, table_name, column_name, display_name, data_type, nullable, default_value, new_column_name } = body;
+    // Verify user is authenticated and is admin
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
 
-    console.log('Column manager action:', action, 'for table:', tableName || table_name, 'column:', columnName || column_name);
-
-    if (action === 'create') {
-      // Validate column name (no spaces, special chars)
-      if (!/^[a-z_][a-z0-9_]*$/.test(columnDetails.name)) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Invalid column name. Use lowercase letters, numbers, and underscores only. Must start with a letter or underscore.' 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        );
-      }
-
-      // Check if column already exists
-      const { data: existingCols } = await supabaseClient
-        .from('column_configurations')
-        .select('column_name')
-        .eq('table_name', tableName)
-        .eq('column_name', columnDetails.name);
-
-      if (existingCols && existingCols.length > 0) {
-        return new Response(
-          JSON.stringify({ error: 'Column already exists' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        );
-      }
-
-      // Create the actual column in the database
-      const sql = `ALTER TABLE public.${tableName} ADD COLUMN IF NOT EXISTS ${columnDetails.name} ${mapDataTypeToSQL(columnDetails.type)}${columnDetails.nullable ? '' : ' NOT NULL'}${columnDetails.defaultValue ? ` DEFAULT '${columnDetails.defaultValue}'` : ''}`;
-      
-      const { data: sqlResult, error: sqlError } = await supabaseClient.rpc('execute_admin_sql', {
-        sql_statement: sql
-      });
-
-      if (sqlError) {
-        console.error('SQL execution error:', sqlError);
-        throw sqlError;
-      }
-
-      // Add configuration entry
-      const { error: configError } = await supabaseClient
-        .from('column_configurations')
-        .insert({
-          table_name: tableName,
-          column_name: columnDetails.name,
-          display_name: columnDetails.displayName || columnDetails.name,
-          field_type: columnDetails.type,
-          is_editable: true,
-          is_required: !columnDetails.nullable
-        });
-
-      if (configError) {
-        console.error('Config insert error:', configError);
-        throw configError;
-      }
-
-      // Log the change
-      await supabaseClient
-        .from('schema_change_log')
-        .insert({
-          table_name: tableName,
-          operation: 'ADD_COLUMN',
-          column_name: columnDetails.name,
-          new_value: `${columnDetails.type}${columnDetails.nullable ? '' : ' NOT NULL'}`,
-          success: true
-        });
-
-      return new Response(
-        JSON.stringify({ success: true, message: 'Column created successfully' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!user) {
+      throw new Error('Unauthorized');
     }
 
-    if (action === 'delete') {
-      // Check if column is protected
-      const { data: isProtected } = await supabaseClient.rpc('is_column_protected', {
-        p_table: tableName,
-        p_column: columnName
-      });
+    const { data: isAdmin } = await supabaseClient.rpc('is_admin', {
+      _user_id: user.id,
+    });
 
-      if (isProtected) {
-        return new Response(
-          JSON.stringify({ error: 'Cannot delete protected column' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
-        );
-      }
-
-      // Remove the actual column from the database
-      const sql = `ALTER TABLE public.${tableName} DROP COLUMN IF EXISTS ${columnName}`;
-      
-      const { error: sqlError } = await supabaseClient.rpc('execute_admin_sql', {
-        sql_statement: sql
-      });
-
-      if (sqlError) throw sqlError;
-
-      // Remove configuration entry
-      await supabaseClient
-        .from('column_configurations')
-        .delete()
-        .eq('table_name', tableName)
-        .eq('column_name', columnName);
-
-      // Log the change
-      await supabaseClient
-        .from('schema_change_log')
-        .insert({
-          table_name: tableName,
-          operation: 'DROP_COLUMN',
-          column_name: columnName,
-          success: true
-        });
-
-      return new Response(
-        JSON.stringify({ success: true, message: 'Column deleted successfully' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!isAdmin) {
+      throw new Error('Admin access required');
     }
 
-    if (action === 'update_type') {
-      // Validate data type change before applying
-      const { data: validation, error: validationError } = await supabaseClient.rpc('validate_column_type_change', {
-        p_table: tableName,
-        p_column: columnName,
-        p_new_type: mapDataTypeToSQL(data_type)
-      });
+    const operation: ColumnOperation = await req.json();
+    console.log('Column operation:', operation);
 
-      if (validationError || !validation?.valid) {
-        const errorMsg = validation?.error || validationError?.message || 'Data type change validation failed';
-        console.error('Type change validation failed:', errorMsg);
-        return new Response(
-          JSON.stringify({ 
-            error: `Cannot change column type: ${errorMsg}`,
-            details: 'Some existing data cannot be converted to the new type. Please clean the data first or choose a compatible type.'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        );
-      }
+    let result;
 
-      // Apply the type change
-      const sql = `ALTER TABLE public.${tableName} ALTER COLUMN ${columnName} TYPE ${mapDataTypeToSQL(data_type)} USING ${columnName}::${mapDataTypeToSQL(data_type)}`;
-      
-      const { error: sqlError } = await supabaseClient.rpc('execute_admin_sql', {
-        sql_statement: sql
-      });
-
-      if (sqlError) {
-        console.error('Type change SQL error:', sqlError);
-        throw new Error(`Failed to change column type: ${sqlError.message}`);
-      }
-
-      // Update configuration
-      await supabaseClient
-        .from('column_configurations')
-        .update({
-          field_type: data_type,
-          updated_at: new Date().toISOString()
-        })
-        .eq('table_name', tableName)
-        .eq('column_name', columnName);
-
-      // Log the change
-      await supabaseClient
-        .from('schema_change_log')
-        .insert({
-          table_name: tableName,
-          operation: 'ALTER_COLUMN_TYPE',
-          column_name: columnName,
-          old_value: validation.old_type,
-          new_value: mapDataTypeToSQL(data_type),
-          success: true
-        });
-
-      return new Response(
-        JSON.stringify({ success: true, message: `Column type changed successfully. ${validation.message || ''}` }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    switch (operation.action) {
+      case 'get_details':
+        result = await getColumnDetails(supabaseClient, operation);
+        break;
+      case 'create':
+        result = await createColumn(supabaseClient, operation);
+        break;
+      case 'update':
+        result = await updateColumn(supabaseClient, operation);
+        break;
+      case 'delete':
+        result = await deleteColumn(supabaseClient, operation);
+        break;
+      case 'rename':
+        result = await renameColumn(supabaseClient, operation);
+        break;
+      default:
+        throw new Error(`Unknown action: ${operation.action}`);
     }
 
-    if (action === 'rename') {
-      // Rename the actual column in the database
-      const sql = `ALTER TABLE public.${tableName} RENAME COLUMN ${columnName} TO ${new_column_name}`;
-      
-      const { error: sqlError } = await supabaseClient.rpc('execute_admin_sql', {
-        sql_statement: sql
-      });
-
-      if (sqlError) {
-        console.error('Rename SQL error:', sqlError);
-        throw new Error(`Failed to rename column: ${sqlError.message}`);
-      }
-
-      // Update configuration entry
-      await supabaseClient
-        .from('column_configurations')
-        .update({
-          column_name: new_column_name,
-          updated_at: new Date().toISOString()
-        })
-        .eq('table_name', tableName)
-        .eq('column_name', columnName);
-
-      // Log the change
-      await supabaseClient
-        .from('schema_change_log')
-        .insert({
-          table_name: tableName,
-          operation: 'RENAME_COLUMN',
-          column_name: columnName,
-          old_value: columnName,
-          new_value: new_column_name,
-          success: true
-        });
-
-      return new Response(
-        JSON.stringify({ success: true, message: 'Column renamed successfully' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
   } catch (error) {
     console.error('Column manager error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: error.message === 'Unauthorized' || error.message === 'Admin access required' ? 403 : 400,
+      }
     );
   }
 });
 
+async function getColumnDetails(supabaseClient: any, operation: ColumnOperation) {
+  // Get column info from information_schema
+  const { data: columnInfo, error: columnError } = await supabaseClient
+    .from('information_schema.columns')
+    .select('*')
+    .eq('table_schema', 'public')
+    .eq('table_name', operation.tableName)
+    .eq('column_name', operation.columnName)
+    .single();
+
+  if (columnError) throw columnError;
+
+  // Get configuration from column_configurations if exists
+  const { data: config } = await supabaseClient
+    .from('column_configurations')
+    .select('*')
+    .eq('table_name', operation.tableName)
+    .eq('column_name', operation.columnName)
+    .single();
+
+  return {
+    ...columnInfo,
+    configuration: config,
+  };
+}
+
+async function createColumn(supabaseClient: any, operation: ColumnOperation) {
+  const { tableName, columnName, dataType, isNullable, defaultValue } = operation;
+
+  // Validate inputs
+  if (!columnName || !dataType) {
+    throw new Error('Column name and data type are required');
+  }
+
+  // Map data type to SQL type
+  const sqlType = mapDataTypeToSQL(dataType);
+  const nullable = isNullable ? '' : 'NOT NULL';
+  const defaultClause = defaultValue ? `DEFAULT ${defaultValue}` : '';
+
+  // Create the column
+  const alterSQL = `
+    ALTER TABLE public.${tableName} 
+    ADD COLUMN ${columnName} ${sqlType} ${nullable} ${defaultClause}
+  `.trim();
+
+  const { data: result, error } = await supabaseClient.rpc('execute_admin_sql', {
+    sql_statement: alterSQL,
+  });
+
+  if (error) throw error;
+
+  // Create configuration entry
+  const { error: configError } = await supabaseClient
+    .from('column_configurations')
+    .insert({
+      table_name: tableName,
+      column_name: columnName,
+      field_type: dataType,
+      display_name: operation.displayName || columnName,
+      is_editable: operation.isEditable ?? true,
+      is_required: operation.isRequired ?? !isNullable,
+      validation_rules: operation.validationRules || [],
+    });
+
+  if (configError) {
+    console.error('Failed to create column configuration:', configError);
+  }
+
+  // Log the change
+  await logSchemaChange(supabaseClient, {
+    action: 'create_column',
+    table_name: tableName,
+    column_name: columnName,
+    details: { dataType, isNullable, defaultValue },
+  });
+
+  return { success: true, message: `Column ${columnName} created successfully` };
+}
+
+async function updateColumn(supabaseClient: any, operation: ColumnOperation) {
+  const { tableName, columnName, dataType } = operation;
+
+  if (!dataType) {
+    throw new Error('Data type is required for update');
+  }
+
+  // Check if column is protected
+  const { data: isProtected } = await supabaseClient
+    .from('protected_columns')
+    .select('reason')
+    .eq('table_name', tableName)
+    .eq('column_name', columnName)
+    .single();
+
+  if (isProtected) {
+    throw new Error(`Cannot modify protected column: ${isProtected.reason}`);
+  }
+
+  const sqlType = mapDataTypeToSQL(dataType);
+
+  const alterSQL = `
+    ALTER TABLE public.${tableName} 
+    ALTER COLUMN ${columnName} TYPE ${sqlType}
+  `;
+
+  const { error } = await supabaseClient.rpc('execute_admin_sql', {
+    sql_statement: alterSQL,
+  });
+
+  if (error) throw error;
+
+  // Update configuration
+  const { error: configError } = await supabaseClient
+    .from('column_configurations')
+    .update({
+      field_type: dataType,
+      display_name: operation.displayName,
+      is_editable: operation.isEditable,
+      is_required: operation.isRequired,
+      validation_rules: operation.validationRules,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('table_name', tableName)
+    .eq('column_name', columnName);
+
+  if (configError) {
+    console.error('Failed to update column configuration:', configError);
+  }
+
+  await logSchemaChange(supabaseClient, {
+    action: 'update_column',
+    table_name: tableName,
+    column_name: columnName,
+    details: { dataType },
+  });
+
+  return { success: true, message: `Column ${columnName} updated successfully` };
+}
+
+async function deleteColumn(supabaseClient: any, operation: ColumnOperation) {
+  const { tableName, columnName } = operation;
+
+  // Check if column is protected
+  const { data: isProtected } = await supabaseClient
+    .from('protected_columns')
+    .select('reason')
+    .eq('table_name', tableName)
+    .eq('column_name', columnName)
+    .single();
+
+  if (isProtected) {
+    throw new Error(`Cannot delete protected column: ${isProtected.reason}`);
+  }
+
+  const alterSQL = `ALTER TABLE public.${tableName} DROP COLUMN ${columnName}`;
+
+  const { error } = await supabaseClient.rpc('execute_admin_sql', {
+    sql_statement: alterSQL,
+  });
+
+  if (error) throw error;
+
+  // Delete configuration
+  await supabaseClient
+    .from('column_configurations')
+    .delete()
+    .eq('table_name', tableName)
+    .eq('column_name', columnName);
+
+  await logSchemaChange(supabaseClient, {
+    action: 'delete_column',
+    table_name: tableName,
+    column_name: columnName,
+    details: {},
+  });
+
+  return { success: true, message: `Column ${columnName} deleted successfully` };
+}
+
+async function renameColumn(supabaseClient: any, operation: ColumnOperation) {
+  const { tableName, columnName, newColumnName } = operation;
+
+  if (!newColumnName) {
+    throw new Error('New column name is required');
+  }
+
+  // Check if column is protected
+  const { data: isProtected } = await supabaseClient
+    .from('protected_columns')
+    .select('reason')
+    .eq('table_name', tableName)
+    .eq('column_name', columnName)
+    .single();
+
+  if (isProtected) {
+    throw new Error(`Cannot rename protected column: ${isProtected.reason}`);
+  }
+
+  const alterSQL = `
+    ALTER TABLE public.${tableName} 
+    RENAME COLUMN ${columnName} TO ${newColumnName}
+  `;
+
+  const { error } = await supabaseClient.rpc('execute_admin_sql', {
+    sql_statement: alterSQL,
+  });
+
+  if (error) throw error;
+
+  // Update configuration
+  await supabaseClient
+    .from('column_configurations')
+    .update({
+      column_name: newColumnName,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('table_name', tableName)
+    .eq('column_name', columnName);
+
+  await logSchemaChange(supabaseClient, {
+    action: 'rename_column',
+    table_name: tableName,
+    column_name: columnName,
+    details: { newColumnName },
+  });
+
+  return { success: true, message: `Column renamed to ${newColumnName} successfully` };
+}
+
 function mapDataTypeToSQL(frontendType: string): string {
   const typeMap: Record<string, string> = {
-    'text': 'TEXT',
-    'email': 'TEXT',
-    'number': 'NUMERIC',
-    'integer': 'INTEGER',
-    'boolean': 'BOOLEAN',
-    'date': 'DATE',
-    'timestamp': 'TIMESTAMP WITH TIME ZONE',
-    'textarea': 'TEXT',
-    'select': 'TEXT'
+    text: 'TEXT',
+    number: 'NUMERIC',
+    integer: 'INTEGER',
+    boolean: 'BOOLEAN',
+    date: 'DATE',
+    datetime: 'TIMESTAMP WITH TIME ZONE',
+    email: 'TEXT',
+    phone: 'TEXT',
+    url: 'TEXT',
+    json: 'JSONB',
+    uuid: 'UUID',
   };
-  return typeMap[frontendType] || 'TEXT';
+
+  return typeMap[frontendType.toLowerCase()] || 'TEXT';
+}
+
+async function logSchemaChange(supabaseClient: any, change: any) {
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+
+  await supabaseClient.from('schema_change_log').insert({
+    action: change.action,
+    table_name: change.table_name,
+    column_name: change.column_name,
+    details: change.details,
+    created_by: user?.id,
+  });
 }

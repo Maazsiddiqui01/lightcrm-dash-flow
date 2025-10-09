@@ -1,5 +1,8 @@
 project_id = "wjghdqkxwuyptxzdidtf"
 
+[functions.column_manager]
+verify_jwt = true
+
 [functions.list_users]
 verify_jwt = true
 
