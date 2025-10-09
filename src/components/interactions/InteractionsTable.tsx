@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { MessageSquare, Mail, Video } from "lucide-react";
+import { MessageSquare, Mail, Video, RefreshCw, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Interaction {
@@ -38,18 +38,35 @@ export function InteractionsTable() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string>("occurred_at");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
+  const [limit, setLimit] = useState<number | null>(1000);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchInteractions();
-  }, [sortKey, sortDirection]);
+  }, [sortKey, sortDirection, limit]);
 
   const fetchInteractions = async () => {
     try {
       setLoading(true);
+      setIsRefreshing(true);
+      
+      // Get total count first
+      const { count } = await supabase
+        .from("interactions_app")
+        .select("*", { count: 'exact', head: true });
+      
+      setTotalCount(count);
+      
+      // Build query with optional limit
       let query = supabase
         .from("interactions_app")
         .select("*");
+
+      if (limit) {
+        query = query.limit(limit);
+      }
 
       if (sortKey && sortDirection) {
         query = query.order(sortKey, { 
@@ -70,10 +87,24 @@ export function InteractionsTable() {
       });
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   const refetch = () => {
+    fetchInteractions();
+  };
+
+  const handleLoadAll = () => {
+    if (totalCount && totalCount > 10000) {
+      if (!confirm(`This will load ${totalCount.toLocaleString()} interactions. This may take a moment. Continue?`)) {
+        return;
+      }
+    }
+    setLimit(null);
+  };
+
+  const handleRefresh = () => {
     fetchInteractions();
   };
 
@@ -360,8 +391,37 @@ export function InteractionsTable() {
           <div className="space-y-1">
             <h3 className="text-lg font-semibold text-foreground">All Interactions</h3>
             <p className="text-sm text-muted-foreground">
-              {filteredInteractions?.length || 0} interaction{filteredInteractions?.length !== 1 ? 's' : ''} total
+              Showing {filteredInteractions?.length || 0} of {interactions.length} loaded
+              {totalCount && limit && interactions.length < totalCount && (
+                <span className="text-amber-600 ml-1">
+                  ({(totalCount - interactions.length).toLocaleString()} more available)
+                </span>
+              )}
             </p>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing || loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            
+            {limit && totalCount && interactions.length < totalCount && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLoadAll}
+                disabled={loading}
+              >
+                <Database className="h-4 w-4 mr-2" />
+                Load All ({totalCount.toLocaleString()} total)
+              </Button>
+            )}
           </div>
         </div>
 
