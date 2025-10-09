@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
 
 interface OppsChartProps {
-  type: 'tier' | 'status' | 'ebitda' | 'platform-addon' | 'referral-contacts' | 'referral-companies';
+  type: 'tier' | 'status' | 'ebitda' | 'platform-addon' | 'lg-leads' | 'sector';
   data: any[];
   loading: boolean;
 }
@@ -56,21 +56,21 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
           dataKey: 'type',
           valueKey: 'count',
         };
-      case 'referral-contacts':
+      case 'lg-leads':
         return {
-          title: 'Top Referral Contacts',
-          description: 'Top referral sources by person',
-          chartType: 'horizontal-bar' as const,
-          dataKey: 'referral_contact_display',
-          valueKey: 'opp_count',
+          title: 'Top LG Leads by Opportunities',
+          description: 'Deal sourcing performance by team member',
+          chartType: 'bar' as const,
+          dataKey: 'lead',
+          valueKey: 'count',
         };
-      case 'referral-companies':
+      case 'sector':
         return {
-          title: 'Top Referral Companies',
-          description: 'Top referral sources by organization',
-          chartType: 'horizontal-bar' as const,
-          dataKey: 'referral_company_display',
-          valueKey: 'opp_count',
+          title: 'Opportunities by Sector',
+          description: 'Distribution across sectors',
+          chartType: 'pie' as const,
+          dataKey: 'sector',
+          valueKey: 'count',
         };
       default:
         return {
@@ -84,8 +84,35 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
   };
 
   const processData = () => {
-    if (type === 'referral-contacts' || type === 'referral-companies') {
-      return data.slice(0, 10); // Already processed
+    if (type === 'lg-leads') {
+      // Count opportunities by LG lead
+      const leadCounts = data.reduce((acc, opp) => {
+        const lead1 = opp.investment_professional_point_person_1?.trim();
+        const lead2 = opp.investment_professional_point_person_2?.trim();
+        
+        if (lead1) acc[lead1] = (acc[lead1] || 0) + 1;
+        if (lead2) acc[lead2] = (acc[lead2] || 0) + 1;
+        
+        return acc;
+      }, {} as Record<string, number>);
+      
+      return Object.entries(leadCounts)
+        .map(([lead, count]) => ({ lead, count: Number(count) }))
+        .sort((a, b) => Number(b.count) - Number(a.count))
+        .slice(0, 8);
+    }
+
+    if (type === 'sector') {
+      // Count opportunities by sector
+      const sectorCounts = data.reduce((acc, opp) => {
+        const sector = opp.sector?.trim() || 'Unknown';
+        acc[sector] = (acc[sector] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      return Object.entries(sectorCounts)
+        .map(([sector, count]) => ({ sector, count: Number(count) }))
+        .sort((a, b) => Number(b.count) - Number(a.count));
     }
 
     if (type === 'ebitda') {
@@ -173,15 +200,21 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
               data={chartData}
               cx="50%"
               cy="50%"
-              innerRadius={50}
-              outerRadius={100}
-              paddingAngle={2}
+              innerRadius={60}
+              outerRadius={110}
+              paddingAngle={3}
               dataKey={config.valueKey}
               label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
               labelLine={false}
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={COLORS[index % COLORS.length]}
+                  style={{
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                  }}
+                />
               ))}
             </Pie>
             <Tooltip 
@@ -198,53 +231,45 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
       );
     }
 
-    if (config.chartType === 'horizontal-bar') {
-      return (
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            layout="horizontal"
-            margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-            <YAxis 
-              type="category" 
-              dataKey={config.dataKey} 
-              stroke="hsl(var(--muted-foreground))" 
-              fontSize={12}
-              width={90}
-              tick={{ fontSize: 10 }}
-            />
-            <Tooltip 
-              formatter={(value) => [value, 'Count']}
-              labelStyle={{ color: 'hsl(var(--foreground))' }}
-            />
-            <Bar dataKey={config.valueKey} fill="hsl(var(--primary))">
-              <LabelList dataKey={config.valueKey} position="right" />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      );
-    }
-
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
+          <defs>
+            <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.9}/>
+              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.6}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
           <XAxis 
             dataKey={config.dataKey} 
             stroke="hsl(var(--muted-foreground))" 
-            fontSize={12}
-            tick={{ fontSize: 10 }}
+            fontSize={11}
+            angle={-45}
+            textAnchor="end"
+            height={60}
+            interval={0}
           />
           <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
           <Tooltip 
-            formatter={(value) => [value, 'Count']}
+            formatter={(value) => [value, 'Opportunities']}
             labelStyle={{ color: 'hsl(var(--foreground))' }}
+            contentStyle={{ 
+              backgroundColor: 'hsl(var(--background))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+            }}
           />
-          <Bar dataKey={config.valueKey} fill="hsl(var(--primary))">
-            <LabelList dataKey={config.valueKey} position="top" />
+          <Bar 
+            dataKey={config.valueKey} 
+            fill="url(#colorBar)"
+            radius={[8, 8, 0, 0]}
+          >
+            <LabelList 
+              dataKey={config.valueKey} 
+              position="top" 
+              style={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 600 }}
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -252,13 +277,13 @@ export function OppsChart({ type, data, loading }: OppsChartProps) {
   };
 
   return (
-    <Card className="rounded-xl shadow-sm">
+    <Card className="rounded-xl shadow-lg border-border/50 bg-gradient-to-br from-card to-card/80">
       <CardHeader>
-        <CardTitle>{config.title}</CardTitle>
-        <CardDescription>{config.description}</CardDescription>
+        <CardTitle className="text-lg font-semibold">{config.title}</CardTitle>
+        <CardDescription className="text-sm">{config.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] w-full">
+        <div className="h-[350px] w-full">
           {renderChart()}
         </div>
       </CardContent>

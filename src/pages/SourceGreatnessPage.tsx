@@ -427,7 +427,7 @@ export default function SourceGreatnessPage() {
           />
         </div>
 
-        {/* Sources Row */}
+        {/* Enhanced Insights Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <OppsChart
             type="platform-addon"
@@ -435,13 +435,13 @@ export default function SourceGreatnessPage() {
             loading={loading}
           />
           <OppsChart
-            type="referral-contacts"
-            data={referralContacts}
+            type="lg-leads"
+            data={metrics.filteredOpportunities}
             loading={loading}
           />
           <OppsChart
-            type="referral-companies"
-            data={referralCompanies}
+            type="sector"
+            data={metrics.filteredOpportunities}
             loading={loading}
           />
         </div>
