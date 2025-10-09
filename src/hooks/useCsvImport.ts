@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { validateCsvData } from "@/utils/csvValidation";
+import { validateCsvDataDynamic } from "@/utils/csvValidationDynamic";
 import { normalizeCsvData, trackNormalizationChanges } from "@/utils/csvNormalization";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ValidationResults {
   valid: any[];
-  invalid: Array<{ row: number; errors: string[] }>;
+  invalid: Array<{ row: number; field: string; message: string; value: any }>;
   warnings: Array<{ row: number; message: string }>;
-  normalized: Array<{ row: number; field: string; original: string; corrected: string }>;
+  normalized?: Array<{ row: number; field: string; original: string; corrected: string }>;
 }
 
 export interface ImportResults {
@@ -53,25 +53,25 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
       setParsedData(data);
 
-      // Validate and normalize
+      // Validate and normalize using dynamic column configurations
       const normalized = normalizeCsvData(data, entityType);
       const normalizationChanges = trackNormalizationChanges(data, normalized);
-      const validation = validateCsvData(normalized, entityType);
+      const validation = await validateCsvDataDynamic(normalized, entityType);
       
       // Add normalization changes to validation results
       validation.normalized = normalizationChanges;
       
       setValidationResults(validation);
-
+      
       toast({
         title: "File Parsed",
-        description: `Found ${data.length} rows. ${validation.valid.length} valid, ${validation.invalid.length} invalid.`,
+        description: `Found ${data.length} rows. ${validation.valid.length} valid, ${validation.invalid.length} with errors.`,
       });
     } catch (error) {
       console.error('Error parsing CSV:', error);
       toast({
         title: "Parse Error",
-        description: "Failed to parse CSV file. Please check the format.",
+        description: error instanceof Error ? error.message : "Failed to parse CSV file. Please check the format.",
         variant: "destructive"
       });
     }

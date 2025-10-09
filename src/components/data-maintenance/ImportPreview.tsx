@@ -110,11 +110,10 @@ export function ImportPreview({ data, validationResults, entityType, onImport, o
                       </Badge>
                     </div>
                     <div className="space-y-1">
-                      {item.errors.map((error, errorIdx) => (
-                        <p key={errorIdx} className="text-xs text-red-600">
-                          • {error}
-                        </p>
-                      ))}
+                      <p className="text-xs text-red-600">
+                        • <strong>{item.field}:</strong> {item.message}
+                        {item.value && <span className="text-muted-foreground ml-1">(value: "{item.value}")</span>}
+                      </p>
                     </div>
                   </div>
                 ))}

@@ -72,17 +72,13 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
     onOpenChange(false);
   };
 
-  const handleDownloadTemplate = () => {
-    const template = generateTemplate(entityType);
-    const blob = new Blob([template], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${entityType}_import_template.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleDownloadTemplate = async () => {
+    try {
+      const { downloadCsvTemplate } = await import('@/utils/csvTemplateGenerator');
+      await downloadCsvTemplate(entityType);
+    } catch (error) {
+      console.error('Failed to download template:', error);
+    }
   };
 
   return (

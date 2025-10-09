@@ -96,7 +96,11 @@ export function ColumnManager({ tableName }: ColumnManagerProps) {
   const handleModalClose = (changed: boolean) => {
     setIsModalOpen(false);
     if (changed) {
-      loadColumns(); // Reload columns if changes were made
+      loadColumns(); // Reload columns without page refresh
+      toast({
+        title: "Column Updated",
+        description: "Column configuration has been updated successfully",
+      });
     }
   };
 
