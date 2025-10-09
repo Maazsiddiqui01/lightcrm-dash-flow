@@ -886,6 +886,7 @@ export type Database = {
       emails_meetings_raw: {
         Row: {
           all_emails: string | null
+          assigned_to: string | null
           cc_emails: string | null
           cc_names: string | null
           created_at: string | null
@@ -909,6 +910,7 @@ export type Database = {
         }
         Insert: {
           all_emails?: string | null
+          assigned_to?: string | null
           cc_emails?: string | null
           cc_names?: string | null
           created_at?: string | null
@@ -932,6 +934,7 @@ export type Database = {
         }
         Update: {
           all_emails?: string | null
+          assigned_to?: string | null
           cc_emails?: string | null
           cc_names?: string | null
           created_at?: string | null
