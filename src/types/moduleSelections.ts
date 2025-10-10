@@ -9,6 +9,10 @@ export interface ModuleSelection {
   phraseId?: string;
   phraseText?: string;
   
+  // Default tracking (for preselection on next load)
+  defaultPhraseId?: string;   // The "starred" default phrase
+  isDefault?: boolean;        // Quick check if current === default
+  
   // For multi-select phrase modules (Suggested Talking Points, Add-ons, Platforms)
   phraseIds?: string[];
   
@@ -23,6 +27,7 @@ export interface ModuleSelection {
   
   // For subject line pool (multi-select subject IDs + style)
   subjectIds?: string[];
+  defaultSubjectId?: string;  // Primary subject within the pool
   style?: 'formal' | 'hybrid' | 'casual';
   
   // Legacy single-select greeting ID (for backward compatibility)

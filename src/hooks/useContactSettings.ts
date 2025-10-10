@@ -16,6 +16,11 @@ export interface ContactSettings {
     cc?: string[];
   } | null;
   custom_module_labels?: Record<string, string>;
+  
+  // Default tracking
+  module_defaults?: Record<string, string>;  // { "top_opportunities": "phr_123" }
+  subject_default_id?: string | null;
+  
   last_updated: string;
   created_at: string;
 }
@@ -47,6 +52,8 @@ export function useContactSettings(contactId: string | null) {
         module_selections: data.module_selections as Record<string, any> | null,
         curated_recipients: data.curated_recipients as any || null,
         custom_module_labels: data.custom_module_labels as Record<string, string> | undefined,
+        module_defaults: data.module_defaults as Record<string, string> | undefined,
+        subject_default_id: data.subject_default_id as string | null | undefined,
       };
     },
     enabled: !!contactId,
@@ -66,6 +73,16 @@ export function useContactSettings(contactId: string | null) {
       curatedCc?: string[];
       customModuleLabels?: Record<string, string>;
     }) => {
+      // Extract defaults from module_selections
+      const moduleDefaults: Record<string, string> = {};
+      Object.entries(payload.moduleSelections || {}).forEach(([key, selection]) => {
+        if (selection?.defaultPhraseId) {
+          moduleDefaults[key] = selection.defaultPhraseId;
+        }
+      });
+      
+      const subjectDefaultId = payload.moduleSelections?.subject_line_pool?.defaultSubjectId || null;
+      
       const curatedRecipients = (payload.curatedTeam || payload.curatedTo || payload.curatedCc) ? {
         team: payload.curatedTeam || [],
         to: payload.curatedTo || '',
@@ -83,6 +100,8 @@ export function useContactSettings(contactId: string | null) {
           module_selections: payload.moduleSelections || null,
           curated_recipients: curatedRecipients as any,
           custom_module_labels: payload.customModuleLabels || null,
+          module_defaults: moduleDefaults,
+          subject_default_id: subjectDefaultId,
         }])
         .select()
         .single();
@@ -97,6 +116,8 @@ export function useContactSettings(contactId: string | null) {
         module_selections: data.module_selections as Record<string, any> | null,
         curated_recipients: data.curated_recipients as any || null,
         custom_module_labels: data.custom_module_labels as Record<string, string> | undefined,
+        module_defaults: data.module_defaults as Record<string, string> | undefined,
+        subject_default_id: data.subject_default_id as string | null | undefined,
       };
     },
     onSuccess: (data) => {

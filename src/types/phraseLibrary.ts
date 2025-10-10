@@ -88,6 +88,10 @@ export interface TemplateSettings {
     ebitda_threshold: number;
   };
   custom_module_labels?: Record<string, string>;
+  
+  // Template-level defaults
+  module_defaults?: Record<string, string>;  // { "top_opportunities": "phr_789" }
+  subject_default_id?: string | null;
 }
 
 export const PHRASE_CATEGORIES: Record<PhraseCategory, string> = {

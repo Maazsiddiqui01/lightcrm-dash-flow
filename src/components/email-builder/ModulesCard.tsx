@@ -225,18 +225,24 @@ export function ModulesCard({
 
     // Single phrase selection
     if (selection.phraseText) {
-      return selection.phraseText.length > 40 
+      const text = selection.phraseText.length > 40 
         ? selection.phraseText.substring(0, 40) + '...' 
         : selection.phraseText;
+      
+      // Show star if this is the default
+      const isDefault = selection.defaultPhraseId === selection.phraseId;
+      return isDefault ? `⭐ ${text}` : text;
     }
     
     // Legacy greeting
     if (selection.greetingId) {
       const greeting = allPhrases.find(p => p.id === selection.greetingId);
       if (greeting) {
-        return greeting.phrase_text.length > 40 
+        const text = greeting.phrase_text.length > 40 
           ? greeting.phrase_text.substring(0, 40) + '...' 
           : greeting.phrase_text;
+        const isDefault = selection.defaultPhraseId === selection.greetingId;
+        return isDefault ? `⭐ ${text}` : text;
       }
     }
     

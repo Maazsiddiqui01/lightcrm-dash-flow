@@ -136,11 +136,13 @@ export type Database = {
           custom_module_labels: Json | null
           delta_type: string | null
           last_updated: string | null
+          module_defaults: Json | null
           module_order: Json | null
           module_selections: Json | null
           module_states: Json
           revision: number | null
           selected_article_id: string | null
+          subject_default_id: string | null
           template_id: string | null
           updated_by: string | null
         }
@@ -151,11 +153,13 @@ export type Database = {
           custom_module_labels?: Json | null
           delta_type?: string | null
           last_updated?: string | null
+          module_defaults?: Json | null
           module_order?: Json | null
           module_selections?: Json | null
           module_states?: Json
           revision?: number | null
           selected_article_id?: string | null
+          subject_default_id?: string | null
           template_id?: string | null
           updated_by?: string | null
         }
@@ -166,11 +170,13 @@ export type Database = {
           custom_module_labels?: Json | null
           delta_type?: string | null
           last_updated?: string | null
+          module_defaults?: Json | null
           module_order?: Json | null
           module_selections?: Json | null
           module_states?: Json
           revision?: number | null
           selected_article_id?: string | null
+          subject_default_id?: string | null
           template_id?: string | null
           updated_by?: string | null
         }
@@ -811,11 +817,13 @@ export type Database = {
           days_range_config: Json | null
           inquiry_config: Json | null
           length_override: string | null
+          module_defaults: Json | null
           module_order: Json | null
           module_states: Json | null
           personalization_config: Json | null
           quality_rules: Json | null
           revision: number | null
+          subject_default_id: string | null
           subject_pool_override: string | null
           template_id: string
           tone_override: string | null
@@ -826,11 +834,13 @@ export type Database = {
           days_range_config?: Json | null
           inquiry_config?: Json | null
           length_override?: string | null
+          module_defaults?: Json | null
           module_order?: Json | null
           module_states?: Json | null
           personalization_config?: Json | null
           quality_rules?: Json | null
           revision?: number | null
+          subject_default_id?: string | null
           subject_pool_override?: string | null
           template_id: string
           tone_override?: string | null
@@ -841,11 +851,13 @@ export type Database = {
           days_range_config?: Json | null
           inquiry_config?: Json | null
           length_override?: string | null
+          module_defaults?: Json | null
           module_order?: Json | null
           module_states?: Json | null
           personalization_config?: Json | null
           quality_rules?: Json | null
           revision?: number | null
+          subject_default_id?: string | null
           subject_pool_override?: string | null
           template_id?: string
           tone_override?: string | null

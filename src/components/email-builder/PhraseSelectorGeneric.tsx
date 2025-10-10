@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -6,9 +6,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Search, ExternalLink, Plus } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { MessageSquare, Search, ExternalLink, Plus, Star } from "lucide-react";
 import type { PhraseLibraryItem } from "@/types/phraseLibrary";
 import type { ModuleSelection } from "@/types/moduleSelections";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface PhraseSelectorGenericProps {
   category: string;
@@ -24,6 +27,9 @@ interface PhraseSelectorGenericProps {
     opportunities?: Array<{ dealName: string; monthsSince?: number }>;
   };
   previewVariables?: Record<string, any>;
+  contactName?: string;  // For default tooltips
+  defaultPhraseId?: string;  // Current default phrase ID
+  onDefaultToggle?: (phraseId: string | null) => void;  // Callback to set default
 }
 
 export function PhraseSelectorGeneric({
@@ -35,11 +41,29 @@ export function PhraseSelectorGeneric({
   multiSelect = false,
   contactData,
   previewVariables = {},
+  contactName = "this contact",
+  defaultPhraseId,
+  onDefaultToggle,
 }: PhraseSelectorGenericProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
 
   // Filter phrases by category
   const categoryPhrases = phrases.filter(p => p.category === category);
+
+  // Check if default phrase still exists
+  useEffect(() => {
+    if (defaultPhraseId && !categoryPhrases.find(p => p.id === defaultPhraseId)) {
+      toast({
+        title: "Default phrase removed",
+        description: "Your default phrase was deleted. Please select a new one.",
+        variant: "destructive",
+      });
+      if (onDefaultToggle) {
+        onDefaultToggle(null);
+      }
+    }
+  }, [categoryPhrases, defaultPhraseId, onDefaultToggle, toast]);
 
   // Filter by search term
   const filteredPhrases = categoryPhrases.filter(phrase => {
@@ -68,9 +92,32 @@ export function PhraseSelectorGeneric({
           category,
           phraseId: phrase.id,
           phraseText: phrase.phrase_text,
+          defaultPhraseId: currentSelection?.defaultPhraseId,  // Preserve default
+          isDefault: phrase.id === defaultPhraseId,
           variables: previewVariables,
         });
       }
+    }
+  };
+  
+  // Handle default toggle
+  const handleDefaultToggle = (phraseId: string) => {
+    if (!onDefaultToggle) return;
+    
+    if (defaultPhraseId === phraseId) {
+      // Unset default
+      onDefaultToggle(null);
+      toast({
+        title: "Default removed",
+        description: `Removed default for ${contactName}`,
+      });
+    } else {
+      // Set new default
+      onDefaultToggle(phraseId);
+      toast({
+        title: "Default set",
+        description: `Set as default for ${contactName}`,
+      });
     }
   };
 
@@ -209,9 +256,43 @@ export function PhraseSelectorGeneric({
               {filteredPhrases.map((phrase) => (
                 <div key={phrase.id} className="flex items-start space-x-2 mb-3 pb-3 border-b last:border-0">
                   <RadioGroupItem value={phrase.id} id={`phrase-${phrase.id}`} className="mt-1" />
+                  {onDefaultToggle && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 mt-0.5"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleDefaultToggle(phrase.id);
+                            }}
+                            aria-label={`Set as default for ${contactName}`}
+                            aria-pressed={phrase.id === defaultPhraseId}
+                          >
+                            <Star 
+                              className={cn(
+                                "h-4 w-4 transition-colors",
+                                phrase.id === defaultPhraseId && "fill-yellow-400 text-yellow-400"
+                              )}
+                            />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{phrase.id === defaultPhraseId ? `Default for ${contactName}` : `Set as default for ${contactName}`}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <Label htmlFor={`phrase-${phrase.id}`} className="cursor-pointer flex-1">
                     <div className="space-y-1">
-                      <p className="text-sm">{phrase.phrase_text}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm">{phrase.phrase_text}</p>
+                        {phrase.id === defaultPhraseId && (
+                          <Badge variant="secondary" className="text-xs">Default</Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant={phrase.is_global ? "secondary" : "outline"} className="text-xs">
                           {phrase.is_global ? "Global" : "Custom"}

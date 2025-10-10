@@ -89,10 +89,17 @@ export function useUpdateTemplateSettings() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (settings: TemplateSettings) => {
+    mutationFn: async (settings: TemplateSettings & {
+      module_defaults?: Record<string, string>;
+      subject_default_id?: string | null;
+    }) => {
       const { data, error } = await supabase
         .from('email_template_settings')
-        .upsert(settings, { onConflict: 'template_id' })
+        .upsert({
+          ...settings,
+          module_defaults: settings.module_defaults || {},
+          subject_default_id: settings.subject_default_id || null,
+        }, { onConflict: 'template_id' })
         .select()
         .single();
 

@@ -198,6 +198,17 @@ export function validateModuleSelections(
     }
   }
   
+  // Validate subject line pool primary
+  if (moduleSelections.subject_line_pool) {
+    const { subjectIds, defaultSubjectId } = moduleSelections.subject_line_pool;
+    
+    if (!defaultSubjectId) {
+      errors.push('Subject Line Pool: Select a primary subject');
+    } else if (subjectIds && !subjectIds.includes(defaultSubjectId)) {
+      errors.push('Subject Line Pool: Primary subject must be enabled');
+    }
+  }
+  
   return {
     isValid: errors.length === 0,
     errors,
