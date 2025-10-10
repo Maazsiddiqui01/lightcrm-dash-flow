@@ -119,6 +119,13 @@ export async function buildBatchPayload(
         contact
       );
 
+      // Validate and use module order from effective config, fallback to shared settings
+      const finalModuleOrder = effectiveConfig.moduleOrder && 
+                               Array.isArray(effectiveConfig.moduleOrder) && 
+                               effectiveConfig.moduleOrder.length > 0
+        ? effectiveConfig.moduleOrder
+        : sharedSettings.moduleOrder;
+      
       // Build enhanced payload using existing function with all params
       const payload = await buildEnhancedDraftPayload(
         contactForPayload,
@@ -130,7 +137,7 @@ export async function buildBatchPayload(
         effectiveSettings.selectedArticle,
         effectiveSettings.toneOverride,
         effectiveSettings.subjectPoolOverride,
-        effectiveConfig.moduleOrder as any, // Use merged module order from effective config
+        finalModuleOrder as any, // Use validated module order
         effectiveSettings.curatedTeam,
         effectiveSettings.curatedTo,
         effectiveSettings.curatedCc,

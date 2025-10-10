@@ -239,8 +239,16 @@ export async function buildEnhancedDraftPayload(
     ? allSubjects.filter(s => subjectPoolOverride.includes(s.id))
     : allSubjects;
   
-  // Get primary subject ID from moduleSelections
+  // Validate primary subject ID exists
   const primarySubjectId = moduleSelections?.subject_line_pool?.defaultSubjectId || subjectPoolOverride?.[0];
+  
+  if (!primarySubjectId) {
+    throw new Error('Subject Line Pool must have a primary subject selected');
+  }
+  
+  if (subjectPool.length === 0) {
+    throw new Error('Subject Line Pool must have at least one enabled subject');
+  }
     
   const subject = await pickSubject({
     tone: effectiveTone,

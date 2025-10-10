@@ -73,6 +73,10 @@ import {
   MULTI_SELECT_MODULES,
   type ModuleKey 
 } from "@/config/moduleCategoryMap";
+import {
+  useSaveContactModuleDefaults,
+  useSaveTemplateModuleDefaults,
+} from "@/hooks/useDefaultsPersistence";
 
 export function EmailBuilder() {
   // Enable real-time synchronization with Global Libraries
@@ -151,9 +155,17 @@ export function EmailBuilder() {
     subjectPrimaryId: string | null;
   } | null>(null);
   const [randomizationSeed, setRandomizationSeed] = useState<number | null>(null);
+  const [makeRandomizedDefaults, setMakeRandomizedDefaults] = useState(false);
   
   // Custom module labels
   const [customModuleLabels, setCustomModuleLabels] = useState<Record<string, string>>({});
+  
+  // Manual save flag to prevent auto-save race conditions
+  const [isManualSaving, setIsManualSaving] = useState(false);
+  
+  // Defaults persistence hooks
+  const saveContactModuleDefaults = useSaveContactModuleDefaults();
+  const saveTemplateModuleDefaults = useSaveTemplateModuleDefaults();
   
   // Curated team and recipients state
   const [curatedTeam, setCuratedTeam] = useState<TeamMember[]>([]);
@@ -432,65 +444,137 @@ export function EmailBuilder() {
   const handleConfirmSave = async () => {
     if (!selectedContact || !masterTemplate) return;
     
-    const fullMasterTemplate = masterTemplates?.find(
-      t => t.master_key === masterTemplate.master_key
-    );
+    setIsManualSaving(true);
     
-    // Guard against missing template ID
-    if (!fullMasterTemplate?.id) {
-      toast({
-        title: "Template Not Found",
-        description: "Master template is still loading. Please try again.",
-        variant: "destructive",
-      });
-      setConfirmDialogOpen(false);
-      return;
-    }
-
-    if (pendingSaveScope === 'contact') {
-      // Validate template ID before saving
-      const templateId = fullMasterTemplate.id;
-      const templateValidation = validateTemplateId(templateId);
+    try {
+      const fullMasterTemplate = masterTemplates?.find(
+        t => t.master_key === masterTemplate.master_key
+      );
       
-      if (!templateValidation.isValid) {
+      // Guard against missing template ID
+      if (!fullMasterTemplate?.id) {
         toast({
-          title: "Validation Error",
-          description: templateValidation.errors.join(', '),
+          title: "Template Not Found",
+          description: "Master template is still loading. Please try again.",
           variant: "destructive",
         });
         setConfirmDialogOpen(false);
         return;
       }
+
+      if (pendingSaveScope === 'contact') {
+        // Validate template ID before saving
+        const templateId = fullMasterTemplate.id;
+        const templateValidation = validateTemplateId(templateId);
+        
+        if (!templateValidation.isValid) {
+          toast({
+            title: "Validation Error",
+            description: templateValidation.errors.join(', '),
+            variant: "destructive",
+          });
+          setConfirmDialogOpen(false);
+          return;
+        }
+        
+        // Validate module selections before saving
+        const moduleValidation = validateModuleSelections(moduleStates, moduleSelections);
+        if (!moduleValidation.isValid) {
+          toast({
+            title: 'Cannot Save - Incomplete Configuration',
+            description: moduleValidation.errors.join('. '),
+            variant: 'destructive',
+          });
+          setConfirmDialogOpen(false);
+          return;
+        }
+        
+        // Save contact settings
+        saveContact({
+          contactId: selectedContact.contact_id,
+          contactName: selectedContact.full_name || 'this contact',
+          templateId,
+          moduleStates,
+          deltaType,
+          moduleOrder: recomputePositions(moduleOrder) as string[],
+          moduleSelections,
+          curatedRecipients: {
+            team: curatedTeam,
+            to: curatedTo,
+            cc: curatedCc,
+          },
+          currentRevision: (contactSettings as any)?.revision || 0,
+        });
+        
+        // If randomized and user wants to save as defaults
+        if (isRandomized && makeRandomizedDefaults) {
+          const defaults = Object.entries(moduleSelections)
+            .filter(([key, sel]) => {
+              return PHRASE_DRIVEN_MODULES.has(key as any) && 
+                     (sel.phraseId || sel.greetingId);
+            })
+            .map(([key, sel]) => ({
+              module_key: key,
+              phrase_id: sel.phraseId || sel.greetingId || '',
+              phrase_text: sel.phraseText || sel.text || '',
+            }));
+          
+          if (defaults.length > 0) {
+            await saveContactModuleDefaults.mutateAsync({
+              contactId: selectedContact.contact_id,
+              templateId,
+              defaults,
+            });
+          }
+          
+          // Reset randomization state after saving defaults
+          setIsRandomized(false);
+          setMakeRandomizedDefaults(false);
+          setRandomizationSeed(null);
+        }
+      } else {
+        // Global save path - template ID already validated above
+        saveGlobal({
+          templateId: fullMasterTemplate.id,
+          templateName: MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key,
+          toneOverride,
+          lengthOverride,
+          moduleStates,
+          moduleOrder: recomputePositions(moduleOrder) as string[],
+          currentRevision: 0,
+        });
+        
+        // If randomized and user wants to save as template defaults
+        if (isRandomized && makeRandomizedDefaults) {
+          const defaults = Object.entries(moduleSelections)
+            .filter(([key, sel]) => {
+              return PHRASE_DRIVEN_MODULES.has(key as any) && 
+                     (sel.phraseId || sel.greetingId);
+            })
+            .map(([key, sel]) => ({
+              module_key: key,
+              phrase_id: sel.phraseId || sel.greetingId || '',
+              phrase_text: sel.phraseText || sel.text || '',
+            }));
+          
+          if (defaults.length > 0) {
+            await saveTemplateModuleDefaults.mutateAsync({
+              templateId: fullMasterTemplate.id,
+              defaults,
+            });
+          }
+          
+          // Reset randomization state after saving defaults
+          setIsRandomized(false);
+          setMakeRandomizedDefaults(false);
+          setRandomizationSeed(null);
+        }
+      }
       
-      saveContact({
-        contactId: selectedContact.contact_id,
-        contactName: selectedContact.full_name || 'this contact',
-        templateId,
-        moduleStates,
-        deltaType,
-        moduleOrder: recomputePositions(moduleOrder) as string[],
-        moduleSelections,
-        curatedRecipients: {
-          team: curatedTeam,
-          to: curatedTo,
-          cc: curatedCc,
-        },
-        currentRevision: (contactSettings as any)?.revision || 0,
-      });
-    } else {
-      // Global save path - template ID already validated above
-      saveGlobal({
-        templateId: fullMasterTemplate.id,
-        templateName: MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key,
-        toneOverride,
-        lengthOverride,
-        moduleStates,
-        moduleOrder: recomputePositions(moduleOrder) as string[],
-        currentRevision: 0,
-      });
+      setConfirmDialogOpen(false);
+    } finally {
+      setIsManualSaving(false);
     }
-    
-    setConfirmDialogOpen(false);
   };
   
   // Keyboard shortcuts
@@ -683,7 +767,7 @@ export function EmailBuilder() {
 
   // Auto-save module order on change in Individual mode (debounced)
   useEffect(() => {
-    if (mode !== 'individual' || !selectedContact?.contact_id) return;
+    if (mode !== 'individual' || !selectedContact?.contact_id || isManualSaving) return;
     const t = setTimeout(() => {
       saveSettings({
         contactId: selectedContact.contact_id,
@@ -699,7 +783,7 @@ export function EmailBuilder() {
       });
     }, 500);
     return () => clearTimeout(t);
-  }, [moduleOrder, customModuleLabels]);
+  }, [moduleOrder, customModuleLabels, isManualSaving]);
 
   const handleSaveSettings = () => {
     if (!selectedContact?.contact_id) return;
@@ -1494,6 +1578,9 @@ ${draftResult.signature}`;
               : ['coreSettings', 'moduleStates'] as AffectedField[]
           }
           onConfirm={handleConfirmSave}
+          isRandomized={isRandomized}
+          makeRandomizedDefaults={makeRandomizedDefaults}
+          onMakeDefaultsChange={setMakeRandomizedDefaults}
         />
       </ResponsiveContainer>
 
