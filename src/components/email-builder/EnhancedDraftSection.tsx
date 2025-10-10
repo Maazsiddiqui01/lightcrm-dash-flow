@@ -6,6 +6,7 @@ import { Sparkles, Copy, CheckCircle2, Mail, Send, Users } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { CopyButton } from "@/components/shared/CopyButton";
 
 interface EnhancedDraftSectionProps {
   isGenerating: boolean;
@@ -66,13 +67,13 @@ export function EnhancedDraftSection({
       <CardContent className="space-y-6 pt-6">
         {/* Generate Button */}
         {!isGenerating && !result && (
-          <div className="text-center py-12">
+          <div className="text-center py-12 animate-fade-in">
             <div className="mb-4 flex justify-center">
-              <div className="p-4 rounded-full bg-primary/10">
+              <div className="p-4 rounded-full bg-primary/10 animate-pulse">
                 <Sparkles className="h-8 w-8 text-primary" />
               </div>
             </div>
-            <Button onClick={onGenerate} disabled={disabled} size="lg" className="gap-2">
+            <Button onClick={onGenerate} disabled={disabled} size="lg" className="gap-2 hover-scale">
               <Sparkles className="h-4 w-4" />
               Generate Draft with AI
             </Button>
@@ -202,25 +203,16 @@ export function EnhancedDraftSection({
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button 
-                onClick={handleCopy} 
-                variant="outline" 
-                className="flex-1 gap-2"
-                disabled={copied}
+              <CopyButton
+                textToCopy={`Subject: ${result.subject}\n\nCC: ${result.ccList.join('; ')}\n\n${result.greeting},\n\n${result.body}\n\n${result.signature}`}
+                successMessage="Copied to clipboard!"
+                onCopySuccess={onCopyToClipboard}
+                variant="outline"
+                className="flex-1"
               >
-                {copied ? (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    Copy to Clipboard
-                  </>
-                )}
-              </Button>
-              <Button onClick={onGenerate} variant="outline" className="gap-2">
+                Copy to Clipboard
+              </CopyButton>
+              <Button onClick={onGenerate} variant="outline" className="gap-2 hover-scale">
                 <Sparkles className="h-4 w-4" />
                 Regenerate
               </Button>

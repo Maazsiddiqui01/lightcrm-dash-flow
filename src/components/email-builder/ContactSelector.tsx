@@ -3,8 +3,9 @@ import { useSearchContacts } from "@/hooks/useComposer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, User } from "lucide-react";
+import { Search, User, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmptyStateWithAction } from "@/components/shared/EmptyStateWithAction";
 import type { ContactEmailComposer } from "@/types/emailComposer";
 
 interface ContactSelectorProps {
@@ -63,20 +64,26 @@ export function ContactSelector({ selectedContact, onContactSelect }: ContactSel
         {!selectedContact && searchTerm.length >= 2 && (
           <div className="max-h-60 overflow-y-auto space-y-2">
             {isLoading ? (
-              <div className="text-center py-4 text-muted-foreground">
-                Searching contacts...
+              <div className="text-center py-4 text-muted-foreground animate-fade-in">
+                <div className="inline-flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  Searching contacts...
+                </div>
               </div>
             ) : contacts.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                No contacts found
-              </div>
+              <EmptyStateWithAction
+                icon={Mail}
+                title="No contacts found"
+                description="Try adjusting your search terms or check if the contact exists in the database."
+              />
             ) : (
               contacts.map((contact) => (
                 <div
                   key={contact.contact_id}
                   className={cn(
-                    "p-3 border rounded-lg cursor-pointer transition-colors",
-                    "hover:bg-muted/50"
+                    "p-3 border rounded-lg cursor-pointer transition-all duration-200",
+                    "hover:bg-muted/50 hover:border-primary/50 hover:scale-[1.02]",
+                    "animate-fade-in"
                   )}
                   onClick={() => onContactSelect(contact)}
                 >
@@ -92,9 +99,11 @@ export function ContactSelector({ selectedContact, onContactSelect }: ContactSel
         )}
 
         {!selectedContact && searchTerm.length < 2 && (
-          <div className="text-center py-4 text-muted-foreground">
-            Start typing to search for contacts
-          </div>
+          <EmptyStateWithAction
+            icon={Search}
+            title="Search for a contact"
+            description="Start typing a name or email address to find contacts in your database."
+          />
         )}
       </CardContent>
     </Card>

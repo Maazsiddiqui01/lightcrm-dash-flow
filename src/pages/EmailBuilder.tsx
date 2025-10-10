@@ -4,6 +4,7 @@ import { useRealtimeLibrarySync } from "@/hooks/useRealtimeSync";
 import { ContactSelector } from "@/components/email-builder/ContactSelector";
 import { ContactInfoPanel } from "@/components/email-builder/ContactInfoPanel";
 import { ModeSwitcher } from "@/components/email-builder/ModeSwitcher";
+import { KeyboardShortcutsModal } from "@/components/email-builder/KeyboardShortcutsModal";
 import { GroupFilterBar } from "@/components/email-builder/GroupFilterBar";
 import { GroupResultsTable } from "@/components/email-builder/GroupResultsTable";
 import { SelectionTray } from "@/components/email-builder/SelectionTray";
@@ -86,6 +87,9 @@ export function EmailBuilder() {
   
   // Mode state
   const [mode, setMode] = useState<'individual' | 'group'>('individual');
+  
+  // UI state
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   
   // Individual mode state
   const [selectedContact, setSelectedContact] = useState<any | null>(null);
@@ -580,6 +584,13 @@ export function EmailBuilder() {
   // Keyboard shortcuts (HIGH-12 fix: Added Ctrl+R for randomize)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // ? - Show keyboard shortcuts help
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setShowShortcutsModal(true);
+        return;
+      }
+
       // Ctrl+S / Cmd+S - Save contact settings
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
@@ -1616,6 +1627,12 @@ ${draftResult.signature}`;
         focusAreas={contactData?.focus_areas || []}
         hasOpps={contactData?.has_opps || false}
         lagDays={0}
+      />
+
+      {/* Keyboard Shortcuts Modal (MED-6) */}
+      <KeyboardShortcutsModal
+        open={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
       />
     </div>
   );
