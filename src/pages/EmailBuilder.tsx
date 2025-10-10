@@ -58,6 +58,8 @@ import { MASTER_TEMPLATES } from "@/lib/router";
 import { recomputePositions, buildModuleSequence, announceModuleMove } from "@/lib/modulePositions";
 import { validateDraftPayload, validateSubjectPool, validateTemplateId, validateModuleSelections } from "@/lib/emailBuilderValidation";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { useAutoSaveModuleLabels } from '@/hooks/useAutoSaveModuleLabels';
+import { useNewTemplateSettings } from '@/hooks/useNewTemplateSettings';
 import { 
   seededShuffle,
   seededRandom,
@@ -161,7 +163,7 @@ export function EmailBuilder() {
   const [randomizationSeed, setRandomizationSeed] = useState<number | null>(null);
   const [makeRandomizedDefaults, setMakeRandomizedDefaults] = useState(false);
   
-  // Custom module labels
+  // Custom module labels - now loaded from global template settings
   const [customModuleLabels, setCustomModuleLabels] = useState<Record<string, string>>({});
   
   // Manual save flag to prevent auto-save race conditions
@@ -737,6 +739,17 @@ export function EmailBuilder() {
   // Load master templates from database
   const { data: masterTemplates, isLoading: isLoadingTemplates } = useMasterTemplates();
   
+  // Compute master template ID for auto-save
+  const fullMasterTemplate = masterTemplates?.find(
+    t => t.master_key === masterTemplate?.master_key
+  );
+  
+  // Auto-save mutation for module labels (global)
+  const autoSaveLabels = useAutoSaveModuleLabels(fullMasterTemplate?.id || null);
+  
+  // Load template settings for custom module labels
+  const { data: templateSettings } = useNewTemplateSettings(fullMasterTemplate?.id || null);
+  
   // Auto-load saved settings once per contact to avoid snapping back after drag
   useEffect(() => {
     const currentId = selectedContact?.contact_id || null;
@@ -766,9 +779,7 @@ export function EmailBuilder() {
           setCuratedTo(contactSettings.curated_recipients.to || selectedContact?.email || '');
           setCuratedCc(contactSettings.curated_recipients.cc || []);
         }
-        if (contactSettings.custom_module_labels) {
-          setCustomModuleLabels(contactSettings.custom_module_labels);
-        }
+        // Custom labels loaded from template settings (see below)
         setInitializedContactId(currentId);
       } else if (masterTemplate && masterTemplates) {
         const defaults = getModuleDefaultsFromMaster(masterTemplate.master_key, masterTemplates);
@@ -785,6 +796,15 @@ export function EmailBuilder() {
       }
     }
   }, [selectedContact?.contact_id, contactSettings, masterTemplate, masterTemplates]);
+  
+  // Load custom module labels from template settings (global)
+  useEffect(() => {
+    if (templateSettings?.custom_module_labels) {
+      setCustomModuleLabels(templateSettings.custom_module_labels as Record<string, string>);
+    } else {
+      setCustomModuleLabels({});
+    }
+  }, [templateSettings]);
 
   // Auto-preview hook
   const { previewData, isGenerating: isAutoGenerating } = useAutoPreview(
@@ -1421,7 +1441,10 @@ ${draftResult.signature}`;
               toneOverride={toneOverride}
               customModuleLabels={customModuleLabels}
               onCustomModuleLabelChange={(moduleKey, newLabel) => {
-                setCustomModuleLabels(prev => ({ ...prev, [moduleKey]: newLabel }));
+                const updatedLabels = { ...customModuleLabels, [moduleKey]: newLabel };
+                setCustomModuleLabels(updatedLabels);
+                // Auto-save globally immediately (no manual save needed)
+                autoSaveLabels.mutate(updatedLabels);
               }}
               onRandomize={handleRandomize}
               onRestoreToDefault={handleRestoreToDefault}
