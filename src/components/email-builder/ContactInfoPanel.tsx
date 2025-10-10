@@ -130,17 +130,25 @@ export function ContactInfoPanel({ contactId, team, onTeamChange, onQuickAddToCC
           </div>
         )}
 
-        {/* Opportunities */}
+        {/* Opportunities - Show All (HIGH-4 fix) */}
         {opps && opps.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Current Opportunities</span>
+              <span className="font-medium">Active Tier 1 Opportunities</span>
+              <Badge variant="secondary" className="text-xs">
+                {opps.length}
+              </Badge>
             </div>
-            <div className="space-y-1">
-              {opps.slice(0, 3).map((opp, index) => (
+            <div className="space-y-1 max-h-[200px] overflow-y-auto">
+              {opps.map((opp, index) => (
                 <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded">
                   {opp.deal_name}
+                  {opp.ebitda_in_ms && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ${opp.ebitda_in_ms}M
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

@@ -349,7 +349,11 @@ export function ModulesCard({
         </div>
       </CardHeader>
       {isRandomized && (
-        <div className="mx-4 mt-2 mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg animate-fade-in">
+        <div 
+          className="mx-4 mt-2 mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg animate-fade-in"
+          role="status"
+          aria-live="polite"
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Dice5 className="h-4 w-4 text-amber-600 dark:text-amber-400" />

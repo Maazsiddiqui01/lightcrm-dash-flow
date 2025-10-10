@@ -594,6 +594,30 @@ export function EmailBuilder() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedContact, masterTemplate]);
 
+  // Handle module selection changes - clear randomization on manual edit (HIGH-8 fix)
+  const handleModuleSelectionChange = (
+    module: keyof ModuleStates | 'subject_line_pool',
+    selection: ModuleSelection | null
+  ) => {
+    if (module === 'subject_line_pool') {
+      setModuleSelections((prev) => ({
+        ...prev,
+        subject_line_pool: selection || undefined,
+      }));
+    } else {
+      setModuleSelections((prev) => ({
+        ...prev,
+        [module]: selection || undefined,
+      }));
+    }
+    
+    // Clear randomization state on manual edit (HIGH-8 fix)
+    if (isRandomized) {
+      setIsRandomized(false);
+      setRandomizationSeed(null);
+    }
+  };
+
   // Initialize team and recipients when contact changes
   useEffect(() => {
     const initializeTeamAndRecipients = async () => {
@@ -756,13 +780,6 @@ export function EmailBuilder() {
         }
       }
     }
-  };
-
-  const handleModuleSelectionChange = (module: keyof ModuleStates | 'subject_line_pool', selection: ModuleSelection | null) => {
-    setModuleSelections(prev => ({
-      ...prev,
-      [module]: selection,
-    }));
   };
 
   // Auto-save module order on change in Individual mode (debounced)

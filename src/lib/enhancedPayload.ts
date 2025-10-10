@@ -280,49 +280,97 @@ export async function buildEnhancedDraftPayload(
     mode: item.mode,
   }));
 
-  // Build modulesV2 with detailed selection data (COMPASS)
-  const modulesV2 = buildModuleSequence(
-    orderedModules,
-    moduleStates || {}
-  ).map(item => {
-    const selection = moduleSelections?.[item.key as keyof typeof moduleSelections];
-    const moduleKey = item.key as keyof ModuleStates;
-    
-    // Base module object
-    const module: any = {
-      key: item.key,
-      position: item.position,
-      mode: item.mode,
+  // Build modulesV2 (new format with position + selection details)
+  const modulesV2: Array<{
+    key: string;
+    position: number;
+    mode: TriState;
+    customLabel?: string;
+    selection: {
+      type?: 'phrase' | 'article' | 'inquiry' | 'subject';
+      category?: string;
+      phraseId?: string;
+      defaultPhraseId?: string;
+      text?: string;
+      articleId?: string;
+      articleUrl?: string;
+      inquiryId?: string;
+      inquiryText?: string;
+      subjectIds?: string[];
+      primaryId?: string;
+      style?: 'formal' | 'hybrid' | 'casual';
+      variables?: Record<string, any>;
     };
-    
-    // Add selection data if available
-    if (selection) {
-      if (selection.type === 'article') {
-        module.selection = {
-          type: 'article',
-          articleId: selection.articleId,
-          articleUrl: selection.articleUrl,
-        };
-      } else if (selection.type === 'phrase' || selection.phraseId || selection.greetingId) {
-        module.selection = {
-          type: 'phrase',
-          category: selection.category,
-          phraseId: selection.phraseId || selection.greetingId,
-          text: selection.phraseText,
-          variables: selection.variables,
-        };
-      } else if (selection.phraseIds && selection.phraseIds.length > 0) {
-        // Multi-select phrases
-        module.selection = {
-          type: 'phrase',
-          category: selection.category,
-          phraseIds: selection.phraseIds,
-          variables: selection.variables,
-        };
-      }
+  }> = [];
+
+  // Add subject line pool as position 0 with style (HIGH-2, HIGH-3, HIGH-7 fix)
+  const subjectSelection = moduleSelections?.subject_line_pool;
+  const subjectStyle = subjectSelection?.style || effectiveTone;
+  
+  if (subjectPoolOverride && subjectPoolOverride.length > 0 && primarySubjectId) {
+    modulesV2.push({
+      key: 'subject_line_pool',
+      position: 0,
+      mode: 'always',
+      selection: {
+        type: 'subject',
+        subjectIds: subjectPoolOverride,
+        primaryId: primarySubjectId,
+        style: subjectStyle,
+      },
+    });
+  }
+
+  // Add content modules with custom labels and default phrase IDs
+  buildModuleSequence(orderedModules, moduleStates || {}).forEach((item) => {
+    const module = item.key;
+    const position = item.position;
+    const mode = item.mode;
+    const selection = moduleSelections?.[module as keyof typeof moduleSelections];
+
+    if (!selection || mode === 'never') {
+      modulesV2.push({
+        key: module,
+        position,
+        mode,
+        selection: {},
+      });
+      return;
     }
-    
-    return module;
+
+    // Build selection object based on type
+    const selectionData: any = {};
+
+    // Handle phrase-based modules
+    if (selection.phraseId || selection.phraseText) {
+      selectionData.type = 'phrase';
+      selectionData.category = selection.category;
+      selectionData.phraseId = selection.phraseId;
+      selectionData.defaultPhraseId = selection.defaultPhraseId; // Include starred default (HIGH-3 fix)
+      selectionData.text = selection.phraseText;
+      selectionData.variables = selection.variables;
+    }
+
+    // Handle article module
+    if (selection.articleId) {
+      selectionData.type = 'article';
+      selectionData.articleId = selection.articleId;
+      selectionData.articleUrl = selection.articleUrl;
+    }
+
+    // Handle inquiry module
+    if (selection.inquiryId) {
+      selectionData.type = 'inquiry';
+      selectionData.inquiryId = selection.inquiryId;
+      selectionData.inquiryText = allInquiries.find(i => i.id === selection.inquiryId)?.inquiry_text;
+    }
+
+    modulesV2.push({
+      key: module,
+      position,
+      mode,
+      selection: selectionData,
+    });
   });
 
   // Build CC list from team directory (fetch emails from database)

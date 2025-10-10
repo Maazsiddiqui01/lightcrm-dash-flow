@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Target } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 interface Opportunity {
   id?: string;
@@ -13,12 +14,24 @@ interface Opportunity {
 
 interface OpportunitiesCardProps {
   opportunities: Opportunity[];
+  isLoading?: boolean;
 }
 
 type SortOption = 'updated' | 'name' | 'ebitda';
 
-export function OpportunitiesCard({ opportunities }: OpportunitiesCardProps) {
-  const [sortBy, setSortBy] = useState<SortOption>('updated');
+const SORT_PREFERENCE_KEY = 'opps_sort_preference';
+
+export function OpportunitiesCard({ opportunities, isLoading = false }: OpportunitiesCardProps) {
+  // Load sort preference from localStorage (HIGH-11 fix)
+  const [sortBy, setSortBy] = useState<SortOption>(() => {
+    const saved = localStorage.getItem(SORT_PREFERENCE_KEY);
+    return (saved as SortOption) || 'updated';
+  });
+
+  // Persist sort preference (HIGH-11 fix)
+  useEffect(() => {
+    localStorage.setItem(SORT_PREFERENCE_KEY, sortBy);
+  }, [sortBy]);
 
   const sortedOpportunities = useMemo(() => {
     if (opportunities.length === 0) return [];
@@ -75,7 +88,14 @@ export function OpportunitiesCard({ opportunities }: OpportunitiesCardProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {opportunities.length > 0 ? (
+        {isLoading ? (
+          // Loading state (HIGH-5 fix)
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : opportunities.length > 0 ? (
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
             {sortedOpportunities.map((opp, index) => (
               <div 

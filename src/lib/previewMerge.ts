@@ -36,6 +36,7 @@ interface ContactData {
 
 /**
  * Merges shared settings with contact-specific overrides to produce the effective config
+ * HIGH-9 fix: Added deep merge validation for moduleSelections and proper fallbacks
  */
 export function mergeEffectiveConfig(
   sharedSettings: SharedSettings,
@@ -52,14 +53,33 @@ export function mergeEffectiveConfig(
   const effectiveLength = contactOverride?.coreSettings?.length || sharedSettings.lengthOverride || 'standard';
   const effectiveDaysSince = contactOverride?.coreSettings?.daysSince ?? sharedSettings.daysSinceContact;
 
-  // Subject Line Pool
-  const effectiveSubjectPool = contactOverride?.subjectLinePool || sharedSettings.subjectLinePool;
+  // Subject Line Pool - validate structure
+  const effectiveSubjectPool = contactOverride?.subjectLinePool && 
+                                Array.isArray(contactOverride.subjectLinePool.selectedIds) &&
+                                contactOverride.subjectLinePool.selectedIds.length > 0
+    ? contactOverride.subjectLinePool
+    : sharedSettings.subjectLinePool;
 
-  // Module Selections
-  const effectiveModuleSelections = contactOverride?.moduleSelections || sharedSettings.moduleSelections;
+  // Module Selections - deep merge with validation (HIGH-9 fix)
+  const effectiveModuleSelections = contactOverride?.moduleSelections && 
+                                     typeof contactOverride.moduleSelections === 'object' &&
+                                     Object.keys(contactOverride.moduleSelections).length > 0
+    ? { ...sharedSettings.moduleSelections, ...contactOverride.moduleSelections }
+    : sharedSettings.moduleSelections;
 
-  // Module Order - contact override takes priority
-  const effectiveModuleOrder = (contactOverride?.moduleOrder || sharedSettings.moduleOrder) as any;
+  // Module Order - validate array structure (HIGH-9 fix)
+  const effectiveModuleOrder = contactOverride?.moduleOrder && 
+                                Array.isArray(contactOverride.moduleOrder) && 
+                                contactOverride.moduleOrder.length > 0
+    ? contactOverride.moduleOrder
+    : sharedSettings.moduleOrder;
+
+  // Module States - with validation (HIGH-9 fix)
+  const effectiveModuleStates = contactOverride?.moduleStates &&
+                                 typeof contactOverride.moduleStates === 'object' &&
+                                 Object.keys(contactOverride.moduleStates).length > 0
+    ? { ...sharedSettings.moduleStates, ...contactOverride.moduleStates }
+    : sharedSettings.moduleStates;
 
   // Team
   const effectiveTeam = contactOverride?.team || sharedSettings.team;
@@ -84,8 +104,8 @@ export function mergeEffectiveConfig(
     },
     subjectLinePool: effectiveSubjectPool,
     moduleSelections: effectiveModuleSelections,
-    moduleOrder: effectiveModuleOrder, // Use merged module order
-    moduleStates: sharedSettings.moduleStates,
+    moduleOrder: effectiveModuleOrder as any, // Use validated merged order
+    moduleStates: effectiveModuleStates, // Use validated merged states (HIGH-9 fix)
     team: effectiveTeam,
     recipients: {
       to: effectiveTo,

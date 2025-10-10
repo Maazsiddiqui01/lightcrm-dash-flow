@@ -16,7 +16,11 @@ export interface EnrichedContact {
   mostRecentContact: string;
   OutreachDate: string;
   has_opps: boolean;
-  opps: Array<{ deal_name: string }>;
+  opps: Array<{ 
+    deal_name: string;
+    ebitda_in_ms?: number | null;
+    updated_at?: string | null;
+  }>;
   focusMeta: Array<{
     focus_area: string;
     sector_id: string;

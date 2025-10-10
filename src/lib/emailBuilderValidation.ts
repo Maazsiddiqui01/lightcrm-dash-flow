@@ -161,12 +161,16 @@ export function validateTemplateId(templateId: string | null): PayloadValidation
 }
 
 /**
- * Validates module phrase selections
- * Ensures phrase-driven modules have required selections when enabled
+ * Validates module selections against module states
+ * @param moduleStates - Current state of all modules (always/sometimes/never)
+ * @param moduleSelections - Current selections for each module
+ * @param allPhrases - All available phrases to check if categories are empty (HIGH-6 fix)
+ * @returns Validation result with errors and warnings
  */
 export function validateModuleSelections(
   moduleStates: ModuleStates,
-  moduleSelections: Record<string, any>
+  moduleSelections: Record<string, any>,
+  allPhrases?: any[]
 ): PayloadValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -180,6 +184,15 @@ export function validateModuleSelections(
     
     const selection = moduleSelections[moduleKey];
     const category = MODULE_LIBRARY_MAP[moduleKey];
+    
+    // Validate category has phrases (HIGH-6 fix)
+    if (allPhrases && category) {
+      const categoryPhrases = allPhrases.filter(p => p.category === category);
+      if (categoryPhrases.length === 0) {
+        errors.push(`${formatModuleName(moduleKey)} references an empty phrase category: ${category}`);
+        continue; // Skip further validation for this module
+      }
+    }
     
     // Single-select validation
     if (SINGLE_SELECT_MODULES.has(moduleKey)) {
