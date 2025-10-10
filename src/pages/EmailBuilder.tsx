@@ -1443,8 +1443,11 @@ ${draftResult.signature}`;
               onCustomModuleLabelChange={(moduleKey, newLabel) => {
                 const updatedLabels = { ...customModuleLabels, [moduleKey]: newLabel };
                 setCustomModuleLabels(updatedLabels);
-                // Auto-save globally immediately (no manual save needed)
-                autoSaveLabels.mutate(updatedLabels);
+                // Auto-save globally immediately with OCC (no manual save needed)
+                autoSaveLabels.mutate({
+                  customLabels: updatedLabels,
+                  currentRevision: templateSettings?.revision,
+                });
               }}
               onRandomize={handleRandomize}
               onRestoreToDefault={handleRestoreToDefault}

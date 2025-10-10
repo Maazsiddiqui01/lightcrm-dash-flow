@@ -242,16 +242,30 @@ export async function buildEnhancedDraftPayload(
   }
 
   // Pick subject line with tone and subject pool override
-  // FIX ISSUE #1 & #2: Auto-select first subject and validate pool
+  // Enhanced validation: Check for deleted subjects in pool override
   let subjectPool: SubjectLibraryItem[];
+  const deletedSubjectIds: string[] = [];
   
   if (subjectPoolOverride && subjectPoolOverride.length > 0) {
-    // Filter to override subjects
-    subjectPool = allSubjects.filter(s => subjectPoolOverride.includes(s.id));
+    // Filter to override subjects and track deleted ones
+    subjectPool = [];
+    for (const overrideId of subjectPoolOverride) {
+      const subject = allSubjects.find(s => s.id === overrideId);
+      if (subject) {
+        subjectPool.push(subject);
+      } else {
+        deletedSubjectIds.push(overrideId);
+      }
+    }
+    
+    // Warn about deleted subjects
+    if (deletedSubjectIds.length > 0) {
+      console.warn(`Subject pool contains ${deletedSubjectIds.length} deleted subject(s): ${deletedSubjectIds.join(', ')}`);
+    }
     
     // If filtering resulted in empty pool (all IDs invalid/deleted), fall back to all subjects
     if (subjectPool.length === 0) {
-      console.warn('Subject pool override contained only invalid IDs. Falling back to all available subjects.');
+      console.error('Subject pool override contained only invalid/deleted IDs. Falling back to all available subjects.');
       subjectPool = allSubjects;
     }
   } else {
@@ -266,8 +280,15 @@ export async function buildEnhancedDraftPayload(
   // Auto-select primary subject if not specified
   let primarySubjectId = moduleSelections?.subject_line_pool?.defaultSubjectId;
   
+  // Check if primary subject was deleted
+  if (primarySubjectId && deletedSubjectIds.includes(primarySubjectId)) {
+    console.warn(`Primary subject ${primarySubjectId} was deleted. Auto-selecting new primary.`);
+    primarySubjectId = undefined;
+  }
+  
   if (!primarySubjectId && subjectPoolOverride && subjectPoolOverride.length > 0) {
-    primarySubjectId = subjectPoolOverride[0];
+    // Use first valid subject from pool (after filtering out deleted ones)
+    primarySubjectId = subjectPool[0].id;
   }
   
   if (!primarySubjectId) {
@@ -276,7 +297,7 @@ export async function buildEnhancedDraftPayload(
     console.log(`Auto-selected primary subject: ${subjectPool[0].subject_template}`);
   }
   
-  // Validate primary subject exists in pool
+  // Validate primary subject exists in pool (final safety check)
   const primaryExists = subjectPool.some(s => s.id === primarySubjectId);
   if (!primaryExists) {
     console.warn(`Primary subject ${primarySubjectId} not in pool. Auto-selecting first available.`);

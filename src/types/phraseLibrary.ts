@@ -92,6 +92,12 @@ export interface TemplateSettings {
   // Template-level defaults
   module_defaults?: Record<string, string>;  // { "top_opportunities": "phr_789" }
   subject_default_id?: string | null;
+  
+  // OCC and metadata
+  revision?: number; // Optimistic concurrency control
+  module_order?: any;
+  updated_at?: string;
+  updated_by?: string;
 }
 
 export const PHRASE_CATEGORIES: Record<PhraseCategory, string> = {
