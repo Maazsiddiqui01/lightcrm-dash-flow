@@ -65,6 +65,7 @@ interface ModulesCardProps {
   onRandomize?: () => void;
   onRestoreToDefault?: () => void;
   isRandomized?: boolean;
+  changedModules?: Set<string>;
 }
 
 /**
@@ -183,6 +184,7 @@ export function ModulesCard({
   onRandomize,
   onRestoreToDefault,
   isRandomized = false,
+  changedModules = new Set(),
 }: ModulesCardProps) {
   const [activeDrawer, setActiveDrawer] = useState<keyof ModuleStates | 'subject_line_pool' | null>(null);
   // Drag-and-drop sensors with accessibility
@@ -425,6 +427,7 @@ export function ModulesCard({
                         onConfigure={() => handleOpenDrawer(moduleKey)}
                         selectedItemsCount={getSelectedItemsCount(moduleKey)}
                         onLabelChange={onCustomModuleLabelChange ? (newLabel) => onCustomModuleLabelChange(moduleKey, newLabel) : undefined}
+                        isChanged={changedModules.has(moduleKey)}
                       />
                     ))}
                   </div>

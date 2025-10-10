@@ -94,6 +94,7 @@ export function EmailBuilder() {
   
   // UI state
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [changedModules, setChangedModules] = useState<Set<string>>(new Set());
   
   // Individual mode state
   const [selectedContact, setSelectedContact] = useState<any | null>(null);
@@ -356,8 +357,21 @@ export function EmailBuilder() {
     const seed = generateSeed(selectedContact?.contact_id);
     setRandomizationSeed(seed);
     
+    // Track changes for visual feedback
+    const positionChanges = new Set<string>();
+    const contentChanges = new Set<string>();
+    
     // 1. Randomize module order (respect pins)
     const randomizedOrder = shuffleModuleOrder(moduleOrder, seed);
+    
+    // Detect position changes
+    randomizedOrder.forEach((moduleKey, newIndex) => {
+      const oldIndex = moduleOrder.indexOf(moduleKey as keyof ModuleStates);
+      if (oldIndex !== newIndex) {
+        positionChanges.add(moduleKey);
+      }
+    });
+    
     setModuleOrder(randomizedOrder as Array<keyof ModuleStates>);
     
     // 2. Randomize phrases for each phrase-driven module
@@ -374,10 +388,17 @@ export function EmailBuilder() {
       
       if (categoryPhrases.length === 0) return;
       
+      const oldSelection = moduleSelections[moduleKey as keyof ModuleSelections];
+      
       // Single-select vs multi-select
       if (SINGLE_SELECT_MODULES.has(moduleKey as ModuleKey)) {
         const randomPhrase = pickRandomPhrase(categoryPhrases, seed + moduleKey.length);
         if (randomPhrase) {
+          // Check if content changed
+          if (oldSelection?.phraseId !== randomPhrase.id) {
+            contentChanges.add(moduleKey);
+          }
+          
           newSelections[moduleKey as keyof ModuleSelections] = {
             type: 'phrase',
             category,
@@ -394,10 +415,17 @@ export function EmailBuilder() {
         const shuffled = seededShuffle(categoryPhrases, seed + moduleKey.length);
         const selectedPhrases = shuffled.slice(0, count);
         
+        // Check if content changed
+        const oldPhraseIds = oldSelection?.phraseIds || [];
+        const newPhraseIds = selectedPhrases.map(p => p.id);
+        if (JSON.stringify(oldPhraseIds.sort()) !== JSON.stringify(newPhraseIds.sort())) {
+          contentChanges.add(moduleKey);
+        }
+        
         newSelections[moduleKey as keyof ModuleSelections] = {
           type: 'phrase',
           category,
-          phraseIds: selectedPhrases.map(p => p.id),
+          phraseIds: newPhraseIds,
           defaultPhraseId: newSelections[moduleKey as keyof ModuleSelections]?.defaultPhraseId,
         };
       }
@@ -410,6 +438,11 @@ export function EmailBuilder() {
         seed + 9999
       )?.id || subjectPoolOverride[0];
       
+      const oldSubjectId = moduleSelections.subject_line_pool?.defaultSubjectId;
+      if (oldSubjectId !== randomSubjectId) {
+        contentChanges.add('subject_line_pool');
+      }
+      
       newSelections.subject_line_pool = {
         ...newSelections.subject_line_pool,
         subjectIds: subjectPoolOverride,
@@ -420,9 +453,17 @@ export function EmailBuilder() {
     setModuleSelections(newSelections);
     setIsRandomized(true);
     
+    // Combine all changes for highlighting
+    const allChanges = new Set([...positionChanges, ...contentChanges]);
+    setChangedModules(allChanges);
+    
+    // Enhanced toast with statistics
+    const positionCount = positionChanges.size;
+    const contentCount = contentChanges.size;
+    
     toast({
-      title: "Randomized",
-      description: "Phrases and module order shuffled. Changes not saved.",
+      title: "✨ Randomization Complete",
+      description: `${positionCount} position change${positionCount !== 1 ? 's' : ''}, ${contentCount} content change${contentCount !== 1 ? 's' : ''}`,
     });
   };
 
@@ -445,6 +486,7 @@ export function EmailBuilder() {
     // Clear randomization state
     setIsRandomized(false);
     setRandomizationSeed(null);
+    setChangedModules(new Set());
     
     toast({
       title: "Restored",
@@ -1475,6 +1517,7 @@ ${draftResult.signature}`;
               onRandomize={handleRandomize}
               onRestoreToDefault={handleRestoreToDefault}
               isRandomized={isRandomized}
+              changedModules={changedModules}
             />
             
             <EditableRecipients

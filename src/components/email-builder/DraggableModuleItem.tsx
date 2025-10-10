@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Settings, Pencil, Check, X } from 'lucide-react';
+import { GripVertical, Settings, Pencil, Check, X, Sparkles } from 'lucide-react';
 import { TriStateToggle } from './TriStateToggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ interface DraggableModuleItemProps {
   onConfigure?: () => void;
   selectedItemsCount?: number;
   onLabelChange?: (newLabel: string) => void;
+  isChanged?: boolean;
 }
 
 export function DraggableModuleItem({
@@ -32,6 +33,7 @@ export function DraggableModuleItem({
   onConfigure,
   selectedItemsCount = 0,
   onLabelChange,
+  isChanged = false,
 }: DraggableModuleItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(label);
@@ -85,14 +87,20 @@ export function DraggableModuleItem({
       style={style}
       className={`group p-3 rounded-lg border transition-all ${
         value === 'never' ? 'opacity-50 bg-muted/20' : 'bg-card'
-      } ${isDragging ? 'shadow-lg z-50' : ''}`}
+      } ${isDragging ? 'shadow-lg z-50' : ''} ${
+        isChanged ? 'ring-2 ring-amber-400 dark:ring-amber-500 bg-amber-50/50 dark:bg-amber-950/30 animate-fade-in' : ''
+      }`}
       role="listitem"
       aria-label={`Module ${index + 1}: ${label}`}
     >
       <div className="flex items-center gap-3">
-        {/* Position Number */}
-        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">
-          {index + 1}
+        {/* Position Number with Change Indicator */}
+        <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+          isChanged 
+            ? 'bg-amber-400 dark:bg-amber-500 text-white' 
+            : 'bg-primary/10 text-primary'
+        }`}>
+          {isChanged ? <Sparkles className="h-3 w-3" /> : index + 1}
         </div>
 
         {/* Drag Handle */}
