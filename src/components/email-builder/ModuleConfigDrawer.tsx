@@ -60,6 +60,17 @@ export function ModuleConfigDrawer({
       setTempSelection(currentSelection);
     }
   }, [isOpen, currentSelection]);
+  
+  // Extract contact name for default tooltips
+  const contactName = contactData?.first_name || contactData?.full_name || "this contact";
+  
+  // Handler for toggling default phrase
+  const handleDefaultToggle = (phraseId: string | null) => {
+    setTempSelection(prev => ({
+      ...prev,
+      defaultPhraseId: phraseId || undefined,
+    }));
+  };
 
   const handleSave = () => {
     onSave(tempSelection);
@@ -78,6 +89,7 @@ export function ModuleConfigDrawer({
           currentSelection={tempSelection}
           toneOverride={toneOverride}
           onSelectionChange={setTempSelection}
+          contactName={contactName}
         />
       );
     }
@@ -130,6 +142,9 @@ export function ModuleConfigDrawer({
               organization: contactData.organization,
               focusAreas: contactData.focus_areas || [],
             } : undefined}
+            contactName={contactName}
+            defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={handleDefaultToggle}
           />
         );
       
@@ -144,6 +159,9 @@ export function ModuleConfigDrawer({
               organization: contactData.organization,
               opportunities: (contactData as any).opportunities || [],
             } : undefined}
+            contactName={contactName}
+            defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={handleDefaultToggle}
           />
         );
       
@@ -171,6 +189,9 @@ export function ModuleConfigDrawer({
               firstName: contactData.first_name,
               organization: contactData.organization,
             } : undefined}
+            contactName={contactName}
+            defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={handleDefaultToggle}
           />
         );
       
@@ -183,6 +204,9 @@ export function ModuleConfigDrawer({
             contactData={contactData ? {
               firstName: contactData.first_name,
             } : undefined}
+            contactName={contactName}
+            defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={handleDefaultToggle}
           />
         );
       
@@ -195,6 +219,9 @@ export function ModuleConfigDrawer({
             contactData={contactData ? {
               firstName: contactData.first_name,
             } : undefined}
+            contactName={contactName}
+            defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={handleDefaultToggle}
           />
         );
       
@@ -208,6 +235,9 @@ export function ModuleConfigDrawer({
               firstName: contactData.first_name,
               organization: contactData.organization,
             } : undefined}
+            contactName={contactName}
+            defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={handleDefaultToggle}
           />
         );
       

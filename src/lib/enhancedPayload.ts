@@ -229,6 +229,9 @@ export async function buildEnhancedDraftPayload(
   const subjectPool = subjectPoolOverride && subjectPoolOverride.length > 0
     ? allSubjects.filter(s => subjectPoolOverride.includes(s.id))
     : allSubjects;
+  
+  // Get primary subject ID from moduleSelections
+  const primarySubjectId = moduleSelections?.subject_line_pool?.defaultSubjectId || subjectPoolOverride?.[0];
     
   const subject = await pickSubject({
     tone: effectiveTone,

@@ -10,6 +10,9 @@ interface AIBackupSelectorProps {
     firstName?: string;
     organization?: string;
   };
+  contactName?: string;
+  defaultPhraseId?: string;
+  onDefaultToggle?: (phraseId: string | null) => void;
 }
 
 export function AIBackupSelector({
@@ -17,6 +20,9 @@ export function AIBackupSelector({
   currentSelection,
   onSelectionChange,
   contactData,
+  contactName,
+  defaultPhraseId,
+  onDefaultToggle,
 }: AIBackupSelectorProps) {
   const previewVariables = {
     first_name: contactData?.firstName || 'John',
@@ -33,6 +39,9 @@ export function AIBackupSelector({
       multiSelect={false}
       contactData={contactData}
       previewVariables={previewVariables}
+      contactName={contactName}
+      defaultPhraseId={defaultPhraseId}
+      onDefaultToggle={onDefaultToggle}
     />
   );
 }

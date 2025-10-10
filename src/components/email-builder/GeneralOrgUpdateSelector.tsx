@@ -10,6 +10,9 @@ interface GeneralOrgUpdateSelectorProps {
     firstName?: string;
     organization?: string;
   };
+  contactName?: string;
+  defaultPhraseId?: string;
+  onDefaultToggle?: (phraseId: string | null) => void;
 }
 
 export function GeneralOrgUpdateSelector({
@@ -17,6 +20,9 @@ export function GeneralOrgUpdateSelector({
   currentSelection,
   onSelectionChange,
   contactData,
+  contactName,
+  defaultPhraseId,
+  onDefaultToggle,
 }: GeneralOrgUpdateSelectorProps) {
   const previewVariables = {
     organization: contactData?.organization || 'Acme Corp',
@@ -33,6 +39,9 @@ export function GeneralOrgUpdateSelector({
       multiSelect={false}
       contactData={contactData}
       previewVariables={previewVariables}
+      contactName={contactName}
+      defaultPhraseId={defaultPhraseId}
+      onDefaultToggle={onDefaultToggle}
     />
   );
 }

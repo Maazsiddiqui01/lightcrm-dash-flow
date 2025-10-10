@@ -9,6 +9,9 @@ interface AttachmentsSelectorProps {
   contactData?: {
     firstName?: string;
   };
+  contactName?: string;
+  defaultPhraseId?: string;
+  onDefaultToggle?: (phraseId: string | null) => void;
 }
 
 export function AttachmentsSelector({
@@ -16,6 +19,9 @@ export function AttachmentsSelector({
   currentSelection,
   onSelectionChange,
   contactData,
+  contactName,
+  defaultPhraseId,
+  onDefaultToggle,
 }: AttachmentsSelectorProps) {
   const previewVariables = {
     first_name: contactData?.firstName || 'John',
@@ -32,6 +38,9 @@ export function AttachmentsSelector({
       multiSelect={false}
       contactData={contactData}
       previewVariables={previewVariables}
+      contactName={contactName}
+      defaultPhraseId={defaultPhraseId}
+      onDefaultToggle={onDefaultToggle}
     />
   );
 }

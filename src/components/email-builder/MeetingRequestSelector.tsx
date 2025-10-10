@@ -9,6 +9,9 @@ interface MeetingRequestSelectorProps {
   contactData?: {
     firstName?: string;
   };
+  contactName?: string;
+  defaultPhraseId?: string;
+  onDefaultToggle?: (phraseId: string | null) => void;
 }
 
 export function MeetingRequestSelector({
@@ -16,6 +19,9 @@ export function MeetingRequestSelector({
   currentSelection,
   onSelectionChange,
   contactData,
+  contactName,
+  defaultPhraseId,
+  onDefaultToggle,
 }: MeetingRequestSelectorProps) {
   const previewVariables = {
     first_name: contactData?.firstName || 'John',
@@ -32,6 +38,9 @@ export function MeetingRequestSelector({
       multiSelect={false}
       contactData={contactData}
       previewVariables={previewVariables}
+      contactName={contactName}
+      defaultPhraseId={defaultPhraseId}
+      onDefaultToggle={onDefaultToggle}
     />
   );
 }

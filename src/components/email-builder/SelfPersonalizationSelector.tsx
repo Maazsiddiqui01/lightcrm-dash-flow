@@ -11,6 +11,9 @@ interface SelfPersonalizationSelectorProps {
     organization?: string;
     focusAreas?: string[];
   };
+  contactName?: string;
+  defaultPhraseId?: string;
+  onDefaultToggle?: (phraseId: string | null) => void;
 }
 
 export function SelfPersonalizationSelector({
@@ -18,6 +21,9 @@ export function SelfPersonalizationSelector({
   currentSelection,
   onSelectionChange,
   contactData,
+  contactName,
+  defaultPhraseId,
+  onDefaultToggle,
 }: SelfPersonalizationSelectorProps) {
   const previewVariables = {
     first_name: contactData?.firstName || 'John',
@@ -35,6 +41,9 @@ export function SelfPersonalizationSelector({
       multiSelect={false}
       contactData={contactData}
       previewVariables={previewVariables}
+      contactName={contactName}
+      defaultPhraseId={defaultPhraseId}
+      onDefaultToggle={onDefaultToggle}
     />
   );
 }

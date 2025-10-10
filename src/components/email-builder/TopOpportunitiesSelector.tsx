@@ -11,6 +11,9 @@ interface TopOpportunitiesSelectorProps {
     organization?: string;
     opportunities?: Array<{ dealName: string; monthsSince?: number }>;
   };
+  contactName?: string;
+  defaultPhraseId?: string;
+  onDefaultToggle?: (phraseId: string | null) => void;
 }
 
 export function TopOpportunitiesSelector({
@@ -18,6 +21,9 @@ export function TopOpportunitiesSelector({
   currentSelection,
   onSelectionChange,
   contactData,
+  contactName,
+  defaultPhraseId,
+  onDefaultToggle,
 }: TopOpportunitiesSelectorProps) {
   // Get top opportunity for preview
   const topOpp = contactData?.opportunities?.[0];
@@ -38,6 +44,9 @@ export function TopOpportunitiesSelector({
       multiSelect={false}
       contactData={contactData}
       previewVariables={previewVariables}
+      contactName={contactName}
+      defaultPhraseId={defaultPhraseId}
+      onDefaultToggle={onDefaultToggle}
     />
   );
 }
