@@ -28,7 +28,7 @@ import { mergeEffectiveConfig } from "@/lib/previewMerge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Save, RotateCcw } from "lucide-react";
+import { Mail, Save, RotateCcw, Shuffle, Dice5 } from "lucide-react";
 import { useEmailBuilderData } from "@/hooks/useEmailBuilderData";
 import { useContactGroupInfo } from "@/hooks/useContactGroupInfo";
 import { useResolvedTemplateQuery } from "@/hooks/useResolvedTemplate";
@@ -57,6 +57,22 @@ import { MASTER_TEMPLATES } from "@/lib/router";
 import { recomputePositions, buildModuleSequence, announceModuleMove } from "@/lib/modulePositions";
 import { validateDraftPayload, validateSubjectPool, validateTemplateId, validateModuleSelections } from "@/lib/emailBuilderValidation";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { 
+  seededShuffle,
+  seededRandom,
+  pickRandomPhrase, 
+  shuffleModuleOrder, 
+  generateSeed,
+  PINNED_TOP_KEYS,
+  PINNED_BOTTOM_KEYS,
+} from "@/lib/randomization";
+import { 
+  MODULE_LIBRARY_MAP, 
+  PHRASE_DRIVEN_MODULES, 
+  SINGLE_SELECT_MODULES, 
+  MULTI_SELECT_MODULES,
+  type ModuleKey 
+} from "@/config/moduleCategoryMap";
 
 export function EmailBuilder() {
   // Enable real-time synchronization with Global Libraries
@@ -126,6 +142,15 @@ export function EmailBuilder() {
   
   // Module selections state
   const [moduleSelections, setModuleSelections] = useState<ModuleSelections>({});
+  
+  // Randomization state
+  const [isRandomized, setIsRandomized] = useState(false);
+  const [defaultsSnapshot, setDefaultsSnapshot] = useState<{
+    order: Array<keyof ModuleStates>;
+    moduleSelections: ModuleSelections;
+    subjectPrimaryId: string | null;
+  } | null>(null);
+  const [randomizationSeed, setRandomizationSeed] = useState<number | null>(null);
   
   // Custom module labels
   const [customModuleLabels, setCustomModuleLabels] = useState<Record<string, string>>({});
@@ -264,6 +289,124 @@ export function EmailBuilder() {
       // Clear announcement after screen reader reads it
       setTimeout(() => setAriaAnnouncement(''), 1000);
     }
+  };
+
+  // Capture defaults snapshot (lazy - only before first randomization)
+  const captureDefaultsSnapshot = () => {
+    if (defaultsSnapshot) return;
+    
+    setDefaultsSnapshot({
+      order: [...moduleOrder],
+      moduleSelections: { ...moduleSelections },
+      subjectPrimaryId: moduleSelections.subject_line_pool?.defaultSubjectId || null,
+    });
+  };
+
+  // Randomize phrases and module order
+  const handleRandomize = () => {
+    // Capture snapshot before first randomization
+    if (!defaultsSnapshot) {
+      captureDefaultsSnapshot();
+    }
+    
+    // Generate new seed for this randomization
+    const seed = generateSeed(selectedContact?.contact_id);
+    setRandomizationSeed(seed);
+    
+    // 1. Randomize module order (respect pins)
+    const randomizedOrder = shuffleModuleOrder(moduleOrder, seed);
+    setModuleOrder(randomizedOrder as Array<keyof ModuleStates>);
+    
+    // 2. Randomize phrases for each phrase-driven module
+    const newSelections: ModuleSelections = { ...moduleSelections };
+    
+    Object.keys(MODULE_LIBRARY_MAP).forEach((moduleKey) => {
+      const category = MODULE_LIBRARY_MAP[moduleKey as ModuleKey];
+      const isPhrase = PHRASE_DRIVEN_MODULES.has(moduleKey as ModuleKey);
+      
+      if (!isPhrase) return; // Skip article_recommendations
+      
+      // Get phrases for this category
+      const categoryPhrases = allPhrases?.filter(p => p.category === category) || [];
+      
+      if (categoryPhrases.length === 0) return;
+      
+      // Single-select vs multi-select
+      if (SINGLE_SELECT_MODULES.has(moduleKey as ModuleKey)) {
+        const randomPhrase = pickRandomPhrase(categoryPhrases, seed + moduleKey.length);
+        if (randomPhrase) {
+          newSelections[moduleKey as keyof ModuleSelections] = {
+            type: 'phrase',
+            category,
+            phraseId: randomPhrase.id,
+            phraseText: randomPhrase.phrase_text,
+            // Keep existing defaultPhraseId (don't change starred default)
+            defaultPhraseId: newSelections[moduleKey as keyof ModuleSelections]?.defaultPhraseId,
+          };
+        }
+      } else if (MULTI_SELECT_MODULES.has(moduleKey as ModuleKey)) {
+        // For multi-select, pick 1-3 random phrases
+        const rng = seededRandom(seed + moduleKey.length);
+        const count = Math.floor(rng() * Math.min(3, categoryPhrases.length)) + 1;
+        const shuffled = seededShuffle(categoryPhrases, seed + moduleKey.length);
+        const selectedPhrases = shuffled.slice(0, count);
+        
+        newSelections[moduleKey as keyof ModuleSelections] = {
+          type: 'phrase',
+          category,
+          phraseIds: selectedPhrases.map(p => p.id),
+          defaultPhraseId: newSelections[moduleKey as keyof ModuleSelections]?.defaultPhraseId,
+        };
+      }
+    });
+    
+    // 3. Randomize primary subject
+    if (subjectPoolOverride.length > 0) {
+      const randomSubjectId = pickRandomPhrase(
+        subjectPoolOverride.map(id => ({ id })),
+        seed + 9999
+      )?.id || subjectPoolOverride[0];
+      
+      newSelections.subject_line_pool = {
+        ...newSelections.subject_line_pool,
+        subjectIds: subjectPoolOverride,
+        defaultSubjectId: randomSubjectId,
+      };
+    }
+    
+    setModuleSelections(newSelections);
+    setIsRandomized(true);
+    
+    toast({
+      title: "Randomized",
+      description: "Phrases and module order shuffled. Changes not saved.",
+    });
+  };
+
+  // Restore to default configuration
+  const handleRestoreToDefault = () => {
+    if (!defaultsSnapshot) {
+      toast({
+        title: "No Changes",
+        description: "Nothing to restore.",
+      });
+      return;
+    }
+    
+    // Restore order
+    setModuleOrder(defaultsSnapshot.order);
+    
+    // Restore selections
+    setModuleSelections(defaultsSnapshot.moduleSelections);
+    
+    // Clear randomization state
+    setIsRandomized(false);
+    setRandomizationSeed(null);
+    
+    toast({
+      title: "Restored",
+      description: "Reverted to your default configuration.",
+    });
   };
 
   const handleConfirmSave = async () => {
