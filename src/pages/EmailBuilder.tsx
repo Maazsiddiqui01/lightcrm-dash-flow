@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 import { useRealtimeLibrarySync } from "@/hooks/useRealtimeSync";
 import { ContactSelector } from "@/components/email-builder/ContactSelector";
@@ -57,7 +57,9 @@ import { ConfirmSaveDialog, type SaveScope, type AffectedField } from "@/compone
 import { MASTER_TEMPLATES } from "@/lib/router";
 import { recomputePositions, buildModuleSequence, announceModuleMove } from "@/lib/modulePositions";
 import { validateDraftPayload, validateSubjectPool, validateTemplateId, validateModuleSelections } from "@/lib/emailBuilderValidation";
+import { validateModuleSelections as validateModuleSelectionsAgainstLibrary } from "@/lib/moduleSelectionValidation";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useAutoSaveModuleLabels } from '@/hooks/useAutoSaveModuleLabels';
 import { useNewTemplateSettings } from '@/hooks/useNewTemplateSettings';
 import { 
@@ -292,8 +294,8 @@ export function EmailBuilder() {
     setModuleStates(prev => ({ ...prev, [key]: value }));
   };
   
-  // Handle module reorder with position recalculation
-  const handleModuleOrderChange = (newOrder: (string | number)[]) => {
+  // Handle module reorder with position recalculation and debouncing
+  const handleModuleOrderChangeImmediate = useCallback((newOrder: (string | number)[]) => {
     // Recompute positions to ensure 1..N contiguity
     const recomputed = recomputePositions(newOrder);
     setModuleOrder(recomputed as Array<keyof ModuleStates>);
@@ -307,7 +309,10 @@ export function EmailBuilder() {
       // Clear announcement after screen reader reads it
       setTimeout(() => setAriaAnnouncement(''), 1000);
     }
-  };
+  }, []);
+
+  // Debounced version for performance (300ms delay)
+  const handleModuleOrderChange = useDebounce(handleModuleOrderChangeImmediate, 300);
 
   // Capture defaults snapshot (lazy - only before first randomization)
   const captureDefaultsSnapshot = () => {
@@ -767,7 +772,25 @@ export function EmailBuilder() {
           setModuleOrder(contactSettings.module_order as Array<keyof ModuleStates>);
         }
         if (contactSettings.module_selections) {
-          setModuleSelections(contactSettings.module_selections as ModuleSelections);
+          // Validate module selections against current libraries
+          const validation = validateModuleSelectionsAgainstLibrary(
+            contactSettings.module_selections as ModuleSelections,
+            allPhrases,
+            allInquiries,
+            allSubjects
+          );
+          
+          // Warn user if stale selections were found
+          if (!validation.isValid) {
+            console.warn(`Removed ${validation.removedItems.length} stale module selection(s):`, validation.removedItems);
+            toast({
+              title: 'Outdated selections removed',
+              description: `${validation.removedItems.length} deleted item(s) removed from selections`,
+              duration: 5000,
+            });
+          }
+          
+          setModuleSelections(validation.cleanedSelections);
         } else {
           setModuleSelections({});
         }
