@@ -55,7 +55,7 @@ import { SourceBadge } from "@/components/email-builder/SourceBadge";
 import { ConfirmSaveDialog, type SaveScope, type AffectedField } from "@/components/email-builder/ConfirmSaveDialog";
 import { MASTER_TEMPLATES } from "@/lib/router";
 import { recomputePositions, buildModuleSequence, announceModuleMove } from "@/lib/modulePositions";
-import { validateDraftPayload, validateSubjectPool, validateTemplateId } from "@/lib/emailBuilderValidation";
+import { validateDraftPayload, validateSubjectPool, validateTemplateId, validateModuleSelections } from "@/lib/emailBuilderValidation";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 export function EmailBuilder() {
@@ -157,6 +157,9 @@ export function EmailBuilder() {
   
   const [draftResult, setDraftResult] = useState<any | null>(null);
   
+  // Module validation errors state
+  const [moduleValidationErrors, setModuleValidationErrors] = useState<string[]>([]);
+  
   // ARIA live region for module reorder announcements
   const [ariaAnnouncement, setAriaAnnouncement] = useState<string>('');
   
@@ -175,6 +178,12 @@ export function EmailBuilder() {
     const ids = moduleSelections.subject_line_pool?.subjectIds || [];
     setSubjectPoolOverride(ids);
   }, [moduleSelections.subject_line_pool]);
+  
+  // Validate module selections whenever they change
+  useEffect(() => {
+    const validation = validateModuleSelections(moduleStates, moduleSelections);
+    setModuleValidationErrors(validation.errors);
+  }, [moduleStates, moduleSelections]);
   
   // Dev-only debug log for subject pool sync
   useEffect(() => {
@@ -532,6 +541,17 @@ export function EmailBuilder() {
   const handleSaveSettings = () => {
     if (!selectedContact?.contact_id) return;
     
+    // Validate module selections before saving
+    const moduleValidation = validateModuleSelections(moduleStates, moduleSelections);
+    if (!moduleValidation.isValid) {
+      toast({
+        title: 'Cannot Save - Module Configuration Incomplete',
+        description: moduleValidation.errors.join('. '),
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     saveSettings({
       contactId: selectedContact.contact_id,
       moduleStates,
@@ -571,6 +591,17 @@ export function EmailBuilder() {
       toast({
         title: 'Subject Pool Required',
         description: subjectValidation.errors.join(', '),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate module selections before generation
+    const moduleValidation = validateModuleSelections(moduleStates, moduleSelections);
+    if (!moduleValidation.isValid) {
+      toast({
+        title: 'Module Configuration Required',
+        description: moduleValidation.errors.join(', '),
         variant: 'destructive',
       });
       return;
@@ -694,6 +725,17 @@ ${draftResult.signature}`;
       toast({
         title: 'Subject Pool Error',
         description: subjectValidation.errors.join(', '),
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Validate module selections before batch generation
+    const moduleValidation = validateModuleSelections(moduleStates, moduleSelections);
+    if (!moduleValidation.isValid) {
+      toast({
+        title: 'Module Configuration Required',
+        description: moduleValidation.errors.join(', '),
         variant: 'destructive',
       });
       return;
@@ -1088,6 +1130,20 @@ ${draftResult.signature}`;
               </div>
             )}
             
+            {/* Module Selection Validation Warnings */}
+            {moduleValidationErrors.length > 0 && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
+                <p className="text-sm text-destructive font-medium">
+                  Module Configuration Required:
+                </p>
+                <ul className="text-sm text-destructive list-disc list-inside space-y-0.5">
+                  {moduleValidationErrors.map((error, idx) => (
+                    <li key={idx}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
             {/* Enhanced Draft Section - replaces old DraftGenerateButton */}
             {selectedContact && contactData && masterTemplate && (
               <EnhancedDraftSection
@@ -1097,7 +1153,13 @@ ${draftResult.signature}`;
                 result={draftResult}
                 onGenerate={handleGenerateDraft}
                 onCopyToClipboard={handleCopyToClipboard}
-                disabled={!contactData || subjectPoolOverride.length === 0 || isSavingSettings || savingWithShortcut}
+                disabled={
+                  !contactData || 
+                  subjectPoolOverride.length === 0 || 
+                  moduleValidationErrors.length > 0 ||
+                  isSavingSettings || 
+                  savingWithShortcut
+                }
               />
             )}
             
