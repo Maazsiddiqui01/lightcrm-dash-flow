@@ -300,15 +300,15 @@ export function ModulesCard({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Email Modules
-            {masterTemplate && (
-              <Badge variant="secondary" className="ml-2 text-xs">
-                Drag to Reorder
-              </Badge>
-            )}
-          </CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Email Modules
+              {masterTemplate && (
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  Drag to Reorder | Ctrl+R to Randomize
+                </Badge>
+              )}
+            </CardTitle>
           <div className="flex items-center gap-2">
             {onRandomize && (
               <Button

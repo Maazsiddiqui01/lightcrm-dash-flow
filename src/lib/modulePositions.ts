@@ -58,12 +58,12 @@ export function validateModuleOrder(moduleOrder: (string | number)[]): {
 export function buildModuleSequence(
   moduleOrder: (string | number)[],
   moduleStates: Record<string, 'always' | 'sometimes' | 'never'>
-): Array<{ key: string; mode: string; position: number }> {
+): Array<{ key: string; mode: 'always' | 'sometimes' | 'never'; position: number }> {
   const recomputed = recomputePositions(moduleOrder);
   
   return recomputed.map((key, index) => ({
     key,
-    mode: moduleStates[key] || 'sometimes',
+    mode: (moduleStates[key] || 'sometimes') as 'always' | 'sometimes' | 'never',
     position: index + 1, // 1-indexed positions
   }));
 }

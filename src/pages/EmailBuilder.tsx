@@ -577,9 +577,10 @@ export function EmailBuilder() {
     }
   };
   
-  // Keyboard shortcuts
+  // Keyboard shortcuts (HIGH-12 fix: Added Ctrl+R for randomize)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+S / Cmd+S - Save contact settings
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         if (e.shiftKey) {
@@ -588,11 +589,17 @@ export function EmailBuilder() {
           handleSaveContact();
         }
       }
+      
+      // Ctrl+R / Cmd+R - Randomize (Individual mode only)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r' && mode === 'individual') {
+        e.preventDefault();
+        handleRandomize();
+      }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedContact, masterTemplate]);
+  }, [selectedContact, masterTemplate, mode, handleRandomize]);
 
   // Handle module selection changes - clear randomization on manual edit (HIGH-8 fix)
   const handleModuleSelectionChange = (

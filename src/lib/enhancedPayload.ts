@@ -134,14 +134,21 @@ export interface EnhancedDraftPayload {
     key: string;
     position: number;
     mode: TriState;
+    customLabel?: string;
     selection?: {
-      type: 'phrase' | 'article';
+      type?: 'phrase' | 'article' | 'inquiry' | 'subject';
       category?: string;
       phraseId?: string;
+      defaultPhraseId?: string;
       text?: string;
       variables?: Record<string, any>;
       articleId?: string;
       articleUrl?: string;
+      inquiryId?: string;
+      inquiryText?: string;
+      subjectIds?: string[];
+      primaryId?: string;
+      style?: 'formal' | 'hybrid' | 'casual';
     };
   }>;
   
@@ -332,7 +339,7 @@ export async function buildEnhancedDraftPayload(
       modulesV2.push({
         key: module,
         position,
-        mode,
+        mode: mode as TriState,
         selection: {},
       });
       return;
@@ -368,7 +375,7 @@ export async function buildEnhancedDraftPayload(
     modulesV2.push({
       key: module,
       position,
-      mode,
+      mode: mode as TriState,
       selection: selectionData,
     });
   });
