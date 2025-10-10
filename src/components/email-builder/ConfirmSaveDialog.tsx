@@ -9,6 +9,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export type SaveScope = 'contact' | 'global';
 export type AffectedField = 'coreSettings' | 'moduleStates' | 'moduleOrder' | 'moduleSelections' | 'team' | 'recipients';
@@ -21,6 +23,9 @@ interface ConfirmSaveDialogProps {
   templateName: string;
   affectedFields: AffectedField[];
   onConfirm: () => void;
+  isRandomized?: boolean;
+  makeRandomizedDefaults?: boolean;
+  onMakeDefaultsChange?: (value: boolean) => void;
 }
 
 const FIELD_LABELS: Record<AffectedField, string> = {
@@ -44,6 +49,9 @@ export function ConfirmSaveDialog({
   templateName,
   affectedFields,
   onConfirm,
+  isRandomized,
+  makeRandomizedDefaults,
+  onMakeDefaultsChange,
 }: ConfirmSaveDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onClose}>
@@ -78,6 +86,23 @@ export function ConfirmSaveDialog({
                       ))}
                     </ul>
                   </div>
+                  
+                  {/* Randomize defaults checkbox (only shown after randomization) */}
+                  {isRandomized && (
+                    <div className="flex items-center space-x-2 pt-3 border-t">
+                      <Checkbox
+                        id="make-defaults"
+                        checked={makeRandomizedDefaults}
+                        onCheckedChange={(checked) => onMakeDefaultsChange?.(checked === true)}
+                      />
+                      <Label
+                        htmlFor="make-defaults"
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        Make randomized picks my new defaults for this contact
+                      </Label>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>

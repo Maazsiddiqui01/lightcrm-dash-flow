@@ -5,6 +5,12 @@
 
 import type { ContactEmailComposer } from '@/types/emailComposer';
 import type { ModuleStates } from '@/components/email-builder/ModulesCard';
+import { 
+  PHRASE_DRIVEN_MODULES, 
+  SINGLE_SELECT_MODULES, 
+  MULTI_SELECT_MODULES,
+  MODULE_LIBRARY_MAP 
+} from '@/config/moduleCategoryMap';
 
 export interface PayloadValidationResult {
   isValid: boolean;
@@ -164,14 +170,6 @@ export function validateModuleSelections(
 ): PayloadValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
-  
-  // Import module configs
-  const { 
-    PHRASE_DRIVEN_MODULES, 
-    SINGLE_SELECT_MODULES, 
-    MULTI_SELECT_MODULES,
-    MODULE_LIBRARY_MAP 
-  } = require('@/config/moduleCategoryMap');
   
   // Check each phrase-driven module
   for (const moduleKey of PHRASE_DRIVEN_MODULES) {

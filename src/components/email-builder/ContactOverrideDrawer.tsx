@@ -103,6 +103,26 @@ export function ContactOverrideDrawer({
 
   // Randomize handler for per-contact overrides
   const handleRandomizeContact = () => {
+    // Validation: Check if phrase libraries are loaded
+    if (!allPhrases || allPhrases.length === 0) {
+      toast({
+        title: "Cannot Randomize",
+        description: "Phrase libraries are not loaded yet. Please wait.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validation: Check if subject pool has selections
+    if (!subjectPool.selectedIds || subjectPool.selectedIds.length === 0) {
+      toast({
+        title: "Cannot Randomize",
+        description: "Subject Line Pool must have at least one enabled subject.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const seed = generateSeed(contactId);
     
     // 1. Randomize module order

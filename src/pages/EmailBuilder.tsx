@@ -304,6 +304,26 @@ export function EmailBuilder() {
 
   // Randomize phrases and module order
   const handleRandomize = () => {
+    // Validation: Check if phrase libraries are loaded
+    if (!allPhrases || allPhrases.length === 0) {
+      toast({
+        title: "Cannot Randomize",
+        description: "Phrase libraries are not loaded yet. Please wait.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validation: Check if subject pool has selections
+    if (!subjectPoolOverride || subjectPoolOverride.length === 0) {
+      toast({
+        title: "Cannot Randomize",
+        description: "Subject Line Pool must have at least one enabled subject.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Capture snapshot before first randomization
     if (!defaultsSnapshot) {
       captureDefaultsSnapshot();
