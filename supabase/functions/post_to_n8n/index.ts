@@ -223,6 +223,7 @@ function transformToN8NPayload(enhanced: any): any {
       modules: modules,
       flow: enhanced.flow || [],
       moduleSequence: enhanced.moduleSequence || [], // Pass module sequence
+      modulesV2: enhanced.modulesV2 || [], // COMPASS: detailed module selections
     },
     custom: {
       deltaType: deltaType, // Pass deltaType to custom as well for backward compat

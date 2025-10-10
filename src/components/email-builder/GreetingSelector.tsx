@@ -101,10 +101,22 @@ export function GreetingSelector({ phrases, currentSelection, onSelectionChange 
       {/* Preview */}
       {selectedGreeting && (
         <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-          <p className="text-sm font-medium">Preview in email:</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            "{selectedGreeting.phrase_text}"
-          </p>
+          <p className="text-sm font-medium mb-2">Preview in email:</p>
+          <p className="text-sm">"{selectedGreeting.phrase_text}"</p>
+          
+          {/* Show variables if they exist */}
+          {(selectedGreeting.phrase_text.includes('{') && selectedGreeting.phrase_text.includes('}')) && (
+            <div className="mt-2 pt-2 border-t border-primary/20">
+              <p className="text-xs text-muted-foreground">Variables detected:</p>
+              <div className="flex gap-1 flex-wrap mt-1">
+                {selectedGreeting.phrase_text.match(/\{([^}]+)\}/g)?.map((variable, idx) => (
+                  <Badge key={idx} variant="secondary" className="text-xs font-mono">
+                    {variable}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

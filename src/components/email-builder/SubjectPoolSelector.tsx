@@ -117,11 +117,23 @@ export function SubjectPoolSelector({
                 htmlFor={`subject-${subject.id}`}
                 className="flex-1 cursor-pointer"
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm">{subject.subject_template}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {subject.style}
-                  </Badge>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{subject.subject_template}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {subject.style}
+                    </Badge>
+                  </div>
+                  {/* Show variables if they exist */}
+                  {(subject.subject_template.includes('[') && subject.subject_template.includes(']')) && (
+                    <div className="flex gap-1 flex-wrap">
+                      {subject.subject_template.match(/\[([^\]]+)\]/g)?.map((variable, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs font-mono">
+                          {variable}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </label>
             </div>

@@ -8,6 +8,7 @@ import type { ContactEmailComposer } from '@/types/emailComposer';
 import type { PhraseLibraryItem, TriState, MasterTemplateDefaults } from '@/types/phraseLibrary';
 import type { InquiryLibraryItem } from '@/hooks/useInquiryLibrary';
 import type { SubjectLibraryItem } from '@/hooks/useSubjectLibrary';
+import type { ModuleStates } from '@/components/email-builder/ModulesCard';
 import { pickPhrase, logPhraseUsage } from '@/hooks/usePhraseLibrary';
 import { pickInquiry, logInquiryUse } from '@/hooks/useInquiryLibrary';
 import { pickSubject } from '@/hooks/useSubjectLibrary';
@@ -117,6 +118,22 @@ export interface EnhancedDraftPayload {
     id: string;
     position: number;
     enabled: boolean;
+  }>;
+  
+  // ModulesV2 with detailed selection data (COMPASS enhancement)
+  modulesV2: Array<{
+    key: string;
+    position: number;
+    mode: TriState;
+    selection?: {
+      type: 'phrase' | 'article';
+      category?: string;
+      phraseId?: string;
+      text?: string;
+      variables?: Record<string, any>;
+      articleId?: string;
+      articleUrl?: string;
+    };
   }>;
   
   // CC recipients
@@ -243,6 +260,51 @@ export async function buildEnhancedDraftPayload(
     mode: item.mode,
   }));
 
+  // Build modulesV2 with detailed selection data (COMPASS)
+  const modulesV2 = buildModuleSequence(
+    orderedModules,
+    moduleStates || {}
+  ).map(item => {
+    const selection = moduleSelections?.[item.key as keyof typeof moduleSelections];
+    const moduleKey = item.key as keyof ModuleStates;
+    
+    // Base module object
+    const module: any = {
+      key: item.key,
+      position: item.position,
+      mode: item.mode,
+    };
+    
+    // Add selection data if available
+    if (selection) {
+      if (selection.type === 'article') {
+        module.selection = {
+          type: 'article',
+          articleId: selection.articleId,
+          articleUrl: selection.articleUrl,
+        };
+      } else if (selection.type === 'phrase' || selection.phraseId || selection.greetingId) {
+        module.selection = {
+          type: 'phrase',
+          category: selection.category,
+          phraseId: selection.phraseId || selection.greetingId,
+          text: selection.phraseText,
+          variables: selection.variables,
+        };
+      } else if (selection.phraseIds && selection.phraseIds.length > 0) {
+        // Multi-select phrases
+        module.selection = {
+          type: 'phrase',
+          category: selection.category,
+          phraseIds: selection.phraseIds,
+          variables: selection.variables,
+        };
+      }
+    }
+    
+    return module;
+  });
+
   // Build CC list from team directory (fetch emails from database)
   const leadEmails: string[] = [];
   const assistantEmails: string[] = [];
@@ -361,6 +423,7 @@ export async function buildEnhancedDraftPayload(
     modules: generation.modules,
     flow,
     moduleSequence,
+    modulesV2,
     cc: {
       leads: leadEmails,
       assistants: assistantEmails,
@@ -448,6 +511,7 @@ function createFailedPayload(
     modules: {},
     flow: [],
     moduleSequence: [],
+    modulesV2: [],
     cc: {
       leads: [],
       assistants: [],

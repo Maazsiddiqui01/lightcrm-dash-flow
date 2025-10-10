@@ -153,3 +153,64 @@ export function validateTemplateId(templateId: string | null): PayloadValidation
     warnings: [],
   };
 }
+
+/**
+ * Validates module phrase selections
+ * Ensures phrase-driven modules have required selections when enabled
+ */
+export function validateModuleSelections(
+  moduleStates: ModuleStates,
+  moduleSelections: Record<string, any>
+): PayloadValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  // Import module configs
+  const { 
+    PHRASE_DRIVEN_MODULES, 
+    SINGLE_SELECT_MODULES, 
+    MULTI_SELECT_MODULES,
+    MODULE_LIBRARY_MAP 
+  } = require('@/config/moduleCategoryMap');
+  
+  // Check each phrase-driven module
+  for (const moduleKey of PHRASE_DRIVEN_MODULES) {
+    const mode = moduleStates[moduleKey];
+    
+    // Skip if module is disabled (never)
+    if (mode === 'never') continue;
+    
+    const selection = moduleSelections[moduleKey];
+    const category = MODULE_LIBRARY_MAP[moduleKey];
+    
+    // Single-select validation
+    if (SINGLE_SELECT_MODULES.has(moduleKey)) {
+      if (!selection?.phraseId && !selection?.greetingId) {
+        errors.push(`Select one phrase for ${formatModuleName(moduleKey)} (${category})`);
+      }
+    }
+    
+    // Multi-select validation
+    if (MULTI_SELECT_MODULES.has(moduleKey)) {
+      if (!selection?.phraseIds || selection.phraseIds.length === 0) {
+        errors.push(`Select at least one phrase for ${formatModuleName(moduleKey)} (${category})`);
+      }
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
+/**
+ * Format module key to human-readable name
+ */
+function formatModuleName(moduleKey: string): string {
+  return moduleKey
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}

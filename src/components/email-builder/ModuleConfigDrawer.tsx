@@ -15,6 +15,13 @@ import { GreetingSelector } from "./GreetingSelector";
 import { TalkingPointsSelector } from "./TalkingPointsSelector";
 import { AddonsSelector } from "./AddonsSelector";
 import { SubjectPoolSelector } from "./SubjectPoolSelector";
+import { TopOpportunitiesSelector } from "./TopOpportunitiesSelector";
+import { SelfPersonalizationSelector } from "./SelfPersonalizationSelector";
+import { PlatformsSelector } from "./PlatformsSelector";
+import { GeneralOrgUpdateSelector } from "./GeneralOrgUpdateSelector";
+import { AttachmentsSelector } from "./AttachmentsSelector";
+import { MeetingRequestSelector } from "./MeetingRequestSelector";
+import { AIBackupSelector } from "./AIBackupSelector";
 
 interface ModuleConfigDrawerProps {
   isOpen: boolean;
@@ -109,6 +116,98 @@ export function ModuleConfigDrawer({
             phrases={allPhrases}
             currentSelection={tempSelection}
             onSelectionChange={setTempSelection}
+          />
+        );
+      
+      case 'self_personalization':
+        return (
+          <SelfPersonalizationSelector
+            phrases={allPhrases}
+            currentSelection={tempSelection}
+            onSelectionChange={setTempSelection}
+            contactData={contactData ? {
+              firstName: contactData.first_name,
+              organization: contactData.organization,
+              focusAreas: contactData.focus_areas || [],
+            } : undefined}
+          />
+        );
+      
+      case 'top_opportunities':
+        return (
+          <TopOpportunitiesSelector
+            phrases={allPhrases}
+            currentSelection={tempSelection}
+            onSelectionChange={setTempSelection}
+            contactData={contactData ? {
+              firstName: contactData.first_name,
+              organization: contactData.organization,
+              opportunities: (contactData as any).opportunities || [],
+            } : undefined}
+          />
+        );
+      
+      case 'platforms':
+        return (
+          <PlatformsSelector
+            phrases={allPhrases}
+            currentSelection={tempSelection}
+            onSelectionChange={setTempSelection}
+            contactData={contactData ? {
+              firstName: contactData.first_name,
+              organization: contactData.organization,
+              focusAreas: contactData.focus_areas || [],
+            } : undefined}
+          />
+        );
+      
+      case 'general_org_update':
+        return (
+          <GeneralOrgUpdateSelector
+            phrases={allPhrases}
+            currentSelection={tempSelection}
+            onSelectionChange={setTempSelection}
+            contactData={contactData ? {
+              firstName: contactData.first_name,
+              organization: contactData.organization,
+            } : undefined}
+          />
+        );
+      
+      case 'attachments':
+        return (
+          <AttachmentsSelector
+            phrases={allPhrases}
+            currentSelection={tempSelection}
+            onSelectionChange={setTempSelection}
+            contactData={contactData ? {
+              firstName: contactData.first_name,
+            } : undefined}
+          />
+        );
+      
+      case 'meeting_request':
+        return (
+          <MeetingRequestSelector
+            phrases={allPhrases}
+            currentSelection={tempSelection}
+            onSelectionChange={setTempSelection}
+            contactData={contactData ? {
+              firstName: contactData.first_name,
+            } : undefined}
+          />
+        );
+      
+      case 'ai_backup_personalization':
+        return (
+          <AIBackupSelector
+            phrases={allPhrases}
+            currentSelection={tempSelection}
+            onSelectionChange={setTempSelection}
+            contactData={contactData ? {
+              firstName: contactData.first_name,
+              organization: contactData.organization,
+            } : undefined}
           />
         );
       

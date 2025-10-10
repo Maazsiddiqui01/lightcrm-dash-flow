@@ -103,10 +103,23 @@ export function TalkingPointsSelector({ phrases, currentSelection, onSelectionCh
       {selectedPhrases.length > 0 && (
         <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
           <p className="text-sm font-medium mb-2">Selected talking points:</p>
-          <ul className="space-y-1">
+          <ul className="space-y-2">
             {selectedPhrases.map((phrase, index) => (
-              <li key={phrase.id} className="text-sm text-muted-foreground">
-                {index + 1}. {phrase.phrase_text}
+              <li key={phrase.id} className="text-sm">
+                <div className="flex items-start gap-2">
+                  <span className="font-medium">{index + 1}.</span>
+                  <span className="flex-1">{phrase.phrase_text}</span>
+                </div>
+                {/* Show variables if they exist */}
+                {(phrase.phrase_text.includes('{') && phrase.phrase_text.includes('}')) && (
+                  <div className="flex gap-1 flex-wrap mt-1 ml-4">
+                    {phrase.phrase_text.match(/\{([^}]+)\}/g)?.map((variable, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs font-mono">
+                        {variable}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

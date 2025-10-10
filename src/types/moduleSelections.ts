@@ -1,13 +1,22 @@
 export interface ModuleSelection {
-  // For single-select modules (Initial Greeting, Article Recommendation)
-  greetingId?: string;
+  // Selection type
+  type?: 'phrase' | 'article';
+  
+  // Category tracking
+  category?: string;
+  
+  // For single-select phrase modules
+  phraseId?: string;
+  phraseText?: string;
+  
+  // For multi-select phrase modules (Suggested Talking Points, Add-ons, Platforms)
+  phraseIds?: string[];
+  
+  // For article recommendation module
   articleId?: string;
   articleUrl?: string;
   articleTitle?: string;
   articleFocusArea?: string;
-  
-  // For multi-select modules (Suggested Talking Points, Add-ons)
-  phraseIds?: string[];
   
   // For inquiry modules
   inquiryId?: string;
@@ -15,6 +24,12 @@ export interface ModuleSelection {
   // For subject line pool (multi-select subject IDs + style)
   subjectIds?: string[];
   style?: 'formal' | 'hybrid' | 'casual';
+  
+  // Legacy single-select greeting ID (for backward compatibility)
+  greetingId?: string;
+  
+  // Variable interpolation data
+  variables?: Record<string, any>;
 }
 
 export interface ModuleSelections {
