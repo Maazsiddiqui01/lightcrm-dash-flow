@@ -97,7 +97,7 @@ export function useSaveSettingsWithOCC() {
         payload.contactId,
         {
           contact_id: payload.contactId,
-          template_id: payload.templateId,
+          template_id: null, // Master templates used instead of case templates
           module_states: payload.moduleStates as any,
           delta_type: payload.deltaType,
           module_order: payload.moduleOrder as any,

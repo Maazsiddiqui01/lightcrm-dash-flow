@@ -258,13 +258,6 @@ export type Database = {
             referencedRelation: "v_contact_top_opps"
             referencedColumns: ["contact_id"]
           },
-          {
-            foreignKeyName: "contact_email_builder_settings_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "email_templates"
-            referencedColumns: ["id"]
-          },
         ]
       }
       contact_intentional_no_outreach_events: {
