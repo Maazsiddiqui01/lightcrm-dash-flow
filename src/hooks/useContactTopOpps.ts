@@ -21,14 +21,16 @@ export function useContactTopOpps(contactId: string | null) {
         
         const { data, error } = await supabase
           .from('opportunities_raw')
-          .select('id, deal_name, ebitda_in_ms, deal_source_individual_1, deal_source_individual_2')
+          .select('id, deal_name, ebitda_in_ms, tier, status, updated_at')
           .or(`deal_source_individual_1.ilike.%${contact.full_name}%,deal_source_individual_2.ilike.%${contact.full_name}%`)
-          .order('ebitda_in_ms', { ascending: false })
-          .limit(3);
+          .eq('status', 'Active')
+          .eq('tier', '1')
+          .order('updated_at', { ascending: false, nullsFirst: false })
+          .order('deal_name', { ascending: true });
         
         if (error) throw error;
         
-        // Add row number for consistency
+        // No limit - return all matching Active Tier 1 opportunities
         return (data || []).map((item, index) => ({
           ...item,
           rn: index + 1,

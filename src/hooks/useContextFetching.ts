@@ -20,6 +20,7 @@ export interface OpportunityData {
   tier: string | null;
   status: string | null;
   sector: string | null;
+  updatedAt: string | null;
 }
 
 /**
@@ -60,23 +61,26 @@ export async function fetchFocusAreaDescriptions(
 }
 
 /**
- * Fetch top opportunities for a contact by full name
+ * Fetch active tier 1 opportunities for a contact by full name
+ * No limit - returns all matching opportunities
+ * Orders by updated_at descending, then deal_name ascending
  */
-export async function fetchTopOpportunities(
-  fullName: string,
-  limit: number = 3
+export async function fetchActiveT1Opportunities(
+  fullName: string
 ): Promise<OpportunityData[]> {
   if (!fullName) return [];
 
   const { data, error } = await supabase
     .from('opportunities_raw' as any)
-    .select('id, deal_name, ebitda_in_ms, tier, status, sector')
+    .select('id, deal_name, ebitda_in_ms, tier, status, sector, updated_at')
     .or(`deal_source_individual_1.eq.${fullName},deal_source_individual_2.eq.${fullName}`)
-    .order('ebitda_in_ms', { ascending: false, nullsFirst: false })
-    .limit(limit);
+    .eq('status', 'Active')
+    .eq('tier', '1')
+    .order('updated_at', { ascending: false, nullsFirst: false })
+    .order('deal_name', { ascending: true });
 
   if (error) {
-    console.error('Error fetching opportunities:', error);
+    console.error('Error fetching active tier 1 opportunities:', error);
     return [];
   }
 
@@ -87,6 +91,7 @@ export async function fetchTopOpportunities(
     tier: opp.tier,
     status: opp.status,
     sector: opp.sector,
+    updatedAt: opp.updated_at,
   }));
 }
 
@@ -140,7 +145,7 @@ export async function fetchContactMetadata(
   // Fetch all data in parallel
   const [descriptions, opportunities, leadsAssistants] = await Promise.all([
     fetchFocusAreaDescriptions(focusAreas),
-    fetchTopOpportunities(fullName),
+    fetchActiveT1Opportunities(fullName),
     fetchLeadsAndAssistants(focusAreas),
   ]);
 

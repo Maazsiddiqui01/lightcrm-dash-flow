@@ -35,7 +35,7 @@ function replaceTokens(
   
   // EBITDA tokens
   const ebitdaThreshold = payload.opportunities.hasOpps 
-    ? Math.max(...payload.opportunities.top.map(o => o.ebitda || 30))
+    ? Math.max(...payload.opportunities.active_tier1.map(o => o.ebitda || 30))
     : 30;
   result = result.replace(/\[EBITDA\]/g, String(ebitdaThreshold));
   result = result.replace(/\$\[EBITDA\]m/g, `$${ebitdaThreshold}m`);
@@ -43,14 +43,14 @@ function replaceTokens(
   result = result.replace(/\>\$\[EBITDA\]m/g, `>$${ebitdaThreshold}m`);
   
   // Opportunity tokens
-  if (payload.opportunities.hasOpps && payload.opportunities.top.length > 0) {
-    const topOpp = payload.opportunities.top[0];
+  if (payload.opportunities.hasOpps && payload.opportunities.active_tier1.length > 0) {
+    const topOpp = payload.opportunities.active_tier1[0];
     result = result.replace(/\[Opportunity Name\]/g, topOpp.dealName);
     result = result.replace(/\[Opp X\]/g, topOpp.dealName);
     result = result.replace(/\[X\]/g, topOpp.dealName);
     
     // Multiple opportunities list
-    const oppNames = payload.opportunities.top.map(o => o.dealName);
+    const oppNames = payload.opportunities.active_tier1.map(o => o.dealName);
     if (oppNames.length > 1) {
       const oppList = oppNames.length === 2 
         ? `${oppNames[0]} and ${oppNames[1]}`

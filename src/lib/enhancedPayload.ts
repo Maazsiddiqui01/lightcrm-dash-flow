@@ -64,10 +64,19 @@ export interface EnhancedDraftPayload {
     addons: string[];
   };
   
-  // Opportunities
+  // Opportunities (Active Tier 1 only, no cap)
   opportunities: {
     hasOpps: boolean;
-    top: Array<{
+    active_tier1: Array<{
+      id: string;
+      dealName: string;
+      ebitda: number | null;
+      tier: string | null;
+      status: string | null;
+      updatedAt: string | null;
+    }>;
+    // Legacy field for backward compatibility (first 3)
+    top_opportunities_legacy: Array<{
       id: string;
       dealName: string;
       ebitda: number | null;
@@ -393,7 +402,16 @@ export async function buildEnhancedDraftPayload(
     },
     opportunities: {
       hasOpps: metadata.topOpportunities.length > 0,
-      top: metadata.topOpportunities.map(opp => ({
+      active_tier1: metadata.topOpportunities.map(opp => ({
+        id: opp.id,
+        dealName: opp.dealName,
+        ebitda: opp.ebitda,
+        tier: opp.tier,
+        status: opp.status,
+        updatedAt: opp.updatedAt,
+      })),
+      // Legacy field: first 3 for backward compatibility
+      top_opportunities_legacy: metadata.topOpportunities.slice(0, 3).map(opp => ({
         id: opp.id,
         dealName: opp.dealName,
         ebitda: opp.ebitda,
@@ -490,7 +508,8 @@ function createFailedPayload(
     },
     opportunities: {
       hasOpps: false,
-      top: [],
+      active_tier1: [],
+      top_opportunities_legacy: [],
     },
     articles: {
       selected: null,

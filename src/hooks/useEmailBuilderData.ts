@@ -200,10 +200,9 @@ export function useEmailBuilderData(contactId: string | null, template: EmailTem
         },
         focusAreas,
         focusAreaDescriptions: mergedDescriptions,
-        opps: opps
-          .map(opp => opp.deal_name)
-          .filter(Boolean)
-          .slice(0, 3),
+      opps: opps
+        .map(opp => opp.deal_name)
+        .filter(Boolean), // No slice - include all active tier 1 opps
         assistantNames,
         delta_type: (contact.delta_type as 'Email' | 'Meeting') || 'Email',
         mostRecentContact: contact.most_recent_contact 
