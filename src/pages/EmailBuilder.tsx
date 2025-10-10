@@ -451,20 +451,31 @@ export function EmailBuilder() {
     setIsManualSaving(true);
     
     try {
-      const fullMasterTemplate = masterTemplates?.find(
-        t => t.master_key === masterTemplate.master_key
-      );
-      
-      // Guard against missing template ID
-      if (!fullMasterTemplate?.id) {
-        toast({
-          title: "Template Not Found",
-          description: "Master template is still loading. Please try again.",
-          variant: "destructive",
-        });
-        setConfirmDialogOpen(false);
-        return;
-      }
+    // Check if templates are still loading
+    if (isLoadingTemplates) {
+      toast({
+        title: "Still Loading",
+        description: "Master templates are still loading. Please wait a moment.",
+        variant: "destructive",
+      });
+      setConfirmDialogOpen(false);
+      return;
+    }
+
+    const fullMasterTemplate = masterTemplates?.find(
+      t => t.master_key === masterTemplate.master_key
+    );
+    
+    // Guard against missing template ID
+    if (!fullMasterTemplate?.id) {
+      toast({
+        title: "Template Not Found",
+        description: `Master template "${masterTemplate.master_key}" not found in database.`,
+        variant: "destructive",
+      });
+      setConfirmDialogOpen(false);
+      return;
+    }
 
       if (pendingSaveScope === 'contact') {
         // Validate template ID before saving
@@ -724,7 +735,7 @@ export function EmailBuilder() {
   }, [contactData, selectedContact, contactSettings]);
 
   // Load master templates from database
-  const { data: masterTemplates } = useMasterTemplates();
+  const { data: masterTemplates, isLoading: isLoadingTemplates } = useMasterTemplates();
   
   // Auto-load saved settings once per contact to avoid snapping back after drag
   useEffect(() => {
@@ -1451,6 +1462,7 @@ ${draftResult.signature}`;
                   templateName={MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key}
                   contactName={selectedContact.full_name || 'this contact'}
                   isSaving={isSavingSettings}
+                  disabled={isLoadingTemplates}
                   mode="individual"
                 />
               </div>

@@ -1613,6 +1613,7 @@ export type Database = {
           days_max: number | null
           days_min: number
           default_modules: Json | null
+          id: string
           length: string
           master_key: string
           subject_style: string
@@ -1623,6 +1624,7 @@ export type Database = {
           days_max?: number | null
           days_min: number
           default_modules?: Json | null
+          id?: string
           length: string
           master_key: string
           subject_style: string
@@ -1633,6 +1635,7 @@ export type Database = {
           days_max?: number | null
           days_min?: number
           default_modules?: Json | null
+          id?: string
           length?: string
           master_key?: string
           subject_style?: string

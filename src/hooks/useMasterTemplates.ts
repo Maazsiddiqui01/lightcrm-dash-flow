@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { MasterTemplateDefaults } from '@/types/phraseLibrary';
 
 export function useMasterTemplates() {
-  return useQuery({
+  const query = useQuery({
     queryKey: ['master-templates'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -15,6 +15,12 @@ export function useMasterTemplates() {
       return data as unknown as MasterTemplateDefaults[];
     },
   });
+
+  return {
+    data: query.data,
+    isLoading: query.isLoading,
+    error: query.error,
+  };
 }
 
 export function useMasterTemplateForDays(daysSinceContact: number) {
