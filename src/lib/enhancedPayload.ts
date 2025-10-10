@@ -242,19 +242,45 @@ export async function buildEnhancedDraftPayload(
   }
 
   // Pick subject line with tone and subject pool override
-  const subjectPool = subjectPoolOverride && subjectPoolOverride.length > 0
-    ? allSubjects.filter(s => subjectPoolOverride.includes(s.id))
-    : allSubjects;
+  // FIX ISSUE #1 & #2: Auto-select first subject and validate pool
+  let subjectPool: SubjectLibraryItem[];
   
-  // Validate primary subject ID exists
-  const primarySubjectId = moduleSelections?.subject_line_pool?.defaultSubjectId || subjectPoolOverride?.[0];
-  
-  if (!primarySubjectId) {
-    throw new Error('Subject Line Pool must have a primary subject selected');
+  if (subjectPoolOverride && subjectPoolOverride.length > 0) {
+    // Filter to override subjects
+    subjectPool = allSubjects.filter(s => subjectPoolOverride.includes(s.id));
+    
+    // If filtering resulted in empty pool (all IDs invalid/deleted), fall back to all subjects
+    if (subjectPool.length === 0) {
+      console.warn('Subject pool override contained only invalid IDs. Falling back to all available subjects.');
+      subjectPool = allSubjects;
+    }
+  } else {
+    subjectPool = allSubjects;
   }
   
+  // Validate pool has at least one subject
   if (subjectPool.length === 0) {
-    throw new Error('Subject Line Pool must have at least one enabled subject');
+    throw new Error('Subject Line Pool is empty. Please add at least one subject line to the library.');
+  }
+  
+  // Auto-select primary subject if not specified
+  let primarySubjectId = moduleSelections?.subject_line_pool?.defaultSubjectId;
+  
+  if (!primarySubjectId && subjectPoolOverride && subjectPoolOverride.length > 0) {
+    primarySubjectId = subjectPoolOverride[0];
+  }
+  
+  if (!primarySubjectId) {
+    // Auto-select first available subject
+    primarySubjectId = subjectPool[0].id;
+    console.log(`Auto-selected primary subject: ${subjectPool[0].subject_template}`);
+  }
+  
+  // Validate primary subject exists in pool
+  const primaryExists = subjectPool.some(s => s.id === primarySubjectId);
+  if (!primaryExists) {
+    console.warn(`Primary subject ${primarySubjectId} not in pool. Auto-selecting first available.`);
+    primarySubjectId = subjectPool[0].id;
   }
     
   const subject = await pickSubject({
@@ -408,21 +434,29 @@ export async function buildEnhancedDraftPayload(
     .map(fa => fa.focusArea);
 
   // Fetch group members if contact is part of a group
+  // FIX ISSUE #5: Add error handling for group members query
   let groupMembers: { to: Array<{ email: string; fullName: string }>; cc: Array<{ email: string; fullName: string }>; bcc: Array<{ email: string; fullName: string }> } | null = null;
   
   if ((contact as any).group_contact) {
-    const { data: membersData } = await supabase
+    const { data: membersData, error: groupError } = await supabase
       .from('contacts_raw')
       .select('email_address, full_name, group_email_role')
       .eq('group_contact', (contact as any).group_contact)
       .not('group_email_role', 'is', null);
     
-    if (membersData) {
+    if (groupError) {
+      console.error('Failed to fetch group members:', groupError);
+      throw new Error(`Failed to fetch group members for ${(contact as any).group_contact}: ${groupError.message}`);
+    }
+    
+    if (membersData && membersData.length > 0) {
       groupMembers = {
         to: membersData.filter(m => m.group_email_role === 'to').map(m => ({ email: m.email_address, fullName: m.full_name })),
         cc: membersData.filter(m => m.group_email_role === 'cc').map(m => ({ email: m.email_address, fullName: m.full_name })),
         bcc: membersData.filter(m => m.group_email_role === 'bcc').map(m => ({ email: m.email_address, fullName: m.full_name })),
       };
+    } else {
+      console.warn(`No group members found for group: ${(contact as any).group_contact}`);
     }
   }
 

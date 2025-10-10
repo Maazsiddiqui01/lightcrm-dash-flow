@@ -86,12 +86,21 @@ export async function buildBatchPayload(
       };
 
       // Convert contact to ContactEmailComposer format
+      // FIX ISSUE #4: Validate required contact fields
+      if (!contact.email_address || contact.email_address.trim() === '') {
+        throw new Error(`Contact ${contact.full_name || contact.id} is missing a valid email address`);
+      }
+      
+      if (!contact.full_name || contact.full_name.trim() === '') {
+        throw new Error(`Contact ${contact.email_address} is missing a name`);
+      }
+      
       const contactForPayload: ContactEmailComposer = {
         contact_id: contact.id,
-        email: contact.email_address || '',
-        full_name: contact.full_name || '',
-        first_name: contact.first_name || '',
-        organization: contact.organization || '',
+        email: contact.email_address.trim(),
+        full_name: contact.full_name.trim(),
+        first_name: contact.first_name?.trim() || contact.full_name.split(' ')[0] || 'there',
+        organization: contact.organization?.trim() || '',
         lg_emails_cc: null,
         focus_areas: contact.lg_focus_areas_comprehensive_list
           ? contact.lg_focus_areas_comprehensive_list.split(',').map(fa => fa.trim()).filter(Boolean)

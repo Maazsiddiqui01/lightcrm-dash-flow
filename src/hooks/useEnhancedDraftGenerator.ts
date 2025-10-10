@@ -112,14 +112,28 @@ export function useEnhancedDraftGenerator() {
       setProgress(100);
 
       // Parse the final accumulated result
+      // FIX ISSUE #3: Throw proper error instead of silent failure
       let n8nResult;
       try {
         // Handle array response format [{ output: {...} }]
         const parsed = JSON.parse(accumulated);
         n8nResult = Array.isArray(parsed) && parsed.length > 0 ? parsed[0].output : parsed;
+        
+        // Validate response has required fields
+        if (!n8nResult || typeof n8nResult !== 'object') {
+          throw new Error('Invalid response format: expected object');
+        }
+        
+        if (!n8nResult.subject && !n8nResult.body) {
+          throw new Error('Response missing required fields (subject and body)');
+        }
       } catch (e) {
         console.error('Failed to parse n8n response:', e);
-        n8nResult = {};
+        console.error('Raw response:', accumulated);
+        
+        // Provide actionable error message
+        const errorMsg = e instanceof Error ? e.message : 'Unknown parsing error';
+        throw new Error(`Draft generation failed: ${errorMsg}. The service returned an invalid response format.`);
       }
       
       console.log('n8n response:', n8nResult);
