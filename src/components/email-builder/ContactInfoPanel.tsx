@@ -1,11 +1,15 @@
 import { useContactEnriched } from "@/hooks/useContactEnriched";
 import { useContactGroupInfo } from "@/hooks/useContactGroupInfo";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { useComposerRow } from "@/hooks/useComposer";
 import { GroupMembersBadge } from "@/components/email-builder/GroupMembersBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EditableTeam, type TeamMember } from "./EditableTeam";
+import { routeCase, CASE_LABELS } from "@/lib/router";
 import { 
   Info, 
   Building, 
@@ -13,7 +17,8 @@ import {
   Users, 
   Target, 
   Calendar,
-  TrendingUp
+  TrendingUp,
+  HelpCircle
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -22,12 +27,24 @@ interface ContactInfoPanelProps {
   team: TeamMember[];
   onTeamChange: (members: TeamMember[]) => void;
   onQuickAddToCC?: (member: TeamMember) => void;
+  deltaType: 'Email' | 'Meeting';
+  onDeltaTypeChange: (type: 'Email' | 'Meeting') => void;
+  contactEmail?: string;
 }
 
-export function ContactInfoPanel({ contactId, team, onTeamChange, onQuickAddToCC }: ContactInfoPanelProps) {
+export function ContactInfoPanel({ 
+  contactId, 
+  team, 
+  onTeamChange, 
+  onQuickAddToCC,
+  deltaType,
+  onDeltaTypeChange,
+  contactEmail 
+}: ContactInfoPanelProps) {
   const { data: enrichedData, isLoading } = useContactEnriched(contactId);
   const { data: groupInfo } = useContactGroupInfo(contactId);
   const { data: groupMembers } = useGroupMembers(groupInfo?.group_contact);
+  const { data: composerData } = useComposerRow(contactEmail || null);
 
   if (isLoading) {
     return (
@@ -66,6 +83,11 @@ export function ContactInfoPanel({ contactId, team, onTeamChange, onQuickAddToCC
   }
 
   const { contact, focusAreas, opps, focusMeta, mostRecentContact, OutreachDate } = enrichedData;
+  
+  // Calculate case based on composer data
+  const caseKey = composerData 
+    ? routeCase(composerData.gb_present, composerData.fa_count, composerData.has_opps)
+    : null;
 
   return (
     <Card>
@@ -76,6 +98,49 @@ export function ContactInfoPanel({ contactId, team, onTeamChange, onQuickAddToCC
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Case and Type Row */}
+        <div className="flex items-center justify-between gap-4 pb-2 border-b">
+          {/* Case Badge */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Case:</span>
+            {caseKey ? (
+              <Badge variant="outline" className="font-mono">
+                {caseKey.replace('case_', '')}
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="text-xs">
+                N/A
+              </Badge>
+            )}
+            {caseKey && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{CASE_LABELS[caseKey]}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+
+          {/* Delta Type Selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Type:</span>
+            <Select value={deltaType} onValueChange={(value: 'Email' | 'Meeting') => onDeltaTypeChange(value)}>
+              <SelectTrigger className="w-24 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-50 bg-background">
+                <SelectItem value="Email">Email</SelectItem>
+                <SelectItem value="Meeting">Meeting</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
         {/* Basic Info */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">

@@ -1454,6 +1454,9 @@ ${draftResult.signature}`;
                     setCuratedCc([...curatedCc, member.email]);
                   }
                 }}
+                deltaType={deltaType}
+                onDeltaTypeChange={setDeltaType}
+                contactEmail={selectedContact.email}
               />
             )}
 
@@ -1474,8 +1477,6 @@ ${draftResult.signature}`;
             <MasterTemplateSelector
               selectedContactId={selectedContact?.contact_id || null}
               selectedContactEmail={selectedContact?.email || null}
-              deltaType={deltaType}
-              onDeltaTypeChange={setDeltaType}
             />
             
             <EmailBuilderCoreSettings

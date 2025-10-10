@@ -3,24 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FileText, HelpCircle } from "lucide-react";
 import { useComposerRow } from "@/hooks/useComposer";
-import { routeCase, routeMaster, daysSince, MASTER_TEMPLATES, CASE_LABELS, type MasterTemplate } from "@/lib/router";
+import { routeMaster, daysSince, MASTER_TEMPLATES, type MasterTemplate } from "@/lib/router";
 
 interface MasterTemplateSelectorProps {
   selectedContactId: string | null;
   selectedContactEmail?: string | null;
-  deltaType: 'Email' | 'Meeting';
-  onDeltaTypeChange: (type: 'Email' | 'Meeting') => void;
 }
 
 export function MasterTemplateSelector({ 
   selectedContactId, 
-  selectedContactEmail,
-  deltaType, 
-  onDeltaTypeChange 
+  selectedContactEmail
 }: MasterTemplateSelectorProps) {
   const { data: contactData } = useComposerRow(selectedContactEmail);
   const [selectedMaster, setSelectedMaster] = useState<MasterTemplate | null>(null);
@@ -55,7 +50,6 @@ export function MasterTemplateSelector({
   };
 
   const daysSinceContact = contactData ? daysSince(contactData.most_recent_contact) : null;
-  const caseKey = contactData ? routeCase(contactData.gb_present, contactData.fa_count, contactData.has_opps) : null;
 
   return (
     <Card>
@@ -121,49 +115,6 @@ export function MasterTemplateSelector({
               </div>
             ))}
           </RadioGroup>
-        </div>
-
-        {/* Case Badge and Delta Type Row */}
-        <div className="flex items-center justify-between gap-4 pt-4 border-t">
-          {/* Case Badge */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Case:</span>
-            {caseKey ? (
-              <Badge variant="outline" className="font-mono">
-                {caseKey.replace('case_', '')}
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="text-xs">
-                N/A
-              </Badge>
-            )}
-            {caseKey && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <HelpCircle className="h-3 w-3 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{CASE_LABELS[caseKey]}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-
-          {/* Delta Type Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Type:</span>
-            <Select value={deltaType} onValueChange={(value: 'Email' | 'Meeting') => onDeltaTypeChange(value)}>
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Email">Email</SelectItem>
-                <SelectItem value="Meeting">Meeting</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         {/* Debug Info (development only) */}
