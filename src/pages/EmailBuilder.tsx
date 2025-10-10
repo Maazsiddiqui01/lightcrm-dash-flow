@@ -1052,6 +1052,47 @@ ${draftResult.signature}`;
         {/* Group Mode Layout */}
         {mode === 'group' && (
           <div className="space-y-6">
+            {/* Group Mode Shared Settings Header with Randomize */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Shared Settings</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Configure default settings for all selected contacts
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {selectedContactIds.size > 0 && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRandomize}
+                          className="flex items-center gap-2"
+                          title="Randomize shared phrases and module order"
+                        >
+                          <Shuffle className="h-4 w-4" />
+                          Randomize Shared
+                        </Button>
+                        {isRandomized && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRestoreToDefault}
+                            className="flex items-center gap-2"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            Restore
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+            
             <GroupFilterBar
               filters={groupFilters}
               onFiltersChange={setGroupFilters}
@@ -1232,6 +1273,9 @@ ${draftResult.signature}`;
               onCustomModuleLabelChange={(moduleKey, newLabel) => {
                 setCustomModuleLabels(prev => ({ ...prev, [moduleKey]: newLabel }));
               }}
+              onRandomize={handleRandomize}
+              onRestoreToDefault={handleRestoreToDefault}
+              isRandomized={isRandomized}
             />
             
             <EditableRecipients

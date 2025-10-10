@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RotateCcw, Settings } from "lucide-react";
+import { RotateCcw, Settings, Shuffle, Dice5 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -61,6 +61,9 @@ interface ModulesCardProps {
   toneOverride?: 'casual' | 'hybrid' | 'formal' | null;
   customModuleLabels?: Record<string, string>;
   onCustomModuleLabelChange?: (moduleKey: string, newLabel: string) => void;
+  onRandomize?: () => void;
+  onRestoreToDefault?: () => void;
+  isRandomized?: boolean;
 }
 
 /**
@@ -176,6 +179,9 @@ export function ModulesCard({
   toneOverride,
   customModuleLabels = {},
   onCustomModuleLabelChange,
+  onRandomize,
+  onRestoreToDefault,
+  isRandomized = false,
 }: ModulesCardProps) {
   const [activeDrawer, setActiveDrawer] = useState<keyof ModuleStates | 'subject_line_pool' | null>(null);
   // Drag-and-drop sensors with accessibility
@@ -303,18 +309,65 @@ export function ModulesCard({
               </Badge>
             )}
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onResetToDefaults}
-            disabled={!masterTemplate}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Reset
-          </Button>
+          <div className="flex items-center gap-2">
+            {onRandomize && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRandomize}
+                disabled={!masterTemplate}
+                className="flex items-center gap-2"
+                title="Pick random phrases + shuffle order (opening first, closing last)"
+              >
+                <Shuffle className="h-4 w-4" />
+                Randomize
+              </Button>
+            )}
+            {onRestoreToDefault && isRandomized && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRestoreToDefault}
+                className="flex items-center gap-2"
+                title="Revert to your defaults without saving"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Restore
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onResetToDefaults}
+              disabled={!masterTemplate}
+              className="flex items-center gap-2"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Reset
+            </Button>
+          </div>
         </div>
       </CardHeader>
+      {isRandomized && (
+        <div className="mx-4 mt-2 mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Dice5 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                Randomized picks applied — not saved.
+              </p>
+            </div>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={onRestoreToDefault}
+              className="text-amber-700 dark:text-amber-300 h-auto p-0"
+            >
+              Restore
+            </Button>
+          </div>
+        </div>
+      )}
       <CardContent className="space-y-6">
         {!masterTemplate && (
           <div className="text-center py-4 text-muted-foreground">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Shuffle, RotateCcw } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -25,6 +26,21 @@ import type { InquiryLibraryItem } from '@/hooks/useInquiryLibrary';
 import type { MasterTemplate } from '@/lib/router';
 import type { TriState } from '@/types/phraseLibrary';
 import type { ContactEmailComposer } from '@/types/emailComposer';
+import { 
+  seededShuffle,
+  seededRandom,
+  pickRandomPhrase, 
+  shuffleModuleOrder, 
+  generateSeed,
+} from "@/lib/randomization";
+import { 
+  MODULE_LIBRARY_MAP, 
+  PHRASE_DRIVEN_MODULES, 
+  SINGLE_SELECT_MODULES, 
+  MULTI_SELECT_MODULES,
+  type ModuleKey 
+} from "@/config/moduleCategoryMap";
+import { useToast } from "@/hooks/use-toast";
 
 interface ContactOverrideDrawerProps {
   open: boolean;
@@ -67,6 +83,8 @@ export function ContactOverrideDrawer({
   currentOverride,
   onSave,
 }: ContactOverrideDrawerProps) {
+  const { toast } = useToast();
+  
   // State for all 6 tabs
   const [selectedMasterTemplate, setSelectedMasterTemplate] = useState<MasterTemplate | null>(null);
   const [toneOverride, setToneOverride] = useState<'casual' | 'hybrid' | 'formal'>('hybrid');
@@ -82,6 +100,79 @@ export function ContactOverrideDrawer({
   const [moduleSelections, setModuleSelections] = useState<ModuleSelections>({});
   const [moduleOrder, setModuleOrder] = useState<Array<keyof ModuleStates>>([]);
   const [moduleStates, setModuleStates] = useState<ModuleStates>({} as ModuleStates);
+
+  // Randomize handler for per-contact overrides
+  const handleRandomizeContact = () => {
+    const seed = generateSeed(contactId);
+    
+    // 1. Randomize module order
+    const randomizedOrder = shuffleModuleOrder(moduleOrder, seed);
+    setModuleOrder(randomizedOrder as Array<keyof ModuleStates>);
+    
+    // 2. Randomize phrases
+    const newSelections: ModuleSelections = { ...moduleSelections };
+    
+    Object.keys(MODULE_LIBRARY_MAP).forEach((moduleKey) => {
+      const category = MODULE_LIBRARY_MAP[moduleKey as ModuleKey];
+      const isPhrase = PHRASE_DRIVEN_MODULES.has(moduleKey as ModuleKey);
+      
+      if (!isPhrase) return;
+      
+      const categoryPhrases = allPhrases?.filter(p => p.category === category) || [];
+      if (categoryPhrases.length === 0) return;
+      
+      if (SINGLE_SELECT_MODULES.has(moduleKey as ModuleKey)) {
+        const randomPhrase = pickRandomPhrase(categoryPhrases, seed + moduleKey.length);
+        if (randomPhrase) {
+          newSelections[moduleKey as keyof ModuleSelections] = {
+            type: 'phrase',
+            category,
+            phraseId: randomPhrase.id,
+            phraseText: randomPhrase.phrase_text,
+            defaultPhraseId: newSelections[moduleKey as keyof ModuleSelections]?.defaultPhraseId,
+          };
+        }
+      } else if (MULTI_SELECT_MODULES.has(moduleKey as ModuleKey)) {
+        const rng = seededRandom(seed + moduleKey.length);
+        const count = Math.floor(rng() * Math.min(3, categoryPhrases.length)) + 1;
+        const shuffled = seededShuffle(categoryPhrases, seed + moduleKey.length);
+        const selectedPhrases = shuffled.slice(0, count);
+        
+        newSelections[moduleKey as keyof ModuleSelections] = {
+          type: 'phrase',
+          category,
+          phraseIds: selectedPhrases.map(p => p.id),
+          defaultPhraseId: newSelections[moduleKey as keyof ModuleSelections]?.defaultPhraseId,
+        };
+      }
+    });
+    
+    // 3. Randomize primary subject
+    if (subjectPool.selectedIds.length > 0) {
+      const randomSubjectId = pickRandomPhrase(
+        subjectPool.selectedIds.map(id => ({ id })),
+        seed + 9999
+      )?.id || subjectPool.selectedIds[0];
+      
+      setSubjectPool({
+        ...subjectPool,
+        selectedIds: subjectPool.selectedIds,
+      });
+      
+      newSelections.subject_line_pool = {
+        ...newSelections.subject_line_pool,
+        subjectIds: subjectPool.selectedIds,
+        defaultSubjectId: randomSubjectId,
+      };
+    }
+    
+    setModuleSelections(newSelections);
+    
+    toast({
+      title: "Randomized",
+      description: `Phrases and module order randomized for ${contactName}`,
+    });
+  };
 
   // Initialize with current override or shared settings - only when drawer opens
   useEffect(() => {
@@ -147,10 +238,24 @@ export function ContactOverrideDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Customize for {contactName}</SheetTitle>
-          <SheetDescription>
-            Override shared settings for this specific contact
-          </SheetDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <SheetTitle>Customize for {contactName}</SheetTitle>
+              <SheetDescription>
+                Override shared settings for this specific contact
+              </SheetDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRandomizeContact}
+              className="flex items-center gap-2"
+              title="Randomize phrases and module order for this contact only"
+            >
+              <Shuffle className="h-4 w-4" />
+              Randomize
+            </Button>
+          </div>
         </SheetHeader>
 
         <Tabs defaultValue="recipients" className="mt-6">
