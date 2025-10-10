@@ -1427,15 +1427,15 @@ ${draftResult.signature}`;
 
         {/* Responsive 2-Column Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full max-w-[1800px] mx-auto px-4 lg:px-6 xl:px-8">
-          {/* Left Column - Configuration & Selection */}
+          {/* Left Column - Workflow & Output */}
           <div className="flex flex-col gap-6">
-            {/* Contact Selection */}
+            {/* Contact Selection - Search */}
             <ContactSelector
               selectedContact={selectedContact}
               onContactSelect={setSelectedContact}
             />
             
-            {/* Contact Info */}
+            {/* Contact Information */}
             {selectedContact && (
               <ContactInfoPanel 
                 contactId={selectedContact.contact_id}
@@ -1451,23 +1451,8 @@ ${draftResult.signature}`;
                 contactEmail={selectedContact.email}
               />
             )}
-
-            {/* Template & Settings */}
-            <MasterTemplateSelector
-              selectedContactId={selectedContact?.contact_id || null}
-              selectedContactEmail={selectedContact?.email || null}
-            />
             
-            <EmailBuilderCoreSettings
-              daysSinceContact={daysSinceContact}
-              onDaysSinceContactChange={setDaysSinceContact}
-              toneOverride={toneOverride}
-              onToneOverrideChange={setToneOverride}
-              lengthOverride={lengthOverride}
-              onLengthOverrideChange={setLengthOverride}
-            />
-            
-            {/* Recipients */}
+            {/* Recipients Info */}
             <EditableRecipients
               to={curatedTo}
               cc={curatedCc}
@@ -1507,11 +1492,46 @@ ${draftResult.signature}`;
                 />
               </div>
             )}
+
+            {/* Generate Draft Screen */}
+            {selectedContact && contactData && masterTemplate && (
+              <EnhancedDraftSection
+                isGenerating={isGenerating}
+                progress={progress}
+                streamedContent={streamedContent}
+                result={draftResult}
+                onGenerate={handleGenerateDraft}
+                onCopyToClipboard={handleCopyToClipboard}
+                disabled={
+                  !contactData || 
+                  subjectPoolOverride.length === 0 || 
+                  moduleValidationErrors.length > 0 ||
+                  isSavingSettings || 
+                  savingWithShortcut
+                }
+              />
+            )}
           </div>
 
-          {/* Right Column - Modules & Generation */}
+          {/* Right Column - Configuration */}
           <div className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
-            {/* Modules Configuration */}
+            {/* Master Template */}
+            <MasterTemplateSelector
+              selectedContactId={selectedContact?.contact_id || null}
+              selectedContactEmail={selectedContact?.email || null}
+            />
+            
+            {/* Core Settings */}
+            <EmailBuilderCoreSettings
+              daysSinceContact={daysSinceContact}
+              onDaysSinceContactChange={setDaysSinceContact}
+              toneOverride={toneOverride}
+              onToneOverrideChange={setToneOverride}
+              lengthOverride={lengthOverride}
+              onLengthOverrideChange={setLengthOverride}
+            />
+
+            {/* Email Modules Configuration */}
             <ModulesCard
               masterTemplate={masterTemplate}
               moduleStates={moduleStates}
@@ -1563,25 +1583,6 @@ ${draftResult.signature}`;
                   ⚠️ Subject Line Pool must have at least one enabled subject
                 </p>
               </div>
-            )}
-            
-            {/* Enhanced Draft Section - replaces old DraftGenerateButton */}
-            {selectedContact && contactData && masterTemplate && (
-              <EnhancedDraftSection
-                isGenerating={isGenerating}
-                progress={progress}
-                streamedContent={streamedContent}
-                result={draftResult}
-                onGenerate={handleGenerateDraft}
-                onCopyToClipboard={handleCopyToClipboard}
-                disabled={
-                  !contactData || 
-                  subjectPoolOverride.length === 0 || 
-                  moduleValidationErrors.length > 0 ||
-                  isSavingSettings || 
-                  savingWithShortcut
-                }
-              />
             )}
           </div>
         </div>
