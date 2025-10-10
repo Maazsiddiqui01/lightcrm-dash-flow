@@ -1425,159 +1425,165 @@ ${draftResult.signature}`;
           )
         )}
 
-        {/* Main Content - Single Column Layout */}
-        <div className="flex flex-col gap-6 max-w-5xl mx-auto">
-          {/* Contact Selection */}
-          <ContactSelector
-            selectedContact={selectedContact}
-            onContactSelect={setSelectedContact}
-          />
-          
-          {/* Contact Info */}
-          {selectedContact && (
-            <ContactInfoPanel 
-              contactId={selectedContact.contact_id}
-              team={curatedTeam}
-              onTeamChange={setCuratedTeam}
-              onQuickAddToCC={(member) => {
-                if (!curatedCc.includes(member.email)) {
-                  setCuratedCc([...curatedCc, member.email]);
-                }
-              }}
-              deltaType={deltaType}
-              onDeltaTypeChange={setDeltaType}
-              contactEmail={selectedContact.email}
+        {/* Responsive 2-Column Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full max-w-[1800px] mx-auto px-4 lg:px-6 xl:px-8">
+          {/* Left Column - Configuration & Selection */}
+          <div className="flex flex-col gap-6">
+            {/* Contact Selection */}
+            <ContactSelector
+              selectedContact={selectedContact}
+              onContactSelect={setSelectedContact}
             />
-          )}
-
-          {/* Template & Settings */}
-          <MasterTemplateSelector
-            selectedContactId={selectedContact?.contact_id || null}
-            selectedContactEmail={selectedContact?.email || null}
-          />
-          
-          <EmailBuilderCoreSettings
-            daysSinceContact={daysSinceContact}
-            onDaysSinceContactChange={setDaysSinceContact}
-            toneOverride={toneOverride}
-            onToneOverrideChange={setToneOverride}
-            lengthOverride={lengthOverride}
-            onLengthOverrideChange={setLengthOverride}
-          />
-          
-          {/* Modules Configuration */}
-          <ModulesCard
-            masterTemplate={masterTemplate}
-            moduleStates={moduleStates}
-            moduleOrder={moduleOrder}
-            onModuleChange={handleModuleChange}
-            onModuleOrderChange={handleModuleOrderChange}
-            onResetToDefaults={handleResetToDefaults}
-            moduleSelections={moduleSelections}
-            onModuleSelectionChange={handleModuleSelectionChange}
-            contactData={contactData}
-            allPhrases={allPhrases}
-            allInquiries={allInquiries}
-            allSubjects={allSubjects}
-            toneOverride={toneOverride}
-            customModuleLabels={customModuleLabels}
-            onCustomModuleLabelChange={(moduleKey, newLabel) => {
-              const updatedLabels = { ...customModuleLabels, [moduleKey]: newLabel };
-              setCustomModuleLabels(updatedLabels);
-              // Auto-save globally immediately with OCC (no manual save needed)
-              autoSaveLabels.mutate({
-                customLabels: updatedLabels,
-                currentRevision: templateSettings?.revision,
-              });
-            }}
-            onRandomize={handleRandomize}
-            onRestoreToDefault={handleRestoreToDefault}
-            isRandomized={isRandomized}
-            changedModules={changedModules}
-          />
-          
-          {/* Recipients */}
-          <EditableRecipients
-            to={curatedTo}
-            cc={curatedCc}
-            onToChange={setCuratedTo}
-            onCcChange={setCuratedCc}
-            teamMembers={curatedTeam}
-            defaultContactEmail={selectedContact?.email || ''}
-          />
-
-          {/* Save Controls with Dual Scope */}
-          {selectedContact && masterTemplate && (
-            <div className="space-y-2">
-              {/* Unsaved Changes Indicator */}
-              {hasUnsavedChanges && (
-                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
-                  <div className="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500 animate-pulse" />
-                  <span>Unsaved changes</span>
-                </div>
-              )}
-              
-              {/* Keyboard Shortcut Feedback */}
-              {savingWithShortcut && isSavingSettings && (
-                <div className="flex items-center gap-2 text-sm text-primary">
-                  <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span>Saving...</span>
-                </div>
-              )}
-              
-              <SplitSaveButton
-                onSaveContact={handleSaveContact}
-                onSaveGlobal={handleSaveGlobal}
-                templateName={MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key}
-                contactName={selectedContact.full_name || 'this contact'}
-                isSaving={isSavingSettings}
-                disabled={isLoadingTemplates}
-                mode="individual"
+            
+            {/* Contact Info */}
+            {selectedContact && (
+              <ContactInfoPanel 
+                contactId={selectedContact.contact_id}
+                team={curatedTeam}
+                onTeamChange={setCuratedTeam}
+                onQuickAddToCC={(member) => {
+                  if (!curatedCc.includes(member.email)) {
+                    setCuratedCc([...curatedCc, member.email]);
+                  }
+                }}
+                deltaType={deltaType}
+                onDeltaTypeChange={setDeltaType}
+                contactEmail={selectedContact.email}
               />
-            </div>
-          )}
-          
-          {/* Module Selection Validation Warnings */}
-          {moduleValidationErrors.length > 0 && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
-              <p className="text-sm text-destructive font-medium">
-                Module Configuration Required:
-              </p>
-              <ul className="text-sm text-destructive list-disc list-inside space-y-0.5">
-                {moduleValidationErrors.map((error, idx) => (
-                  <li key={idx}>{error}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {/* Enhanced Draft Section - replaces old DraftGenerateButton */}
-          {selectedContact && contactData && masterTemplate && (
-            <EnhancedDraftSection
-              isGenerating={isGenerating}
-              progress={progress}
-              streamedContent={streamedContent}
-              result={draftResult}
-              onGenerate={handleGenerateDraft}
-              onCopyToClipboard={handleCopyToClipboard}
-              disabled={
-                !contactData || 
-                subjectPoolOverride.length === 0 || 
-                moduleValidationErrors.length > 0 ||
-                isSavingSettings || 
-                savingWithShortcut
-              }
+            )}
+
+            {/* Template & Settings */}
+            <MasterTemplateSelector
+              selectedContactId={selectedContact?.contact_id || null}
+              selectedContactEmail={selectedContact?.email || null}
             />
-          )}
-          
-          {/* Subject Pool Validation Warning */}
-          {subjectPoolOverride.length === 0 && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-sm text-destructive font-medium">
-                ⚠️ Subject Line Pool must have at least one enabled subject
-              </p>
-            </div>
-          )}
+            
+            <EmailBuilderCoreSettings
+              daysSinceContact={daysSinceContact}
+              onDaysSinceContactChange={setDaysSinceContact}
+              toneOverride={toneOverride}
+              onToneOverrideChange={setToneOverride}
+              lengthOverride={lengthOverride}
+              onLengthOverrideChange={setLengthOverride}
+            />
+            
+            {/* Recipients */}
+            <EditableRecipients
+              to={curatedTo}
+              cc={curatedCc}
+              onToChange={setCuratedTo}
+              onCcChange={setCuratedCc}
+              teamMembers={curatedTeam}
+              defaultContactEmail={selectedContact?.email || ''}
+            />
+
+            {/* Save Controls with Dual Scope */}
+            {selectedContact && masterTemplate && (
+              <div className="space-y-2">
+                {/* Unsaved Changes Indicator */}
+                {hasUnsavedChanges && (
+                  <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
+                    <div className="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500 animate-pulse" />
+                    <span>Unsaved changes</span>
+                  </div>
+                )}
+                
+                {/* Keyboard Shortcut Feedback */}
+                {savingWithShortcut && isSavingSettings && (
+                  <div className="flex items-center gap-2 text-sm text-primary">
+                    <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </div>
+                )}
+                
+                <SplitSaveButton
+                  onSaveContact={handleSaveContact}
+                  onSaveGlobal={handleSaveGlobal}
+                  templateName={MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key}
+                  contactName={selectedContact.full_name || 'this contact'}
+                  isSaving={isSavingSettings}
+                  disabled={isLoadingTemplates}
+                  mode="individual"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Right Column - Modules & Generation */}
+          <div className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
+            {/* Modules Configuration */}
+            <ModulesCard
+              masterTemplate={masterTemplate}
+              moduleStates={moduleStates}
+              moduleOrder={moduleOrder}
+              onModuleChange={handleModuleChange}
+              onModuleOrderChange={handleModuleOrderChange}
+              onResetToDefaults={handleResetToDefaults}
+              moduleSelections={moduleSelections}
+              onModuleSelectionChange={handleModuleSelectionChange}
+              contactData={contactData}
+              allPhrases={allPhrases}
+              allInquiries={allInquiries}
+              allSubjects={allSubjects}
+              toneOverride={toneOverride}
+              customModuleLabels={customModuleLabels}
+              onCustomModuleLabelChange={(moduleKey, newLabel) => {
+                const updatedLabels = { ...customModuleLabels, [moduleKey]: newLabel };
+                setCustomModuleLabels(updatedLabels);
+                // Auto-save globally immediately with OCC (no manual save needed)
+                autoSaveLabels.mutate({
+                  customLabels: updatedLabels,
+                  currentRevision: templateSettings?.revision,
+                });
+              }}
+              onRandomize={handleRandomize}
+              onRestoreToDefault={handleRestoreToDefault}
+              isRandomized={isRandomized}
+              changedModules={changedModules}
+            />
+            
+            {/* Module Selection Validation Warnings */}
+            {moduleValidationErrors.length > 0 && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
+                <p className="text-sm text-destructive font-medium">
+                  Module Configuration Required:
+                </p>
+                <ul className="text-sm text-destructive list-disc list-inside space-y-0.5">
+                  {moduleValidationErrors.map((error, idx) => (
+                    <li key={idx}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Subject Pool Validation Warning */}
+            {subjectPoolOverride.length === 0 && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive font-medium">
+                  ⚠️ Subject Line Pool must have at least one enabled subject
+                </p>
+              </div>
+            )}
+            
+            {/* Enhanced Draft Section - replaces old DraftGenerateButton */}
+            {selectedContact && contactData && masterTemplate && (
+              <EnhancedDraftSection
+                isGenerating={isGenerating}
+                progress={progress}
+                streamedContent={streamedContent}
+                result={draftResult}
+                onGenerate={handleGenerateDraft}
+                onCopyToClipboard={handleCopyToClipboard}
+                disabled={
+                  !contactData || 
+                  subjectPoolOverride.length === 0 || 
+                  moduleValidationErrors.length > 0 ||
+                  isSavingSettings || 
+                  savingWithShortcut
+                }
+              />
+            )}
+          </div>
         </div>
         
         {/* ARIA Live Region for Module Reorder Announcements */}
