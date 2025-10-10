@@ -8,7 +8,12 @@
  * @param moduleOrder - Array of module keys in current order
  * @returns Array of module keys with guaranteed contiguous positions
  */
-export function recomputePositions(moduleOrder: (string | number)[]): string[] {
+export function recomputePositions(moduleOrder: (string | number)[] | undefined | null): string[] {
+  // Guard against undefined/null input
+  if (!moduleOrder || !Array.isArray(moduleOrder)) {
+    return [];
+  }
+  
   // Filter out any invalid entries and ensure string type
   const validModules = moduleOrder
     .filter(key => key !== null && key !== undefined)

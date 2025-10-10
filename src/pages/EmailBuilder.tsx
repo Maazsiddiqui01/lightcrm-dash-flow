@@ -295,8 +295,8 @@ export function EmailBuilder() {
     setModuleStates(prev => ({ ...prev, [key]: value }));
   };
   
-  // Handle module reorder with position recalculation and debouncing
-  const handleModuleOrderChangeImmediate = useCallback((newOrder: (string | number)[]) => {
+  // Handle module reorder with position recalculation
+  const handleModuleOrderChange = useCallback((newOrder: (string | number)[]) => {
     // Recompute positions to ensure 1..N contiguity
     const recomputed = recomputePositions(newOrder);
     setModuleOrder(recomputed as Array<keyof ModuleStates>);
@@ -311,9 +311,6 @@ export function EmailBuilder() {
       setTimeout(() => setAriaAnnouncement(''), 1000);
     }
   }, []);
-
-  // Debounced version for performance (300ms delay)
-  const handleModuleOrderChange = useDebounce(handleModuleOrderChangeImmediate, 300);
 
   // Capture defaults snapshot (lazy - only before first randomization)
   const captureDefaultsSnapshot = () => {
