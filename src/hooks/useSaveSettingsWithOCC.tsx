@@ -45,9 +45,11 @@ interface UndoEntry {
 
 const undoStack: UndoEntry[] = [];
 const UNDO_TIMEOUT = 10000; // 10 seconds
+const MAX_UNDO_STACK_SIZE = 50; // Maximum 50 undo entries to prevent memory leak
 
 /**
  * Prunes expired entries from undo stack to prevent memory leak
+ * Also enforces max stack size
  */
 function pruneUndoStack() {
   const cutoff = new Date(Date.now() - UNDO_TIMEOUT);
@@ -58,6 +60,11 @@ function pruneUndoStack() {
   } else if (validIndex === -1 && undoStack.length > 0) {
     // All entries expired
     undoStack.length = 0;
+  }
+  
+  // Enforce max size - remove oldest entries if over limit
+  if (undoStack.length > MAX_UNDO_STACK_SIZE) {
+    undoStack.splice(0, undoStack.length - MAX_UNDO_STACK_SIZE);
   }
 }
 
@@ -83,9 +90,14 @@ export function useSaveSettingsWithOCC() {
   // Save for specific contact with OCC
   const saveContactMutation = useMutation({
     mutationFn: async (payload: ContactSavePayload) => {
-      // Validate template ID is present
-      if (!payload.templateId) {
-        throw new Error('Template ID is required for saving contact settings');
+      // Validate required fields
+      if (!payload.contactId) {
+        throw new Error('Contact ID is required for saving settings');
+      }
+      
+      // Validate revision number to prevent stale data saves
+      if (payload.currentRevision !== undefined && payload.currentRevision < 0) {
+        throw new Error('Invalid revision number - cannot save with stale data');
       }
       
       pruneUndoStack();
@@ -179,6 +191,16 @@ export function useSaveSettingsWithOCC() {
   // Save to Global with OCC
   const saveGlobalMutation = useMutation({
     mutationFn: async (payload: GlobalSavePayload) => {
+      // Validate required fields
+      if (!payload.templateId) {
+        throw new Error('Template ID is required for saving global settings');
+      }
+      
+      // Validate revision number to prevent stale data saves
+      if (payload.currentRevision !== undefined && payload.currentRevision < 0) {
+        throw new Error('Invalid revision number - cannot save with stale data');
+      }
+      
       pruneUndoStack();
       
       const { data: { user } } = await supabase.auth.getUser();

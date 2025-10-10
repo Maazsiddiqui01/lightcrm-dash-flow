@@ -887,54 +887,54 @@ export function EmailBuilder() {
     handleResetToDefaults();
   };
 
-  // Enhanced draft generation handler
+  // Enhanced draft generation handler with error boundary
   const handleGenerateDraft = async () => {
-    if (!contactData || !masterTemplate) {
-      toast({
-        title: 'Missing Data',
-        description: 'Please select a contact first',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate subject pool before generation
-    const subjectValidation = validateSubjectPool(subjectPoolOverride);
-    if (!subjectValidation.isValid) {
-      toast({
-        title: 'Subject Pool Required',
-        description: subjectValidation.errors.join(', '),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate module selections before generation
-    const moduleValidation = validateModuleSelections(moduleStates, moduleSelections);
-    if (!moduleValidation.isValid) {
-      toast({
-        title: 'Module Configuration Required',
-        description: moduleValidation.errors.join(', '),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Get full master template from database
-    const fullMasterTemplate = masterTemplates?.find(
-      t => t.master_key === masterTemplate.master_key
-    );
-    
-    if (!fullMasterTemplate) {
-      toast({
-        title: 'Template Not Found',
-        description: 'Master template not found in database',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     try {
+      if (!contactData || !masterTemplate) {
+        toast({
+          title: 'Missing Data',
+          description: 'Please select a contact first',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Validate subject pool before generation
+      const subjectValidation = validateSubjectPool(subjectPoolOverride);
+      if (!subjectValidation.isValid) {
+        toast({
+          title: 'Subject Pool Required',
+          description: subjectValidation.errors.join(', '),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Validate module selections before generation
+      const moduleValidation = validateModuleSelections(moduleStates, moduleSelections);
+      if (!moduleValidation.isValid) {
+        toast({
+          title: 'Module Configuration Required',
+          description: moduleValidation.errors.join(', '),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Get full master template from database
+      const fullMasterTemplate = masterTemplates?.find(
+        t => t.master_key === masterTemplate.master_key
+      );
+      
+      if (!fullMasterTemplate) {
+        toast({
+          title: 'Template Not Found',
+          description: 'Master template not found in database',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       // Build enhanced payload with curated recipients
       const payload = await buildEnhancedDraftPayload(
         contactData,
@@ -966,7 +966,7 @@ export function EmailBuilder() {
       console.error('Failed to generate draft:', error);
       toast({
         title: 'Generation Failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
+        description: error instanceof Error ? error.message : 'Unknown error occurred during draft generation',
         variant: 'destructive',
       });
     }

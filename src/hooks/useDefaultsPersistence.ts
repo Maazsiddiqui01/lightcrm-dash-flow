@@ -26,7 +26,15 @@ export function useContactModuleDefaults(contactId: string | null, templateId: s
   return useQuery({
     queryKey: ['contact-module-defaults', contactId, templateId],
     queryFn: async () => {
-      if (!contactId || !templateId) return [];
+      if (!contactId) {
+        logger.warn('useContactModuleDefaults: contactId is null');
+        return [];
+      }
+      
+      if (!templateId) {
+        logger.warn('useContactModuleDefaults: templateId is null');
+        return [];
+      }
       
       const { data, error } = await supabase
         .from('contact_module_defaults')
@@ -53,7 +61,10 @@ export function useTemplateModuleDefaults(templateId: string | null) {
   return useQuery({
     queryKey: ['template-module-defaults', templateId],
     queryFn: async () => {
-      if (!templateId) return [];
+      if (!templateId) {
+        logger.warn('useTemplateModuleDefaults: templateId is null');
+        return [];
+      }
       
       const { data, error } = await supabase
         .from('template_module_defaults')
