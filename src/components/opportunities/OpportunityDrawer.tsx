@@ -14,7 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail, Loader2 } from "lucide-react";
+import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail, Loader2, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
 import { OpportunityNotesSection } from "./OpportunityNotesSection";
 import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
@@ -73,6 +74,8 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [customStatusOptions, setCustomStatusOptions] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   
   // Use canonical lookup options
@@ -211,6 +214,38 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     }
   };
 
+  const handleDelete = async () => {
+    if (!opportunity) return;
+
+    try {
+      setIsDeleting(true);
+      const { error } = await supabase
+        .from('opportunities_raw')
+        .delete()
+        .eq('id', opportunity.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Opportunity deleted successfully",
+      });
+
+      onClose();
+      onOpportunityUpdated();
+    } catch (error) {
+      console.error('Error deleting opportunity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete opportunity. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmOpen(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case "active":
@@ -329,6 +364,15 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               <Button onClick={handleSave} disabled={isUpdating}>
                 <Save className="h-4 w-4 mr-2" />
                 {isUpdating ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
               </Button>
             </div>
           </div>
@@ -664,31 +708,18 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             </div>
           </div>
 
-          <Separator />
-
-          <OpportunityNotesSection
-            title="Next Steps"
-            field="next_steps"
-            currentValue={currentNotes.next_steps}
-            currentDueDate={currentNotes.next_steps_due_date}
-            onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
-            isSaving={isSavingNextSteps}
-            isLoadingCurrent={isLoadingCurrent}
-            timeline={timeline.filter(n => n.field === 'next_steps')}
-            isLoadingTimeline={isLoadingTimeline}
-          />
-
-          <OpportunityNotesSection
-            title="Most Recent Notes"
-            field="most_recent_notes"
-            currentValue={currentNotes.most_recent_notes}
-            onSave={(content) => saveMostRecentNotes(content)}
-            isSaving={isSavingNotes}
-            isLoadingCurrent={isLoadingCurrent}
-            timeline={timeline.filter(n => n.field === 'most_recent_notes')}
-            isLoadingTimeline={isLoadingTimeline}
-          />
         </div>
+
+        <ConfirmDialog
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+          onConfirm={handleDelete}
+          title="Delete Opportunity"
+          description={`Are you sure you want to delete "${opportunity.deal_name}"? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="destructive"
+        />
       </SheetContent>
     </Sheet>
   );
