@@ -30,10 +30,22 @@ interface SlicersProps {
 export function Slicers({ filters, onFiltersChange }: SlicersProps) {
   const [searchDebounce, setSearchDebounce] = useState(filters.searchText);
 
+  // Ensure array filters are always arrays (handle legacy URL params)
+  const normalizedFilters = {
+    ...filters,
+    platformAddon: Array.isArray(filters.platformAddon) ? filters.platformAddon : [],
+    ownershipType: Array.isArray(filters.ownershipType) ? filters.ownershipType : [],
+    sector: Array.isArray(filters.sector) ? filters.sector : [],
+    focusArea: Array.isArray(filters.focusArea) ? filters.focusArea : [],
+    lgLead: Array.isArray(filters.lgLead) ? filters.lgLead : [],
+    tier: Array.isArray(filters.tier) ? filters.tier : [],
+    status: Array.isArray(filters.status) ? filters.status : [],
+  };
+
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
-      onFiltersChange({ ...filters, searchText: searchDebounce });
+      onFiltersChange({ ...normalizedFilters, searchText: searchDebounce });
     }, 300);
     return () => clearTimeout(timer);
   }, [searchDebounce]);
@@ -157,11 +169,11 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
   const lgLeads = useMemo(() => lgLeadsData.map(opt => opt.value), [lgLeadsData]);
 
   const updateFilter = (key: string, value: any) => {
-    onFiltersChange({ ...filters, [key]: value });
+    onFiltersChange({ ...normalizedFilters, [key]: value });
   };
 
   const toggleArrayFilter = (key: string, value: string) => {
-    const current = filters[key] as string[];
+    const current = normalizedFilters[key] as string[];
     
     if (value === "HC: (All)") {
       // Handle HC: (All) group selection
@@ -220,7 +232,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         <div className="space-y-2">
           <Label>Date Range</Label>
           <Select
-            value={filters.dateRange}
+            value={normalizedFilters.dateRange}
             onValueChange={(value) => updateFilter('dateRange', value)}
           >
             <SelectTrigger>
@@ -240,7 +252,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         <MultiSelectDropdown
           label="Platform/Add-on"
           options={platformAddonDisplayOptions}
-          selected={filters.platformAddon}
+          selected={normalizedFilters.platformAddon}
           onToggle={(value) => toggleArrayFilter('platformAddon', value)}
           onBatchUpdate={(values) => updateFilter('platformAddon', values)}
         />
@@ -249,7 +261,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         <MultiSelectDropdown
           label="Ownership Type"
           options={defaultOwnershipTypes}
-          selected={filters.ownershipType}
+          selected={normalizedFilters.ownershipType}
           onToggle={(value) => toggleArrayFilter('ownershipType', value)}
           onBatchUpdate={(values) => updateFilter('ownershipType', values)}
         />
@@ -267,8 +279,8 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         {/* EBITDA Range */}
         <RangeInput
           label="EBITDA"
-          minValue={filters.ebitdaMin}
-          maxValue={filters.ebitdaMax}
+          minValue={normalizedFilters.ebitdaMin}
+          maxValue={normalizedFilters.ebitdaMax}
           onMinChange={(value) => updateFilter('ebitdaMin', value)}
           onMaxChange={(value) => updateFilter('ebitdaMax', value)}
           minPlaceholder="Min EBITDA"
@@ -280,7 +292,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         <MultiSelectDropdown
           label="LG Sector"
           options={sectors}
-          selected={filters.sector}
+          selected={normalizedFilters.sector}
           onToggle={(value) => toggleArrayFilter('sector', value)}
           onBatchUpdate={(values) => updateFilter('sector', values)}
         />
@@ -288,7 +300,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         <MultiSelectDropdown
           label="LG Focus Area"
           options={focusAreas}
-          selected={filters.focusArea}
+          selected={normalizedFilters.focusArea}
           onToggle={(value) => toggleArrayFilter('focusArea', value)}
           onBatchUpdate={(values) => updateFilter('focusArea', values)}
         />
@@ -296,7 +308,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         <MultiSelectDropdown
           label="LG Lead"
           options={lgLeads as string[]}
-          selected={filters.lgLead}
+          selected={normalizedFilters.lgLead}
           onToggle={(value) => toggleArrayFilter('lgLead', value)}
           onBatchUpdate={(values) => updateFilter('lgLead', values)}
         />
@@ -304,7 +316,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         <MultiSelectDropdown
           label="Tier"
           options={tiers}
-          selected={filters.tier}
+          selected={normalizedFilters.tier}
           onToggle={(value) => toggleArrayFilter('tier', value)}
           onBatchUpdate={(values) => updateFilter('tier', values)}
         />
@@ -312,7 +324,7 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
         <MultiSelectDropdown
           label="Status"
           options={statuses}
-          selected={filters.status}
+          selected={normalizedFilters.status}
           onToggle={(value) => toggleArrayFilter('status', value)}
           onBatchUpdate={(values) => updateFilter('status', values)}
         />
