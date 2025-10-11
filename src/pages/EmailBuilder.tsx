@@ -41,6 +41,7 @@ import { useSubjectLibrary } from "@/hooks/useSubjectLibrary";
 import { buildEnhancedDraftPayload } from "@/lib/enhancedPayload";
 import { routeMaster } from "@/lib/router";
 import type { EmailTemplate } from "@/hooks/useEmailTemplates";
+import { useEmailTemplatesQuery } from "@/hooks/useEmailTemplates";
 import type { Article } from "@/types/emailComposer";
 import type { TriState } from "@/types/phraseLibrary";
 import type { ModuleSelection, ModuleSelections } from "@/types/moduleSelections";
@@ -782,16 +783,23 @@ export function EmailBuilder() {
   // Load master templates from database
   const { data: masterTemplates, isLoading: isLoadingTemplates } = useMasterTemplates();
   
-  // Compute master template ID for auto-save
-  const fullMasterTemplate = masterTemplates?.find(
-    t => t.master_key === masterTemplate?.master_key
-  );
+  // Load email templates (presets)
+  const { data: emailTemplates = [] } = useEmailTemplatesQuery();
   
-  // Auto-save mutation for module labels (global)
-  const autoSaveLabels = useAutoSaveModuleLabels(fullMasterTemplate?.id || null);
+  // Map current master template to its preset email_template
+  const activeEmailTemplate = masterTemplate
+    ? emailTemplates.find(
+        (t) =>
+          t.is_preset &&
+          t.name === (MASTER_TEMPLATES[masterTemplate.master_key]?.label || masterTemplate.master_key)
+      ) || null
+    : null;
+  
+  // Auto-save mutation for module labels (global) - must use email_templates.id to satisfy FK
+  const autoSaveLabels = useAutoSaveModuleLabels(activeEmailTemplate?.id || null);
   
   // Load template settings for custom module labels
-  const { data: templateSettings } = useNewTemplateSettings(fullMasterTemplate?.id || null);
+  const { data: templateSettings } = useNewTemplateSettings(activeEmailTemplate?.id || null);
   
   // Auto-load saved settings once per contact to avoid snapping back after drag
   useEffect(() => {
