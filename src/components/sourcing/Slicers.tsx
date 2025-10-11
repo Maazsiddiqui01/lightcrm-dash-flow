@@ -11,7 +11,14 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { RangeInput } from '@/components/shared/RangeInput';
 import { cn } from '@/lib/utils';
-import { getTierDisplayValue, getTierDatabaseValue } from '@/lib/export/opportunityUtils';
+import { 
+  getTierDisplayValue, 
+  getTierDatabaseValue,
+  defaultOwnershipTypes,
+  platformAddonDisplayOptions
+} from '@/lib/export/opportunityUtils';
+import { useFocusAreas, useSectors } from '@/hooks/useLookups';
+import { useOpportunityLeads } from '@/hooks/useDistinctOptions';
 
 interface SlicersProps {
   filters: any;
@@ -19,18 +26,6 @@ interface SlicersProps {
 }
 
 // Dynamic date options will be fetched from Supabase
-
-const PLATFORM_ADDON_OPTIONS = [
-  { label: 'All', value: 'all' },
-  { label: 'Platform Only', value: 'platform' },
-  { label: 'Add-on Only', value: 'addon' },
-];
-
-const OWNERSHIP_OPTIONS = [
-  { label: 'All', value: 'all' },
-  { label: 'Family/Founder', value: 'family_founder' },
-  { label: 'Other', value: 'other' },
-];
 
 export function Slicers({ filters, onFiltersChange }: SlicersProps) {
   const [searchDebounce, setSearchDebounce] = useState(filters.searchText);
@@ -96,45 +91,27 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
   });
 
 
-  // Fetch distinct values
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['distinct-sectors'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('opportunities_app')
-        .select('sector')
-        .not('sector', 'is', null);
-      if (error) throw error;
-      return [...new Set(data.map(row => row.sector).filter(Boolean))].sort();
-    },
-    staleTime: 300_000,
-  });
+  // Fetch distinct values from canonical lookup tables
+  const sectorsQuery = useSectors();
+  const sectors = useMemo(() => sectorsQuery.data?.map(opt => opt.value) || [], [sectorsQuery.data]);
 
-  const { data: focusAreas = [] } = useQuery({
-    queryKey: ['distinct-focus-areas'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('opportunities_app')
-        .select('lg_focus_area')
-        .not('lg_focus_area', 'is', null);
-      if (error) throw error;
-      
-      const areas = [...new Set(data.map(row => row.lg_focus_area).filter(Boolean))].sort();
-      
-      // Add HC: (All) as a virtual option for group selection if there are HC focus areas
-      const hasHcOptions = areas.some(area => area.startsWith('HC:'));
-      if (hasHcOptions) {
-        // Insert HC: (All) after the first HC option for logical grouping
-        const hcIndex = areas.findIndex(area => area.startsWith('HC:'));
-        if (hcIndex >= 0) {
-          areas.splice(hcIndex, 0, 'HC: (All)');
-        }
+  const focusAreasQuery = useFocusAreas({});
+  const focusAreas = useMemo(() => {
+    const areas = focusAreasQuery.data?.map(opt => opt.value) || [];
+    
+    // Add HC: (All) as a virtual option for group selection if there are HC focus areas
+    const hasHcOptions = areas.some(area => area.startsWith('HC:'));
+    if (hasHcOptions) {
+      const hcIndex = areas.findIndex(area => area.startsWith('HC:'));
+      if (hcIndex >= 0) {
+        const result = [...areas];
+        result.splice(hcIndex, 0, 'HC: (All)');
+        return result;
       }
-      
-      return areas;
-    },
-    staleTime: 300_000,
-  });
+    }
+    
+    return areas;
+  }, [focusAreasQuery.data]);
 
   const { data: tiers = [] } = useQuery({
     queryKey: ['distinct-tiers'],
@@ -175,22 +152,9 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
     staleTime: 300_000,
   });
 
-  const { data: lgLeads = [] } = useQuery({
-    queryKey: ['distinct-lg-leads'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('opportunities_app')
-        .select('investment_professional_point_person_1, investment_professional_point_person_2');
-      if (error) throw error;
-      const leads = new Set<string>();
-      data.forEach(row => {
-        if (row.investment_professional_point_person_1) leads.add(row.investment_professional_point_person_1);
-        if (row.investment_professional_point_person_2) leads.add(row.investment_professional_point_person_2);
-      });
-      return Array.from(leads).sort();
-    },
-    staleTime: 300_000,
-  });
+  // Use consistent data source for LG leads
+  const { data: lgLeadsData = [] } = useOpportunityLeads();
+  const lgLeads = useMemo(() => lgLeadsData.map(opt => opt.value), [lgLeadsData]);
 
   const updateFilter = (key: string, value: any) => {
     onFiltersChange({ ...filters, [key]: value });
@@ -233,8 +197,8 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
       lgLead: [],
       tier: [],
       status: [],
-      platformAddon: 'all',
-      ownershipType: 'all',
+      platformAddon: [],
+      ownershipType: [],
       ebitdaMin: undefined,
       ebitdaMax: undefined,
       searchText: '',
@@ -272,39 +236,23 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
           </Select>
         </div>
 
-        {/* Platform/Add-on */}
-        <div className="space-y-2">
-          <Label>Platform/Add-on</Label>
-          <div className="flex flex-wrap gap-1">
-            {PLATFORM_ADDON_OPTIONS.map(option => (
-              <Badge
-                key={option.value}
-                variant={filters.platformAddon === option.value ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() => updateFilter('platformAddon', option.value)}
-              >
-                {option.label}
-              </Badge>
-            ))}
-          </div>
-        </div>
+        {/* Platform/Add-on - Multi-select */}
+        <MultiSelectDropdown
+          label="Platform/Add-on"
+          options={platformAddonDisplayOptions}
+          selected={filters.platformAddon}
+          onToggle={(value) => toggleArrayFilter('platformAddon', value)}
+          onBatchUpdate={(values) => updateFilter('platformAddon', values)}
+        />
 
-        {/* Ownership Type */}
-        <div className="space-y-2">
-          <Label>Ownership Type</Label>
-          <div className="flex flex-wrap gap-1">
-            {OWNERSHIP_OPTIONS.map(option => (
-              <Badge
-                key={option.value}
-                variant={filters.ownershipType === option.value ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() => updateFilter('ownershipType', option.value)}
-              >
-                {option.label}
-              </Badge>
-            ))}
-          </div>
-        </div>
+        {/* Ownership Type - Multi-select */}
+        <MultiSelectDropdown
+          label="Ownership Type"
+          options={defaultOwnershipTypes}
+          selected={filters.ownershipType}
+          onToggle={(value) => toggleArrayFilter('ownershipType', value)}
+          onBatchUpdate={(values) => updateFilter('ownershipType', values)}
+        />
 
         {/* Search */}
         <div className="space-y-2">

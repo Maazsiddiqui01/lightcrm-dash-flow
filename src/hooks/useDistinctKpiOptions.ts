@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { defaultOwnershipTypes } from '@/lib/export/opportunityUtils';
 
 export const useDistinctFocusAreas = () => {
   return useQuery({
@@ -51,16 +52,8 @@ export const useDistinctOwnershipTypes = () => {
   return useQuery({
     queryKey: ['kpi-distinct-ownership-types'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('opportunities_app')
-        .select('ownership_type')
-        .not('ownership_type', 'is', null)
-        .neq('ownership_type', '');
-      
-      if (error) throw error;
-      
-      const types = [...new Set(data?.map(row => row.ownership_type).filter(Boolean))];
-      return types.sort();
+      // Use standardized ownership types from opportunityUtils
+      return defaultOwnershipTypes;
     },
     staleTime: 60_000,
   });

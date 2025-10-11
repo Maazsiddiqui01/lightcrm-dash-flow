@@ -18,8 +18,8 @@ interface SourcingFilters {
   lgLead: string[];
   tier: string[];
   status: string[];
-  platformAddon: 'all' | 'platform' | 'addon';
-  ownershipType: 'all' | 'family_founder' | 'other';
+  platformAddon: string[];
+  ownershipType: string[];
   ebitdaMin?: number;
   ebitdaMax?: number;
   searchText: string;
@@ -33,8 +33,8 @@ const defaultFilters: SourcingFilters = {
   lgLead: [],
   tier: [],
   status: [],
-  platformAddon: 'all',
-  ownershipType: 'all',
+  platformAddon: [],
+  ownershipType: [],
   ebitdaMin: undefined,
   ebitdaMax: undefined,
   searchText: '',
@@ -103,15 +103,11 @@ export default function SourceGreatnessPage() {
       if (Array.isArray(filterState.status) && filterState.status.length > 0) {
         query = query.in('status', filterState.status);
       }
-      if (filterState.platformAddon === 'platform') {
-        query = query.ilike('platform_add_on', '%platform%');
-      } else if (filterState.platformAddon === 'addon') {
-        query = query.ilike('platform_add_on', '%add%');
+      if (Array.isArray(filterState.platformAddon) && filterState.platformAddon.length > 0) {
+        query = query.in('platform_add_on', filterState.platformAddon);
       }
-      if (filterState.ownershipType === 'family_founder') {
-        query = query.or('ownership_type.ilike.%family%,ownership_type.ilike.%founder%');
-      } else if (filterState.ownershipType === 'other') {
-        query = query.not('ownership_type', 'ilike', '%family%').not('ownership_type', 'ilike', '%founder%');
+      if (Array.isArray(filterState.ownershipType) && filterState.ownershipType.length > 0) {
+        query = query.in('ownership_type', filterState.ownershipType);
       }
       
       // EBITDA range filter
