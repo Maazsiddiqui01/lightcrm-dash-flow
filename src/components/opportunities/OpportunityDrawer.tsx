@@ -29,6 +29,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ContactPickerWithAddNew } from "./ContactPickerWithAddNew";
+import { ContactSearchResult } from "@/hooks/useContactSearch";
+import { AddContactDialog } from "@/components/contacts/AddContactDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Opportunity {
   id: string;
@@ -76,7 +80,12 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
   const [isUpdating, setIsUpdating] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedSourceContact1, setSelectedSourceContact1] = useState<ContactSearchResult | null>(null);
+  const [selectedSourceContact2, setSelectedSourceContact2] = useState<ContactSearchResult | null>(null);
+  const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
+  const [pendingContactField, setPendingContactField] = useState<'contact1' | 'contact2' | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Use canonical lookup options
   const sectorsQuery = useSectors();
@@ -87,6 +96,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     statusOptions,
     platformAddonOptions,
     ownershipTypeOptions,
+    dealSourceCompanyOptions,
     lgLeadOptions,
     isLoading: isLoadingOptions
   } = useOpportunityOptions();
@@ -134,7 +144,31 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         investment_professional_point_person_3: opportunity.investment_professional_point_person_3 || "",
         investment_professional_point_person_4: opportunity.investment_professional_point_person_4 || "",
         acquisition_date: opportunity.acquisition_date || null,
+        deal_source_company: opportunity.deal_source_company || "",
       });
+
+      // Initialize contact selections if names exist
+      if (opportunity.deal_source_individual_1) {
+        setSelectedSourceContact1({
+          id: '',
+          full_name: opportunity.deal_source_individual_1,
+          email_address: '',
+          organization: undefined
+        });
+      } else {
+        setSelectedSourceContact1(null);
+      }
+      
+      if (opportunity.deal_source_individual_2) {
+        setSelectedSourceContact2({
+          id: '',
+          full_name: opportunity.deal_source_individual_2,
+          email_address: '',
+          organization: undefined
+        });
+      } else {
+        setSelectedSourceContact2(null);
+      }
     }
   }, [opportunity]);
 
@@ -158,6 +192,45 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         }
       }
     }
+  };
+
+  const handleAddNewContact = (field: 'contact1' | 'contact2') => {
+    setPendingContactField(field);
+    setIsAddContactModalOpen(true);
+  };
+
+  const handleContactAdded = (newContact?: { id: string; full_name: string; email_address: string; organization?: string }) => {
+    if (newContact && pendingContactField) {
+      const contactResult: ContactSearchResult = {
+        id: newContact.id,
+        full_name: newContact.full_name,
+        email_address: newContact.email_address,
+        organization: newContact.organization,
+      };
+      
+      if (pendingContactField === 'contact1') {
+        setSelectedSourceContact1(contactResult);
+        handleFieldChange("deal_source_individual_1", newContact.full_name);
+      } else {
+        setSelectedSourceContact2(contactResult);
+        handleFieldChange("deal_source_individual_2", newContact.full_name);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['contact_search'] });
+    }
+    
+    setIsAddContactModalOpen(false);
+    setPendingContactField(null);
+  };
+
+  const handleSourceContact1Select = (contact: ContactSearchResult | null) => {
+    setSelectedSourceContact1(contact);
+    handleFieldChange("deal_source_individual_1", contact?.full_name || "");
+  };
+
+  const handleSourceContact2Select = (contact: ContactSearchResult | null) => {
+    setSelectedSourceContact2(contact);
+    handleFieldChange("deal_source_individual_2", contact?.full_name || "");
   };
 
   const handleSave = async () => {
@@ -628,20 +701,30 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             <h3 className="text-lg font-semibold">Deal Source</h3>
             
             <div className="grid grid-cols-1 gap-4">
-              <div>
-                <Label className="text-sm font-medium">Source Company</Label>
-                <p className="text-sm text-muted-foreground">{opportunity.deal_source_company || "—"}</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Individual #1</Label>
-                  <p className="text-sm text-muted-foreground">{opportunity.deal_source_individual_1 || "—"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Individual #2</Label>
-                  <p className="text-sm text-muted-foreground">{opportunity.deal_source_individual_2 || "—"}</p>
-                </div>
-              </div>
+              <SingleSelectDropdown
+                label="Deal Source Company"
+                options={dealSourceCompanyOptions}
+                value={editedFields.deal_source_company || ""}
+                onChange={(value) => handleFieldChange("deal_source_company", value)}
+                placeholder="Search or add company..."
+                allowCustom
+                onAddCustom={(value) => handleFieldChange("deal_source_company", value)}
+                disabled={isUpdating}
+              />
+
+              <ContactPickerWithAddNew
+                label="Deal Source Individual #1"
+                selectedContact={selectedSourceContact1}
+                onContactSelect={handleSourceContact1Select}
+                onAddNewContact={() => handleAddNewContact('contact1')}
+              />
+
+              <ContactPickerWithAddNew
+                label="Deal Source Individual #2"
+                selectedContact={selectedSourceContact2}
+                onContactSelect={handleSourceContact2Select}
+                onAddNewContact={() => handleAddNewContact('contact2')}
+              />
             </div>
           </div>
 
@@ -712,6 +795,15 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
           </div>
 
         </div>
+
+        <AddContactDialog
+          open={isAddContactModalOpen}
+          onClose={() => {
+            setIsAddContactModalOpen(false);
+            setPendingContactField(null);
+          }}
+          onContactAdded={handleContactAdded}
+        />
 
         <ConfirmDialog
           open={deleteConfirmOpen}

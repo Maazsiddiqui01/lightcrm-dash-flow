@@ -69,6 +69,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
   const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useFocusAreasBySector(formData.sector);
   
   const { 
+    dealSourceCompanyOptions,
     lgLeadOptions,
     isLoading: isLoadingOptions
   } = useOpportunityOptions();
@@ -450,15 +451,16 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="deal_source_company">Deal Source Company</Label>
-              <Input
-                id="deal_source_company"
-                value={formData.deal_source_company}
-                onChange={(e) => handleInputChange("deal_source_company", e.target.value)}
-                placeholder="Enter source company"
-              />
-            </div>
+            <SingleSelectDropdown
+              label="Deal Source Company"
+              options={dealSourceCompanyOptions}
+              value={formData.deal_source_company}
+              onChange={(value) => handleInputChange("deal_source_company", value)}
+              placeholder="Search or add company..."
+              allowCustom
+              onAddCustom={(value) => handleInputChange("deal_source_company", value)}
+              disabled={isLoading}
+            />
 
             <ContactPickerWithAddNew
               label="Deal Source Individual #1"

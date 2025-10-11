@@ -120,14 +120,32 @@ export const useOpportunityOptions = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Deal Source Company options
+  const { data: dealSourceCompanyOptions = [], isLoading: isLoadingDealSourceCompany } = useQuery({
+    queryKey: ['opportunity-deal-source-company'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('opportunities_raw')
+        .select('deal_source_company')
+        .not('deal_source_company', 'is', null)
+        .neq('deal_source_company', '');
+      
+      return uniqCasefold(data?.map(r => r.deal_source_company).filter(Boolean) ?? [])
+        .sort((a, b) => a.localeCompare(b));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   return {
     focusAreaOptions,
     sectorOptions,
     statusOptions,
     platformAddonOptions,
     ownershipTypeOptions,
+    dealSourceCompanyOptions,
     lgLeadOptions,
     isLoading: isLoadingFocusAreas || isLoadingSectors || isLoadingStatus || 
-               isLoadingPlatformAddon || isLoadingOwnershipType || isLoadingLgLeads,
+               isLoadingPlatformAddon || isLoadingOwnershipType || isLoadingLgLeads ||
+               isLoadingDealSourceCompany,
   };
 };
