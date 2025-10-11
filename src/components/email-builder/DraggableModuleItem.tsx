@@ -62,10 +62,15 @@ export function DraggableModuleItem({
   };
 
   const handleSaveEdit = () => {
-    if (editValue.trim() && onLabelChange) {
-      onLabelChange(editValue.trim());
+    const trimmedValue = editValue.trim();
+    if (trimmedValue && onLabelChange) {
+      onLabelChange(trimmedValue);
+      setIsEditing(false);
+    } else if (!trimmedValue) {
+      // If empty, revert to original label
+      setEditValue(label);
+      setIsEditing(false);
     }
-    setIsEditing(false);
   };
 
   const handleCancelEdit = () => {

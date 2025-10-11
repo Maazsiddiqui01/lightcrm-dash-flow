@@ -59,8 +59,8 @@ export function useAutoSaveModuleLabels(templateId: string | null) {
       queryClient.invalidateQueries({ queryKey: ['template-settings', templateId] });
       
       toast({
-        title: 'Module label saved',
-        description: 'Custom label applied globally for all contacts',
+        title: 'Module name saved',
+        description: 'Preserved across all contacts and sessions',
         duration: 2000,
       });
     },
