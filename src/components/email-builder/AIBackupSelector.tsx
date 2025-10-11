@@ -42,6 +42,7 @@ export function AIBackupSelector({
       contactName={contactName}
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
+      allowInlineManagement={true}
     />
   );
 }

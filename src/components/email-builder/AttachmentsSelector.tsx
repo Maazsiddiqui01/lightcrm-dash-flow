@@ -41,6 +41,7 @@ export function AttachmentsSelector({
       contactName={contactName}
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
+      allowInlineManagement={true}
     />
   );
 }
