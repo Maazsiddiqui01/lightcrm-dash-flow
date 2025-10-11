@@ -339,14 +339,16 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         query = query.lte('ebitda_in_ms', filters.ebitdaMax);
       }
 
-      // Date of origination filter - now using proper date type
+      // Date of origination filter - support both year-only and date ranges
       if (filters.dateOfOrigination.length > 0) {
-        const dateConditions = filters.dateOfOrigination.map(dateRange => {
-          const [start, end] = dateRange.split(' to ');
-          if (end) {
+        const dateConditions = filters.dateOfOrigination.map(dateValue => {
+          // Check if it's a date range (contains " to ")
+          if (dateValue.includes(' to ')) {
+            const [start, end] = dateValue.split(' to ');
             return `date_of_origination.gte.${start},date_of_origination.lte.${end}`;
           }
-          return `date_of_origination.gte.${start}`;
+          // Otherwise treat as exact year match
+          return `date_of_origination.eq.${dateValue}`;
         });
         query = query.or(dateConditions.join(','));
       }

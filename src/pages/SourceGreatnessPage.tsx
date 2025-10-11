@@ -53,34 +53,9 @@ export default function SourceGreatnessPage() {
     queryFn: async () => {
       let query = supabase.from('opportunities_raw').select('*');
       
-      // Apply date filter with proper date range queries
+      // Apply year filter with exact text matching (dates normalized to years)
       if (filterState.dateRange !== 'all') {
-        const dateValue = filterState.dateRange;
-        if (dateValue.includes('Q')) {
-          // Quarter filter with proper date range parsing
-          const parts = dateValue.match(/(\d{4}).*?Q([1-4])/i);
-          if (parts) {
-            const year = parseInt(parts[1]);
-            const quarter = parseInt(parts[2]);
-            const startMonth = (quarter - 1) * 3 + 1;
-            const endMonth = quarter * 3;
-            const startDate = `${year}-${String(startMonth).padStart(2, '0')}-01`;
-            const endDate = `${year}-${String(endMonth).padStart(2, '0')}-${new Date(year, endMonth, 0).getDate()}`;
-            
-            // Use proper date range comparison
-            query = query.gte('date_of_origination', startDate).lte('date_of_origination', endDate);
-          } else {
-            // Fallback to text matching
-            query = query.ilike('date_of_origination', `%${dateValue}%`);
-          }
-        } else if (/^\d{4}$/.test(dateValue)) {
-          // Year filter - use proper date range
-          const year = parseInt(dateValue);
-          query = query.gte('date_of_origination', `${year}-01-01`).lte('date_of_origination', `${year}-12-31`);
-        } else {
-          // Fallback to text matching for other formats
-          query = query.ilike('date_of_origination', `%${dateValue}%`);
-        }
+        query = query.eq('date_of_origination', filterState.dateRange);
       }
       // Note: When dateRange === 'all', no date filter is applied (includes null dates)
       
@@ -159,28 +134,13 @@ export default function SourceGreatnessPage() {
         .ilike('source', '%meeting%')
         .order('occurred_at');
       
-      // Apply date range filter to meetings if not 'all'
+      // Filter meetings by selected year
       if (filterState.dateRange !== 'all') {
-        const dateValue = filterState.dateRange;
-        if (dateValue.includes('Q')) {
-          // Quarter filter
-          const parts = dateValue.match(/(\d{4}).*?Q([1-4])/i);
-          if (parts) {
-            const year = parseInt(parts[1]);
-            const quarter = parseInt(parts[2]);
-            const startMonth = (quarter - 1) * 3;
-            const startDate = new Date(year, startMonth, 1);
-            const endDate = new Date(year, startMonth + 3, 0, 23, 59, 59);
-            query = query.gte('occurred_at', startDate.toISOString()).lte('occurred_at', endDate.toISOString());
-          }
-        } else {
-          // Year filter
-          const year = parseInt(dateValue);
-          if (!isNaN(year)) {
-            const startDate = new Date(year, 0, 1);
-            const endDate = new Date(year, 11, 31, 23, 59, 59);
-            query = query.gte('occurred_at', startDate.toISOString()).lte('occurred_at', endDate.toISOString());
-          }
+        const year = parseInt(filterState.dateRange);
+        if (!isNaN(year)) {
+          const startDate = new Date(year, 0, 1).toISOString();
+          const endDate = new Date(year, 11, 31, 23, 59, 59).toISOString();
+          query = query.gte('occurred_at', startDate).lte('occurred_at', endDate);
         }
       }
       
