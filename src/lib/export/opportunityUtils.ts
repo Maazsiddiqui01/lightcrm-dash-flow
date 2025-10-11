@@ -109,3 +109,31 @@ export const tierDisplayOptions = [
   '4-Likely Pass',
   '5-Passed'
 ];
+
+// Group Email Role mapping utilities
+export const groupEmailRoleDisplayMapping: Record<string, string> = {
+  'to': 'To (Primary Recipient)',
+  'cc': 'CC (Carbon Copy)',
+  'bcc': 'BCC (Blind Carbon Copy)'
+};
+
+export const groupEmailRoleValueMapping: Record<string, string> = {
+  'To (Primary Recipient)': 'to',
+  'CC (Carbon Copy)': 'cc',
+  'BCC (Blind Carbon Copy)': 'bcc'
+};
+
+export const getGroupEmailRoleDisplayValue = (value: string | null | undefined): string => {
+  if (!value) return '';
+  return groupEmailRoleDisplayMapping[value] || value;
+};
+
+export const getGroupEmailRoleDatabaseValue = (displayValue: string): string => {
+  return groupEmailRoleValueMapping[displayValue] || displayValue;
+};
+
+export const groupEmailRoleDisplayOptions = [
+  'To (Primary Recipient)',
+  'CC (Carbon Copy)',
+  'BCC (Blind Carbon Copy)'
+];

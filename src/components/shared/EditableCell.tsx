@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EditableFieldConfig } from '@/config/editableColumns';
 import { cn } from '@/lib/utils';
-import { getTierDatabaseValue, getTierDisplayValue } from '@/lib/export/opportunityUtils';
+import { getTierDatabaseValue, getTierDisplayValue, getGroupEmailRoleDisplayValue } from '@/lib/export/opportunityUtils';
 import { useOpportunityOptions } from '@/hooks/useOpportunityOptions';
 import { useContactSearch } from '@/hooks/useContactSearch';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -92,6 +92,10 @@ export function EditableCell({
     // If this is a tier field with display options, show the display value
     if (config.options?.includes('1-Active') && ['1', '2', '3', '4', '5'].includes(stringValue)) {
       return getTierDisplayValue(stringValue);
+    }
+    // If this is a group_email_role field, show the display value
+    if (columnKey === 'group_email_role' && ['to', 'cc', 'bcc'].includes(stringValue)) {
+      return getGroupEmailRoleDisplayValue(stringValue);
     }
     return stringValue;
   })();

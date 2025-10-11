@@ -29,8 +29,10 @@ const validateNumber = (value: any): string | null => {
   return null;
 };
 
-// Import tier display options
-const tierDisplayOptions = [
+// Import tier display options and other display utilities
+import { tierDisplayOptions, defaultOwnershipTypes } from '@/lib/export/opportunityUtils';
+
+const tierDisplayOptionsLocal = [
   '1-Active',
   '2-Longer Term',
   '3-For Review', 
@@ -341,13 +343,9 @@ export const editableColumns: EditableConfig = {
       ]
     },
     category: { type: 'text' },
-    contact_type: { 
-      type: 'select',
-      options: ['Primary', 'Secondary', 'Referral']
-    },
     delta_type: { 
       type: 'select',
-      options: ['Email', 'Meeting', 'Call', 'Event']
+      options: ['Email', 'Meeting']
     },
     notes: { type: 'textarea' },
     url_to_online_bio: { type: 'text' },
@@ -412,11 +410,11 @@ export const editableColumns: EditableConfig = {
     },
     platform_add_on: { 
       type: 'select',
-      options: ['Platform', 'Add-on', 'Add-on: Aspire Bakeries', 'Add-on: Creation Technologies', 'Add-on: GSF', 'Add-on: Kleinfelder', 'Add-on: Lightwave', 'Add-on: MMS', 'Both']
+      options: ['Platform', 'Add-On']
     },
     tier: { 
       type: 'select',
-      options: tierDisplayOptions
+      options: tierDisplayOptionsLocal
     },
     status: { 
       type: 'select',
@@ -433,7 +431,7 @@ export const editableColumns: EditableConfig = {
     ownership: { type: 'text' },
     ownership_type: { 
       type: 'select',
-      options: ['Family Owned', 'Founder Owned', 'PE Owned', 'Public', 'Other']
+      options: defaultOwnershipTypes
     },
     investment_professional_point_person_1: { type: 'text' },
     investment_professional_point_person_2: { type: 'text' },
