@@ -62,7 +62,7 @@ export function ContactPickerWithAddNew({
         
         {/* Dropdown with contacts + "Add New" option */}
         {isSearching && (
-          <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+          <div className="absolute z-[9999] w-full mt-1 bg-popover border-border border rounded-md shadow-lg max-h-60 overflow-y-auto">
             {isLoading && (
               <div className="p-3 text-center text-sm text-muted-foreground">
                 Loading contacts...

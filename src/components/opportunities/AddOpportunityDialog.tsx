@@ -288,7 +288,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-full bg-primary-light flex items-center justify-center">
@@ -301,7 +301,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="overflow-y-auto max-h-[calc(80vh-8rem)] pr-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
           {/* Required Fields */}
           <div className="space-y-4 border-b pb-4">
             <h3 className="text-sm font-medium text-foreground">Required Fields</h3>
@@ -546,16 +547,17 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               />
             </div>
           </div>
+          </form>
+        </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Adding..." : "Add Opportunity"}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Adding..." : "Add Opportunity"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
       
       {/* Add Contact Modal */}
