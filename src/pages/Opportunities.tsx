@@ -214,8 +214,8 @@ export function Opportunities() {
             icon={Target}
           />
           <StatsCard
-            title="Active Deals"
-            value={stats.loading ? "..." : stats.activeDeals}
+            title="Tier 1 Active Deals"
+            value={stats.loading ? "..." : stats.tier1ActiveDeals}
             icon={TrendingUp}
           />
           <StatsCard

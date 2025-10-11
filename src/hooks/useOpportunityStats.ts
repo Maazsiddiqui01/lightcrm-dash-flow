@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface OpportunityStats {
   totalOpportunities: number;
   activeDeals: number;
+  tier1ActiveDeals: number;
   familyFounderPercentage: string;
   averageEbitda: string;
   loading: boolean;
@@ -30,6 +31,7 @@ export function useOpportunityStats(filters?: OpportunityFilters): OpportunitySt
   const [stats, setStats] = useState<OpportunityStats>({
     totalOpportunities: 0,
     activeDeals: 0,
+    tier1ActiveDeals: 0,
     familyFounderPercentage: "0%",
     averageEbitda: "$0M",
     loading: true,
@@ -127,7 +129,7 @@ export function useOpportunityStats(filters?: OpportunityFilters): OpportunitySt
       // Optimized: Fetch all data in a single query instead of 4 separate queries
       let query = supabase
         .from("opportunities_raw")
-        .select("ownership_type, ebitda_in_ms, status");
+        .select("ownership_type, ebitda_in_ms, status, tier");
       query = applyFilters(query);
       const { data: opportunities, error } = await query;
 
@@ -139,6 +141,13 @@ export function useOpportunityStats(filters?: OpportunityFilters): OpportunitySt
       const activeDeals = opportunities?.filter(opp => {
         const status = opp.status?.toLowerCase() || '';
         return !status.includes('closed') && !status.includes('won') && !status.includes('lost');
+      }).length || 0;
+
+      // Calculate Tier 1 Active Deals
+      const tier1ActiveDeals = opportunities?.filter(opp => {
+        const tier = opp.tier?.toString().trim() || '';
+        const status = opp.status?.toLowerCase().trim() || '';
+        return (tier === '1' || tier.toLowerCase() === 'tier 1') && status === 'active';
       }).length || 0;
 
       const familyFounderCount = opportunities?.filter(opp => {
@@ -163,6 +172,7 @@ export function useOpportunityStats(filters?: OpportunityFilters): OpportunitySt
       setStats({
         totalOpportunities,
         activeDeals,
+        tier1ActiveDeals,
         familyFounderPercentage,
         averageEbitda,
         loading: false,
