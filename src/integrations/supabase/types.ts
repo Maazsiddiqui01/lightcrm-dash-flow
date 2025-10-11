@@ -1060,6 +1060,7 @@ export type Database = {
       }
       email_template_settings: {
         Row: {
+          custom_module_labels: Json | null
           days_range_config: Json | null
           inquiry_config: Json | null
           length_override: string | null
@@ -1077,6 +1078,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          custom_module_labels?: Json | null
           days_range_config?: Json | null
           inquiry_config?: Json | null
           length_override?: string | null
@@ -1094,6 +1096,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          custom_module_labels?: Json | null
           days_range_config?: Json | null
           inquiry_config?: Json | null
           length_override?: string | null
