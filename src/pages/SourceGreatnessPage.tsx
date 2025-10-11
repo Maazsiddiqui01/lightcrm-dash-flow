@@ -88,14 +88,17 @@ export default function SourceGreatnessPage() {
       if (Array.isArray(filterState.sector) && filterState.sector.length > 0) {
         query = query.in('sector', filterState.sector);
       }
+      // Use exact matching for focus areas (same as Contacts and Opportunities)
       if (Array.isArray(filterState.focusArea) && filterState.focusArea.length > 0) {
-        query = query.or(filterState.focusArea.map(fa => `lg_focus_area.ilike.%${fa}%`).join(','));
+        query = query.in('lg_focus_area', filterState.focusArea);
       }
+      // Use exact matching for LG leads (same as Contacts and Opportunities)
       if (Array.isArray(filterState.lgLead) && filterState.lgLead.length > 0) {
-        const leadFilters = filterState.lgLead.map(lead => 
-          `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
-        ).join(',');
-        query = query.or(leadFilters);
+        const orConditions = filterState.lgLead.flatMap(lead => [
+          `investment_professional_point_person_1.eq.${lead}`,
+          `investment_professional_point_person_2.eq.${lead}`
+        ]).join(',');
+        query = query.or(orConditions);
       }
       if (Array.isArray(filterState.tier) && filterState.tier.length > 0) {
         query = query.in('tier', filterState.tier);
@@ -129,13 +132,30 @@ export default function SourceGreatnessPage() {
     staleTime: 60_000,
   });
 
-  // Fetch meetings data - filtered by date range if applicable
+  // Fetch meetings data - filtered by contacts from filtered opportunities
   const { data: meetings = [], isLoading: meetingsLoading } = useQuery({
-    queryKey: ['sourcing-meetings', filterState.dateRange],
+    queryKey: ['sourcing-meetings', filters], // Changed to use all filters
     queryFn: async () => {
+      // First, extract contact names from filtered opportunities
+      const filteredContactNames = new Set<string>();
+      opportunities.forEach(opp => {
+        if (opp.deal_source_individual_1) filteredContactNames.add(opp.deal_source_individual_1);
+        if (opp.deal_source_individual_2) filteredContactNames.add(opp.deal_source_individual_2);
+      });
+      
+      // If filters are applied but no opportunities match, return empty meetings
+      const hasFilters = filterState.focusArea.length > 0 || filterState.sector.length > 0 || 
+                        filterState.lgLead.length > 0 || filterState.tier.length > 0 ||
+                        filterState.status.length > 0 || filterState.platformAddon.length > 0 ||
+                        filterState.ownershipType.length > 0 || filterState.searchText;
+      
+      if (hasFilters && filteredContactNames.size === 0) {
+        return [];
+      }
+      
       let query = supabase
         .from('interactions_app')
-        .select('occurred_at')
+        .select('occurred_at, from_name, to_names, cc_names')
         .ilike('source', '%meeting%')
         .order('occurred_at');
       
@@ -164,6 +184,14 @@ export default function SourceGreatnessPage() {
         }
       }
       
+      // Filter by contacts from filtered opportunities (if any filters applied)
+      if (hasFilters && filteredContactNames.size > 0) {
+        const contactConditions = Array.from(filteredContactNames).map(name => 
+          `from_name.ilike.%${name}%,to_names.ilike.%${name}%,cc_names.ilike.%${name}%`
+        ).join(',');
+        query = query.or(contactConditions);
+      }
+      
       const { data, error } = await query;
       if (error) throw error;
       
@@ -182,6 +210,7 @@ export default function SourceGreatnessPage() {
       }));
     },
     staleTime: 60_000,
+    enabled: !oppsLoading, // Wait for opportunities to load first
   });
 
   // Fetch referral data - using filtered opportunities from opportunities_raw

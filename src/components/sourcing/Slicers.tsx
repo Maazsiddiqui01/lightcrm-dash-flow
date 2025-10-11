@@ -18,7 +18,7 @@ import {
   platformAddonDisplayOptions
 } from '@/lib/export/opportunityUtils';
 import { useFocusAreas, useSectors } from '@/hooks/useLookups';
-import { useOpportunityLeads } from '@/hooks/useDistinctOptions';
+import { useOpportunityLeads, useOpportunityDatesOfOrigination } from '@/hooks/useDistinctOptions';
 
 interface SlicersProps {
   filters: any;
@@ -50,57 +50,12 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
     return () => clearTimeout(timer);
   }, [searchDebounce]);
 
-  // Fetch date options from opportunities data directly
-  const { data: dateOptions = [] } = useQuery({
-    queryKey: ['date-options'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('opportunities_raw')
-        .select('date_of_origination')
-        .not('date_of_origination', 'is', null);
-      if (error) throw error;
-      
-      const years = new Set<string>();
-      const quarters = new Set<string>();
-      
-      data?.forEach(row => {
-        const dateStr = row.date_of_origination;
-        if (!dateStr) return;
-        
-        // Extract year (e.g., "2024 Q4" -> "2024", "Jun 2025" -> "2025")
-        const yearMatch = dateStr.match(/(\d{4})/);
-        if (yearMatch) {
-          years.add(yearMatch[1]);
-        }
-        
-        // Extract quarter if present (e.g., "2024 Q4" -> "2024 Q4")
-        const quarterMatch = dateStr.match(/(\d{4}\s*Q[1-4])/);
-        if (quarterMatch) {
-          quarters.add(quarterMatch[1]);
-        }
-      });
-      
-      const options = [{ label: 'All', value: 'all' }];
-      
-      // Add years (descending)
-      Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)).forEach(year => {
-        options.push({ label: year, value: year });
-      });
-      
-      // Add quarters (descending)
-      Array.from(quarters).sort((a, b) => {
-        const [yearA, qA] = a.split(' Q');
-        const [yearB, qB] = b.split(' Q');
-        if (yearA !== yearB) return parseInt(yearB) - parseInt(yearA);
-        return parseInt(qB) - parseInt(qA);
-      }).forEach(quarter => {
-        options.push({ label: quarter, value: quarter });
-      });
-      
-      return options;
-    },
-    staleTime: 300_000,
-  });
+  // Use centralized hook for date options (same as Opportunities page)
+  const { data: dateOptionsFromHook = [] } = useOpportunityDatesOfOrigination();
+  const dateOptions = useMemo(() => [
+    { label: 'All', value: 'all' },
+    ...dateOptionsFromHook
+  ], [dateOptionsFromHook]);
 
 
   // Fetch distinct values from canonical lookup tables
