@@ -1,6 +1,7 @@
 export interface EditableFieldConfig {
-  type: 'text' | 'email' | 'textarea' | 'number' | 'date' | 'select' | 'boolean';
+  type: 'text' | 'email' | 'textarea' | 'number' | 'date' | 'select' | 'boolean' | 'searchable-select' | 'contact-search';
   options?: string[];
+  allowCustom?: boolean;
   required?: boolean;
   validation?: (value: any) => string | null;
 }
@@ -438,9 +439,9 @@ export const editableColumns: EditableConfig = {
     investment_professional_point_person_2: { type: 'text' },
     investment_professional_point_person_3: { type: 'text' },
     investment_professional_point_person_4: { type: 'text' },
-    deal_source_company: { type: 'text' },
-    deal_source_individual_1: { type: 'text' },
-    deal_source_individual_2: { type: 'text' },
+    deal_source_company: { type: 'searchable-select', allowCustom: true },
+    deal_source_individual_1: { type: 'contact-search' },
+    deal_source_individual_2: { type: 'contact-search' },
     deal_source_contacts: { type: 'textarea' },
     date_of_origination: { type: 'text' },
     dealcloud: { type: 'boolean' },

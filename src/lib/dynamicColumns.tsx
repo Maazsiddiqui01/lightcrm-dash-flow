@@ -127,6 +127,7 @@ export function createDynamicColumns<T extends Record<string, any>>(
               editing={isCurrentlyEditing}
               onStartEdit={() => editHandlers.onStartEdit(rowId, tableColumn.name)}
               error={hasError}
+              columnKey={tableColumn.name}
             />
           );
          }

@@ -7,6 +7,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { EditableFieldConfig } from '@/config/editableColumns';
 import { cn } from '@/lib/utils';
 import { getTierDatabaseValue, getTierDisplayValue } from '@/lib/export/opportunityUtils';
+import { useOpportunityOptions } from '@/hooks/useOpportunityOptions';
+import { useContactSearch } from '@/hooks/useContactSearch';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Check, ChevronsUpDown } from 'lucide-react';
 
 interface EditableCellProps {
   value: any;
@@ -17,6 +23,7 @@ interface EditableCellProps {
   editing: boolean;
   onStartEdit: () => void;
   error?: string;
+  columnKey?: string;
 }
 
 export function EditableCell({
@@ -28,10 +35,17 @@ export function EditableCell({
   editing,
   onStartEdit,
   error,
+  columnKey,
 }: EditableCellProps) {
   const [localValue, setLocalValue] = useState(value);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Get options for searchable fields
+  const { dealSourceCompanyOptions = [] } = useOpportunityOptions();
+  const { contacts, handleSearch } = useContactSearch();
 
   useEffect(() => {
     setLocalValue(value);
@@ -134,6 +148,170 @@ export function EditableCell({
       error && "border-destructive focus:border-destructive"
     ),
   };
+
+  // Searchable select for deal_source_company
+  if (config.type === 'searchable-select' && columnKey === 'deal_source_company') {
+    if (!editing) {
+      return (
+        <div
+          className={cn(
+            "cursor-pointer hover:bg-muted/50 p-2 rounded min-h-[32px] flex items-center",
+            error && "border border-destructive"
+          )}
+          onClick={onStartEdit}
+        >
+          <span className={cn("truncate", !displayValue && "text-muted-foreground italic")}>
+            {displayValue || 'Click to edit'}
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className={cn("w-full justify-between", error && "border-destructive")}
+          >
+            {localValue || "Select or type..."}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput 
+              placeholder="Search companies..." 
+              value={searchValue}
+              onValueChange={setSearchValue}
+            />
+            <CommandList>
+              <CommandEmpty>
+                {searchValue && (
+                  <div className="p-2">
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setLocalValue(searchValue);
+                        onChange(searchValue);
+                        setSearchOpen(false);
+                        onCommit();
+                      }}
+                    >
+                      Add "{searchValue}"
+                    </Button>
+                  </div>
+                )}
+              </CommandEmpty>
+              <CommandGroup>
+                {dealSourceCompanyOptions
+                  .filter(opt => 
+                    searchValue === '' || 
+                    opt.toLowerCase().includes(searchValue.toLowerCase())
+                  )
+                  .map((option) => (
+                    <CommandItem
+                      key={option}
+                      value={option}
+                      onSelect={() => {
+                        setLocalValue(option);
+                        onChange(option);
+                        setSearchOpen(false);
+                        onCommit();
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          localValue === option ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option}
+                    </CommandItem>
+                  ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  // Contact search for deal_source_individual fields
+  if (config.type === 'contact-search') {
+    if (!editing) {
+      return (
+        <div
+          className={cn(
+            "cursor-pointer hover:bg-muted/50 p-2 rounded min-h-[32px] flex items-center",
+            error && "border border-destructive"
+          )}
+          onClick={onStartEdit}
+        >
+          <span className={cn("truncate", !displayValue && "text-muted-foreground italic")}>
+            {displayValue || 'Click to edit'}
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className={cn("w-full justify-between", error && "border-destructive")}
+          >
+            {localValue || "Search contacts..."}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput 
+              placeholder="Search contacts..." 
+              value={searchValue}
+              onValueChange={(val) => {
+                setSearchValue(val);
+                handleSearch(val);
+              }}
+            />
+            <CommandList>
+              <CommandEmpty>
+                <div className="p-2 text-sm text-muted-foreground">
+                  {searchValue.length < 2 ? 'Type at least 2 characters' : 'No contacts found'}
+                </div>
+              </CommandEmpty>
+              <CommandGroup>
+                {contacts.map((contact) => (
+                  <CommandItem
+                    key={contact.id}
+                    value={contact.full_name}
+                    onSelect={() => {
+                      setLocalValue(contact.full_name);
+                      onChange(contact.full_name);
+                      setSearchOpen(false);
+                      onCommit();
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{contact.full_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {contact.email_address} {contact.organization && `• ${contact.organization}`}
+                      </span>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   switch (config.type) {
     case 'textarea':
