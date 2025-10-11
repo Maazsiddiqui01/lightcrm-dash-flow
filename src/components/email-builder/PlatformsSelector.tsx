@@ -31,7 +31,7 @@ export function PlatformsSelector({
       phrases={phrases}
       currentSelection={currentSelection}
       onSelectionChange={onSelectionChange}
-      multiSelect={true}
+      multiSelect={false}
       contactData={contactData}
       previewVariables={previewVariables}
     />

@@ -52,6 +52,7 @@ import { useSaveSettingsWithOCC } from "@/hooks/useSaveSettingsWithOCC";
 import { SplitSaveButton } from "@/components/email-builder/SplitSaveButton";
 import { SourceBadge } from "@/components/email-builder/SourceBadge";
 import { ConfirmSaveDialog, type SaveScope, type AffectedField } from "@/components/email-builder/ConfirmSaveDialog";
+import { ModuleContentPreview } from "@/components/email-builder/ModuleContentPreview";
 import { MASTER_TEMPLATES } from "@/lib/router";
 import { recomputePositions, buildModuleSequence, announceModuleMove } from "@/lib/modulePositions";
 import { validateDraftPayload, validateSubjectPool, validateTemplateId, validateModuleSelections } from "@/lib/emailBuilderValidation";
@@ -1561,6 +1562,18 @@ ${draftResult.signature}`;
               isRandomized={isRandomized}
               changedModules={changedModules}
             />
+
+            {/* Live Preview Panel */}
+            {masterTemplate && contactData && (
+              <ModuleContentPreview
+                moduleOrder={moduleOrder}
+                moduleStates={moduleStates}
+                moduleSelections={moduleSelections}
+                allPhrases={allPhrases}
+                contactData={contactData}
+                customModuleLabels={customModuleLabels}
+              />
+            )}
             
             {/* Module Selection Validation Warnings */}
             {moduleValidationErrors.length > 0 && (

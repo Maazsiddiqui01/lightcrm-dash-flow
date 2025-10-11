@@ -43,7 +43,7 @@ export function PhraseSelectorGeneric({
   phrases,
   currentSelection,
   onSelectionChange,
-  multiSelect = false,
+  multiSelect = false, // Deprecated: Always single-select now
   contactData,
   previewVariables = {},
   contactName = "this contact",
@@ -85,14 +85,10 @@ export function PhraseSelectorGeneric({
     return phrase.phrase_text.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  // Get current selection IDs
+  // Get current selection ID (single-select only)
   const selectedIds = useMemo(() => {
-    if (multiSelect) {
-      return currentSelection?.phraseIds || [];
-    } else {
-      return currentSelection?.phraseId || currentSelection?.greetingId || null;
-    }
-  }, [currentSelection, multiSelect]);
+    return currentSelection?.phraseId || currentSelection?.greetingId || null;
+  }, [currentSelection]);
 
   // Handle single-select change
   const handleSingleSelect = (phraseId: string) => {
@@ -166,8 +162,8 @@ export function PhraseSelectorGeneric({
 
       setIsAdding(false);
       
-      // Auto-select the new phrase in single-select mode
-      if (!multiSelect && newPhrase) {
+      // Auto-select the new phrase
+      if (newPhrase) {
         onSelectionChange({
           type: 'phrase',
           category,
@@ -208,22 +204,12 @@ export function PhraseSelectorGeneric({
       
       // Clear selection if deleted phrase was selected
       if (isCurrentSelection) {
-        if (multiSelect) {
-          const newIds = (selectedIds as string[]).filter(id => id !== phraseId);
-          onSelectionChange(newIds.length > 0 ? {
-            type: 'phrase',
-            category,
-            phraseIds: newIds,
-            variables: previewVariables,
-          } : null);
-        } else {
-          onSelectionChange(null);
-          toast({
-            title: "Selection cleared",
-            description: "Please select another phrase",
-            variant: "destructive",
-          });
-        }
+        onSelectionChange(null);
+        toast({
+          title: "Selection cleared",
+          description: "Please select another phrase",
+          variant: "destructive",
+        });
       }
 
       // Clear default if deleted phrase was default
@@ -246,14 +232,10 @@ export function PhraseSelectorGeneric({
     });
   };
 
-  // Get selected phrase(s) for preview
+  // Get selected phrase for preview (single-select only)
   const selectedPhrases = useMemo(() => {
-    if (multiSelect) {
-      return categoryPhrases.filter(p => (selectedIds as string[]).includes(p.id));
-    } else {
-      return categoryPhrases.filter(p => p.id === selectedIds);
-    }
-  }, [categoryPhrases, selectedIds, multiSelect]);
+    return categoryPhrases.filter(p => p.id === selectedIds);
+  }, [categoryPhrases, selectedIds]);
 
   // Extract variables from phrase text
   const extractVariables = (text: string): string[] => {
@@ -333,12 +315,7 @@ export function PhraseSelectorGeneric({
           />
         )}
 
-        {/* Selection Count */}
-        {multiSelect && (selectedIds as string[]).length > 0 && (
-          <div className="text-sm text-muted-foreground">
-            {(selectedIds as string[]).length} phrase{(selectedIds as string[]).length !== 1 ? 's' : ''} selected
-          </div>
-        )}
+        {/* Single-select mode only - no count needed */}
 
         {/* Phrases List */}
         <div className="max-h-96 overflow-y-auto pr-2">
@@ -357,76 +334,8 @@ export function PhraseSelectorGeneric({
                 </Link>
               )}
             </div>
-          ) : multiSelect ? (
-            // Multi-select checkboxes
-            <div className="space-y-3">
-              {filteredPhrases.map((phrase) => (
-                <div key={phrase.id} className="pb-3 border-b last:border-0">
-                  {editingPhraseId === phrase.id ? (
-                    <InlinePhraseForm
-                      category={category}
-                      mode="edit"
-                      initialText={phrase.phrase_text}
-                      initialTriState={phrase.tri_state}
-                      onSave={(text, triState) => handleUpdatePhrase(phrase.id, text, triState)}
-                      onCancel={() => setEditingPhraseId(null)}
-                      isLoading={updatePhrase.isPending}
-                    />
-                  ) : (
-                    <div className="flex items-start space-x-2">
-                      <Checkbox
-                        id={`phrase-${phrase.id}`}
-                        checked={(selectedIds as string[]).includes(phrase.id)}
-                        onCheckedChange={(checked) => handleMultiToggle(phrase.id, checked as boolean)}
-                        className="mt-1"
-                      />
-                      <Label htmlFor={`phrase-${phrase.id}`} className="cursor-pointer flex-1">
-                        <div className="space-y-1">
-                          <p className="text-sm">{phrase.phrase_text}</p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant={phrase.is_global ? "secondary" : "outline"} className="text-xs">
-                              {phrase.is_global ? "Global" : "Custom"}
-                            </Badge>
-                            {phrase.tri_state && (
-                              <Badge variant="outline" className="text-xs capitalize">
-                                {phrase.tri_state}
-                              </Badge>
-                            )}
-                            {extractVariables(phrase.phrase_text).map(variable => (
-                              <Badge key={variable} variant="outline" className="text-xs font-mono">
-                                {`{${variable}}`}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </Label>
-                      {allowInlineManagement && (
-                        <div className="flex items-center gap-1 ml-auto">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setEditingPhraseId(phrase.id)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => setDeletingPhraseId(phrase.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
           ) : (
-            // Single-select radio
+            // Single-select radio (multi-select removed)
             <RadioGroup
               value={String(selectedIds || 'none')}
               onValueChange={handleSingleSelect}
