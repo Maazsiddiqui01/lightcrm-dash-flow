@@ -22,7 +22,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 interface AddContactDialogProps {
   open: boolean;
   onClose: () => void;
-  onContactAdded: () => void;
+  onContactAdded: (newContact?: { id: string; full_name: string; email_address: string; organization?: string }) => void;
 }
 
 interface IndividualContactForm {
@@ -219,7 +219,15 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
       setGroupName("");
       setContacts([emptyContactForm]);
 
-      onContactAdded();
+      // Pass the newly created contact data back (first contact for individual, or first group member)
+      const newContact = data && data.length > 0 ? {
+        id: data[0].id,
+        full_name: data[0].full_name,
+        email_address: data[0].email_address,
+        organization: data[0].organization || undefined
+      } : undefined;
+      
+      onContactAdded(newContact);
     } catch (error: any) {
       console.error("Error adding contact(s):", error);
       toast({

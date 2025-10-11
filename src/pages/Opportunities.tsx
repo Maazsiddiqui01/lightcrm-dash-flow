@@ -17,6 +17,7 @@ import {
 import { useUsersList } from "@/hooks/useUsersList";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 
 export function Opportunities() {
@@ -25,6 +26,7 @@ export function Opportunities() {
   const [isAssigning, setIsAssigning] = useState(false);
   const { data: users } = useUsersList();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { filters: rawFilters, updateFilters: rawUpdateFilters, clearFilters } = useUrlFilters({
     focusArea: [],
@@ -185,6 +187,8 @@ export function Opportunities() {
           onClose={() => setIsAddDialogOpen(false)} 
           onOpportunityAdded={() => {
             setIsAddDialogOpen(false);
+            // Invalidate queries to refresh the list
+            queryClient.invalidateQueries({ queryKey: ['opportunities'] });
           }} 
         />
       </ResponsiveContainer>

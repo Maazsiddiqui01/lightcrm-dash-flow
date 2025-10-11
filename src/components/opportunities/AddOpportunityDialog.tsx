@@ -19,6 +19,10 @@ import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
 import { useSectors, useFocusAreasBySector } from "@/hooks/useLookups";
 import { calculateLgTeam } from "@/utils/opportunityHelpers";
+import { ContactPickerWithAddNew } from "./ContactPickerWithAddNew";
+import { ContactSearchResult } from "@/hooks/useContactSearch";
+import { AddContactDialog } from "@/components/contacts/AddContactDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AddOpportunityDialogProps {
   open: boolean;
@@ -53,7 +57,12 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [customStatusOptions, setCustomStatusOptions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedSourceContact1, setSelectedSourceContact1] = useState<ContactSearchResult | null>(null);
+  const [selectedSourceContact2, setSelectedSourceContact2] = useState<ContactSearchResult | null>(null);
+  const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
+  const [pendingContactField, setPendingContactField] = useState<'contact1' | 'contact2' | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Use the canonical lookup hooks
   const { data: sectorOptions = [], isLoading: isLoadingSectors } = useSectors();
@@ -139,8 +148,10 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         platform_add_on: opt(formData.platform_add_on),
         date_of_origination: opt(formData.date_of_origination),
         deal_source_company: opt(formData.deal_source_company),
-        deal_source_individual_1: opt(formData.deal_source_individual_1),
-        deal_source_individual_2: opt(formData.deal_source_individual_2),
+        deal_source_individual_1: selectedSourceContact1?.full_name || null,
+        deal_source_individual_2: selectedSourceContact2?.full_name || null,
+        deal_source_contact_1_id: selectedSourceContact1?.id || null,
+        deal_source_contact_2_id: selectedSourceContact2?.id || null,
         ownership: opt(formData.ownership),
         ownership_type: opt(formData.ownership_type),
         
@@ -242,7 +253,37 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     });
     setSelectedFocusAreas([]);
     setCustomStatusOptions([]);
+    setSelectedSourceContact1(null);
+    setSelectedSourceContact2(null);
     onClose();
+  };
+
+  const handleAddNewContact = (field: 'contact1' | 'contact2') => {
+    setPendingContactField(field);
+    setIsAddContactModalOpen(true);
+  };
+
+  const handleContactAdded = (newContact?: { id: string; full_name: string; email_address: string; organization?: string }) => {
+    if (newContact && pendingContactField) {
+      const contactResult: ContactSearchResult = {
+        id: newContact.id,
+        full_name: newContact.full_name,
+        email_address: newContact.email_address,
+        organization: newContact.organization,
+      };
+      
+      if (pendingContactField === 'contact1') {
+        setSelectedSourceContact1(contactResult);
+      } else {
+        setSelectedSourceContact2(contactResult);
+      }
+      
+      // Invalidate contact search cache so new contact appears in searches
+      queryClient.invalidateQueries({ queryKey: ['contact_search'] });
+    }
+    
+    setIsAddContactModalOpen(false);
+    setPendingContactField(null);
   };
 
   return (
@@ -409,37 +450,29 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="deal_source_company">Deal Source Company</Label>
-                <Input
-                  id="deal_source_company"
-                  value={formData.deal_source_company}
-                  onChange={(e) => handleInputChange("deal_source_company", e.target.value)}
-                  placeholder="Enter source company"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="deal_source_individual_1">Deal Source Individual #1</Label>
-                <Input
-                  id="deal_source_individual_1"
-                  value={formData.deal_source_individual_1}
-                  onChange={(e) => handleInputChange("deal_source_individual_1", e.target.value)}
-                  placeholder="Enter individual #1"
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="deal_source_individual_2">Deal Source Individual #2</Label>
+              <Label htmlFor="deal_source_company">Deal Source Company</Label>
               <Input
-                id="deal_source_individual_2"
-                value={formData.deal_source_individual_2}
-                onChange={(e) => handleInputChange("deal_source_individual_2", e.target.value)}
-                placeholder="Enter individual #2"
+                id="deal_source_company"
+                value={formData.deal_source_company}
+                onChange={(e) => handleInputChange("deal_source_company", e.target.value)}
+                placeholder="Enter source company"
               />
             </div>
+
+            <ContactPickerWithAddNew
+              label="Deal Source Individual #1"
+              selectedContact={selectedSourceContact1}
+              onContactSelect={setSelectedSourceContact1}
+              onAddNewContact={() => handleAddNewContact('contact1')}
+            />
+
+            <ContactPickerWithAddNew
+              label="Deal Source Individual #2"
+              selectedContact={selectedSourceContact2}
+              onContactSelect={setSelectedSourceContact2}
+              onAddNewContact={() => handleAddNewContact('contact2')}
+            />
 
            {/* Ownership */}
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -524,6 +557,16 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
           </DialogFooter>
         </form>
       </DialogContent>
+      
+      {/* Add Contact Modal */}
+      <AddContactDialog
+        open={isAddContactModalOpen}
+        onClose={() => {
+          setIsAddContactModalOpen(false);
+          setPendingContactField(null);
+        }}
+        onContactAdded={handleContactAdded}
+      />
     </Dialog>
   );
 }

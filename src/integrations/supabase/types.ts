@@ -1708,6 +1708,8 @@ export type Database = {
           date_of_origination: string | null
           deal_name: string | null
           deal_source_company: string | null
+          deal_source_contact_1_id: string | null
+          deal_source_contact_2_id: string | null
           deal_source_contacts: string | null
           deal_source_individual_1: string | null
           deal_source_individual_2: string | null
@@ -1752,6 +1754,8 @@ export type Database = {
           date_of_origination?: string | null
           deal_name?: string | null
           deal_source_company?: string | null
+          deal_source_contact_1_id?: string | null
+          deal_source_contact_2_id?: string | null
           deal_source_contacts?: string | null
           deal_source_individual_1?: string | null
           deal_source_individual_2?: string | null
@@ -1796,6 +1800,8 @@ export type Database = {
           date_of_origination?: string | null
           deal_name?: string | null
           deal_source_company?: string | null
+          deal_source_contact_1_id?: string | null
+          deal_source_contact_2_id?: string | null
           deal_source_contacts?: string | null
           deal_source_individual_1?: string | null
           deal_source_individual_2?: string | null
@@ -1832,7 +1838,162 @@ export type Database = {
           updated_at?: string | null
           url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+        ]
       }
       opportunity_note_events: {
         Row: {
