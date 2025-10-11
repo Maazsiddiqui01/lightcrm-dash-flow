@@ -128,25 +128,8 @@ export function Slicers({ filters, onFiltersChange }: SlicersProps) {
   const { data: tiers = [] } = useQuery({
     queryKey: ['distinct-tiers'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('opportunities_raw')
-        .select('tier')
-        .not('tier', 'is', null);
-      if (error) throw error;
-      
-      // Get existing tiers from database - only show tiers that actually exist
-      const dbTiers = [...new Set(data.map(row => row.tier).filter(Boolean))];
-      
-      // Convert to display values and sort
-      return dbTiers.sort((a, b) => {
-        // Sort numerically if both are numbers, otherwise alphabetically
-        const numA = parseInt(a);
-        const numB = parseInt(b);
-        if (!isNaN(numA) && !isNaN(numB)) {
-          return numA - numB;
-        }
-        return a.localeCompare(b);
-      }).map(tier => getTierDisplayValue(tier));
+      // Return all 5 possible tiers (1-5) instead of only database values
+      return ['1', '2', '3', '4', '5'].map(tier => getTierDisplayValue(tier));
     },
     staleTime: 300_000,
   });
