@@ -477,22 +477,45 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       const contactIds = (contactsData || []).map(c => c.id);
       console.log(`[Contacts#${reqId}] Fetching opportunities for ${contactIds.length} filtered contacts...`);
       
-      const { data: oppsData, error: oppsError } = await supabase
-        .from('contacts_with_opportunities_v')
-        .select('id, opportunities')
-        .in('id', contactIds);
+      // Batch processing to avoid URL length limits
+      const BATCH_SIZE = 100;
+      const batches: string[][] = [];
       
-      if (oppsError) {
-        console.error(`[Contacts#${reqId}] Error fetching opportunities:`, oppsError);
+      for (let i = 0; i < contactIds.length; i += BATCH_SIZE) {
+        batches.push(contactIds.slice(i, i + BATCH_SIZE));
       }
-
+      
+      console.log(`[Contacts#${reqId}] Processing ${batches.length} batches of opportunities...`);
+      
+      // Fetch all batches in parallel
+      const batchResults = await Promise.allSettled(
+        batches.map((batch, index) => 
+          supabase
+            .from('contacts_with_opportunities_v')
+            .select('id, opportunities')
+            .in('id', batch)
+            .then(result => ({ ...result, batchIndex: index }))
+        )
+      );
+      
       // Build a simple map: contact id -> opportunities string
       const oppsMap = new Map<string, string>();
-      (oppsData || []).forEach(row => {
-        if (row.id && row.opportunities) {
-          oppsMap.set(row.id, row.opportunities);
+      let successfulBatches = 0;
+      
+      batchResults.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value.data) {
+          successfulBatches++;
+          result.value.data.forEach(row => {
+            if (row.id && row.opportunities) {
+              oppsMap.set(row.id, row.opportunities);
+            }
+          });
+        } else if (result.status === 'rejected') {
+          console.error(`[Contacts#${reqId}] Batch ${index + 1}/${batches.length} failed:`, result.reason);
         }
       });
+      
+      console.log(`[Contacts#${reqId}] Successfully processed ${successfulBatches}/${batches.length} batches`);
 
       console.log(`[Contacts#${reqId}] Opportunities map built:`, oppsMap.size, 'contacts have opportunities');
 
