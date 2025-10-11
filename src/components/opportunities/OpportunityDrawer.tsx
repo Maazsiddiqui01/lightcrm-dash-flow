@@ -22,7 +22,14 @@ import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
-import { splitTokens, tierOptions, normalizePlatformAddonMapping, normalizeOwnershipTypeMapping } from "@/lib/export/opportunityUtils";
+import { 
+  splitTokens, 
+  tierDisplayOptions, 
+  getTierDisplayValue, 
+  getTierDatabaseValue,
+  normalizePlatformAddonMapping, 
+  normalizeOwnershipTypeMapping 
+} from "@/lib/export/opportunityUtils";
 import { useSectors, useFocusAreasBySector, findMatchingOption } from "@/hooks/useLookups";
 import { calculateLgTeam } from "@/utils/opportunityHelpers";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -497,12 +504,15 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 disabled={isLoading}
               />
 
-              {/* Tier - Hardcoded 1-5 */}
+              {/* Tier with Display Labels */}
               <SingleSelectDropdown
                 label="Tier"
-                options={['1','2','3','4','5']}
-                value={editedFields.tier || ""}
-                onChange={(value) => handleFieldChange("tier", value)}
+                options={tierDisplayOptions}
+                value={getTierDisplayValue(editedFields.tier)}
+                onChange={(displayValue) => {
+                  const dbValue = getTierDatabaseValue(displayValue);
+                  handleFieldChange("tier", dbValue);
+                }}
                 placeholder="Select tier"
                 disabled={isLoading}
               />

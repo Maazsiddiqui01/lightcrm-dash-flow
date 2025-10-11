@@ -59,7 +59,7 @@ export function OpportunityFilterBar({
   // Use existing hooks for other options
   const { data: ownershipTypes = [], isLoading: ownershipLoading } = useOpportunityOwnershipTypes();
   
-  // Tier options with definitions for display, but values remain as numbers
+  // Tier options - use centralized tier options from utils
   const tiers = [
     { value: '1', label: '1-Active' },
     { value: '2', label: '2-Longer Term' },

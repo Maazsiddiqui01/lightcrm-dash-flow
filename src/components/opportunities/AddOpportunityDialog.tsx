@@ -23,6 +23,7 @@ import { ContactPickerWithAddNew } from "./ContactPickerWithAddNew";
 import { ContactSearchResult } from "@/hooks/useContactSearch";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { useQueryClient } from "@tanstack/react-query";
+import { tierDisplayOptions, getTierDisplayValue, getTierDatabaseValue } from "@/lib/export/opportunityUtils";
 
 interface AddOpportunityDialogProps {
   open: boolean;
@@ -361,12 +362,15 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               disabled={isLoading}
             />
 
-            {/* Tier - Hardcoded 1-5 */}
+            {/* Tier with Display Labels */}
             <SingleSelectDropdown
               label="Tier"
-              options={['1','2','3','4','5']}
-              value={formData.tier}
-              onChange={(value) => handleInputChange("tier", value)}
+              options={tierDisplayOptions}
+              value={getTierDisplayValue(formData.tier)}
+              onChange={(displayValue) => {
+                const dbValue = getTierDatabaseValue(displayValue);
+                handleInputChange("tier", dbValue);
+              }}
               placeholder="Select tier"
               required
               disabled={isLoading}

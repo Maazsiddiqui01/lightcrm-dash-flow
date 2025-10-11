@@ -132,28 +132,25 @@ export const useOpportunityTiers = (search?: string) => {
   return useQuery({
     queryKey: ['opportunity-tiers', search],
     queryFn: async () => {
-      let query = supabase
-        .from('opportunities_raw')
-        .select('tier', { head: false })
-        .not('tier', 'is', null)
-        .neq('tier', '');
+      // Import getTierDisplayValue at runtime to avoid circular dependencies
+      const { getTierDisplayValue } = await import('@/lib/export/opportunityUtils');
       
+      // Always return all 5 tiers with display labels
+      const allTiers = ['1', '2', '3', '4', '5'];
+      const tierOptions = allTiers.map(value => ({
+        value, // Keep database value (1, 2, 3, 4, 5)
+        label: getTierDisplayValue(value) // Show display label (1-Active, etc.)
+      }));
+      
+      // If search is provided, filter the results
       if (search) {
-        query = query.ilike('tier', `%${search}%`);
+        const searchLower = search.toLowerCase();
+        return tierOptions.filter(
+          option => option.value.includes(searchLower) || option.label.toLowerCase().includes(searchLower)
+        );
       }
       
-      const { data, error } = await query.order('tier').limit(1000);
-      if (error) throw error;
-      
-      const uniqueValues = new Set<string>();
-      (data || []).forEach(row => {
-        const value = row.tier?.toString().trim();
-        if (value) uniqueValues.add(value);
-      });
-      
-      return Array.from(uniqueValues)
-        .sort()
-        .map(value => ({ value, label: value }));
+      return tierOptions;
     },
     staleTime: 10 * 60 * 1000,
   });
