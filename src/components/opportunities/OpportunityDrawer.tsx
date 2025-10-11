@@ -231,7 +231,10 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         description: "Opportunity deleted successfully",
       });
 
+      // Close drawer first
       onClose();
+      
+      // Then trigger refresh
       onOpportunityUpdated();
     } catch (error) {
       console.error('Error deleting opportunity:', error);

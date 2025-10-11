@@ -125,8 +125,13 @@ export function Opportunities() {
         description: `Deleted ${selectedRows.length} ${selectedRows.length === 1 ? 'opportunity' : 'opportunities'}`,
       });
       
+      // Clear selection and force table refresh
       setSelectedRows([]);
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      
+      // Force a hard refresh of the page data to ensure table updates
+      window.location.hash = Date.now().toString();
+      window.location.hash = '';
     } catch (error) {
       console.error('Error in bulk delete:', error);
       toast({

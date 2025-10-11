@@ -471,7 +471,13 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         description: "Opportunity deleted successfully",
       });
 
-      fetchOpportunities();
+      // Clear selection if the deleted row was selected
+      if (selectedRows.includes(opportunityId)) {
+        onSelectionChange?.(selectedRows.filter(id => id !== opportunityId));
+      }
+
+      // Refresh the table
+      await fetchOpportunities();
     } catch (error) {
       console.error('Error deleting opportunity:', error);
       toast({
