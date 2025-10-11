@@ -11,7 +11,9 @@ import {
   useOpportunityReferralContacts,
   useOpportunityReferralCompanies,
   useOpportunityDatesOfOrigination,
-  useOpportunityHeadquarters
+  useOpportunityHeadquarters,
+  useOpportunityProcessTimelines,
+  useOpportunityFunds
 } from '@/hooks/useDistinctOptions';
 import { useSectors, useFocusAreas } from '@/hooks/useLookups';
 import { tierOptions } from '@/lib/export/opportunityUtils';
@@ -74,20 +76,13 @@ export function OpportunityFilterBar({
   const { data: referralCompanies = [], isLoading: referralCompaniesLoading } = useOpportunityReferralCompanies();
   const { data: dateOrigins = [], isLoading: dateOriginsLoading } = useOpportunityDatesOfOrigination();
   const { data: headquarters = [], isLoading: headquartersLoading } = useOpportunityHeadquarters();
+  const { data: processTimelines = [], isLoading: processTimelinesLoading } = useOpportunityProcessTimelines();
+  const { data: funds = [], isLoading: fundsLoading } = useOpportunityFunds();
 
-  // Dealcloud options (static)
+  // Dealcloud options (static - intentional per user requirement)
   const dealcloudOptions = [
     { value: 'Yes', label: 'Yes' },
     { value: 'No', label: 'No' }
-  ];
-
-  // Process Timeline options (static)
-  const processTimelineOptions = [
-    { value: '1-90 days', label: '1-90 days' },
-    { value: '91-180 days', label: '91-180 days' },
-    { value: '181-270 days', label: '181-270 days' },
-    { value: '271-365 days', label: '271-365 days' },
-    { value: '365+ days', label: '365+ days' }
   ];
 
   const updateFilter = (key: keyof OpportunityFilters, value: any) => {
@@ -238,20 +233,20 @@ export function OpportunityFilterBar({
 
         <ComboboxMulti
           label="Process Timeline"
-          options={processTimelineOptions}
+          options={processTimelines}
           values={filters.processTimeline || []}
           onChange={(values) => updateFilter('processTimeline', values)}
-          searchPlaceholder="Select Process Timeline"
+          searchPlaceholder="Search Process Timeline"
+          loading={processTimelinesLoading}
         />
 
         <ComboboxMulti
           label="Funds"
-          options={[
-            { value: 'LG Fund VI', label: 'LG Fund VI' }
-          ]}
+          options={funds}
           values={filters.funds || []}
           onChange={(values) => updateFilter('funds', values)}
-          searchPlaceholder="Select Funds"
+          searchPlaceholder="Search Funds"
+          loading={fundsLoading}
         />
 
         <DateRangeInput

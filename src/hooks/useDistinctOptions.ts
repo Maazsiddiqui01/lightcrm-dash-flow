@@ -101,6 +101,9 @@ export const useOpportunityOwnershipTypes = (search?: string) => {
   return useQuery({
     queryKey: ['opportunity-ownership-types', search],
     queryFn: async () => {
+      // Import defaults at runtime to avoid circular dependencies
+      const { defaultOwnershipTypes } = await import('@/lib/export/opportunityUtils');
+      
       let query = supabase
         .from('opportunities_raw')
         .select('ownership_type', { head: false })
@@ -114,7 +117,7 @@ export const useOpportunityOwnershipTypes = (search?: string) => {
       const { data, error } = await query.order('ownership_type').limit(1000);
       if (error) throw error;
       
-      const uniqueValues = new Set<string>();
+      const uniqueValues = new Set<string>(defaultOwnershipTypes);
       (data || []).forEach(row => {
         const value = row.ownership_type?.toString().trim();
         if (value) uniqueValues.add(value);
@@ -269,6 +272,9 @@ export const useOpportunityPlatformAddOn = (search?: string) => {
   return useQuery({
     queryKey: ['opportunity-platform-addon', search],
     queryFn: async () => {
+      // Import display mapping at runtime
+      const { getPlatformAddonDisplayValue, platformAddonDisplayOptions } = await import('@/lib/export/opportunityUtils');
+      
       let query = supabase
         .from('opportunities_raw')
         .select('platform_add_on', { head: false })
@@ -283,14 +289,24 @@ export const useOpportunityPlatformAddOn = (search?: string) => {
       if (error) throw error;
       
       const uniqueValues = new Set<string>();
+      // Add all display options first
+      platformAddonDisplayOptions.forEach(opt => uniqueValues.add(opt));
+      
+      // Add any DB values (converted to display format)
       (data || []).forEach(row => {
         const value = row.platform_add_on?.toString().trim();
-        if (value) uniqueValues.add(value);
+        if (value) {
+          const displayValue = getPlatformAddonDisplayValue(value);
+          uniqueValues.add(displayValue);
+        }
       });
       
       return Array.from(uniqueValues)
         .sort()
-        .map(value => ({ value, label: value }));
+        .map(displayValue => ({ 
+          value: displayValue, 
+          label: displayValue 
+        }));
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -425,6 +441,68 @@ export const useOpportunityHeadquarters = (search?: string) => {
       const uniqueValues = new Set<string>();
       (data || []).forEach(row => {
         const value = row.headquarters?.toString().trim();
+        if (value) uniqueValues.add(value);
+      });
+      
+      return Array.from(uniqueValues)
+        .sort()
+        .map(value => ({ value, label: value }));
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useOpportunityProcessTimelines = (search?: string) => {
+  return useQuery({
+    queryKey: ['opportunity-process-timelines', search],
+    queryFn: async () => {
+      let query = supabase
+        .from('opportunities_raw')
+        .select('process_timeline', { head: false })
+        .not('process_timeline', 'is', null)
+        .neq('process_timeline', '');
+      
+      if (search) {
+        query = query.ilike('process_timeline', `%${search}%`);
+      }
+      
+      const { data, error } = await query.order('process_timeline').limit(1000);
+      if (error) throw error;
+      
+      const uniqueValues = new Set<string>();
+      (data || []).forEach(row => {
+        const value = row.process_timeline?.toString().trim();
+        if (value) uniqueValues.add(value);
+      });
+      
+      return Array.from(uniqueValues)
+        .sort()
+        .map(value => ({ value, label: value }));
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useOpportunityFunds = (search?: string) => {
+  return useQuery({
+    queryKey: ['opportunity-funds', search],
+    queryFn: async () => {
+      let query = supabase
+        .from('opportunities_raw')
+        .select('funds', { head: false })
+        .not('funds', 'is', null)
+        .neq('funds', '');
+      
+      if (search) {
+        query = query.ilike('funds', `%${search}%`);
+      }
+      
+      const { data, error } = await query.order('funds').limit(1000);
+      if (error) throw error;
+      
+      const uniqueValues = new Set<string>();
+      (data || []).forEach(row => {
+        const value = row.funds?.toString().trim();
         if (value) uniqueValues.add(value);
       });
       

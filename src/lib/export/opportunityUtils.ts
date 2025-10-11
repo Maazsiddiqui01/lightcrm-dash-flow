@@ -52,6 +52,30 @@ export const tierOptions = ['1', '2', '3', '4', '5'];
 export const defaultOwnershipTypes = ['Family/Founder', 'Sponsor Owned', 'Public', 'Other'];
 export const defaultPlatformAddons = ['Platform', 'Add-On', 'Both'];
 
+// Platform/Add-On display mapping
+export const platformAddonDisplayMapping: Record<string, string> = {
+  'Platform': 'Platform',
+  'Add-On': 'Add-On',
+  'Both': 'Platform & Add-On'
+};
+
+export const platformAddonValueMapping: Record<string, string> = {
+  'Platform': 'Platform',
+  'Add-On': 'Add-On',
+  'Platform & Add-On': 'Both'
+};
+
+export const getPlatformAddonDisplayValue = (value: string | null | undefined): string => {
+  if (!value) return '';
+  return platformAddonDisplayMapping[value] || value;
+};
+
+export const getPlatformAddonDatabaseValue = (displayValue: string): string => {
+  return platformAddonValueMapping[displayValue] || displayValue;
+};
+
+export const platformAddonDisplayOptions = ['Platform', 'Add-On', 'Platform & Add-On'];
+
 // Tier mapping utilities
 export const tierDisplayMapping: Record<string, string> = {
   '1': '1-Active',

@@ -282,7 +282,10 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
       }
 
       if (filters.platformAddOn.length > 0) {
-        query = query.in('platform_add_on', filters.platformAddOn);
+        // Convert display values to database values
+        const { getPlatformAddonDatabaseValue } = await import('@/lib/export/opportunityUtils');
+        const dbValues = filters.platformAddOn.map(v => getPlatformAddonDatabaseValue(v));
+        query = query.in('platform_add_on', dbValues);
       }
 
       // Headquarters filter

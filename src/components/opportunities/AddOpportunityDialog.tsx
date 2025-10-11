@@ -23,7 +23,15 @@ import { ContactPickerWithAddNew } from "./ContactPickerWithAddNew";
 import { ContactSearchResult } from "@/hooks/useContactSearch";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { useQueryClient } from "@tanstack/react-query";
-import { tierDisplayOptions, getTierDisplayValue, getTierDatabaseValue } from "@/lib/export/opportunityUtils";
+import { 
+  tierDisplayOptions, 
+  getTierDisplayValue, 
+  getTierDatabaseValue,
+  platformAddonDisplayOptions,
+  getPlatformAddonDisplayValue,
+  getPlatformAddonDatabaseValue,
+  defaultOwnershipTypes
+} from "@/lib/export/opportunityUtils";
 
 interface AddOpportunityDialogProps {
   open: boolean;
@@ -147,7 +155,9 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         status: req(formData.status),
         tier: req(formData.tier),
         // Optionals
-        platform_add_on: opt(formData.platform_add_on),
+        platform_add_on: opt(formData.platform_add_on) 
+          ? getPlatformAddonDatabaseValue(formData.platform_add_on) 
+          : null,
         date_of_origination: opt(formData.date_of_origination),
         deal_source_company: opt(formData.deal_source_company),
         deal_source_individual_1: selectedSourceContact1?.full_name || null,
@@ -424,20 +434,23 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Platform/Add-on */}
+              {/* Platform/Add-on with Display Labels */}
               <SingleSelectDropdown
                 label="Platform/Add-on"
-                options={['Platform','Add-on']}
-                value={formData.platform_add_on}
-                onChange={(value) => handleInputChange("platform_add_on", value)}
+                options={platformAddonDisplayOptions}
+                value={getPlatformAddonDisplayValue(formData.platform_add_on)}
+                onChange={(displayValue) => {
+                  const dbValue = getPlatformAddonDatabaseValue(displayValue);
+                  handleInputChange("platform_add_on", dbValue);
+                }}
                 placeholder="Select platform/add-on"
                 disabled={isLoading}
               />
 
-              {/* Ownership Type */}
+              {/* Ownership Type with All Defaults */}
               <SingleSelectDropdown
                 label="Ownership Type"
-                options={['Family/Founder','Sponsor Owned','Other']}
+                options={defaultOwnershipTypes}
                 value={formData.ownership_type}
                 onChange={(value) => handleInputChange("ownership_type", value)}
                 placeholder="Select ownership type"

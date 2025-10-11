@@ -27,8 +27,10 @@ import {
   tierDisplayOptions, 
   getTierDisplayValue, 
   getTierDatabaseValue,
-  normalizePlatformAddonMapping, 
-  normalizeOwnershipTypeMapping 
+  platformAddonDisplayOptions,
+  getPlatformAddonDisplayValue,
+  getPlatformAddonDatabaseValue,
+  defaultOwnershipTypes
 } from "@/lib/export/opportunityUtils";
 import { useSectors, useFocusAreasBySector, findMatchingOption } from "@/hooks/useLookups";
 import { calculateLgTeam } from "@/utils/opportunityHelpers";
@@ -517,12 +519,15 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 disabled={isLoading}
               />
 
-              {/* Platform Add-On */}
+              {/* Platform Add-On with Display Labels */}
               <SingleSelectDropdown
                 label="Platform/Add-on"
-                options={['Platform','Add-on']}
-                value={editedFields.platform_add_on || ""}
-                onChange={(value) => handleFieldChange("platform_add_on", value)}
+                options={platformAddonDisplayOptions}
+                value={getPlatformAddonDisplayValue(editedFields.platform_add_on)}
+                onChange={(displayValue) => {
+                  const dbValue = getPlatformAddonDatabaseValue(displayValue);
+                  handleFieldChange("platform_add_on", dbValue);
+                }}
                 placeholder="Select platform/add-on"
                 disabled={isLoading}
               />
@@ -643,10 +648,10 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 />
               </div>
               
-              {/* Ownership Type */}
+              {/* Ownership Type with All Defaults */}
               <SingleSelectDropdown
                 label="Ownership Type"
-                options={['Family/Founder','Sponsor Owned','Other']}
+                options={defaultOwnershipTypes}
                 value={editedFields.ownership_type || ""}
                 onChange={(value) => handleFieldChange("ownership_type", value)}
                 placeholder="Select ownership type"
