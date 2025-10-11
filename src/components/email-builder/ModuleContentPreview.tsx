@@ -2,10 +2,12 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Eye, ChevronDown, ChevronUp, Mail, AlertCircle } from "lucide-react";
 import type { ModuleSelections } from "@/types/moduleSelections";
 import type { PhraseLibraryItem } from "@/types/phraseLibrary";
 import type { TriState } from "@/types/phraseLibrary";
+import type { ContactEmailComposer, Opportunity } from "@/types/emailComposer";
+import type { SubjectLibraryItem } from "@/hooks/useSubjectLibrary";
 
 interface ModuleStates {
   initial_greeting: TriState;
@@ -26,13 +28,10 @@ interface ModuleContentPreviewProps {
   moduleStates: ModuleStates;
   moduleSelections: ModuleSelections;
   allPhrases: PhraseLibraryItem[];
-  contactData: {
-    first_name?: string;
-    full_name?: string;
-    organization?: string;
-    lg_focus_areas_comprehensive_list?: string;
-  } | null;
+  contactData: ContactEmailComposer | null;
   customModuleLabels?: Record<string, string>;
+  selectedSubjects?: string[];
+  allSubjects?: SubjectLibraryItem[];
 }
 
 const MODULE_LABELS: Record<keyof ModuleStates, string> = {
@@ -56,6 +55,8 @@ export function ModuleContentPreview({
   allPhrases,
   contactData,
   customModuleLabels = {},
+  selectedSubjects = [],
+  allSubjects = [],
 }: ModuleContentPreviewProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showAll, setShowAll] = useState(false);
@@ -138,7 +139,51 @@ export function ModuleContentPreview({
       </CardHeader>
 
       {isExpanded && (
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Subject Line Preview */}
+          {selectedSubjects.length > 0 ? (
+            <div className="p-4 bg-primary/5 rounded-lg border-2 border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Mail className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-primary">Subject Line Pool</span>
+                <Badge variant="outline" className="text-xs">
+                  {selectedSubjects.length} enabled
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                {selectedSubjects.slice(0, 3).map((subjectId) => {
+                  const subject = allSubjects.find((s) => s.id === subjectId);
+                  if (!subject) return null;
+
+                  const interpolatedSubject = contactData
+                    ? interpolateVariables(subject.subject_template, contactData)
+                    : subject.subject_template;
+
+                  return (
+                    <div key={subjectId} className="text-sm text-foreground/90">
+                      • {interpolatedSubject}
+                    </div>
+                  );
+                })}
+                {selectedSubjects.length > 3 && (
+                  <div className="text-xs text-muted-foreground">
+                    +{selectedSubjects.length - 3} more subjects
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 bg-destructive/5 rounded-lg border-2 border-destructive/20">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <span className="text-sm font-medium text-destructive">
+                  No subject lines enabled
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Module Content Preview */}
           {visibleModules.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Eye className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -220,25 +265,62 @@ export function ModuleContentPreview({
 }
 
 /**
+ * Format opportunities with proper grammar
+ */
+function formatOpportunities(opps: Opportunity[]): string {
+  if (!opps || opps.length === 0) return 'your recent projects';
+  
+  const names = opps.map((o) => o.deal_name);
+  
+  if (names.length === 1) {
+    return names[0];
+  } else if (names.length === 2) {
+    return `${names[0]} and ${names[1]}`;
+  } else {
+    const lastOpp = names[names.length - 1];
+    const firstOpps = names.slice(0, -1).join(', ');
+    return `${firstOpps} and ${lastOpp}`;
+  }
+}
+
+/**
  * Interpolate variables in phrase text with contact data
  */
-function interpolateVariables(text: string, contactData: any): string {
+function interpolateVariables(text: string, contactData: ContactEmailComposer): string {
   let result = text;
 
-  // Replace {first_name}
-  if (contactData.first_name) {
-    result = result.replace(/\{first_name\}/g, contactData.first_name);
-  }
+  // 1. Name variables (case-insensitive)
+  const firstName = contactData.first_name || '';
+  const fullName = contactData.full_name || '';
+  const organization = contactData.organization || '';
 
-  // Replace {organization}
-  if (contactData.organization) {
-    result = result.replace(/\{organization\}/g, contactData.organization);
-  }
+  result = result.replace(/\{first_name\}|\[First Name\]/gi, firstName);
+  result = result.replace(/\{full_name\}|\[Full Name\]/gi, fullName);
+  result = result.replace(/\{organization\}|\[Organization\]/gi, organization);
 
-  // Replace {full_name}
-  if (contactData.full_name) {
-    result = result.replace(/\{full_name\}/g, contactData.full_name);
-  }
+  // 2. Sector variables
+  const sectors = contactData.fa_sectors || [];
+  const primarySector = sectors[0] || 'Technology';
+  const allSectors = sectors.length > 0 ? sectors.join(', ') : 'Technology';
+
+  result = result.replace(/\[Sector\]|\{sector\}/gi, primarySector);
+  result = result.replace(/\[Sectors\]|\{sectors\}/gi, allSectors);
+
+  // 3. Opportunity variables
+  const opps = contactData.opps || [];
+  const formattedOpps = formatOpportunities(opps);
+  const primaryOpp = opps[0]?.deal_name || 'your recent project';
+
+  result = result.replace(/\[X\]/g, formattedOpps);
+  result = result.replace(/\[Deal Name\]|\{deal_name\}|\[Opportunity\]|\{opportunity\}/gi, primaryOpp);
+
+  // 4. Focus Area variables
+  const focusAreas = contactData.focus_areas || [];
+  const primaryFocusArea = focusAreas[0] || '';
+  const allFocusAreas = focusAreas.length > 0 ? focusAreas.join(', ') : '';
+
+  result = result.replace(/\[Focus Area\]|\{focus_area\}/gi, primaryFocusArea);
+  result = result.replace(/\[Focus Areas\]|\{focus_areas\}/gi, allFocusAreas);
 
   return result;
 }

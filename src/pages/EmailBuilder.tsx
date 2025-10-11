@@ -1572,6 +1572,8 @@ ${draftResult.signature}`;
                 allPhrases={allPhrases}
                 contactData={contactData}
                 customModuleLabels={customModuleLabels}
+                selectedSubjects={subjectPoolOverride}
+                allSubjects={allSubjects || []}
               />
             )}
             
