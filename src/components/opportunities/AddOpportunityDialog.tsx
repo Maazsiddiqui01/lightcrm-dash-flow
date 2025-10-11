@@ -457,15 +457,14 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                 disabled={isLoading}
               />
 
-              <div className="space-y-2">
-                <Label htmlFor="date_of_origination">Date of Origination</Label>
-                <Input
-                  id="date_of_origination"
-                  value={formData.date_of_origination}
-                  onChange={(e) => handleInputChange("date_of_origination", e.target.value)}
-                  placeholder="e.g., Q1 2024, Jan 2024"
-                />
-              </div>
+            <SingleSelectDropdown
+              label="Date of Origination"
+              options={['2024', '2025', '2026', '2027']}
+              value={formData.date_of_origination}
+              onChange={(value) => handleInputChange("date_of_origination", value)}
+              placeholder="Select year"
+              disabled={isLoading}
+            />
             </div>
 
             <SingleSelectDropdown

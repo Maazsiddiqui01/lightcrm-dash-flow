@@ -542,6 +542,16 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 disabled={isLoading}
               />
 
+              {/* Date of Origination */}
+              <SingleSelectDropdown
+                label="Date of Origination"
+                options={['2024', '2025', '2026', '2027']}
+                value={opportunity.date_of_origination || ""}
+                onChange={(value) => handleFieldChange("date_of_origination", value)}
+                placeholder="Select year"
+                disabled={isLoading}
+              />
+
               {/* Funds */}
               <SingleSelectDropdown
                 label="Funds"

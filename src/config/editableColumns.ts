@@ -441,7 +441,10 @@ export const editableColumns: EditableConfig = {
     deal_source_individual_1: { type: 'contact-search' },
     deal_source_individual_2: { type: 'contact-search' },
     deal_source_contacts: { type: 'textarea' },
-    date_of_origination: { type: 'text' },
+    date_of_origination: { 
+      type: 'select',
+      options: ['2024', '2025', '2026', '2027']
+    },
     dealcloud: { type: 'boolean' },
     headquarters: { type: 'text' },
     revenue: { type: 'number', validation: validateNumber },
