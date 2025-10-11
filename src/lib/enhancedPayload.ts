@@ -17,6 +17,7 @@ import { fetchContactMetadata } from '@/hooks/useContextFetching';
 import { buildModuleConfiguration, buildContentFlow } from './draftGeneration';
 import { supabase } from '@/integrations/supabase/client';
 import { buildModuleSequence } from './modulePositions';
+import { interpolateContent } from './contentInterpolation';
 
 export interface EnhancedDraftPayload {
   // Core contact info
@@ -103,7 +104,7 @@ export interface EnhancedDraftPayload {
     deltaType: 'Email' | 'Meeting';
   };
   
-  // Resolved content from libraries
+  // Resolved content from libraries (RAW - with placeholders)
   content: {
     subject: string;
     greeting: string | null;
@@ -114,6 +115,21 @@ export interface EnhancedDraftPayload {
     } | null;
     signature: string;
     assistantClause: string;
+  };
+  
+  // Pre-interpolated content (NEW - ready for n8n)
+  contentInterpolated: {
+    subject: string;
+    greeting: string;
+    modules: Array<{
+      key: string;
+      position: number;
+      label: string;
+      state: TriState;
+      content: string;
+    }>;
+    signature: string;
+    ccList: string[];
   };
   
   // Module states
@@ -494,6 +510,96 @@ export async function buildEnhancedDraftPayload(
     addedIds: curatedTeam.filter(m => !autoTeam.some(a => a.id === m.id)).map(m => m.id),
   } : undefined;
 
+  // ===== Build Interpolated Content (NEW) =====
+  
+  // Module labels map (custom labels from moduleSelections)
+  const MODULE_LABELS: Record<string, string> = {
+    initial_greeting: "Initial Greeting",
+    self_personalization: "Self Personalization",
+    top_opportunities: "Top Opportunities",
+    article_recommendations: "Article Recommendations",
+    platforms: "Platforms",
+    addons: "Add-ons",
+    suggested_talking_points: "Suggested Talking Points",
+    general_org_update: "General Org Update",
+    attachments: "Attachments",
+    meeting_request: "Meeting Request",
+    ai_backup_personalization: "AI Backup Personalization",
+  };
+
+  const interpolatedModules: Array<{
+    key: string;
+    position: number;
+    label: string;
+    state: TriState;
+    content: string;
+  }> = [];
+
+  // Convert opportunities to the expected format for interpolation
+  const opportunitiesForInterpolation = metadata.topOpportunities.map(opp => ({
+    deal_name: opp.dealName,
+    ebitda_in_ms: opp.ebitda,
+  }));
+
+  // Convert focus area descriptions to the expected format for interpolation
+  const focusAreaDescriptionsForInterpolation = metadata.focusAreaDescriptions.map(fa => ({
+    focus_area: fa.focusArea,
+    description: fa.description,
+    platform_type: fa.platformAddon,
+    sector: fa.sector,
+  }));
+
+  // Use moduleSequence (which respects UI order) to build interpolated content
+  for (const module of moduleSequence) {
+    const rawContent = resolvedPhrases[module.id] || '';
+    const customLabel = moduleSelections?.[module.id as keyof typeof moduleSelections]?.customLabel;
+    const effectiveLabel = customLabel || MODULE_LABELS[module.id] || module.id;
+    const state = (module as any).mode || 'never';
+    
+    if (state !== 'never' && rawContent) {
+      interpolatedModules.push({
+        key: module.id,
+        position: module.position,
+        label: effectiveLabel,
+        state: state as TriState,
+        content: interpolateContent(
+          rawContent,
+          contact,
+          opportunitiesForInterpolation,
+          focusAreaDescriptionsForInterpolation
+        ),
+      });
+    }
+  }
+
+  // Interpolate subject
+  const interpolatedSubject = interpolateContent(
+    subject,
+    contact,
+    opportunitiesForInterpolation,
+    focusAreaDescriptionsForInterpolation
+  );
+
+  // Interpolate greeting
+  const interpolatedGreeting = interpolateContent(
+    greeting,
+    contact,
+    opportunitiesForInterpolation,
+    focusAreaDescriptionsForInterpolation
+  );
+
+  // Interpolate signature (may contain placeholders like [Assistant])
+  const interpolatedSignature = interpolateContent(
+    generation.signature,
+    contact,
+    opportunitiesForInterpolation,
+    focusAreaDescriptionsForInterpolation
+  );
+
+  const finalCcList = recipients?.cc || [...leadEmails, ...assistantEmails].filter((email, index, self) => 
+    self.indexOf(email) === index
+  );
+
   return {
     contact: {
       id: contact.contact_id,
@@ -559,6 +665,13 @@ export async function buildEnhancedDraftPayload(
       signature: generation.signature,
       assistantClause: generation.assistantClause,
     },
+    contentInterpolated: {
+      subject: interpolatedSubject,
+      greeting: interpolatedGreeting,
+      modules: interpolatedModules,
+      signature: interpolatedSignature,
+      ccList: finalCcList,
+    },
     modules: generation.modules,
     flow,
     moduleSequence,
@@ -566,9 +679,7 @@ export async function buildEnhancedDraftPayload(
     cc: {
       leads: leadEmails,
       assistants: assistantEmails,
-      final: [...leadEmails, ...assistantEmails].filter((email, index, self) => 
-        self.indexOf(email) === index
-      ),
+      final: finalCcList,
     },
     qualityCheck: generation.qualityCheck,
     tracking: {
@@ -647,6 +758,13 @@ function createFailedPayload(
       inquiry: null,
       signature: '',
       assistantClause: '',
+    },
+    contentInterpolated: {
+      subject: '',
+      greeting: '',
+      modules: [],
+      signature: '',
+      ccList: [],
     },
     modules: {},
     flow: [],

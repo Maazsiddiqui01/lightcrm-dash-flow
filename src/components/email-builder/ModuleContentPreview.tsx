@@ -8,6 +8,7 @@ import type { PhraseLibraryItem } from "@/types/phraseLibrary";
 import type { TriState } from "@/types/phraseLibrary";
 import type { ContactEmailComposer, Opportunity } from "@/types/emailComposer";
 import type { SubjectLibraryItem } from "@/hooks/useSubjectLibrary";
+import { interpolateContent } from "@/lib/contentInterpolation";
 
 interface ModuleStates {
   initial_greeting: TriState;
@@ -93,9 +94,9 @@ export function ModuleContentPreview({
           }
         }
 
-        // Interpolate variables in content
+        // Interpolate variables in content using unified function
         if (content && contactData) {
-          content = interpolateVariables(content, contactData);
+          content = interpolateContent(content, contactData, contactData.opps, contactData.fa_descriptions);
         }
 
         return {
@@ -156,7 +157,7 @@ export function ModuleContentPreview({
                   if (!subject) return null;
 
                   const interpolatedSubject = contactData
-                    ? interpolateVariables(subject.subject_template, contactData)
+                    ? interpolateContent(subject.subject_template, contactData, contactData.opps, contactData.fa_descriptions)
                     : subject.subject_template;
 
                   return (
@@ -264,63 +265,3 @@ export function ModuleContentPreview({
   );
 }
 
-/**
- * Format opportunities with proper grammar
- */
-function formatOpportunities(opps: Opportunity[]): string {
-  if (!opps || opps.length === 0) return 'your recent projects';
-  
-  const names = opps.map((o) => o.deal_name);
-  
-  if (names.length === 1) {
-    return names[0];
-  } else if (names.length === 2) {
-    return `${names[0]} and ${names[1]}`;
-  } else {
-    const lastOpp = names[names.length - 1];
-    const firstOpps = names.slice(0, -1).join(', ');
-    return `${firstOpps} and ${lastOpp}`;
-  }
-}
-
-/**
- * Interpolate variables in phrase text with contact data
- */
-function interpolateVariables(text: string, contactData: ContactEmailComposer): string {
-  let result = text;
-
-  // 1. Name variables (case-insensitive)
-  const firstName = contactData.first_name || '';
-  const fullName = contactData.full_name || '';
-  const organization = contactData.organization || '';
-
-  result = result.replace(/\{first_name\}|\[First Name\]/gi, firstName);
-  result = result.replace(/\{full_name\}|\[Full Name\]/gi, fullName);
-  result = result.replace(/\{organization\}|\[Organization\]/gi, organization);
-
-  // 2. Sector variables
-  const sectors = contactData.fa_sectors || [];
-  const primarySector = sectors[0] || 'Technology';
-  const allSectors = sectors.length > 0 ? sectors.join(', ') : 'Technology';
-
-  result = result.replace(/\[Sector\]|\{sector\}/gi, primarySector);
-  result = result.replace(/\[Sectors\]|\{sectors\}/gi, allSectors);
-
-  // 3. Opportunity variables
-  const opps = contactData.opps || [];
-  const formattedOpps = formatOpportunities(opps);
-  const primaryOpp = opps[0]?.deal_name || 'your recent project';
-
-  result = result.replace(/\[X\]/g, formattedOpps);
-  result = result.replace(/\[Deal Name\]|\{deal_name\}|\[Opportunity\]|\{opportunity\}/gi, primaryOpp);
-
-  // 4. Focus Area variables
-  const focusAreas = contactData.focus_areas || [];
-  const primaryFocusArea = focusAreas[0] || '';
-  const allFocusAreas = focusAreas.length > 0 ? focusAreas.join(', ') : '';
-
-  result = result.replace(/\[Focus Area\]|\{focus_area\}/gi, primaryFocusArea);
-  result = result.replace(/\[Focus Areas\]|\{focus_areas\}/gi, allFocusAreas);
-
-  return result;
-}

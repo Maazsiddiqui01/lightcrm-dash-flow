@@ -5,115 +5,66 @@
  */
 
 import type { EnhancedDraftPayload } from './enhancedPayload';
+import { interpolateContent } from './contentInterpolation';
 
 /**
- * Token replacement for placeholders in phrases
+ * Token replacement using unified interpolation system
  */
 function replaceTokens(
   text: string,
   payload: EnhancedDraftPayload
 ): string {
-  let result = text;
-  
-  // First Name token
-  result = result.replace(/\[First Name\]/g, payload.contact.firstName);
-  result = result.replace(/\[first name\]/g, payload.contact.firstName.toLowerCase());
-  
-  // Focus Area tokens
-  if (payload.focusAreas.list.length > 0) {
-    result = result.replace(/\[Focus Area\]/g, payload.focusAreas.list[0]);
-    result = result.replace(/\[focus area\]/g, payload.focusAreas.list[0].toLowerCase());
-    result = result.replace(/\[LG Focus Area\]/g, payload.focusAreas.list[0]);
-  }
-  
-  // Sector tokens
-  if (payload.focusAreas.descriptions.length > 0) {
-    const sector = payload.focusAreas.descriptions[0].sector;
-    result = result.replace(/\[Sector\]/g, sector);
-    result = result.replace(/\[sector\]/g, sector.toLowerCase());
-  }
-  
-  // EBITDA tokens
-  const ebitdaThreshold = payload.opportunities.hasOpps 
-    ? Math.max(...payload.opportunities.active_tier1.map(o => o.ebitda || 30))
-    : 30;
-  result = result.replace(/\[EBITDA\]/g, String(ebitdaThreshold));
-  result = result.replace(/\$\[EBITDA\]m/g, `$${ebitdaThreshold}m`);
-  result = result.replace(/>\s*\$\[EBITDA\]m/g, `>$${ebitdaThreshold}m`);
-  result = result.replace(/\>\$\[EBITDA\]m/g, `>$${ebitdaThreshold}m`);
-  
-  // Opportunity tokens
-  if (payload.opportunities.hasOpps && payload.opportunities.active_tier1.length > 0) {
-    const topOpp = payload.opportunities.active_tier1[0];
-    result = result.replace(/\[Opportunity Name\]/g, topOpp.dealName);
-    result = result.replace(/\[Opp X\]/g, topOpp.dealName);
-    result = result.replace(/\[X\]/g, topOpp.dealName);
-    
-    // Multiple opportunities list
-    const oppNames = payload.opportunities.active_tier1.map(o => o.dealName);
-    if (oppNames.length > 1) {
-      const oppList = oppNames.length === 2 
-        ? `${oppNames[0]} and ${oppNames[1]}`
-        : `${oppNames.slice(0, -1).join(', ')}, and ${oppNames[oppNames.length - 1]}`;
-      result = result.replace(/\[X\] \(and others\)/g, oppList);
-    }
-  }
-  
-  // Organization tokens
-  result = result.replace(/\[Their Org\]/g, payload.contact.organization || 'your organization');
-  result = result.replace(/\[My Org\]/g, 'Lindsay Goldberg');
-  result = result.replace(/\[Contact's Org\]/g, payload.contact.organization || 'your organization');
-  result = result.replace(/\[Contact's Organization Name\]/g, payload.contact.organization || 'your organization');
-  
-  // Article tokens
-  if (payload.articles.selected) {
-    result = result.replace(/\[Link\]/g, payload.articles.selected);
-    result = result.replace(/\[Article Link\]/g, payload.articles.selected);
-  }
-  
-  // Sub-sector emphasis (from focus area description)
-  if (payload.focusAreas.descriptions.length > 0) {
-    const desc = payload.focusAreas.descriptions[0].description;
-    // Extract potential sub-sector from description
-    const subSector = desc.split(',')[0] || 'related areas';
-    result = result.replace(/\[sub sector\]/g, subSector);
-    result = result.replace(/\[sub sector emphasis\]/g, subSector);
-  }
-  
-  // LG Lead tokens
-  if (payload.cc.leads.length > 0) {
-    const leadEmail = payload.cc.leads[0];
-    const leadName = leadEmail.split('@')[0].split('.').map(
-      part => part.charAt(0).toUpperCase() + part.slice(1)
-    ).join(' ');
-    result = result.replace(/\[LG Lead\]/g, leadName);
-    result = result.replace(/\[Teammate\]/g, leadName);
-  }
-  
-  // Assistant tokens
-  if (payload.cc.assistants.length > 0) {
-    const assistantEmail = payload.cc.assistants[0];
-    const assistantName = assistantEmail.split('@')[0].split('.').map(
-      part => part.charAt(0).toUpperCase() + part.slice(1)
-    ).join(' ');
-    result = result.replace(/\[Assistant\]/g, assistantName);
-  }
-  
-  // Article Title tokens
-  if (payload.articles.selected) {
-    // Extract title from article link or use generic
-    const articleTitle = payload.articles.selected.split('/').pop()?.replace(/-/g, ' ') || 'Recent Article';
-    result = result.replace(/\[Article Title\]/g, articleTitle);
-  }
-  
-  // Title/Attachment tokens
-  result = result.replace(/\[Title\]/g, 'Investment Overview');
-  result = result.replace(/\[news\]/g, 'recent announcement');
-  result = result.replace(/\[Company\]/g, 'Company');
-  result = result.replace(/\[Buyer\]/g, 'Buyer');
-  result = result.replace(/\[topic\]/g, 'this topic');
-  
-  return result;
+  // Convert payload to ContactEmailComposer format for interpolation
+  const contactData = {
+    contact_id: payload.contact.id,
+    full_name: payload.contact.fullName,
+    first_name: payload.contact.firstName,
+    email: payload.contact.email,
+    organization: payload.contact.organization,
+    lg_emails_cc: null,
+    focus_areas: payload.focusAreas.list,
+    fa_count: payload.focusAreas.list.length,
+    fa_sectors: payload.focusAreas.descriptions.map(d => d.sector),
+    fa_descriptions: payload.focusAreas.descriptions.map(d => ({
+      focus_area: d.focusArea,
+      description: d.description,
+      platform_type: d.platformAddon,
+      sector: d.sector,
+    })),
+    gb_present: false,
+    hs_present: false,
+    ls_present: false,
+    has_opps: payload.opportunities.hasOpps,
+    opps: payload.opportunities.active_tier1.map(o => ({
+      deal_name: o.dealName,
+      ebitda_in_ms: o.ebitda,
+    })),
+    articles: payload.articles.available.map(a => ({
+      focus_area: a.focusArea || '',
+      article_link: a.link,
+      last_date_to_use: a.lastDate,
+    })),
+    lead_emails: payload.cc.leads,
+    assistant_names: [],
+    assistant_emails: payload.cc.assistants,
+    most_recent_contact: null,
+    outreach_date: null,
+  };
+
+  return interpolateContent(
+    text,
+    contactData,
+    payload.opportunities.active_tier1.map(o => ({
+      deal_name: o.dealName,
+      ebitda_in_ms: o.ebitda,
+    })),
+    payload.focusAreas.descriptions.map(d => ({
+      focus_area: d.focusArea,
+      description: d.description,
+      platform_type: d.platformAddon,
+      sector: d.sector,
+    }))
+  );
 }
 
 /**
