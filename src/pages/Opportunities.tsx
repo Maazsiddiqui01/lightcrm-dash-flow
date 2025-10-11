@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useOpportunityStats } from "@/hooks/useOpportunityStats";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { Plus, Target, TrendingUp, Users, DollarSign, UserPlus } from "lucide-react";
+import { Plus, Target, TrendingUp, Users, DollarSign, UserPlus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { AddOpportunityDialog } from "@/components/opportunities/AddOpportunityDialog";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
@@ -18,12 +18,15 @@ import { useUsersList } from "@/hooks/useUsersList";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 
 export function Opportunities() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { data: users } = useUsersList();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -105,6 +108,38 @@ export function Opportunities() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('opportunities_raw')
+        .delete()
+        .in('id', selectedRows);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Deleted ${selectedRows.length} ${selectedRows.length === 1 ? 'opportunity' : 'opportunities'}`,
+      });
+      
+      setSelectedRows([]);
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+    } catch (error) {
+      console.error('Error in bulk delete:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete opportunities",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsBulkDeleteDialogOpen(false);
+    }
+  };
+
   return (
     <div className="min-h-0 flex-1">
       <ResponsiveContainer className="flex flex-col gap-6 py-6">
@@ -116,27 +151,41 @@ export function Opportunities() {
           </div>
           <div className="flex gap-2">
             {selectedRows.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="touch-target" disabled={isAssigning}>
-                    <UserPlus className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">
-                      {isAssigning ? "Assigning..." : `Assign (${selectedRows.length})`}
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {users?.map((user) => (
-                    <DropdownMenuItem
-                      key={user.id}
-                      onClick={() => handleBulkAssignment(user.id)}
-                      disabled={isAssigning}
-                    >
-                      {user.full_name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="touch-target" disabled={isAssigning}>
+                      <UserPlus className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">
+                        {isAssigning ? "Assigning..." : `Assign (${selectedRows.length})`}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {users?.map((user) => (
+                      <DropdownMenuItem
+                        key={user.id}
+                        onClick={() => handleBulkAssignment(user.id)}
+                        disabled={isAssigning}
+                      >
+                        {user.full_name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                <Button 
+                  variant="destructive" 
+                  className="touch-target" 
+                  disabled={isDeleting}
+                  onClick={() => setIsBulkDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    {isDeleting ? "Deleting..." : `Delete (${selectedRows.length})`}
+                  </span>
+                </Button>
+              </>
             )}
             <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
               <Plus className="h-4 w-4 sm:mr-2" />
@@ -190,6 +239,17 @@ export function Opportunities() {
             // Invalidate queries to refresh the list
             queryClient.invalidateQueries({ queryKey: ['opportunities'] });
           }} 
+        />
+
+        <ConfirmDialog
+          open={isBulkDeleteDialogOpen}
+          onOpenChange={setIsBulkDeleteDialogOpen}
+          onConfirm={handleBulkDelete}
+          title="Delete Opportunities"
+          description={`Are you sure you want to delete ${selectedRows.length} ${selectedRows.length === 1 ? 'opportunity' : 'opportunities'}? This action cannot be undone.`}
+          confirmText="Delete All"
+          cancelText="Cancel"
+          variant="destructive"
         />
       </ResponsiveContainer>
     </div>

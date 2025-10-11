@@ -6,7 +6,7 @@ import { OpportunityDrawer } from "./OpportunityDrawer";
 import { AddOpportunityDialog } from "./AddOpportunityDialog";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle, Upload } from "lucide-react";
+import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle, Upload, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { QuickAddModal } from "./QuickAddModal";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 // Dynamic column imports
 import { OPPORTUNITIES_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -117,6 +118,8 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
   const [quickAddType, setQuickAddType] = useState<'next_steps' | 'most_recent_notes'>('next_steps');
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [opportunityToDelete, setOpportunityToDelete] = useState<OpportunityRaw | null>(null);
   
   // Add request tracking to prevent race conditions
   const requestIdRef = useRef<string | null>(null);
@@ -206,6 +209,17 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
             >
               <FileText className="h-4 w-4 mr-2" />
               Add New Note
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpportunityToDelete(row);
+                setDeleteConfirmOpen(true);
+              }}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Opportunity
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -443,6 +457,31 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
     }
   };
 
+  const handleDeleteOpportunity = async (opportunityId: string) => {
+    try {
+      const { error } = await supabase
+        .from('opportunities_raw')
+        .delete()
+        .eq('id', opportunityId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Opportunity deleted successfully",
+      });
+
+      fetchOpportunities();
+    } catch (error) {
+      console.error('Error deleting opportunity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete opportunity. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Simplified export function - exports visible columns of filtered rows
   const handleExport = async () => {
     setIsExporting(true);
@@ -612,6 +651,24 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         onOpenChange={setIsImportModalOpen}
         entityType="opportunities"
         onImportComplete={() => fetchOpportunities()}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        onConfirm={() => {
+          if (opportunityToDelete) {
+            handleDeleteOpportunity(opportunityToDelete.id);
+          }
+          setDeleteConfirmOpen(false);
+          setOpportunityToDelete(null);
+        }}
+        title="Delete Opportunity"
+        description={`Are you sure you want to delete "${opportunityToDelete?.deal_name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
       />
     </div>
   );
