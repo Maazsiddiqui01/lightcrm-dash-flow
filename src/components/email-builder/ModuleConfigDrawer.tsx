@@ -23,6 +23,7 @@ import { GeneralOrgUpdateSelector } from "./GeneralOrgUpdateSelector";
 import { AttachmentsSelector } from "./AttachmentsSelector";
 import { MeetingRequestSelector } from "./MeetingRequestSelector";
 import { AIBackupSelector } from "./AIBackupSelector";
+import { PhraseSelectorGeneric } from "./PhraseSelectorGeneric";
 
 interface ModuleConfigDrawerProps {
   isOpen: boolean;
@@ -234,6 +235,23 @@ export function ModuleConfigDrawer({
             contactName={contactName}
             defaultPhraseId={tempSelection?.defaultPhraseId}
             onDefaultToggle={handleDefaultToggle}
+          />
+        );
+      
+      case 'closing_line':
+        const closingPhrases = allPhrases.filter(p => p.category === 'closing');
+        return (
+          <PhraseSelectorGeneric
+            category="closing"
+            categoryLabel="Closing Line"
+            phrases={closingPhrases}
+            currentSelection={tempSelection}
+            onSelectionChange={setTempSelection}
+            multiSelect={false}
+            contactName={contactName}
+            defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={handleDefaultToggle}
+            allowInlineManagement={true}
           />
         );
       

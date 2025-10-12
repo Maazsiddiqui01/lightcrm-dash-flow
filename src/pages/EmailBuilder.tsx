@@ -133,6 +133,7 @@ export function EmailBuilder() {
     addons: 'always',
     general_org_update: 'always',
     meeting_request: 'sometimes',
+    closing_line: 'sometimes',
   });
   
   // Module order state
@@ -147,6 +148,7 @@ export function EmailBuilder() {
     'addons',
     'general_org_update',
     'meeting_request',
+    'closing_line',
   ]);
   
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null); // Deprecated - keep for backward compat

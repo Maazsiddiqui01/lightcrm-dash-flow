@@ -21,6 +21,7 @@ interface ModuleStates {
   addons: TriState;
   general_org_update: TriState;
   meeting_request: TriState;
+  closing_line: TriState;
 }
 
 interface ModuleContentPreviewProps {
@@ -45,6 +46,7 @@ const MODULE_LABELS: Record<keyof ModuleStates, string> = {
   addons: "Add-on Investments/Existing Platforms",
   general_org_update: "General Org Update",
   meeting_request: "Meeting Request",
+  closing_line: "Closing Line",
 };
 
 export function ModuleContentPreview({

@@ -42,6 +42,7 @@ export interface ModuleStates {
   addons: TriState;
   general_org_update: TriState;
   meeting_request: TriState;
+  closing_line: TriState;
 }
 
 interface ModulesCardProps {
@@ -87,6 +88,7 @@ export function getModuleDefaultsFromMaster(masterKey: string, masterTemplates: 
     addons: defaults.addons || 'always',
     general_org_update: defaults.general_org_update || 'always',
     meeting_request: defaults.meeting_request || 'sometimes',
+    closing_line: defaults.closing_line || 'sometimes',
   };
 }
 
@@ -103,6 +105,7 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     addons: 'always',
     general_org_update: 'always',
     meeting_request: 'sometimes',
+    closing_line: 'sometimes',
   },
   business_development: {
     subject_line: 'always',
@@ -115,6 +118,7 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     addons: 'always',
     general_org_update: 'always',
     meeting_request: 'sometimes',
+    closing_line: 'sometimes',
   },
   hybrid_neutral: {
     subject_line: 'always',
@@ -127,6 +131,7 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     addons: 'always',
     general_org_update: 'always',
     meeting_request: 'sometimes',
+    closing_line: 'sometimes',
   },
 };
 
@@ -141,6 +146,7 @@ const MODULE_LABELS: Record<keyof ModuleStates, string> = {
   addons: "Add-on Investments/Existing Platforms",
   general_org_update: "General Org Update",
   meeting_request: "Meeting Request",
+  closing_line: "Closing Line",
 };
 
 // Modules that have configuration drawers
@@ -155,6 +161,7 @@ const CONFIGURABLE_MODULES: Set<keyof ModuleStates> = new Set([
   'addons',
   'general_org_update',
   'meeting_request',
+  'closing_line',
 ]);
 
 export function ModulesCard({

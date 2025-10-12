@@ -14,6 +14,7 @@ export const MODULE_LIBRARY_MAP = {
   addons: 'addons',
   general_org_update: 'org_update',
   meeting_request: 'meeting_request',
+  closing_line: 'closing',
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_LIBRARY_MAP;
@@ -33,6 +34,7 @@ export const PHRASE_DRIVEN_MODULES: ReadonlySet<ModuleKey> = new Set([
   'addons',
   'general_org_update',
   'meeting_request',
+  'closing_line',
 ]);
 
 /**
@@ -46,6 +48,7 @@ export const SINGLE_SELECT_MODULES: ReadonlySet<ModuleKey> = new Set([
   'top_opportunities',
   'general_org_update',
   'meeting_request',
+  'closing_line',
 ]);
 
 /**

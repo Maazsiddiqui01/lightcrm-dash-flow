@@ -49,4 +49,5 @@ export interface ModuleSelections {
   suggested_talking_points?: ModuleSelection;
   general_org_update?: ModuleSelection;
   meeting_request?: ModuleSelection;
+  closing_line?: ModuleSelection;
 }
