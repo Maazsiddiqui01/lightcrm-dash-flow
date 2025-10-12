@@ -38,6 +38,7 @@ import { useEnhancedDraftGenerator } from "@/hooks/useEnhancedDraftGenerator";
 import { useGlobalPhrases } from "@/hooks/usePhraseLibrary";
 import { useGlobalInquiries } from "@/hooks/useInquiryLibrary";
 import { useSubjectLibrary } from "@/hooks/useSubjectLibrary";
+import { useAutoSelectPhrases } from "@/hooks/useAutoSelectPhrases";
 import { buildEnhancedDraftPayload } from "@/lib/enhancedPayload";
 import { routeMaster } from "@/lib/router";
 import type { EmailTemplate } from "@/hooks/useEmailTemplates";
@@ -783,31 +784,21 @@ export function EmailBuilder() {
     initializeTeamAndRecipients();
   }, [contactData, selectedContact, contactSettings]);
 
-  // Ensure subject_line always has a selection
-  useEffect(() => {
-    if (!allSubjects || allSubjects.length === 0) return;
-    
-    // Check if subject_line has selection
-    if (!moduleSelections.subject_line?.phraseId) {
-      // Auto-select first subject matching tone override
-      const filteredSubjects = toneOverride
-        ? allSubjects.filter(s => s.style === toneOverride)
-        : allSubjects;
-      
-      if (filteredSubjects.length > 0) {
-        const firstSubject = filteredSubjects[0];
-        setModuleSelections(prev => ({
-          ...prev,
-          subject_line: {
-            type: 'phrase',
-            category: 'subject',
-            phraseId: firstSubject.id,
-            phraseText: firstSubject.subject_template,
-          },
-        }));
-      }
-    }
-  }, [allSubjects, toneOverride, moduleSelections.subject_line]);
+  // Auto-select first phrase for all single-select modules (runs once per contact)
+  useAutoSelectPhrases({
+    contactId: selectedContact?.contact_id || null,
+    moduleStates,
+    moduleSelections,
+    allPhrases,
+    allSubjects,
+    toneOverride,
+    onSelectionChange: (updates) => {
+      setModuleSelections(prev => ({
+        ...prev,
+        ...updates,
+      }));
+    },
+  });
 
   // Load master templates from database
   const { data: masterTemplates, isLoading: isLoadingTemplates } = useMasterTemplates();
