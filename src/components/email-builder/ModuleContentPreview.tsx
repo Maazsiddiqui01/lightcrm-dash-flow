@@ -13,15 +13,13 @@ import { interpolateContent } from "@/lib/contentInterpolation";
 interface ModuleStates {
   initial_greeting: TriState;
   self_personalization: TriState;
-  top_opportunities: TriState;
   article_recommendations: TriState;
+  top_opportunities: TriState;
   platforms: TriState;
-  addons: TriState;
   suggested_talking_points: TriState;
+  addons: TriState;
   general_org_update: TriState;
-  attachments: TriState;
   meeting_request: TriState;
-  ai_backup_personalization: TriState;
 }
 
 interface ModuleContentPreviewProps {
@@ -36,17 +34,15 @@ interface ModuleContentPreviewProps {
 }
 
 const MODULE_LABELS: Record<keyof ModuleStates, string> = {
-  initial_greeting: "Initial Greeting",
-  self_personalization: "Self Personalization",
-  top_opportunities: "Top Opportunities",
+  initial_greeting: "Greeting Line",
+  self_personalization: "Courtesy Openers",
   article_recommendations: "Article Recommendations",
-  platforms: "Platforms",
-  addons: "Add-ons",
-  suggested_talking_points: "Suggested Talking Points",
+  top_opportunities: "Follow up re Active Opportunities",
+  platforms: "Focus Area/New Platforms",
+  suggested_talking_points: "Focus Area Rationale",
+  addons: "Add-on Investments/Existing Platforms",
   general_org_update: "General Org Update",
-  attachments: "Attachments",
   meeting_request: "Meeting Request",
-  ai_backup_personalization: "AI Backup Personalization",
 };
 
 export function ModuleContentPreview({

@@ -35,15 +35,13 @@ import { recomputePositions, announceModuleMove } from "@/lib/modulePositions";
 export interface ModuleStates {
   initial_greeting: TriState;
   self_personalization: TriState;
-  top_opportunities: TriState;
   article_recommendations: TriState;
+  top_opportunities: TriState;
   platforms: TriState;
-  addons: TriState;
   suggested_talking_points: TriState;
+  addons: TriState;
   general_org_update: TriState;
-  attachments: TriState;
   meeting_request: TriState;
-  ai_backup_personalization: TriState;
 }
 
 interface ModulesCardProps {
@@ -81,15 +79,13 @@ export function getModuleDefaultsFromMaster(masterKey: string, masterTemplates: 
   return {
     initial_greeting: defaults.initial_greeting || 'always',
     self_personalization: defaults.self_personalization || 'always',
-    top_opportunities: defaults.top_opportunities || 'always',
     article_recommendations: defaults.article_recommendations || 'sometimes',
+    top_opportunities: defaults.top_opportunities || 'always',
     platforms: defaults.platforms || 'never',
-    addons: defaults.addons || 'never',
     suggested_talking_points: defaults.suggested_talking_points || 'sometimes',
+    addons: defaults.addons || 'never',
     general_org_update: defaults.general_org_update || 'never',
-    attachments: defaults.attachments || 'never',
     meeting_request: defaults.meeting_request || 'sometimes',
-    ai_backup_personalization: defaults.ai_backup_personalization || 'sometimes',
   };
 }
 
@@ -98,71 +94,61 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
   relationship_maintenance: {
     initial_greeting: 'always',
     self_personalization: 'always',
-    top_opportunities: 'always',
     article_recommendations: 'sometimes',
+    top_opportunities: 'always',
     platforms: 'never',
-    addons: 'never',
     suggested_talking_points: 'sometimes',
+    addons: 'never',
     general_org_update: 'never',
-    attachments: 'never',
     meeting_request: 'sometimes',
-    ai_backup_personalization: 'sometimes',
   },
   business_development: {
     initial_greeting: 'always',
     self_personalization: 'always',
-    top_opportunities: 'sometimes',
     article_recommendations: 'always',
+    top_opportunities: 'sometimes',
     platforms: 'always',
-    addons: 'always',
     suggested_talking_points: 'always',
+    addons: 'always',
     general_org_update: 'always',
-    attachments: 'sometimes',
     meeting_request: 'always',
-    ai_backup_personalization: 'sometimes',
   },
   hybrid_neutral: {
     initial_greeting: 'always',
     self_personalization: 'always',
-    top_opportunities: 'always',
     article_recommendations: 'sometimes',
+    top_opportunities: 'always',
     platforms: 'never',
-    addons: 'never',
     suggested_talking_points: 'sometimes',
+    addons: 'never',
     general_org_update: 'never',
-    attachments: 'never',
     meeting_request: 'sometimes',
-    ai_backup_personalization: 'sometimes',
   },
 };
 
 const MODULE_LABELS: Record<keyof ModuleStates, string> = {
-  initial_greeting: "Initial Greeting",
-  self_personalization: "Self Personalization", 
-  top_opportunities: "Top Opportunities",
+  initial_greeting: "Greeting Line",
+  self_personalization: "Courtesy Openers",
   article_recommendations: "Article Recommendations",
-  platforms: "Platforms",
-  addons: "Add-ons",
-  suggested_talking_points: "Suggested Talking Points",
+  top_opportunities: "Follow up re Active Opportunities",
+  platforms: "Focus Area/New Platforms",
+  suggested_talking_points: "Focus Area Rationale",
+  addons: "Add-on Investments/Existing Platforms",
   general_org_update: "General Org Update",
-  attachments: "Attachments",
   meeting_request: "Meeting Request",
-  ai_backup_personalization: "AI Backup Personalization",
 };
 
 // Modules that have configuration drawers
 const CONFIGURABLE_MODULES: Set<keyof ModuleStates> = new Set([
   'initial_greeting',
   'self_personalization',
-  'top_opportunities',
   'article_recommendations',
+  'top_opportunities',
   'platforms',
-  'addons',
   'suggested_talking_points',
+  'addons',
   'general_org_update',
-  'attachments',
   'meeting_request',
-  'ai_backup_personalization',
 ]);
 
 export function ModulesCard({

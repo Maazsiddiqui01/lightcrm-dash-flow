@@ -125,30 +125,26 @@ export function EmailBuilder() {
   const [moduleStates, setModuleStates] = useState<ModuleStates>({
     initial_greeting: 'always',
     self_personalization: 'always',
-    top_opportunities: 'always',
     article_recommendations: 'always',
+    top_opportunities: 'always',
     platforms: 'never',
-    addons: 'never',
     suggested_talking_points: 'sometimes',
+    addons: 'never',
     general_org_update: 'never',
-    attachments: 'never',
     meeting_request: 'always',
-    ai_backup_personalization: 'always',
   });
   
   // Module order state
   const [moduleOrder, setModuleOrder] = useState<Array<keyof ModuleStates>>([
     'initial_greeting',
     'self_personalization',
-    'top_opportunities',
     'article_recommendations',
+    'top_opportunities',
     'platforms',
-    'addons',
     'suggested_talking_points',
+    'addons',
     'general_org_update',
-    'attachments',
     'meeting_request',
-    'ai_backup_personalization',
   ]);
   
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null); // Deprecated - keep for backward compat

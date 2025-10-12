@@ -204,21 +204,6 @@ export function ModuleConfigDrawer({
           />
         );
       
-      case 'attachments':
-        return (
-          <AttachmentsSelector
-            phrases={allPhrases}
-            currentSelection={tempSelection}
-            onSelectionChange={setTempSelection}
-            contactData={contactData ? {
-              firstName: contactData.first_name,
-            } : undefined}
-            contactName={contactName}
-            defaultPhraseId={tempSelection?.defaultPhraseId}
-            onDefaultToggle={handleDefaultToggle}
-          />
-        );
-      
       case 'meeting_request':
         return (
           <MeetingRequestSelector
@@ -227,22 +212,6 @@ export function ModuleConfigDrawer({
             onSelectionChange={setTempSelection}
             contactData={contactData ? {
               firstName: contactData.first_name,
-            } : undefined}
-            contactName={contactName}
-            defaultPhraseId={tempSelection?.defaultPhraseId}
-            onDefaultToggle={handleDefaultToggle}
-          />
-        );
-      
-      case 'ai_backup_personalization':
-        return (
-          <AIBackupSelector
-            phrases={allPhrases}
-            currentSelection={tempSelection}
-            onSelectionChange={setTempSelection}
-            contactData={contactData ? {
-              firstName: contactData.first_name,
-              organization: contactData.organization,
             } : undefined}
             contactName={contactName}
             defaultPhraseId={tempSelection?.defaultPhraseId}
