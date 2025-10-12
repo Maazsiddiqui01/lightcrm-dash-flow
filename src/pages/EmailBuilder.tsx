@@ -126,13 +126,13 @@ export function EmailBuilder() {
     subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
-    article_recommendations: 'always',
-    top_opportunities: 'always',
-    platforms: 'never',
-    suggested_talking_points: 'sometimes',
-    addons: 'never',
-    general_org_update: 'never',
-    meeting_request: 'always',
+    article_recommendations: 'sometimes',
+    top_opportunities: 'sometimes',
+    platforms: 'always',
+    suggested_talking_points: 'always',
+    addons: 'always',
+    general_org_update: 'always',
+    meeting_request: 'sometimes',
   });
   
   // Module order state
