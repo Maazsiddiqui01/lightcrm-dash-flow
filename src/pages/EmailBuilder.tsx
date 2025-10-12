@@ -5,6 +5,7 @@ import { ContactSelector } from "@/components/email-builder/ContactSelector";
 import { ContactInfoPanel } from "@/components/email-builder/ContactInfoPanel";
 import { ModeSwitcher } from "@/components/email-builder/ModeSwitcher";
 import { KeyboardShortcutsModal } from "@/components/email-builder/KeyboardShortcutsModal";
+import { SharedSettingsPanel } from "@/components/email-builder/SharedSettingsPanel";
 import { GroupFilterBar } from "@/components/email-builder/GroupFilterBar";
 import { GroupResultsTable } from "@/components/email-builder/GroupResultsTable";
 import { SelectionTray } from "@/components/email-builder/SelectionTray";
@@ -119,8 +120,9 @@ export function EmailBuilder() {
   // Core Settings state
   const [daysSinceContact, setDaysSinceContact] = useState<number>(0);
   const [toneOverride, setToneOverride] = useState<'casual' | 'hybrid' | 'formal' | null>(null);
-  const [lengthOverride, setLengthOverride] = useState<'brief' | 'medium' | 'detailed' | null>(null);
+  const [lengthOverride, setLengthOverride] = useState<'brief' | 'standard' | 'detailed' | null>(null);
   const [subjectPoolOverride, setSubjectPoolOverride] = useState<string[]>([]);
+  const [groupMasterTemplateKey, setGroupMasterTemplateKey] = useState<string | null>(null);
   
   // Module states for email builder
   const [moduleStates, setModuleStates] = useState<ModuleStates>({
@@ -1302,46 +1304,60 @@ ${draftResult.signature}`;
         {/* Group Mode Layout */}
         {mode === 'group' && (
           <div className="space-y-6">
-            {/* Group Mode Shared Settings Header with Randomize */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Shared Settings</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Configure default settings for all selected contacts
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {selectedContactIds.size > 0 && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleRandomize}
-                          className="flex items-center gap-2"
-                          title="Randomize shared phrases and module order"
-                        >
-                          <Shuffle className="h-4 w-4" />
-                          Randomize Shared
-                        </Button>
-                        {isRandomized && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleRestoreToDefault}
-                            className="flex items-center gap-2"
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                            Restore
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+            {/* Shared Settings Panel */}
+            <SharedSettingsPanel
+              masterTemplateKey={groupMasterTemplateKey || masterTemplate?.master_key || null}
+              masterTemplate={masterTemplates?.find(t => t.master_key === (groupMasterTemplateKey || masterTemplate?.master_key)) || null}
+              onMasterTemplateChange={(masterKey) => {
+                setGroupMasterTemplateKey(masterKey);
+                const defaults = getModuleDefaultsFromMaster(masterKey, masterTemplates || []);
+                if (defaults) {
+                  setModuleStates(defaults);
+                  setModuleOrder(Object.keys(defaults) as Array<keyof ModuleStates>);
+                }
+                toast({
+                  title: "Master Template Updated",
+                  description: `All ${selectedContactIds.size} contacts will use "${masterKey}"`,
+                });
+              }}
+              daysSinceContact={daysSinceContact}
+              onDaysSinceContactChange={setDaysSinceContact}
+              toneOverride={toneOverride}
+              onToneOverrideChange={setToneOverride}
+              lengthOverride={lengthOverride}
+              onLengthOverrideChange={setLengthOverride}
+              moduleStates={moduleStates}
+              moduleOrder={moduleOrder}
+              moduleSelections={moduleSelections}
+              onModuleChange={handleModuleChange}
+              onModuleOrderChange={handleModuleOrderChange}
+              onModuleSelectionChange={handleModuleSelectionChange}
+              onResetToDefaults={handleResetToDefaults}
+              allPhrases={allPhrases}
+              allInquiries={allInquiries}
+              allSubjects={allSubjects}
+              subjectPoolOverride={subjectPoolOverride}
+              onSubjectPoolChange={setSubjectPoolOverride}
+              team={curatedTeam}
+              onTeamChange={setCuratedTeam}
+              cc={curatedCc}
+              onCcChange={setCuratedCc}
+              onRandomize={handleRandomize}
+              onRestoreToDefault={handleRestoreToDefault}
+              isRandomized={isRandomized}
+              changedModules={changedModules}
+              customModuleLabels={customModuleLabels}
+              onCustomModuleLabelChange={(moduleKey, newLabel) => {
+                const updatedLabels = { ...customModuleLabels, [moduleKey]: newLabel };
+                setCustomModuleLabels(updatedLabels);
+                autoSaveLabels.mutate({
+                  customLabels: updatedLabels,
+                  currentRevision: templateSettings?.revision,
+                });
+              }}
+              selectedContactCount={selectedContactIds.size}
+              defaultOpen={true}
+            />
             
             <GroupFilterBar
               filters={groupFilters}
@@ -1663,7 +1679,7 @@ ${draftResult.signature}`;
           sharedSettings={{
             masterTemplate: masterTemplate,
             toneOverride: toneOverride || undefined,
-            lengthOverride: (lengthOverride === 'medium' ? 'standard' : lengthOverride) || undefined,
+            lengthOverride: lengthOverride || undefined,
             daysSinceContact,
             team: curatedTeam,
             to: curatedTo,
