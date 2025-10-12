@@ -38,7 +38,8 @@ export interface ModuleSelection {
 }
 
 export interface ModuleSelections {
-  subject_line_pool?: ModuleSelection;
+  subject_line?: ModuleSelection;
+  subject_line_pool?: ModuleSelection; // Legacy - backward compatibility
   initial_greeting?: ModuleSelection;
   self_personalization?: ModuleSelection;
   top_opportunities?: ModuleSelection;
@@ -47,7 +48,5 @@ export interface ModuleSelections {
   addons?: ModuleSelection;
   suggested_talking_points?: ModuleSelection;
   general_org_update?: ModuleSelection;
-  attachments?: ModuleSelection;
   meeting_request?: ModuleSelection;
-  ai_backup_personalization?: ModuleSelection;
 }

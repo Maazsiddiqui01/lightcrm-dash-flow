@@ -11,6 +11,7 @@ import type { SubjectLibraryItem } from "@/hooks/useSubjectLibrary";
 import { interpolateContent } from "@/lib/contentInterpolation";
 
 interface ModuleStates {
+  subject_line: TriState;
   initial_greeting: TriState;
   self_personalization: TriState;
   article_recommendations: TriState;
@@ -34,6 +35,7 @@ interface ModuleContentPreviewProps {
 }
 
 const MODULE_LABELS: Record<keyof ModuleStates, string> = {
+  subject_line: "Subject Line",
   initial_greeting: "Greeting Line",
   self_personalization: "Courtesy Openers",
   article_recommendations: "Article Recommendations",

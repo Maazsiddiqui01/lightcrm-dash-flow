@@ -4,6 +4,7 @@
  */
 
 export const MODULE_LIBRARY_MAP = {
+  subject_line: 'subject',
   initial_greeting: 'greeting',
   self_personalization: 'self_personalization',
   article_recommendations: 'article_recommendations',
@@ -22,6 +23,7 @@ export type CategorySlug = typeof MODULE_LIBRARY_MAP[ModuleKey];
  * Modules that require phrase selection from Global Library
  */
 export const PHRASE_DRIVEN_MODULES: ReadonlySet<ModuleKey> = new Set([
+  'subject_line',
   'initial_greeting',
   'self_personalization',
   'article_recommendations',
@@ -37,6 +39,7 @@ export const PHRASE_DRIVEN_MODULES: ReadonlySet<ModuleKey> = new Set([
  * Modules that enforce single-select (radio button UI)
  */
 export const SINGLE_SELECT_MODULES: ReadonlySet<ModuleKey> = new Set([
+  'subject_line',
   'initial_greeting',
   'self_personalization',
   'article_recommendations',

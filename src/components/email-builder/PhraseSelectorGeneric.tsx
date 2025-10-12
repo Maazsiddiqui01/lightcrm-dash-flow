@@ -93,6 +93,15 @@ export function PhraseSelectorGeneric({
   // Handle single-select change
   const handleSingleSelect = (phraseId: string) => {
     if (phraseId === 'none') {
+      // For subject_line, prevent deselection (always require 1)
+      if (category === 'subject') {
+        toast({
+          title: "Selection Required",
+          description: "Subject Line must always have a selection.",
+          variant: "destructive",
+        });
+        return;
+      }
       onSelectionChange(null);
     } else {
       const phrase = categoryPhrases.find(p => p.id === phraseId);

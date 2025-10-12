@@ -15,6 +15,7 @@ import { GreetingSelector } from "./GreetingSelector";
 import { TalkingPointsSelector } from "./TalkingPointsSelector";
 import { AddonsSelector } from "./AddonsSelector";
 import { SubjectPoolSelector } from "./SubjectPoolSelector";
+import { SubjectLineSelector } from "./SubjectLineSelector";
 import { TopOpportunitiesSelector } from "./TopOpportunitiesSelector";
 import { SelfPersonalizationSelector } from "./SelfPersonalizationSelector";
 import { PlatformsSelector } from "./PlatformsSelector";
@@ -82,7 +83,24 @@ export function ModuleConfigDrawer({
   };
 
   const renderContent = () => {
-    if (isSubjectPool) {
+    if (isSubjectPool || moduleKey === 'subject_line') {
+      if (moduleKey === 'subject_line') {
+        // New single-select subject line
+        return (
+          <SubjectLineSelector
+            allSubjects={allSubjects}
+            currentSelection={tempSelection}
+            onSelectionChange={setTempSelection}
+            toneOverride={toneOverride}
+            contactName={contactData?.first_name || 'this contact'}
+            defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={(phraseId) => {
+              setTempSelection(prev => prev ? { ...prev, defaultPhraseId: phraseId || undefined } : null);
+            }}
+          />
+        );
+      }
+      // Legacy subject_line_pool
       return (
         <SubjectPoolSelector
           allSubjects={allSubjects}

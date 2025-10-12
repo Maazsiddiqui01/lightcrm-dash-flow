@@ -23,7 +23,6 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import type { MasterTemplate } from "@/lib/router";
 import { DraggableModuleItem } from './DraggableModuleItem';
 import { ModuleConfigDrawer } from './ModuleConfigDrawer';
-import { SubjectLinePoolCard } from './SubjectLinePoolCard';
 import type { TriState } from "@/types/phraseLibrary";
 import type { ContactEmailComposer } from "@/types/emailComposer";
 import type { PhraseLibraryItem } from "@/types/phraseLibrary";
@@ -33,6 +32,7 @@ import type { ModuleSelection, ModuleSelections } from "@/types/moduleSelections
 import { recomputePositions, announceModuleMove } from "@/lib/modulePositions";
 
 export interface ModuleStates {
+  subject_line: TriState;
   initial_greeting: TriState;
   self_personalization: TriState;
   article_recommendations: TriState;
@@ -77,6 +77,7 @@ export function getModuleDefaultsFromMaster(masterKey: string, masterTemplates: 
   const defaults = template.default_modules;
   
   return {
+    subject_line: defaults.subject_line || 'always',
     initial_greeting: defaults.initial_greeting || 'always',
     self_personalization: defaults.self_personalization || 'always',
     article_recommendations: defaults.article_recommendations || 'sometimes',
@@ -92,6 +93,7 @@ export function getModuleDefaultsFromMaster(masterKey: string, masterTemplates: 
 // Fallback defaults (used when database is not available)
 export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
   relationship_maintenance: {
+    subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
     article_recommendations: 'sometimes',
@@ -103,6 +105,7 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     meeting_request: 'sometimes',
   },
   business_development: {
+    subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
     article_recommendations: 'always',
@@ -114,6 +117,7 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     meeting_request: 'always',
   },
   hybrid_neutral: {
+    subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
     article_recommendations: 'sometimes',
@@ -127,6 +131,7 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
 };
 
 const MODULE_LABELS: Record<keyof ModuleStates, string> = {
+  subject_line: "Subject Line",
   initial_greeting: "Greeting Line",
   self_personalization: "Courtesy Openers",
   article_recommendations: "Article Recommendations",
@@ -140,6 +145,7 @@ const MODULE_LABELS: Record<keyof ModuleStates, string> = {
 
 // Modules that have configuration drawers
 const CONFIGURABLE_MODULES: Set<keyof ModuleStates> = new Set([
+  'subject_line',
   'initial_greeting',
   'self_personalization',
   'article_recommendations',
@@ -197,65 +203,55 @@ export function ModulesCard({
   };
 
   const getSelectedItemsCount = (moduleKey: keyof ModuleStates | 'subject_line_pool'): number => {
-    const selection = moduleSelections[moduleKey as keyof ModuleSelections];
+    // Map legacy key
+    const actualKey = moduleKey === 'subject_line_pool' ? 'subject_line' : moduleKey;
+    const selection = moduleSelections[actualKey as keyof ModuleSelections];
     if (!selection) return 0;
 
-    // Handle phrase-based single selections
+    // Handle single selections first
     if (selection.phraseId) return 1;
     if (selection.greetingId) return 1;
-    
-    // Handle article selection
     if (selection.articleId) return 1;
-    
-    // Handle multi-select
+    if (selection.inquiryId) return 1;
+
+    // Handle arrays (multi-select - deprecated for subject_line)
     if (selection.phraseIds) return selection.phraseIds.length;
     if (selection.subjectIds) return selection.subjectIds.length;
-    
+
     return 0;
   };
   
   const getSelectionSummary = (moduleKey: keyof ModuleStates | 'subject_line_pool'): string | null => {
-    const selection = moduleSelections[moduleKey as keyof ModuleSelections];
+    // Map legacy key
+    const actualKey = moduleKey === 'subject_line_pool' ? 'subject_line' : moduleKey;
+    const selection = moduleSelections[actualKey as keyof ModuleSelections];
     if (!selection) return null;
 
-    // Single phrase selection
+    // Single phrase/subject selection with preview
     if (selection.phraseText) {
-      const text = selection.phraseText.length > 40 
-        ? selection.phraseText.substring(0, 40) + '...' 
+      const text = selection.phraseText.length > 50 
+        ? selection.phraseText.substring(0, 50) + '...' 
         : selection.phraseText;
       
-      // Show star if this is the default
       const isDefault = selection.defaultPhraseId === selection.phraseId;
       return isDefault ? `⭐ ${text}` : text;
     }
-    
-    // Legacy greeting
-    if (selection.greetingId) {
-      const greeting = allPhrases.find(p => p.id === selection.greetingId);
-      if (greeting) {
-        const text = greeting.phrase_text.length > 40 
-          ? greeting.phrase_text.substring(0, 40) + '...' 
-          : greeting.phrase_text;
-        const isDefault = selection.defaultPhraseId === selection.greetingId;
-        return isDefault ? `⭐ ${text}` : text;
-      }
-    }
-    
-    // Multi-select
-    if (selection.phraseIds && selection.phraseIds.length > 0) {
-      return `${selection.phraseIds.length} phrase${selection.phraseIds.length !== 1 ? 's' : ''} selected`;
-    }
-    
-    // Article
+
+    // Article selection
     if (selection.articleTitle) {
-      return selection.articleTitle.length > 40
+      return selection.articleTitle.length > 40 
         ? selection.articleTitle.substring(0, 40) + '...'
         : selection.articleTitle;
     }
-    
-    // Subject pool
+
+    // Legacy multi-select (for platforms, addons, talking_points)
+    if (selection.phraseIds && selection.phraseIds.length > 0) {
+      return `${selection.phraseIds.length} items`;
+    }
+
+    // Legacy subject pool
     if (selection.subjectIds && selection.subjectIds.length > 0) {
-      return `${selection.subjectIds.length} subject${selection.subjectIds.length !== 1 ? 's' : ''} selected`;
+      return `${selection.subjectIds.length} in pool`;
     }
     
     return null;
@@ -371,19 +367,6 @@ export function ModulesCard({
 
         {masterTemplate && (
           <>
-            {/* Initial Module (Always On) */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                Initial Module (Always On)
-              </h3>
-              <SubjectLinePoolCard
-                selectedCount={selectedSubjectIds.length}
-                totalCount={allSubjects.length}
-                previewItems={previewSubjects}
-                onConfigure={() => handleOpenDrawer('subject_line_pool')}
-              />
-            </div>
-
             {/* Content Modules */}
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">

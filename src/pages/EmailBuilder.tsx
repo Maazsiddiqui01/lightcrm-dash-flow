@@ -123,6 +123,7 @@ export function EmailBuilder() {
   
   // Module states for email builder
   const [moduleStates, setModuleStates] = useState<ModuleStates>({
+    subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
     article_recommendations: 'always',
@@ -136,6 +137,7 @@ export function EmailBuilder() {
   
   // Module order state
   const [moduleOrder, setModuleOrder] = useState<Array<keyof ModuleStates>>([
+    'subject_line',
     'initial_greeting',
     'self_personalization',
     'article_recommendations',
@@ -332,16 +334,6 @@ export function EmailBuilder() {
       return;
     }
     
-    // Validation: Check if subject pool has selections
-    if (!subjectPoolOverride || subjectPoolOverride.length === 0) {
-      toast({
-        title: "Cannot Randomize",
-        description: "Subject Line Pool must have at least one enabled subject.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     // Capture snapshot before first randomization
     if (!defaultsSnapshot) {
       captureDefaultsSnapshot();
@@ -425,23 +417,35 @@ export function EmailBuilder() {
       }
     });
     
-    // 3. Randomize primary subject
-    if (subjectPoolOverride.length > 0) {
-      const randomSubjectId = pickRandomPhrase(
-        subjectPoolOverride.map(id => ({ id })),
-        seed + 9999
-      )?.id || subjectPoolOverride[0];
+    // 3. Randomize subject line (single-select)
+    const subjectCategory = allSubjects || [];
+    if (subjectCategory.length > 0) {
+      // Filter by tone override if present
+      const filteredSubjects = toneOverride
+        ? subjectCategory.filter(s => s.style === toneOverride)
+        : subjectCategory;
       
-      const oldSubjectId = moduleSelections.subject_line_pool?.defaultSubjectId;
-      if (oldSubjectId !== randomSubjectId) {
-        contentChanges.add('subject_line_pool');
+      if (filteredSubjects.length > 0) {
+        const randomSubject = pickRandomPhrase(
+          filteredSubjects.map(s => ({ id: s.id, phrase_text: s.subject_template })),
+          seed + 9999
+        );
+        
+        if (randomSubject) {
+          const oldSelection = moduleSelections.subject_line;
+          if (oldSelection?.phraseId !== randomSubject.id) {
+            contentChanges.add('subject_line');
+          }
+          
+          newSelections.subject_line = {
+            type: 'phrase',
+            category: 'subject',
+            phraseId: randomSubject.id,
+            phraseText: randomSubject.phrase_text,
+            defaultPhraseId: newSelections.subject_line?.defaultPhraseId,
+          };
+        }
       }
-      
-      newSelections.subject_line_pool = {
-        ...newSelections.subject_line_pool,
-        subjectIds: subjectPoolOverride,
-        defaultSubjectId: randomSubjectId,
-      };
     }
     
     setModuleSelections(newSelections);
@@ -776,6 +780,32 @@ export function EmailBuilder() {
     
     initializeTeamAndRecipients();
   }, [contactData, selectedContact, contactSettings]);
+
+  // Ensure subject_line always has a selection
+  useEffect(() => {
+    if (!allSubjects || allSubjects.length === 0) return;
+    
+    // Check if subject_line has selection
+    if (!moduleSelections.subject_line?.phraseId) {
+      // Auto-select first subject matching tone override
+      const filteredSubjects = toneOverride
+        ? allSubjects.filter(s => s.style === toneOverride)
+        : allSubjects;
+      
+      if (filteredSubjects.length > 0) {
+        const firstSubject = filteredSubjects[0];
+        setModuleSelections(prev => ({
+          ...prev,
+          subject_line: {
+            type: 'phrase',
+            category: 'subject',
+            phraseId: firstSubject.id,
+            phraseText: firstSubject.subject_template,
+          },
+        }));
+      }
+    }
+  }, [allSubjects, toneOverride, moduleSelections.subject_line]);
 
   // Load master templates from database
   const { data: masterTemplates, isLoading: isLoadingTemplates } = useMasterTemplates();

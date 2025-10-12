@@ -173,7 +173,7 @@ export function DraggableModuleItem({
               )}
               {selectedItemsCount > 0 && (
                 <Badge variant="secondary" className="text-xs">
-                  {selectedItemsCount} selected
+                  {selectedItemsCount === 1 ? 'Selected' : `${selectedItemsCount} selected`}
                 </Badge>
               )}
             </>
