@@ -12,8 +12,8 @@ interface EmailBuilderCoreSettingsProps {
   onDaysSinceContactChange: (days: number) => void;
   toneOverride: 'casual' | 'hybrid' | 'formal' | null;
   onToneOverrideChange: (tone: 'casual' | 'hybrid' | 'formal' | null) => void;
-  lengthOverride: 'brief' | 'medium' | 'detailed' | null;
-  onLengthOverrideChange: (length: 'brief' | 'medium' | 'detailed' | null) => void;
+  lengthOverride: 'brief' | 'standard' | 'detailed' | null;
+  onLengthOverrideChange: (length: 'brief' | 'standard' | 'detailed' | null) => void;
 }
 
 export function EmailBuilderCoreSettings({
@@ -125,7 +125,7 @@ export function EmailBuilderCoreSettings({
               Length
             </Label>
             <Badge variant="secondary" className="text-xs">
-              Default: {effectiveTemplate?.length || 'medium'}
+              Default: {effectiveTemplate?.length || 'standard'}
             </Badge>
           </div>
           <Select
