@@ -557,13 +557,26 @@ export async function buildEnhancedDraftPayload(
     const state = (module as any).mode || 'never';
     
     if (state !== 'never' && rawContent) {
+      // Special handling for article_recommendations: inject article URL
+      let contentToInterpolate = rawContent;
+      if (module.id === 'article_recommendations' && selectedArticle) {
+        // Find the article object from contact.articles
+        const articleObj = contact.articles.find(a => a.article_link === selectedArticle);
+        if (articleObj) {
+          // Replace {article_url} placeholder with actual article URL
+          contentToInterpolate = contentToInterpolate.replace(/{article_url}/g, articleObj.article_link || '');
+          contentToInterpolate = contentToInterpolate.replace(/{article_title}/g, articleObj.article_link || '');
+          contentToInterpolate = contentToInterpolate.replace(/{focus_area}/g, articleObj.focus_area || '');
+        }
+      }
+      
       interpolatedModules.push({
         key: module.id,
         position: module.position,
         label: effectiveLabel,
         state: state as TriState,
         content: interpolateContent(
-          rawContent,
+          contentToInterpolate,
           contact,
           opportunitiesForInterpolation,
           focusAreaDescriptionsForInterpolation

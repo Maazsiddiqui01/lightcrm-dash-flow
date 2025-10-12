@@ -10,7 +10,7 @@ import type { ContactEmailComposer } from "@/types/emailComposer";
 import type { PhraseLibraryItem } from "@/types/phraseLibrary";
 import type { InquiryLibraryItem } from "@/hooks/useInquiryLibrary";
 import type { SubjectLibraryItem } from "@/hooks/useSubjectLibrary";
-import { ArticleSelector } from "./ArticleSelector";
+import { ArticleRecommendationSelector } from "./ArticleRecommendationSelector";
 import { GreetingSelector } from "./GreetingSelector";
 import { TalkingPointsSelector } from "./TalkingPointsSelector";
 import { AddonsSelector } from "./AddonsSelector";
@@ -97,10 +97,19 @@ export function ModuleConfigDrawer({
     switch (moduleKey) {
       case 'article_recommendations':
         return (
-          <ArticleSelector
-            contactData={contactData}
+          <ArticleRecommendationSelector
+            phrases={allPhrases}
             currentSelection={tempSelection}
             onSelectionChange={setTempSelection}
+            contactData={contactData ? {
+              firstName: contactData.first_name,
+              organization: contactData.organization,
+              focusAreas: contactData.focus_areas || [],
+            } : undefined}
+            selectedArticleUrl={contactData?.articles?.[0]?.article_link}
+            contactName={contactName}
+            defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={handleDefaultToggle}
           />
         );
       

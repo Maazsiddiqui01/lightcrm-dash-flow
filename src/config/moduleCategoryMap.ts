@@ -7,7 +7,7 @@ export const MODULE_LIBRARY_MAP = {
   initial_greeting: 'greeting',
   self_personalization: 'self_personalization',
   top_opportunities: 'top_opportunities',
-  article_recommendations: 'article_recommendations', // Uses articles, not phrases
+  article_recommendations: 'article_recommendations',
   platforms: 'platforms',
   addons: 'addons',
   suggested_talking_points: 'talking_points',
@@ -22,12 +22,12 @@ export type CategorySlug = typeof MODULE_LIBRARY_MAP[ModuleKey];
 
 /**
  * Modules that require phrase selection from Global Library
- * (Excludes article_recommendations which uses articles)
  */
 export const PHRASE_DRIVEN_MODULES: ReadonlySet<ModuleKey> = new Set([
   'initial_greeting',
   'self_personalization',
   'top_opportunities',
+  'article_recommendations',
   'platforms',
   'addons',
   'suggested_talking_points',
@@ -44,6 +44,7 @@ export const SINGLE_SELECT_MODULES: ReadonlySet<ModuleKey> = new Set([
   'initial_greeting',
   'self_personalization',
   'top_opportunities',
+  'article_recommendations',
   'general_org_update',
   'attachments',
   'meeting_request',

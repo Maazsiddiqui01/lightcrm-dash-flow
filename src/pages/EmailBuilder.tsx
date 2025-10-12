@@ -152,6 +152,7 @@ export function EmailBuilder() {
   ]);
   
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null); // Deprecated - keep for backward compat
+  const [selectedArticleForContext, setSelectedArticleForContext] = useState<Article | null>(null); // Article selected for interpolation into phrase templates
   
   // Module selections state
   const [moduleSelections, setModuleSelections] = useState<ModuleSelections>({});
@@ -378,7 +379,7 @@ export function EmailBuilder() {
       const category = MODULE_LIBRARY_MAP[moduleKey as ModuleKey];
       const isPhrase = PHRASE_DRIVEN_MODULES.has(moduleKey as ModuleKey);
       
-      if (!isPhrase) return; // Skip article_recommendations
+      if (!isPhrase) return;
       
       // Get phrases for this category
       const categoryPhrases = allPhrases?.filter(p => p.category === category) || [];
@@ -1003,7 +1004,7 @@ export function EmailBuilder() {
         allInquiries,
         allSubjects,
         daysSinceContact,
-        selectedArticle?.article_link,
+        selectedArticleForContext?.article_link,
         toneOverride || undefined,
         subjectPoolOverride,
         moduleOrder,
@@ -1179,7 +1180,7 @@ ${draftResult.signature}`;
             allInquiries || [],
             allSubjects || [],
             daysSinceContact,
-            selectedArticle?.article_link || null,
+            selectedArticleForContext?.article_link || null,
             toneOverride,
             subjectPoolOverride,
             effectiveModuleOrder, // Use effective module order
@@ -1458,6 +1459,15 @@ ${draftResult.signature}`;
                 deltaType={deltaType}
                 onDeltaTypeChange={setDeltaType}
                 contactEmail={selectedContact.email}
+              />
+            )}
+            
+            {/* Article Picker - Select contextual article for this contact */}
+            {selectedContact && contactData && (
+              <ArticlePicker
+                contactData={contactData}
+                selectedArticle={selectedArticleForContext}
+                onArticleSelect={setSelectedArticleForContext}
               />
             )}
             
