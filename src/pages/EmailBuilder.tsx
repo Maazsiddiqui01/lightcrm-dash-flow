@@ -223,12 +223,6 @@ export function EmailBuilder() {
     }
   }, [contactData?.most_recent_contact]);
   
-  // Sync subject line selection to subjectPoolOverride
-  useEffect(() => {
-    const ids = moduleSelections.subject_line?.subjectIds || [];
-    setSubjectPoolOverride(ids);
-  }, [moduleSelections.subject_line]);
-  
   // Sync subject line selection to subjectPoolOverride (renamed from subject_line_pool to subject_line)
   useEffect(() => {
     const ids = moduleSelections.subject_line?.subjectIds || [];

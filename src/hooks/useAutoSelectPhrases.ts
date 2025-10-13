@@ -25,13 +25,34 @@ export function useAutoSelectPhrases({
   toneOverride,
   onSelectionChange,
 }: UseAutoSelectPhrasesProps) {
-  // Track which contact we've initialized to avoid re-triggering
-  const initializedContactRef = useRef<string | null>(null);
-
   useEffect(() => {
-    // Only run once per contact
-    if (!contactId || initializedContactRef.current === contactId) return;
+    // Skip if no contact selected
+    if (!contactId) return;
+    
+    // Skip if no phrases/subjects available yet
     if (allPhrases.length === 0 && allSubjects.length === 0) return;
+
+    // Check if we need to auto-select for any modules
+    let needsAutoSelection = false;
+
+    // Check each single-select module
+    SINGLE_SELECT_MODULES.forEach((moduleKey) => {
+      if (moduleStates[moduleKey] !== 'never' && !moduleSelections[moduleKey]?.phraseId) {
+        needsAutoSelection = true;
+      }
+    });
+
+    // Check each multi-select module (now using single phraseId)
+    MULTI_SELECT_MODULES.forEach((moduleKey) => {
+      if (moduleStates[moduleKey] !== 'never' && !moduleSelections[moduleKey]?.phraseId) {
+        needsAutoSelection = true;
+      }
+    });
+
+    // Exit early if no modules need auto-selection
+    if (!needsAutoSelection) {
+      return;
+    }
 
     const updates: Partial<ModuleSelections> = {};
     let hasUpdates = false;
@@ -64,13 +85,29 @@ export function useAutoSelectPhrases({
             phraseText: firstSubject.subject_template,
           };
           hasUpdates = true;
+        } else if (allSubjects.length > 0) {
+          // Fallback: if tone filter yields nothing, use first available subject
+          console.warn(`⚠️ No subjects found for tone "${toneOverride}", using first available subject`);
+          const firstSubject = allSubjects[0];
+          updates.subject_line = {
+            type: 'phrase',
+            category: 'subject',
+            phraseId: firstSubject.id,
+            phraseText: firstSubject.subject_template,
+          };
+          hasUpdates = true;
+        } else {
+          console.error('❌ No subjects available in library for auto-selection');
         }
         return;
       }
 
       // Get phrases for this category
       const categoryPhrases = allPhrases.filter(p => p.category === category);
-      if (categoryPhrases.length === 0) return;
+      if (categoryPhrases.length === 0) {
+        console.warn(`⚠️ No phrases found for category "${category}" (module: ${moduleKey})`);
+        return;
+      }
 
       // Auto-select first phrase
       const firstPhrase = categoryPhrases[0];
@@ -98,7 +135,10 @@ export function useAutoSelectPhrases({
 
       // Get phrases for this category
       const categoryPhrases = allPhrases.filter(p => p.category === category);
-      if (categoryPhrases.length === 0) return;
+      if (categoryPhrases.length === 0) {
+        console.warn(`⚠️ No phrases found for category "${category}" (module: ${moduleKey})`);
+        return;
+      }
 
       // Auto-select exactly 1 phrase (single selection, not array)
       const firstPhrase = categoryPhrases[0];
@@ -113,12 +153,14 @@ export function useAutoSelectPhrases({
 
     // Apply all updates at once
     if (hasUpdates) {
-      console.log('🎯 Auto-selecting default phrases for contact:', contactId, updates);
+      console.log('🎯 Auto-selecting default phrases', {
+        contactId,
+        modulesUpdated: Object.keys(updates),
+        updateCount: Object.keys(updates).length,
+        updates
+      });
       onSelectionChange(updates);
     }
-
-    // Mark this contact as initialized
-    initializedContactRef.current = contactId;
   }, [
     contactId,
     moduleStates,
@@ -128,11 +170,4 @@ export function useAutoSelectPhrases({
     toneOverride,
     onSelectionChange,
   ]);
-
-  // Reset initialization when contact changes
-  useEffect(() => {
-    if (contactId !== initializedContactRef.current) {
-      initializedContactRef.current = null;
-    }
-  }, [contactId]);
 }
