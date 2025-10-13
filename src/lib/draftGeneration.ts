@@ -23,8 +23,9 @@ interface GenerationContext {
 /**
  * Evaluate tri-state setting with probabilistic logic based on days since contact
  * "always" = 100%, "sometimes" = variable probability, "never" = 0%
+ * EXPORTED for use in live preview
  */
-function evaluateTriState(
+export function evaluateTriState(
   state: TriState,
   moduleName: string,
   daysSinceContact: number,

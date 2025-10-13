@@ -824,6 +824,8 @@ export function EmailBuilder() {
       if (contactSettings) {
         setModuleStates(contactSettings.module_states as ModuleStates);
         setDeltaType(contactSettings.delta_type);
+        // Only load saved order if it exists and is non-empty
+        // Otherwise preserve current moduleOrder (don't reset to default)
         if (
           contactSettings.module_order &&
           Array.isArray(contactSettings.module_order) &&
@@ -831,6 +833,7 @@ export function EmailBuilder() {
         ) {
           setModuleOrder(contactSettings.module_order as Array<keyof ModuleStates>);
         }
+        // If no saved order, preserve current order (don't reset)
         if (contactSettings.module_selections) {
           // Validate module selections against current libraries
           const validation = validateModuleSelectionsAgainstLibrary(
@@ -865,6 +868,7 @@ export function EmailBuilder() {
         // Custom labels loaded from template settings (see below)
         setInitializedContactId(currentId);
       } else if (masterTemplate && masterTemplates) {
+        // No saved settings - load module states but preserve order
         const defaults = getModuleDefaultsFromMaster(masterTemplate.master_key, masterTemplates);
         if (defaults) {
           setModuleStates(defaults);
@@ -874,7 +878,8 @@ export function EmailBuilder() {
             setModuleStates(fallback);
           }
         }
-        // Do NOT force-reset order here; keep current local order
+        // IMPORTANT: Do NOT reset moduleOrder here - preserve current order
+        // Only reset when user explicitly clicks Reset button
         setInitializedContactId(currentId);
       }
     }
@@ -1617,6 +1622,8 @@ ${draftResult.signature}`;
                 customModuleLabels={customModuleLabels}
                 selectedSubjects={subjectPoolOverride}
                 allSubjects={allSubjects || []}
+                daysSinceContact={daysSinceContact}
+                masterKey={masterTemplate.master_key}
               />
             )}
             
@@ -1635,7 +1642,7 @@ ${draftResult.signature}`;
             )}
             
             {/* Subject Line Validation Warning */}
-            {!moduleSelections.subject_line?.phraseId && (
+            {moduleStates.subject_line !== 'never' && !moduleSelections.subject_line?.phraseId && (
               <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                 <p className="text-sm text-destructive font-medium">
                   ⚠️ Subject Line must be selected

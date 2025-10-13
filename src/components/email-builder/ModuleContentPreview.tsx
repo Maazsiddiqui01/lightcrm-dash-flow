@@ -9,6 +9,7 @@ import type { TriState } from "@/types/phraseLibrary";
 import type { ContactEmailComposer, Opportunity } from "@/types/emailComposer";
 import type { SubjectLibraryItem } from "@/hooks/useSubjectLibrary";
 import { interpolateContent } from "@/lib/contentInterpolation";
+import { evaluateTriState } from "@/lib/draftGeneration";
 
 interface ModuleStates {
   subject_line: TriState;
@@ -33,6 +34,8 @@ interface ModuleContentPreviewProps {
   customModuleLabels?: Record<string, string>;
   selectedSubjects?: string[];
   allSubjects?: SubjectLibraryItem[];
+  daysSinceContact: number;
+  masterKey: string;
 }
 
 const MODULE_LABELS: Record<keyof ModuleStates, string> = {
@@ -58,6 +61,8 @@ export function ModuleContentPreview({
   customModuleLabels = {},
   selectedSubjects = [],
   allSubjects = [],
+  daysSinceContact,
+  masterKey,
 }: ModuleContentPreviewProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showAll, setShowAll] = useState(false);
@@ -67,8 +72,10 @@ export function ModuleContentPreview({
     return moduleOrder
       .map((moduleKey, index) => {
         const state = moduleStates[moduleKey];
-        // Never → hide from preview
-        if (state === 'never') return null;
+        
+        // Apply tri-state evaluation with probabilistic logic for "Sometimes"
+        const shouldShow = evaluateTriState(state, moduleKey, daysSinceContact, masterKey);
+        if (!shouldShow) return null;
 
         const selection = moduleSelections[moduleKey as keyof ModuleSelections];
         const label = customModuleLabels[moduleKey] || MODULE_LABELS[moduleKey];
@@ -105,7 +112,7 @@ export function ModuleContentPreview({
         };
       })
       .filter(Boolean);
-  }, [moduleOrder, moduleStates, moduleSelections, allPhrases, contactData, customModuleLabels]);
+  }, [moduleOrder, moduleStates, moduleSelections, allPhrases, contactData, customModuleLabels, daysSinceContact, masterKey]);
 
   // Count hidden modules
   const hiddenCount = moduleOrder.filter(key => moduleStates[key] === 'never').length;

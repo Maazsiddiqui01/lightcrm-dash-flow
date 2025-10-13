@@ -25,12 +25,22 @@ export function useAutoSelectPhrases({
   toneOverride,
   onSelectionChange,
 }: UseAutoSelectPhrasesProps) {
+  // Track previous contact to only auto-select when switching contacts
+  const previousContactRef = useRef<string | null>(null);
+  
   useEffect(() => {
     // Skip if no contact selected
     if (!contactId) return;
     
     // Skip if no phrases/subjects available yet
     if (allPhrases.length === 0 && allSubjects.length === 0) return;
+    
+    // ONLY auto-select when switching to a NEW contact
+    const isNewContact = contactId !== previousContactRef.current;
+    if (!isNewContact) {
+      // Same contact - preserve user selections, don't re-auto-select
+      return;
+    }
 
     // Check if we need to auto-select for any modules
     let needsAutoSelection = false;
@@ -51,6 +61,7 @@ export function useAutoSelectPhrases({
 
     // Exit early if no modules need auto-selection
     if (!needsAutoSelection) {
+      previousContactRef.current = contactId;
       return;
     }
 
@@ -161,6 +172,9 @@ export function useAutoSelectPhrases({
       });
       onSelectionChange(updates);
     }
+    
+    // Mark this contact as initialized
+    previousContactRef.current = contactId;
   }, [
     contactId,
     moduleStates,
