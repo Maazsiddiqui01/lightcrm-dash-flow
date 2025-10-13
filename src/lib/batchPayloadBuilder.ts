@@ -6,6 +6,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { buildEnhancedDraftPayload } from './enhancedPayload';
 import { mergeEffectiveConfig } from './previewMerge';
+import { DEFAULT_MODULE_ORDER } from '@/config/moduleDefaults';
 import type { ContactOverride, BatchPayload, FilterValues } from '@/types/groupEmailBuilder';
 import type { ContactEmailComposer } from '@/types/emailComposer';
 import type { MasterTemplateDefaults, PhraseLibraryItem } from '@/types/phraseLibrary';
@@ -141,21 +142,7 @@ export async function buildBatchPayload(
         contact
       );
 
-      // Validate and use module order from effective config, fallback to shared settings, then hardcoded default
-      const defaultModuleOrder = [
-        'subject_line',
-        'initial_greeting',
-        'self_personalization',
-        'article_recommendations',
-        'top_opportunities',
-        'platforms',
-        'suggested_talking_points',
-        'addons',
-        'general_org_update',
-        'meeting_request',
-        'closing_line',
-      ];
-      
+      // Validate and use module order from effective config, fallback to shared settings, then DEFAULT_MODULE_ORDER constant
       const finalModuleOrder = effectiveConfig.moduleOrder && 
                                Array.isArray(effectiveConfig.moduleOrder) && 
                                effectiveConfig.moduleOrder.length > 0
@@ -164,7 +151,7 @@ export async function buildBatchPayload(
            Array.isArray(sharedSettings.moduleOrder) && 
            sharedSettings.moduleOrder.length > 0
             ? sharedSettings.moduleOrder
-            : defaultModuleOrder);
+            : DEFAULT_MODULE_ORDER);
       
       // Build enhanced payload using existing function with all params
       const payload = await buildEnhancedDraftPayload(
