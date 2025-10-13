@@ -894,7 +894,6 @@ export function EmailBuilder() {
         // NEW CONTACT: Enforce default module order to prevent bleed from previous contact
         setModuleOrder(DEFAULT_MODULE_ORDER);
         setInitializedContactId(currentId);
-        setInitializedContactId(currentId);
       }
     }
   }, [selectedContact?.contact_id, contactSettings, masterTemplate, masterTemplates]);
