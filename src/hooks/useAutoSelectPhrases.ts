@@ -42,29 +42,8 @@ export function useAutoSelectPhrases({
       return;
     }
 
-    // Check if we need to auto-select for any modules
-    // Always auto-select even for 'never' state modules to ensure defaults exist
-    let needsAutoSelection = false;
-
-    // Check each single-select module
-    SINGLE_SELECT_MODULES.forEach((moduleKey) => {
-      if (!moduleSelections[moduleKey]?.phraseId) {
-        needsAutoSelection = true;
-      }
-    });
-
-    // Check each multi-select module (now using single phraseId)
-    MULTI_SELECT_MODULES.forEach((moduleKey) => {
-      if (!moduleSelections[moduleKey]?.phraseId) {
-        needsAutoSelection = true;
-      }
-    });
-
-    // Exit early if no modules need auto-selection
-    if (!needsAutoSelection) {
-      previousContactRef.current = contactId;
-      return;
-    }
+    // NEW CONTACT: Always run auto-selection to set defaults
+    // (Don't check needsAutoSelection - just select defaults for all modules)
 
     const updates: Partial<ModuleSelections> = {};
     let hasUpdates = false;

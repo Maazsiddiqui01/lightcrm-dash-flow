@@ -209,14 +209,26 @@ export function validateModuleSelections(
     }
   }
   
-  // Validate subject line (renamed from subject_line_pool)
-  if (moduleSelections.subject_line) {
-    const { subjectIds, defaultSubjectId } = moduleSelections.subject_line;
+  // Validate subject line - support both Individual (phraseId) and Group (pool) modes
+  if (moduleStates.subject_line !== 'never') {
+    const subjectSelection = moduleSelections.subject_line;
     
-    if (!defaultSubjectId) {
-      errors.push('Subject Line: Select a primary subject');
-    } else if (subjectIds && !subjectIds.includes(defaultSubjectId)) {
-      errors.push('Subject Line: Primary subject must be enabled');
+    if (!subjectSelection) {
+      errors.push('Subject Line: No selection found');
+    } else if (subjectSelection.phraseId) {
+      // Individual mode: single-select via phraseId
+      // Already valid if phraseId exists
+    } else if (subjectSelection.subjectIds) {
+      // Group mode: pool with defaultSubjectId
+      const { subjectIds, defaultSubjectId } = subjectSelection;
+      
+      if (!defaultSubjectId) {
+        errors.push('Subject Line: Select a primary subject from pool');
+      } else if (!subjectIds.includes(defaultSubjectId)) {
+        errors.push('Subject Line: Primary subject must be enabled in pool');
+      }
+    } else {
+      errors.push('Subject Line: Invalid selection format');
     }
   }
   
