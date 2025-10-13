@@ -881,7 +881,7 @@ export function EmailBuilder() {
         // Custom labels loaded from template settings (see below)
         setInitializedContactId(currentId);
       } else if (masterTemplate && masterTemplates) {
-        // No saved settings - load module states but preserve order
+        // No saved settings - load default states AND order
         const defaults = getModuleDefaultsFromMaster(masterTemplate.master_key, masterTemplates);
         if (defaults) {
           setModuleStates(defaults);
@@ -891,8 +891,9 @@ export function EmailBuilder() {
             setModuleStates(fallback);
           }
         }
-        // IMPORTANT: Do NOT reset moduleOrder here - preserve current order
-        // Only reset when user explicitly clicks Reset button
+        // NEW CONTACT: Enforce default module order to prevent bleed from previous contact
+        setModuleOrder(DEFAULT_MODULE_ORDER);
+        setInitializedContactId(currentId);
         setInitializedContactId(currentId);
       }
     }

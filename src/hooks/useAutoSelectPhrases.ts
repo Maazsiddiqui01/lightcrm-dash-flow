@@ -152,12 +152,10 @@ export function useAutoSelectPhrases({
     // Mark this contact as initialized
     previousContactRef.current = contactId;
   }, [
-    contactId,
-    moduleStates,
-    moduleSelections,
-    allPhrases,
-    allSubjects,
-    toneOverride,
-    onSelectionChange,
+    contactId,           // Only trigger on new contact
+    allPhrases,         // Detect library loading
+    allSubjects,        // Detect library loading
+    toneOverride,       // Affects subject filtering
+    onSelectionChange,  // Stable callback
   ]);
 }
