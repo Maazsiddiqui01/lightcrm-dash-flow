@@ -224,10 +224,19 @@ export function EmailBuilder() {
     }
   }, [contactData?.most_recent_contact]);
   
-  // Sync subject line selection to subjectPoolOverride (renamed from subject_line_pool to subject_line)
+  // Sync subject line selection to subjectPoolOverride - UNIFIED for Individual & Group modes
   useEffect(() => {
-    const ids = moduleSelections.subject_line?.subjectIds || [];
-    setSubjectPoolOverride(ids);
+    const selection = moduleSelections.subject_line;
+    
+    if (selection?.phraseId) {
+      // Individual mode: single-select via phraseId
+      setSubjectPoolOverride([selection.phraseId]);
+    } else if (selection?.subjectIds) {
+      // Group mode: pool with multiple IDs
+      setSubjectPoolOverride(selection.subjectIds);
+    } else {
+      setSubjectPoolOverride([]);
+    }
   }, [moduleSelections.subject_line]);
   
   // Validate module selections whenever they change
