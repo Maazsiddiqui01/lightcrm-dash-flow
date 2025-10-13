@@ -42,9 +42,10 @@ export function seededShuffle<T>(array: T[], seed?: number): T[] {
 /**
  * Pin Rules Configuration
  * Defines modules that must stay at top or bottom during shuffle
+ * Subject Line always first, Closing Line always last
  */
-export const PINNED_TOP_KEYS = ['initial_greeting'] as const;
-export const PINNED_BOTTOM_KEYS: readonly string[] = []; // Expandable for closing signatures
+export const PINNED_TOP_KEYS = ['subject_line', 'initial_greeting'] as const;
+export const PINNED_BOTTOM_KEYS = ['closing_line'] as const;
 
 type PinnedTopKey = typeof PINNED_TOP_KEYS[number];
 

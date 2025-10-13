@@ -64,6 +64,7 @@ import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAutoSaveModuleLabels } from '@/hooks/useAutoSaveModuleLabels';
 import { useNewTemplateSettings } from '@/hooks/useNewTemplateSettings';
+import { DEFAULT_MODULE_ORDER } from '@/config/moduleDefaults';
 import { 
   seededShuffle,
   seededRandom,
@@ -826,13 +827,16 @@ export function EmailBuilder() {
         setDeltaType(contactSettings.delta_type);
         // Only load saved order if it exists and is non-empty
         // Otherwise preserve current moduleOrder (don't reset to default)
-        if (
-          contactSettings.module_order &&
-          Array.isArray(contactSettings.module_order) &&
-          contactSettings.module_order.length > 0
-        ) {
-          setModuleOrder(contactSettings.module_order as Array<keyof ModuleStates>);
-        }
+      if (
+        contactSettings.module_order &&
+        Array.isArray(contactSettings.module_order) &&
+        contactSettings.module_order.length > 0
+      ) {
+        setModuleOrder(contactSettings.module_order as Array<keyof ModuleStates>);
+      } else {
+        // No saved order: enforce default order
+        setModuleOrder(DEFAULT_MODULE_ORDER);
+      }
         // If no saved order, preserve current order (don't reset)
         if (contactSettings.module_selections) {
           // Validate module selections against current libraries
@@ -1111,15 +1115,17 @@ ${draftResult.signature}`;
       return;
     }
     
-    // Validate subject pool
-    const subjectValidation = validateSubjectPool(subjectPoolOverride);
-    if (!subjectValidation.isValid) {
-      toast({
-        title: 'Subject Pool Error',
-        description: subjectValidation.errors.join(', '),
-        variant: 'destructive',
-      });
-      return;
+    // Validate subject pool only if subject_line is not 'never'
+    if (moduleStates.subject_line !== 'never') {
+      const subjectValidation = validateSubjectPool(subjectPoolOverride);
+      if (!subjectValidation.isValid) {
+        toast({
+          title: 'Subject Pool Error',
+          description: subjectValidation.errors.join(', '),
+          variant: 'destructive',
+        });
+        return;
+      }
     }
     
     // Validate module selections before batch generation
@@ -1310,7 +1316,8 @@ ${draftResult.signature}`;
                 const defaults = getModuleDefaultsFromMaster(masterKey, masterTemplates || []);
                 if (defaults) {
                   setModuleStates(defaults);
-                  setModuleOrder(Object.keys(defaults) as Array<keyof ModuleStates>);
+                  // Always use default order, never unstable Object.keys
+                  setModuleOrder(DEFAULT_MODULE_ORDER);
                 }
                 toast({
                   title: "Master Template Updated",

@@ -145,47 +145,75 @@ export function ModuleContentPreview({
       {isExpanded && (
         <CardContent className="space-y-4">
           {/* Subject Line Preview */}
-          {selectedSubjects.length > 0 ? (
-            <div className="p-4 bg-primary/5 rounded-lg border-2 border-primary/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Mail className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-primary">Subject Line Pool</span>
-                <Badge variant="outline" className="text-xs">
-                  {selectedSubjects.length} enabled
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                {selectedSubjects.slice(0, 3).map((subjectId) => {
-                  const subject = allSubjects.find((s) => s.id === subjectId);
-                  if (!subject) return null;
-
-                  const interpolatedSubject = contactData
-                    ? interpolateContent(subject.subject_template, contactData, contactData.opps, contactData.fa_descriptions)
-                    : subject.subject_template;
-
-                  return (
-                    <div key={subjectId} className="text-sm text-foreground/90">
-                      • {interpolatedSubject}
+          {(() => {
+            // Individual mode: render single selected subject from phraseId
+            const singleSubjectId = moduleSelections.subject_line?.phraseId;
+            if (singleSubjectId) {
+              const selectedSubject = allSubjects.find(s => s.id === singleSubjectId);
+              if (selectedSubject && contactData) {
+                const interpolatedSubject = interpolateContent(selectedSubject.subject_template, contactData, contactData.opps, contactData.fa_descriptions);
+                return (
+                  <div className="p-4 bg-primary/5 rounded-lg border-2 border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Mail className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold text-primary">Subject Line</span>
                     </div>
-                  );
-                })}
-                {selectedSubjects.length > 3 && (
-                  <div className="text-xs text-muted-foreground">
-                    +{selectedSubjects.length - 3} more subjects
+                    <div className="text-sm text-foreground/90">
+                      {interpolatedSubject}
+                    </div>
                   </div>
-                )}
+                );
+              }
+            }
+            
+            // Group mode or pool: render all selected subjects
+            if (selectedSubjects.length > 0) {
+              return (
+                <div className="p-4 bg-primary/5 rounded-lg border-2 border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-primary">Subject Line Pool</span>
+                    <Badge variant="outline" className="text-xs">
+                      {selectedSubjects.length} enabled
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    {selectedSubjects.slice(0, 3).map((subjectId) => {
+                      const subject = allSubjects.find((s) => s.id === subjectId);
+                      if (!subject) return null;
+
+                      const interpolatedSubject = contactData
+                        ? interpolateContent(subject.subject_template, contactData, contactData.opps, contactData.fa_descriptions)
+                        : subject.subject_template;
+
+                      return (
+                        <div key={subjectId} className="text-sm text-foreground/90">
+                          • {interpolatedSubject}
+                        </div>
+                      );
+                    })}
+                    {selectedSubjects.length > 3 && (
+                      <div className="text-xs text-muted-foreground">
+                        +{selectedSubjects.length - 3} more subjects
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+            
+            // No selection
+            return (
+              <div className="p-4 bg-destructive/5 rounded-lg border-2 border-destructive/20">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <span className="text-sm font-medium text-destructive">
+                    No subject lines enabled
+                  </span>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="p-4 bg-destructive/5 rounded-lg border-2 border-destructive/20">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-destructive" />
-                <span className="text-sm font-medium text-destructive">
-                  No subject lines enabled
-                </span>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Module Content Preview */}
           {visibleModules.length === 0 ? (

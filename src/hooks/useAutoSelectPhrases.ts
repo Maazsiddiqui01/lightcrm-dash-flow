@@ -43,18 +43,19 @@ export function useAutoSelectPhrases({
     }
 
     // Check if we need to auto-select for any modules
+    // Always auto-select even for 'never' state modules to ensure defaults exist
     let needsAutoSelection = false;
 
     // Check each single-select module
     SINGLE_SELECT_MODULES.forEach((moduleKey) => {
-      if (moduleStates[moduleKey] !== 'never' && !moduleSelections[moduleKey]?.phraseId) {
+      if (!moduleSelections[moduleKey]?.phraseId) {
         needsAutoSelection = true;
       }
     });
 
     // Check each multi-select module (now using single phraseId)
     MULTI_SELECT_MODULES.forEach((moduleKey) => {
-      if (moduleStates[moduleKey] !== 'never' && !moduleSelections[moduleKey]?.phraseId) {
+      if (!moduleSelections[moduleKey]?.phraseId) {
         needsAutoSelection = true;
       }
     });
@@ -69,10 +70,8 @@ export function useAutoSelectPhrases({
     let hasUpdates = false;
 
     // Iterate through all single-select modules
+    // Always select defaults even for 'never' state modules
     SINGLE_SELECT_MODULES.forEach((moduleKey) => {
-      // Skip if module is disabled (never)
-      if (moduleStates[moduleKey] === 'never') return;
-
       // Skip if already has selection
       const currentSelection = moduleSelections[moduleKey];
       if (currentSelection?.phraseId) return;
@@ -132,10 +131,8 @@ export function useAutoSelectPhrases({
     });
 
     // Iterate through all multi-select modules - now enforcing exactly 1 selection (using phraseId)
+    // Always select defaults even for 'never' state modules
     MULTI_SELECT_MODULES.forEach((moduleKey) => {
-      // Skip if module is disabled (never)
-      if (moduleStates[moduleKey] === 'never') return;
-
       // Skip if already has selection
       const currentSelection = moduleSelections[moduleKey];
       if (currentSelection?.phraseId) return;
