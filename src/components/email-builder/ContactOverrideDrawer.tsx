@@ -179,8 +179,8 @@ export function ContactOverrideDrawer({
         selectedIds: subjectPool.selectedIds,
       });
       
-      newSelections.subject_line_pool = {
-        ...newSelections.subject_line_pool,
+      newSelections.subject_line = {
+        ...newSelections.subject_line,
         subjectIds: subjectPool.selectedIds,
         defaultSubjectId: randomSubjectId,
       };

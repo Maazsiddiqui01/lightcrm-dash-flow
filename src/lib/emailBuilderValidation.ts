@@ -201,22 +201,22 @@ export function validateModuleSelections(
       }
     }
     
-    // Multi-select validation
+    // Multi-select validation - make it a warning instead of error
     if (MULTI_SELECT_MODULES.has(moduleKey)) {
       if (!selection?.phraseIds || selection.phraseIds.length === 0) {
-        errors.push(`Select at least one phrase for ${formatModuleName(moduleKey)} (${category})`);
+        warnings.push(`${formatModuleName(moduleKey)} has no selections (${category})`);
       }
     }
   }
   
-  // Validate subject line pool primary
-  if (moduleSelections.subject_line_pool) {
-    const { subjectIds, defaultSubjectId } = moduleSelections.subject_line_pool;
+  // Validate subject line (renamed from subject_line_pool)
+  if (moduleSelections.subject_line) {
+    const { subjectIds, defaultSubjectId } = moduleSelections.subject_line;
     
     if (!defaultSubjectId) {
-      errors.push('Subject Line Pool: Select a primary subject');
+      errors.push('Subject Line: Select a primary subject');
     } else if (subjectIds && !subjectIds.includes(defaultSubjectId)) {
-      errors.push('Subject Line Pool: Primary subject must be enabled');
+      errors.push('Subject Line: Primary subject must be enabled');
     }
   }
   

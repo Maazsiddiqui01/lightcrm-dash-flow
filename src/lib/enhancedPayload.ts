@@ -293,8 +293,8 @@ export async function buildEnhancedDraftPayload(
     throw new Error('Subject Line Pool is empty. Please add at least one subject line to the library.');
   }
   
-  // Auto-select primary subject if not specified
-  let primarySubjectId = moduleSelections?.subject_line_pool?.defaultSubjectId;
+  // Auto-select primary subject if not specified (renamed from subject_line_pool to subject_line)
+  let primarySubjectId = moduleSelections?.subject_line?.defaultSubjectId;
   
   // Check if primary subject was deleted
   if (primarySubjectId && deletedSubjectIds.includes(primarySubjectId)) {
@@ -373,13 +373,13 @@ export async function buildEnhancedDraftPayload(
     };
   }> = [];
 
-  // Add subject line pool as position 0 with style (HIGH-2, HIGH-3, HIGH-7 fix)
-  const subjectSelection = moduleSelections?.subject_line_pool;
+  // Add subject line as position 0 with style (renamed from subject_line_pool to subject_line)
+  const subjectSelection = moduleSelections?.subject_line;
   const subjectStyle = subjectSelection?.style || effectiveTone;
   
   if (subjectPoolOverride && subjectPoolOverride.length > 0 && primarySubjectId) {
     modulesV2.push({
-      key: 'subject_line_pool',
+      key: 'subject_line',
       position: 0,
       mode: 'always',
       selection: {

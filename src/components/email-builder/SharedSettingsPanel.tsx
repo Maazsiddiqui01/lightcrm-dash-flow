@@ -282,9 +282,9 @@ export function SharedSettingsPanel({
         open={subjectPoolDialogOpen}
         onOpenChange={setSubjectPoolDialogOpen}
         allSubjects={allSubjects}
-        currentSelection={moduleSelections.subject_line_pool || null}
+        currentSelection={moduleSelections.subject_line || null}
         onSelectionChange={(selection) => {
-          onModuleSelectionChange('subject_line_pool', selection);
+          onModuleSelectionChange('subject_line', selection);
         }}
         toneOverride={toneOverride}
       />

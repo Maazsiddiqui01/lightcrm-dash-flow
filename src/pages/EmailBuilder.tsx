@@ -223,11 +223,11 @@ export function EmailBuilder() {
     }
   }, [contactData?.most_recent_contact]);
   
-  // Sync subject pool selection to subjectPoolOverride for validation
+  // Sync subject line selection to subjectPoolOverride (renamed from subject_line_pool to subject_line)
   useEffect(() => {
-    const ids = moduleSelections.subject_line_pool?.subjectIds || [];
+    const ids = moduleSelections.subject_line?.subjectIds || [];
     setSubjectPoolOverride(ids);
-  }, [moduleSelections.subject_line_pool]);
+  }, [moduleSelections.subject_line]);
   
   // Validate module selections whenever they change
   useEffect(() => {
@@ -238,12 +238,12 @@ export function EmailBuilder() {
   // Dev-only debug log for subject pool sync
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
-      console.debug('📋 Subject Pool Sync:', {
+      console.debug('📋 Subject Line Sync:', {
         subjectPoolOverride: subjectPoolOverride.length,
-        moduleSelections: moduleSelections.subject_line_pool?.subjectIds?.length || 0,
+        moduleSelections: moduleSelections.subject_line?.subjectIds?.length || 0,
       });
     }
-  }, [subjectPoolOverride, moduleSelections.subject_line_pool]);
+  }, [subjectPoolOverride, moduleSelections.subject_line]);
   
   // Auto-set module defaults when master template changes
   const masterTemplate = contactData ? routeMaster(contactData.most_recent_contact) : null;
@@ -323,7 +323,7 @@ export function EmailBuilder() {
     setDefaultsSnapshot({
       order: [...moduleOrder],
       moduleSelections: { ...moduleSelections },
-      subjectPrimaryId: moduleSelections.subject_line_pool?.defaultSubjectId || null,
+      subjectPrimaryId: moduleSelections.subject_line?.defaultSubjectId || null,
     });
   };
 
@@ -1558,8 +1558,6 @@ ${draftResult.signature}`;
                 onCopyToClipboard={handleCopyToClipboard}
                 disabled={
                   !contactData || 
-                  subjectPoolOverride.length === 0 || 
-                  moduleValidationErrors.length > 0 ||
                   isSavingSettings || 
                   savingWithShortcut
                 }

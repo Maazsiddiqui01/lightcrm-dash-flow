@@ -4,7 +4,7 @@ import type { ModuleSelections, ModuleSelection } from '@/types/moduleSelections
 import type { PhraseLibraryItem } from '@/types/phraseLibrary';
 import type { SubjectLibraryItem } from '@/hooks/useSubjectLibrary';
 import { MODULE_LIBRARY_MAP } from '@/config/moduleCategoryMap';
-import { SINGLE_SELECT_MODULES } from '@/config/moduleCategoryMap';
+import { SINGLE_SELECT_MODULES, MULTI_SELECT_MODULES } from '@/config/moduleCategoryMap';
 
 interface UseAutoSelectPhrasesProps {
   contactId: string | null;
@@ -79,6 +79,33 @@ export function useAutoSelectPhrases({
         category,
         phraseId: firstPhrase.id,
         phraseText: firstPhrase.phrase_text,
+      };
+      hasUpdates = true;
+    });
+
+    // Iterate through all multi-select modules - auto-select exactly 1 phrase
+    MULTI_SELECT_MODULES.forEach((moduleKey) => {
+      // Skip if module is disabled (never)
+      if (moduleStates[moduleKey] === 'never') return;
+
+      // Skip if already has selection
+      const currentSelection = moduleSelections[moduleKey];
+      if (currentSelection?.phraseIds && currentSelection.phraseIds.length > 0) return;
+
+      // Get category for this module
+      const category = MODULE_LIBRARY_MAP[moduleKey];
+      if (!category) return;
+
+      // Get phrases for this category
+      const categoryPhrases = allPhrases.filter(p => p.category === category);
+      if (categoryPhrases.length === 0) return;
+
+      // Auto-select exactly 1 phrase for multi-select modules
+      const firstPhrase = categoryPhrases[0];
+      updates[moduleKey] = {
+        type: 'phrase',
+        category,
+        phraseIds: [firstPhrase.id], // Array with single item
       };
       hasUpdates = true;
     });

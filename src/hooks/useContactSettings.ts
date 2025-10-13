@@ -44,12 +44,19 @@ export function useContactSettings(contactId: string | null) {
       if (error) throw error;
       if (!data) return null;
 
+      // Runtime migration: rename subject_line_pool to subject_line
+      const moduleSelections = data.module_selections as Record<string, any> | null;
+      if (moduleSelections?.subject_line_pool && !moduleSelections?.subject_line) {
+        moduleSelections.subject_line = moduleSelections.subject_line_pool;
+        delete moduleSelections.subject_line_pool;
+      }
+
       return {
         ...data,
         delta_type: data.delta_type as 'Email' | 'Meeting',
         module_states: data.module_states as unknown as ModuleStates,
         module_order: data.module_order as string[] | null,
-        module_selections: data.module_selections as Record<string, any> | null,
+        module_selections: moduleSelections,
         curated_recipients: data.curated_recipients as any || null,
         custom_module_labels: data.custom_module_labels as Record<string, string> | undefined,
         module_defaults: data.module_defaults as Record<string, string> | undefined,
@@ -81,7 +88,7 @@ export function useContactSettings(contactId: string | null) {
         }
       });
       
-      const subjectDefaultId = payload.moduleSelections?.subject_line_pool?.defaultSubjectId || null;
+      const subjectDefaultId = payload.moduleSelections?.subject_line?.defaultSubjectId || null;
       
       const curatedRecipients = (payload.curatedTeam || payload.curatedTo || payload.curatedCc) ? {
         team: payload.curatedTeam || [],
