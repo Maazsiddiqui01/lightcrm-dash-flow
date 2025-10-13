@@ -71,20 +71,7 @@ export function validateModuleSelections(
       }
     }
 
-    // Validate multi-select phrase modules
-    if (selection.phraseIds && Array.isArray(selection.phraseIds)) {
-      const validPhraseIds = selection.phraseIds.filter(id => {
-        const isValid = phraseIds.has(id);
-        if (!isValid) {
-          removedItems.push({
-            module: moduleKey,
-            itemId: id,
-          });
-        }
-        return isValid;
-      });
-      cleanedSelection.phraseIds = validPhraseIds;
-    }
+    // Legacy phraseIds validation removed - multi-select now uses phraseId (single selection)
 
     // Validate inquiry modules
     if (selection.inquiryId) {

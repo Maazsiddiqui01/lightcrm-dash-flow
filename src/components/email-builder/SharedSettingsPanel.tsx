@@ -39,7 +39,7 @@ interface SharedSettingsPanelProps {
   moduleSelections: ModuleSelections;
   onModuleChange: (module: keyof ModuleStates, value: TriState) => void;
   onModuleOrderChange: (newOrder: Array<keyof ModuleStates>) => void;
-  onModuleSelectionChange: (module: keyof ModuleStates | 'subject_line_pool', selection: ModuleSelection | null) => void;
+  onModuleSelectionChange: (module: keyof ModuleStates, selection: ModuleSelection | null) => void;
   onResetToDefaults: () => void;
   
   // Libraries

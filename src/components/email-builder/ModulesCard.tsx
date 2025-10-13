@@ -53,7 +53,7 @@ interface ModulesCardProps {
   onModuleOrderChange: (newOrder: Array<keyof ModuleStates>) => void;
   onResetToDefaults: () => void;
   moduleSelections: ModuleSelections;
-  onModuleSelectionChange: (module: keyof ModuleStates | 'subject_line_pool', selection: ModuleSelection | null) => void;
+  onModuleSelectionChange: (module: keyof ModuleStates, selection: ModuleSelection | null) => void;
   contactData: ContactEmailComposer | null;
   allPhrases: PhraseLibraryItem[];
   allInquiries: InquiryLibraryItem[];
@@ -209,29 +209,24 @@ export function ModulesCard({
     setActiveDrawer(null);
   };
 
-  const getSelectedItemsCount = (moduleKey: keyof ModuleStates | 'subject_line_pool'): number => {
-    // Map legacy key
-    const actualKey = moduleKey === 'subject_line_pool' ? 'subject_line' : moduleKey;
-    const selection = moduleSelections[actualKey as keyof ModuleSelections];
+  const getSelectedItemsCount = (moduleKey: keyof ModuleStates): number => {
+    const selection = moduleSelections[moduleKey];
     if (!selection) return 0;
 
-    // Handle single selections first
+    // Handle single selections
     if (selection.phraseId) return 1;
     if (selection.greetingId) return 1;
     if (selection.articleId) return 1;
     if (selection.inquiryId) return 1;
 
-    // Handle arrays (multi-select - deprecated for subject_line)
-    if (selection.phraseIds) return selection.phraseIds.length;
+    // Handle subject pool (multi-subject allowed)
     if (selection.subjectIds) return selection.subjectIds.length;
 
     return 0;
   };
   
-  const getSelectionSummary = (moduleKey: keyof ModuleStates | 'subject_line_pool'): string | null => {
-    // Map legacy key
-    const actualKey = moduleKey === 'subject_line_pool' ? 'subject_line' : moduleKey;
-    const selection = moduleSelections[actualKey as keyof ModuleSelections];
+  const getSelectionSummary = (moduleKey: keyof ModuleStates): string | null => {
+    const selection = moduleSelections[moduleKey];
     if (!selection) return null;
 
     // Single phrase/subject selection with preview
@@ -251,12 +246,7 @@ export function ModulesCard({
         : selection.articleTitle;
     }
 
-    // Legacy multi-select (for platforms, addons, talking_points)
-    if (selection.phraseIds && selection.phraseIds.length > 0) {
-      return `${selection.phraseIds.length} items`;
-    }
-
-    // Legacy subject pool
+    // Subject pool (multi-subject allowed)
     if (selection.subjectIds && selection.subjectIds.length > 0) {
       return `${selection.subjectIds.length} in pool`;
     }
@@ -265,7 +255,7 @@ export function ModulesCard({
   };
   
   // Get subject pool data for preview
-  const subjectPoolSelection = moduleSelections.subject_line_pool;
+  const subjectPoolSelection = moduleSelections.subject_line;
   const selectedSubjectIds = subjectPoolSelection?.subjectIds || [];
   const selectedSubjects = allSubjects.filter(s => selectedSubjectIds.includes(s.id));
   const previewSubjects = selectedSubjects.map(s => s.subject_template);

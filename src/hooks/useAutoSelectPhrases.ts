@@ -83,14 +83,14 @@ export function useAutoSelectPhrases({
       hasUpdates = true;
     });
 
-    // Iterate through all multi-select modules - auto-select exactly 1 phrase
+    // Iterate through all multi-select modules - now enforcing exactly 1 selection (using phraseId)
     MULTI_SELECT_MODULES.forEach((moduleKey) => {
       // Skip if module is disabled (never)
       if (moduleStates[moduleKey] === 'never') return;
 
       // Skip if already has selection
       const currentSelection = moduleSelections[moduleKey];
-      if (currentSelection?.phraseIds && currentSelection.phraseIds.length > 0) return;
+      if (currentSelection?.phraseId) return;
 
       // Get category for this module
       const category = MODULE_LIBRARY_MAP[moduleKey];
@@ -100,12 +100,13 @@ export function useAutoSelectPhrases({
       const categoryPhrases = allPhrases.filter(p => p.category === category);
       if (categoryPhrases.length === 0) return;
 
-      // Auto-select exactly 1 phrase for multi-select modules
+      // Auto-select exactly 1 phrase (single selection, not array)
       const firstPhrase = categoryPhrases[0];
       updates[moduleKey] = {
         type: 'phrase',
         category,
-        phraseIds: [firstPhrase.id], // Array with single item
+        phraseId: firstPhrase.id,
+        phraseText: firstPhrase.phrase_text,
       };
       hasUpdates = true;
     });

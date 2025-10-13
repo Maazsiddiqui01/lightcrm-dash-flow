@@ -83,11 +83,7 @@ export function ModuleContentPreview({
             const phrase = allPhrases.find(p => p.id === phraseId);
             content = phrase?.phrase_text || selection.phraseText || "";
           }
-          // Multi-select (should not exist after enforcement, but handle legacy)
-          else if (selection.phraseIds && selection.phraseIds.length > 0) {
-            const phrases = allPhrases.filter(p => selection.phraseIds!.includes(p.id));
-            content = phrases.map(p => p.phrase_text).join(", ");
-          }
+          // Multi-select removed - all modules now use single phraseId
           // Article
           else if (selection.articleTitle) {
             content = `📄 ${selection.articleTitle}`;

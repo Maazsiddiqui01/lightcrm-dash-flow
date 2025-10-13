@@ -153,17 +153,18 @@ export function ContactOverrideDrawer({
           };
         }
       } else if (MULTI_SELECT_MODULES.has(moduleKey as ModuleKey)) {
-        const rng = seededRandom(seed + moduleKey.length);
-        const count = Math.floor(rng() * Math.min(3, categoryPhrases.length)) + 1;
-        const shuffled = seededShuffle(categoryPhrases, seed + moduleKey.length);
-        const selectedPhrases = shuffled.slice(0, count);
+        // Multi-select now enforces exactly 1 selection
+        const randomPhrase = pickRandomPhrase(categoryPhrases, seed + moduleKey.length);
         
-        newSelections[moduleKey as keyof ModuleSelections] = {
-          type: 'phrase',
-          category,
-          phraseIds: selectedPhrases.map(p => p.id),
-          defaultPhraseId: newSelections[moduleKey as keyof ModuleSelections]?.defaultPhraseId,
-        };
+        if (randomPhrase) {
+          newSelections[moduleKey as keyof ModuleSelections] = {
+            type: 'phrase',
+            category,
+            phraseId: randomPhrase.id,
+            phraseText: randomPhrase.phrase_text,
+            defaultPhraseId: newSelections[moduleKey as keyof ModuleSelections]?.defaultPhraseId,
+          };
+        }
       }
     });
     

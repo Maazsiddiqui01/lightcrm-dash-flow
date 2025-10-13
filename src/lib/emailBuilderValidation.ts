@@ -201,10 +201,10 @@ export function validateModuleSelections(
       }
     }
     
-    // Multi-select validation - make it a warning instead of error
+    // Multi-select modules now enforce exactly 1 selection (same as single-select)
     if (MULTI_SELECT_MODULES.has(moduleKey)) {
-      if (!selection?.phraseIds || selection.phraseIds.length === 0) {
-        warnings.push(`${formatModuleName(moduleKey)} has no selections (${category})`);
+      if (!selection?.phraseId) {
+        errors.push(`Select one phrase for ${formatModuleName(moduleKey)} (${category})`);
       }
     }
   }

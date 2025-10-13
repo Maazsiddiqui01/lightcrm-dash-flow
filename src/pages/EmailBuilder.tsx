@@ -400,25 +400,24 @@ export function EmailBuilder() {
           };
         }
       } else if (MULTI_SELECT_MODULES.has(moduleKey as ModuleKey)) {
-        // For multi-select, pick 1-3 random phrases
-        const rng = seededRandom(seed + moduleKey.length);
-        const count = Math.floor(rng() * Math.min(3, categoryPhrases.length)) + 1;
-        const shuffled = seededShuffle(categoryPhrases, seed + moduleKey.length);
-        const selectedPhrases = shuffled.slice(0, count);
+        // Multi-select now enforces exactly 1 selection
+        const randomPhrase = pickRandomPhrase(categoryPhrases, seed + moduleKey.length);
         
         // Check if content changed
-        const oldPhraseIds = oldSelection?.phraseIds || [];
-        const newPhraseIds = selectedPhrases.map(p => p.id);
-        if (JSON.stringify(oldPhraseIds.sort()) !== JSON.stringify(newPhraseIds.sort())) {
+        const oldPhraseId = oldSelection?.phraseId;
+        if (randomPhrase && oldPhraseId !== randomPhrase.id) {
           contentChanges.add(moduleKey);
         }
         
-        newSelections[moduleKey as keyof ModuleSelections] = {
-          type: 'phrase',
-          category,
-          phraseIds: newPhraseIds,
-          defaultPhraseId: newSelections[moduleKey as keyof ModuleSelections]?.defaultPhraseId,
-        };
+        if (randomPhrase) {
+          newSelections[moduleKey as keyof ModuleSelections] = {
+            type: 'phrase',
+            category,
+            phraseId: randomPhrase.id,
+            phraseText: randomPhrase.phrase_text,
+            defaultPhraseId: newSelections[moduleKey as keyof ModuleSelections]?.defaultPhraseId,
+          };
+        }
       }
     });
     
@@ -974,27 +973,7 @@ export function EmailBuilder() {
         return;
       }
 
-      // Validate subject pool before generation
-      const subjectValidation = validateSubjectPool(subjectPoolOverride);
-      if (!subjectValidation.isValid) {
-        toast({
-          title: 'Subject Pool Required',
-          description: subjectValidation.errors.join(', '),
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Validate module selections before generation
-      const moduleValidation = validateModuleSelections(moduleStates, moduleSelections);
-      if (!moduleValidation.isValid) {
-        toast({
-          title: 'Module Configuration Required',
-          description: moduleValidation.errors.join(', '),
-          variant: 'destructive',
-        });
-        return;
-      }
+      // Validation removed - auto-selection ensures all modules are valid
 
       // Get full master template from database
       const fullMasterTemplate = masterTemplates?.find(
