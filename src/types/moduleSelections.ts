@@ -39,7 +39,8 @@ export interface ModuleSelection {
 
 export interface ModuleSelections {
   subject_line?: ModuleSelection;
-  subject_line_pool?: ModuleSelection; // DEPRECATED: Use subject_line instead (kept for backward compatibility)
+  /** @deprecated Use subject_line instead. Kept for backward compatibility only. */
+  subject_line_pool?: ModuleSelection;
   initial_greeting?: ModuleSelection;
   self_personalization?: ModuleSelection;
   top_opportunities?: ModuleSelection;

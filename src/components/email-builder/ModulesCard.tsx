@@ -185,7 +185,7 @@ export function ModulesCard({
   isRandomized = false,
   changedModules = new Set(),
 }: ModulesCardProps) {
-  const [activeDrawer, setActiveDrawer] = useState<keyof ModuleStates | 'subject_line_pool' | null>(null);
+  const [activeDrawer, setActiveDrawer] = useState<keyof ModuleStates | null>(null);
   // Drag-and-drop sensors with accessibility
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -194,7 +194,7 @@ export function ModulesCard({
     })
   );
 
-  const handleOpenDrawer = (moduleKey: keyof ModuleStates | 'subject_line_pool') => {
+  const handleOpenDrawer = (moduleKey: keyof ModuleStates) => {
     setActiveDrawer(moduleKey);
   };
 
@@ -434,8 +434,8 @@ export function ModulesCard({
         <ModuleConfigDrawer
           isOpen={true}
           onClose={handleCloseDrawer}
-          moduleKey={activeDrawer === 'subject_line_pool' ? 'initial_greeting' : activeDrawer}
-          moduleLabel={activeDrawer === 'subject_line_pool' ? 'Subject Line Pool' : MODULE_LABELS[activeDrawer]}
+          moduleKey={activeDrawer}
+          moduleLabel={MODULE_LABELS[activeDrawer]}
           contactData={contactData}
           currentSelection={moduleSelections[activeDrawer as keyof ModuleSelections] || null}
           onSave={handleSaveSelection}
@@ -443,7 +443,7 @@ export function ModulesCard({
           allInquiries={allInquiries}
           allSubjects={allSubjects}
           toneOverride={toneOverride}
-          isSubjectPool={activeDrawer === 'subject_line_pool'}
+          isSubjectPool={activeDrawer === 'subject_line'}
         />
       )}
     </Card>

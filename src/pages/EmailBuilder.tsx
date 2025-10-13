@@ -677,20 +677,13 @@ export function EmailBuilder() {
 
   // Handle module selection changes - clear randomization on manual edit (HIGH-8 fix)
   const handleModuleSelectionChange = (
-    module: keyof ModuleStates | 'subject_line_pool',
+    module: keyof ModuleStates,
     selection: ModuleSelection | null
   ) => {
-    if (module === 'subject_line_pool') {
-      setModuleSelections((prev) => ({
-        ...prev,
-        subject_line_pool: selection || undefined,
-      }));
-    } else {
-      setModuleSelections((prev) => ({
-        ...prev,
-        [module]: selection || undefined,
-      }));
-    }
+    setModuleSelections((prev) => ({
+      ...prev,
+      [module]: selection || undefined,
+    }));
     
     // Clear randomization state on manual edit (HIGH-8 fix)
     if (isRandomized) {
@@ -1078,22 +1071,42 @@ ${draftResult.signature}`;
     if (mode === 'group') {
       const fetchGroupContacts = async () => {
         setLoadingGroupContacts(true);
-        let query = supabase.from('contacts_raw').select('*');
-        
-        // Apply filters (simplified for MVP)
-        if (groupFilters.sectors && groupFilters.sectors.length > 0) {
-          query = query.in('lg_sector', groupFilters.sectors);
+        try {
+          let query = supabase.from('contacts_raw').select('*');
+          
+          // Apply filters (simplified for MVP)
+          if (groupFilters.sectors && groupFilters.sectors.length > 0) {
+            query = query.in('lg_sector', groupFilters.sectors);
+          }
+          if (groupFilters.lgLead && groupFilters.lgLead.length > 0) {
+            query = query.in('lg_lead', groupFilters.lgLead);
+          }
+          
+          // NO LIMIT - fetch all matching contacts
+          const { data, error } = await query;
+          
+          if (error) {
+            console.error('Error fetching group contacts:', error);
+            toast({
+              title: 'Error Loading Contacts',
+              description: 'Failed to load contacts for group mode. Please try again.',
+              variant: 'destructive',
+            });
+            setGroupContacts([]);
+          } else if (data) {
+            setGroupContacts(data);
+          }
+        } catch (err) {
+          console.error('Unexpected error fetching group contacts:', err);
+          toast({
+            title: 'Error',
+            description: 'An unexpected error occurred while loading contacts.',
+            variant: 'destructive',
+          });
+          setGroupContacts([]);
+        } finally {
+          setLoadingGroupContacts(false);
         }
-        if (groupFilters.lgLead && groupFilters.lgLead.length > 0) {
-          query = query.in('lg_lead', groupFilters.lgLead);
-        }
-        
-        // NO LIMIT - fetch all matching contacts
-        const { data, error } = await query;
-        if (!error && data) {
-          setGroupContacts(data);
-        }
-        setLoadingGroupContacts(false);
       };
       
       fetchGroupContacts();
@@ -1642,11 +1655,11 @@ ${draftResult.signature}`;
               </div>
             )}
             
-            {/* Subject Pool Validation Warning */}
-            {subjectPoolOverride.length === 0 && (
+            {/* Subject Line Validation Warning */}
+            {!moduleSelections.subject_line?.phraseId && (
               <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                 <p className="text-sm text-destructive font-medium">
-                  ⚠️ Subject Line Pool must have at least one enabled subject
+                  ⚠️ Subject Line must be selected
                 </p>
               </div>
             )}

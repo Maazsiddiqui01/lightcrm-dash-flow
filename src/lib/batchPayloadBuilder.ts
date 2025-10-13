@@ -141,12 +141,30 @@ export async function buildBatchPayload(
         contact
       );
 
-      // Validate and use module order from effective config, fallback to shared settings
+      // Validate and use module order from effective config, fallback to shared settings, then hardcoded default
+      const defaultModuleOrder = [
+        'subject_line',
+        'initial_greeting',
+        'self_personalization',
+        'article_recommendations',
+        'top_opportunities',
+        'platforms',
+        'suggested_talking_points',
+        'addons',
+        'general_org_update',
+        'meeting_request',
+        'closing_line',
+      ];
+      
       const finalModuleOrder = effectiveConfig.moduleOrder && 
                                Array.isArray(effectiveConfig.moduleOrder) && 
                                effectiveConfig.moduleOrder.length > 0
         ? effectiveConfig.moduleOrder
-        : sharedSettings.moduleOrder;
+        : (sharedSettings.moduleOrder && 
+           Array.isArray(sharedSettings.moduleOrder) && 
+           sharedSettings.moduleOrder.length > 0
+            ? sharedSettings.moduleOrder
+            : defaultModuleOrder);
       
       // Build enhanced payload using existing function with all params
       const payload = await buildEnhancedDraftPayload(
