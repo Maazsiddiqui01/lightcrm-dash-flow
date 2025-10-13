@@ -143,15 +143,23 @@ export async function buildBatchPayload(
       );
 
       // Validate and use module order from effective config, fallback to shared settings, then DEFAULT_MODULE_ORDER constant
-      const finalModuleOrder = effectiveConfig.moduleOrder && 
-                               Array.isArray(effectiveConfig.moduleOrder) && 
-                               effectiveConfig.moduleOrder.length > 0
-        ? effectiveConfig.moduleOrder
-        : (sharedSettings.moduleOrder && 
-           Array.isArray(sharedSettings.moduleOrder) && 
-           sharedSettings.moduleOrder.length > 0
-            ? sharedSettings.moduleOrder
-            : DEFAULT_MODULE_ORDER);
+      let finalModuleOrder: typeof DEFAULT_MODULE_ORDER = DEFAULT_MODULE_ORDER;
+
+      if (effectiveConfig.moduleOrder && 
+          Array.isArray(effectiveConfig.moduleOrder) && 
+          effectiveConfig.moduleOrder.length > 0) {
+        finalModuleOrder = effectiveConfig.moduleOrder as typeof DEFAULT_MODULE_ORDER;
+      } else if (sharedSettings.moduleOrder && 
+                 Array.isArray(sharedSettings.moduleOrder) && 
+                 sharedSettings.moduleOrder.length > 0) {
+        finalModuleOrder = sharedSettings.moduleOrder as typeof DEFAULT_MODULE_ORDER;
+      }
+
+      // Final safety: ensure order contains all required modules
+      if (finalModuleOrder.length !== 11) {
+        console.warn(`Module order incomplete (${finalModuleOrder.length}/11), using DEFAULT_MODULE_ORDER`);
+        finalModuleOrder = DEFAULT_MODULE_ORDER;
+      }
       
       // Build enhanced payload using existing function with all params
       const payload = await buildEnhancedDraftPayload(

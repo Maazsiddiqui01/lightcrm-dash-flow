@@ -52,7 +52,9 @@ export const SINGLE_SELECT_MODULES: ReadonlySet<ModuleKey> = new Set([
 ]);
 
 /**
- * Modules that allow multi-select (checkbox UI)
+ * Modules that historically allowed multi-select but now enforce exactly 1 selection
+ * (Using phraseId like single-select modules)
+ * Kept separate for legacy compatibility and future expansion
  */
 export const MULTI_SELECT_MODULES: ReadonlySet<ModuleKey> = new Set([
   'platforms',

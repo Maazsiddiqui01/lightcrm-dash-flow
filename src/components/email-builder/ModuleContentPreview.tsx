@@ -180,7 +180,10 @@ export function ModuleContentPreview({
                   <div className="space-y-2">
                     {selectedSubjects.slice(0, 3).map((subjectId) => {
                       const subject = allSubjects.find((s) => s.id === subjectId);
-                      if (!subject) return null;
+                      if (!subject) {
+                        console.warn(`Subject ID ${subjectId} not found in allSubjects library`);
+                        return null;
+                      }
 
                       const interpolatedSubject = contactData
                         ? interpolateContent(subject.subject_template, contactData, contactData.opps, contactData.fa_descriptions)

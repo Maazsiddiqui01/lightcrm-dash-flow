@@ -114,10 +114,20 @@ export function ContactOverrideDrawer({
     }
     
     // Validation: Check if subject pool has selections
-    if (!subjectPool.selectedIds || subjectPool.selectedIds.length === 0) {
+    if (!subjectPool || !subjectPool.selectedIds || subjectPool.selectedIds.length === 0) {
       toast({
         title: "Cannot Randomize",
-        description: "Subject Line Pool must have at least one enabled subject.",
+        description: "Subject Line Pool must have at least one enabled subject. Please configure shared settings first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Additional check: Ensure subject library is loaded
+    if (!allSubjects || allSubjects.length === 0) {
+      toast({
+        title: "Cannot Randomize",
+        description: "Subject library is still loading. Please wait.",
         variant: "destructive",
       });
       return;

@@ -1316,8 +1316,8 @@ ${draftResult.signature}`;
                 const defaults = getModuleDefaultsFromMaster(masterKey, masterTemplates || []);
                 if (defaults) {
                   setModuleStates(defaults);
-                  // Always use default order, never unstable Object.keys
-                  setModuleOrder(DEFAULT_MODULE_ORDER);
+                  // REMOVED: setModuleOrder(DEFAULT_MODULE_ORDER)
+                  // Only reset order when user clicks "Reset" button explicitly
                 }
                 toast({
                   title: "Master Template Updated",
