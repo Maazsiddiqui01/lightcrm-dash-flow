@@ -121,11 +121,21 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         setIsRefreshing(true);
       }
 
-      // Fetch contacts directly from contacts_raw to ensure freshest interaction dates
+      // Fetch contacts with computed stats from contacts_computed view
       let effectiveContactsData: any[] | null = null;
       let contactsQuery = supabase
         .from("contacts_raw")
-        .select("*");
+        .select(`
+          *,
+          computed:contacts_computed!contact_id(
+            of_emails,
+            of_meetings,
+            total_of_contacts,
+            days_since_last_email,
+            days_since_last_meeting,
+            contact_type
+          )
+        `);
 
       // Apply contact filters
       const {
@@ -326,7 +336,17 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           console.log(`[Contacts#${reqId}] Falling back to contacts_raw table with filters applied...`);
           let fallbackQuery = supabase
             .from("contacts_raw")
-            .select("*");
+            .select(`
+              *,
+              computed:contacts_computed!contact_id(
+                of_emails,
+                of_meetings,
+                total_of_contacts,
+                days_since_last_email,
+                days_since_last_meeting,
+                contact_type
+              )
+            `);
           
           // Apply focus area filter via contact IDs to fallback
           if (contactIdsFromFocusAreas !== null) {
@@ -405,41 +425,42 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           const fallbackContacts: ContactWithOpportunities[] = (fallbackData || []).map((contact: any) => ({
             id: contact.id,
             full_name: contact.full_name ?? null,
-            first_name: contact.first_name ?? null,
-            last_name: contact.last_name ?? null,
-            email_address: contact.email_address ?? null,
-            phone: contact.phone ?? null,
-            group_email_role: contact.group_email_role ?? null,
-            title: contact.title ?? null,
-            organization: contact.organization ?? null,
-            areas_of_specialization: contact.areas_of_specialization ?? null,
-            lg_sector: contact.lg_sector ?? null,
-            lg_focus_area_1: contact.lg_focus_area_1 ?? null,
-            lg_focus_area_2: contact.lg_focus_area_2 ?? null,
-            lg_focus_area_3: contact.lg_focus_area_3 ?? null,
-            lg_focus_area_4: contact.lg_focus_area_4 ?? null,
-            lg_focus_area_5: contact.lg_focus_area_5 ?? null,
-            lg_focus_area_6: contact.lg_focus_area_6 ?? null,
-            lg_focus_area_7: contact.lg_focus_area_7 ?? null,
-            lg_focus_area_8: contact.lg_focus_area_8 ?? null,
-            lg_focus_areas_comprehensive_list: contact.lg_focus_areas_comprehensive_list ?? null,
-            category: contact.category ?? null,
-            contact_type: contact.contact_type ?? null,
-            delta_type: contact.delta_type ?? null,
-            notes: contact.notes ?? null,
-            url_to_online_bio: contact.url_to_online_bio ?? null,
-            most_recent_contact: contact.most_recent_contact ?? null,
-            latest_contact_email: contact.latest_contact_email ?? null,
-            latest_contact_meeting: contact.latest_contact_meeting ?? null,
-            outreach_date: contact.outreach_date ?? null,
-            email_subject: contact.email_subject ?? null,
-            meeting_title: contact.meeting_title ?? null,
-            total_of_contacts: contact.total_of_contacts ?? null,
-            of_emails: contact.of_emails ?? null,
-            of_meetings: contact.of_meetings ?? null,
-            delta: contact.delta ?? null,
-            days_since_last_email: contact.days_since_last_email ?? null,
-            days_since_last_meeting: contact.days_since_last_meeting ?? null,
+            // Override with accurate computed values
+            of_emails: contact.computed?.of_emails ?? contact.of_emails,
+            of_meetings: contact.computed?.of_meetings ?? contact.of_meetings,
+            total_of_contacts: contact.computed?.total_of_contacts ?? contact.total_of_contacts,
+            days_since_last_email: contact.computed?.days_since_last_email ?? contact.days_since_last_email,
+            days_since_last_meeting: contact.computed?.days_since_last_meeting ?? contact.days_since_last_meeting,
+            contact_type: contact.computed?.contact_type ?? contact.contact_type,
+        first_name: contact.first_name ?? null,
+        last_name: contact.last_name ?? null,
+        email_address: contact.email_address ?? null,
+        phone: contact.phone ?? null,
+        group_email_role: contact.group_email_role ?? null,
+        title: contact.title ?? null,
+        organization: contact.organization ?? null,
+        areas_of_specialization: contact.areas_of_specialization ?? null,
+        lg_sector: contact.lg_sector ?? null,
+        lg_focus_area_1: contact.lg_focus_area_1 ?? null,
+        lg_focus_area_2: contact.lg_focus_area_2 ?? null,
+        lg_focus_area_3: contact.lg_focus_area_3 ?? null,
+        lg_focus_area_4: contact.lg_focus_area_4 ?? null,
+        lg_focus_area_5: contact.lg_focus_area_5 ?? null,
+        lg_focus_area_6: contact.lg_focus_area_6 ?? null,
+        lg_focus_area_7: contact.lg_focus_area_7 ?? null,
+        lg_focus_area_8: contact.lg_focus_area_8 ?? null,
+        lg_focus_areas_comprehensive_list: contact.lg_focus_areas_comprehensive_list ?? null,
+        category: contact.category ?? null,
+        delta_type: contact.delta_type ?? null,
+        notes: contact.notes ?? null,
+        url_to_online_bio: contact.url_to_online_bio ?? null,
+        most_recent_contact: contact.most_recent_contact ?? null,
+        latest_contact_email: contact.latest_contact_email ?? null,
+        latest_contact_meeting: contact.latest_contact_meeting ?? null,
+        outreach_date: contact.outreach_date ?? null,
+        email_subject: contact.email_subject ?? null,
+        meeting_title: contact.meeting_title ?? null,
+        delta: contact.delta ?? null,
             no_of_lg_focus_areas: contact.no_of_lg_focus_areas ?? null,
             all_opps: contact.all_opps ?? null,
             no_of_opps_sourced: contact.no_of_opps_sourced ?? null,
@@ -522,6 +543,13 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       // Attach opportunities to each contact with proper null handling for group fields
       const contactsWithOpportunities = contactsData?.map(contact => ({
         ...contact,
+        // Override with accurate computed values from contacts_computed
+        of_emails: (contact as any).computed?.of_emails ?? (contact as any).of_emails,
+        of_meetings: (contact as any).computed?.of_meetings ?? (contact as any).of_meetings,
+        total_of_contacts: (contact as any).computed?.total_of_contacts ?? (contact as any).total_of_contacts,
+        days_since_last_email: (contact as any).computed?.days_since_last_email ?? (contact as any).days_since_last_email,
+        days_since_last_meeting: (contact as any).computed?.days_since_last_meeting ?? (contact as any).days_since_last_meeting,
+        contact_type: (contact as any).computed?.contact_type ?? (contact as any).contact_type,
         group_email_role: (contact as any).group_email_role ?? null,
         group_contact: (contact as any).group_contact && (contact as any).group_contact.trim() !== '' ? (contact as any).group_contact : null,
         most_recent_group_contact: (contact as any).most_recent_group_contact ?? null,

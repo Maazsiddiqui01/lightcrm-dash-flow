@@ -280,7 +280,15 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
 
       let statsQuery = supabase
         .from("contacts_raw")
-        .select("of_emails, of_meetings, most_recent_contact, delta, intentional_no_outreach");
+        .select(`
+          most_recent_contact,
+          delta,
+          intentional_no_outreach,
+          computed:contacts_computed!contact_id(
+            of_emails,
+            of_meetings
+          )
+        `);
       statsQuery = applyFilters(statsQuery, finalContactIds);
 
       // Apply active contacts date filter
@@ -293,11 +301,11 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
       const { count: activeContacts } = await activeQuery;
       const { data: contactsWithStats } = await statsQuery;
 
-      const totalEmails = contactsWithStats?.reduce((sum, contact) => 
-        sum + ((contact as any).of_emails || 0), 0) || 0;
+      const totalEmails = contactsWithStats?.reduce((sum, contact: any) => 
+        sum + ((contact.computed?.of_emails || contact.of_emails) || 0), 0) || 0;
       
-      const totalMeetings = contactsWithStats?.reduce((sum, contact) => 
-        sum + ((contact as any).of_meetings || 0), 0) || 0;
+      const totalMeetings = contactsWithStats?.reduce((sum, contact: any) => 
+        sum + ((contact.computed?.of_meetings || contact.of_meetings) || 0), 0) || 0;
 
       // Calculate cadence metrics
       let contactsWithCadenceData = 0;
