@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Mail, Sparkles, MessageSquare, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Mail, Sparkles, MessageSquare, Users, RefreshCw } from "lucide-react";
 
 interface LivePreviewPanelProps {
   isGenerating: boolean;
@@ -9,6 +10,7 @@ interface LivePreviewPanelProps {
   inquiry?: { text: string; category: string };
   assistantClause?: string;
   bodyPreview?: string;
+  onRefresh?: () => void;
 }
 
 export function LivePreviewPanel({
@@ -17,6 +19,7 @@ export function LivePreviewPanel({
   inquiry,
   assistantClause,
   bodyPreview,
+  onRefresh,
 }: LivePreviewPanelProps) {
   console.log('🎨 LivePreviewPanel render:', {
     isGenerating,
@@ -52,10 +55,23 @@ export function LivePreviewPanel({
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-background to-muted/20">
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Mail className="h-4 w-4" />
-          Live Preview
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Live Preview
+          </CardTitle>
+          {onRefresh && (
+            <Button
+              onClick={onRefresh}
+              size="sm"
+              variant="outline"
+              disabled={isGenerating}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Subject Line */}

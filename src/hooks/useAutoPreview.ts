@@ -21,7 +21,8 @@ export function useAutoPreview(
   deltaType: 'Email' | 'Meeting',
   moduleStates: ModuleStates,
   selectedArticle: Article | null,
-  masterTemplate: any
+  masterTemplate: any,
+  refreshKey: number = 0
 ) {
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -202,7 +203,8 @@ export function useAutoPreview(
     globalPhrases.length,
     globalInquiries.length,
     subjectLibrary.length,
-    masterTemplates
+    masterTemplates,
+    refreshKey
   ]);
 
   return {

@@ -35,6 +35,7 @@ interface ModuleConfigDrawerProps {
   allInquiries: InquiryLibraryItem[];
   toneOverride?: 'casual' | 'hybrid' | 'formal' | null;
   isSubjectPool?: boolean;
+  focusedContactId?: string | null;
 }
 
 export function ModuleConfigDrawer({
@@ -48,6 +49,7 @@ export function ModuleConfigDrawer({
   allPhrases,
   toneOverride,
   isSubjectPool = false,
+  focusedContactId,
 }: ModuleConfigDrawerProps) {
   const isMobile = useIsMobile();
   const [tempSelection, setTempSelection] = useState<ModuleSelection | null>(currentSelection);
@@ -105,6 +107,7 @@ export function ModuleConfigDrawer({
             moduleKey="subject_line"
             subjectStyle={toneOverride || 'hybrid'}
             allowInlineManagement={true}
+            focusedContactId={focusedContactId}
           />
         );
       }
@@ -145,6 +148,7 @@ export function ModuleConfigDrawer({
             contactName={contactName}
             defaultPhraseId={tempSelection?.defaultPhraseId}
             onDefaultToggle={handleDefaultToggle}
+            focusedContactId={focusedContactId}
           />
         );
       
@@ -162,6 +166,7 @@ export function ModuleConfigDrawer({
             contactName={contactName}
             defaultPhraseId={tempSelection?.defaultPhraseId}
             onDefaultToggle={handleDefaultToggle}
+            focusedContactId={focusedContactId}
           />
         );
       
@@ -198,6 +203,7 @@ export function ModuleConfigDrawer({
             contactName={contactName}
             defaultPhraseId={tempSelection?.defaultPhraseId}
             onDefaultToggle={handleDefaultToggle}
+            focusedContactId={focusedContactId}
           />
         );
       
@@ -216,6 +222,7 @@ export function ModuleConfigDrawer({
             contactName={contactName}
             defaultPhraseId={tempSelection?.defaultPhraseId}
             onDefaultToggle={handleDefaultToggle}
+            focusedContactId={focusedContactId}
           />
         );
       
@@ -248,6 +255,7 @@ export function ModuleConfigDrawer({
             contactName={contactName}
             defaultPhraseId={tempSelection?.defaultPhraseId}
             onDefaultToggle={handleDefaultToggle}
+            focusedContactId={focusedContactId}
           />
         );
       
@@ -264,6 +272,7 @@ export function ModuleConfigDrawer({
             contactName={contactName}
             defaultPhraseId={tempSelection?.defaultPhraseId}
             onDefaultToggle={handleDefaultToggle}
+            focusedContactId={focusedContactId}
           />
         );
       
@@ -281,6 +290,7 @@ export function ModuleConfigDrawer({
             defaultPhraseId={tempSelection?.defaultPhraseId}
             onDefaultToggle={handleDefaultToggle}
             allowInlineManagement={true}
+            focusedContactId={focusedContactId}
           />
         );
       

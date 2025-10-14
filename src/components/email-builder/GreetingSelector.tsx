@@ -15,6 +15,7 @@ interface GreetingSelectorProps {
   contactName?: string;
   defaultPhraseId?: string;
   onDefaultToggle?: (phraseId: string | null) => void;
+  focusedContactId?: string | null;
 }
 
 export function GreetingSelector({
@@ -25,6 +26,7 @@ export function GreetingSelector({
   contactName,
   defaultPhraseId,
   onDefaultToggle,
+  focusedContactId,
 }: GreetingSelectorProps) {
   // Find "Hi [First Name]," phrase for default
   const defaultGreetingPhrase = useMemo(() => {
@@ -68,6 +70,7 @@ export function GreetingSelector({
       onDefaultToggle={onDefaultToggle}
       allowInlineManagement={true}
       moduleKey="initial_greeting"
+      focusedContactId={focusedContactId}
     />
   );
 }

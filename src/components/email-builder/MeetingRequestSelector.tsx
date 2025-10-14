@@ -13,6 +13,7 @@ interface MeetingRequestSelectorProps {
   contactName?: string;
   defaultPhraseId?: string;
   onDefaultToggle?: (phraseId: string | null) => void;
+  focusedContactId?: string | null;
 }
 
 export function MeetingRequestSelector({
@@ -23,6 +24,7 @@ export function MeetingRequestSelector({
   contactName,
   defaultPhraseId,
   onDefaultToggle,
+  focusedContactId,
 }: MeetingRequestSelectorProps) {
   const previewVariables = {
     first_name: contactData?.firstName || 'John',
@@ -43,6 +45,7 @@ export function MeetingRequestSelector({
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
       moduleKey="meeting_request"
+      focusedContactId={focusedContactId}
     />
   );
 }

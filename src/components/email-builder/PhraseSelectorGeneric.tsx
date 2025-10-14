@@ -40,6 +40,7 @@ interface PhraseSelectorGenericProps {
   allowInlineManagement?: boolean;
   moduleKey?: string;
   subjectStyle?: 'formal' | 'hybrid' | 'casual';
+  focusedContactId?: string | null;
 }
 
 export function PhraseSelectorGeneric({
@@ -57,6 +58,7 @@ export function PhraseSelectorGeneric({
   allowInlineManagement = true,
   moduleKey = '',
   subjectStyle = 'hybrid',
+  focusedContactId,
 }: PhraseSelectorGenericProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -66,8 +68,10 @@ export function PhraseSelectorGeneric({
   const queryClient = useQueryClient();
 
   // Load contact-specific phrase preferences (unified for all categories including subject)
+  // In group mode, use focusedContactId; in individual mode, use contactData.id
+  const effectiveContactId = focusedContactId || (contactData?.id ? contactData.id : null);
   const phrasePrefs = useContactPhrasePreferences(
-    contactData?.id ? contactData.id : null,
+    effectiveContactId,
     moduleKey
   );
 

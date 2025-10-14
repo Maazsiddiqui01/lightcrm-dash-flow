@@ -14,6 +14,7 @@ interface GeneralOrgUpdateSelectorProps {
   contactName?: string;
   defaultPhraseId?: string;
   onDefaultToggle?: (phraseId: string | null) => void;
+  focusedContactId?: string | null;
 }
 
 export function GeneralOrgUpdateSelector({
@@ -24,6 +25,7 @@ export function GeneralOrgUpdateSelector({
   contactName,
   defaultPhraseId,
   onDefaultToggle,
+  focusedContactId,
 }: GeneralOrgUpdateSelectorProps) {
   const previewVariables = {
     organization: contactData?.organization || 'Acme Corp',
@@ -44,6 +46,7 @@ export function GeneralOrgUpdateSelector({
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
       moduleKey="general_org_update"
+      focusedContactId={focusedContactId}
     />
   );
 }

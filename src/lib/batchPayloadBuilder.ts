@@ -162,6 +162,7 @@ export async function buildBatchPayload(
       }
       
       // Build enhanced payload using existing function with all params
+      // CRITICAL: Use effectiveConfig.moduleSelections to include per-contact overrides
       const payload = await buildEnhancedDraftPayload(
         contactForPayload,
         effectiveSettings.masterTemplate,
@@ -178,8 +179,8 @@ export async function buildBatchPayload(
         effectiveSettings.curatedCc,
         [], // autoTeam
         contact.delta_type as 'Email' | 'Meeting' || 'Email', // deltaType
-        effectiveConfig.moduleStates, // moduleStates
-        effectiveConfig.moduleSelections // moduleSelections
+        effectiveConfig.moduleStates, // moduleStates from override
+        effectiveConfig.moduleSelections || sharedSettings.moduleSelections // moduleSelections from override, fallback to shared
       );
 
       return {

@@ -65,6 +65,7 @@ interface ModulesCardProps {
   onRestoreToDefault?: () => void;
   isRandomized?: boolean;
   changedModules?: Set<string>;
+  focusedContactId?: string | null;
 }
 
 /**
@@ -172,6 +173,7 @@ export function ModulesCard({
   onModuleOrderChange,
   onResetToDefaults,
   moduleSelections,
+  focusedContactId,
   onModuleSelectionChange,
   contactData,
   allPhrases,
@@ -431,9 +433,9 @@ export function ModulesCard({
           onSave={handleSaveSelection}
           allPhrases={allPhrases}
           allInquiries={allInquiries}
-          
           toneOverride={toneOverride}
           isSubjectPool={activeDrawer === 'subject_line'}
+          focusedContactId={focusedContactId}
         />
       )}
     </Card>

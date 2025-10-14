@@ -16,6 +16,7 @@ interface ArticleRecommendationSelectorProps {
   contactName?: string;
   defaultPhraseId?: string;
   onDefaultToggle?: (phraseId: string | null) => void;
+  focusedContactId?: string | null;
 }
 
 export function ArticleRecommendationSelector({
@@ -27,6 +28,7 @@ export function ArticleRecommendationSelector({
   contactName,
   defaultPhraseId,
   onDefaultToggle,
+  focusedContactId,
 }: ArticleRecommendationSelectorProps) {
   const previewVariables = {
     article_url: selectedArticleUrl || 'https://example.com/article',
@@ -50,6 +52,7 @@ export function ArticleRecommendationSelector({
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
       moduleKey="article_recommendations"
+      focusedContactId={focusedContactId}
     />
   );
 }

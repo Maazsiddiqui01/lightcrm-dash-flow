@@ -15,6 +15,7 @@ interface SelfPersonalizationSelectorProps {
   contactName?: string;
   defaultPhraseId?: string;
   onDefaultToggle?: (phraseId: string | null) => void;
+  focusedContactId?: string | null;
 }
 
 export function SelfPersonalizationSelector({
@@ -25,6 +26,7 @@ export function SelfPersonalizationSelector({
   contactName,
   defaultPhraseId,
   onDefaultToggle,
+  focusedContactId,
 }: SelfPersonalizationSelectorProps) {
   const previewVariables = {
     first_name: contactData?.firstName || 'John',
@@ -46,6 +48,7 @@ export function SelfPersonalizationSelector({
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
       moduleKey="self_personalization"
+      focusedContactId={focusedContactId}
     />
   );
 }

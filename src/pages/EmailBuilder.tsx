@@ -208,6 +208,9 @@ export function EmailBuilder() {
   
   const [draftResult, setDraftResult] = useState<any | null>(null);
   
+  // Preview refresh key for manual refresh
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
+  
   // Module validation errors state
   const [moduleValidationErrors, setModuleValidationErrors] = useState<string[]>([]);
   
@@ -1726,6 +1729,7 @@ ${draftResult.signature}`;
               allInquiries={allInquiries}
               allSubjects={allSubjects}
               toneOverride={toneOverride}
+              focusedContactId={null}
               customModuleLabels={customModuleLabels}
               onCustomModuleLabelChange={(moduleKey, newLabel) => {
                 const updatedLabels = { ...customModuleLabels, [moduleKey]: newLabel };

@@ -15,6 +15,7 @@ interface TopOpportunitiesSelectorProps {
   contactName?: string;
   defaultPhraseId?: string;
   onDefaultToggle?: (phraseId: string | null) => void;
+  focusedContactId?: string | null;
 }
 
 export function TopOpportunitiesSelector({
@@ -25,6 +26,7 @@ export function TopOpportunitiesSelector({
   contactName,
   defaultPhraseId,
   onDefaultToggle,
+  focusedContactId,
 }: TopOpportunitiesSelectorProps) {
   // Get top opportunity for preview
   const topOpp = contactData?.opportunities?.[0];
@@ -49,6 +51,7 @@ export function TopOpportunitiesSelector({
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
       moduleKey="top_opportunities"
+      focusedContactId={focusedContactId}
     />
   );
 }
