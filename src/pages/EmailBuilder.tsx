@@ -1196,8 +1196,17 @@ ${draftResult.signature}`;
           }
           
           // NO LIMIT - fetch all matching contacts
-          const { data, error } = await query;
+          let { data, error } = await query;
           
+          // Apply search filter client-side
+          if (data && groupFilters.searchTerm) {
+            const searchLower = groupFilters.searchTerm.toLowerCase();
+            data = data.filter(contact =>
+              contact.full_name?.toLowerCase().includes(searchLower) ||
+              contact.email_address?.toLowerCase().includes(searchLower) ||
+              contact.organization?.toLowerCase().includes(searchLower)
+            );
+          }
           if (error) {
             console.error('Error fetching group contacts:', error);
             toast({

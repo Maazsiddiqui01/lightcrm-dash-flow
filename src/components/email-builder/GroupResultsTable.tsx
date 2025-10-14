@@ -5,7 +5,7 @@ import {
   flexRender,
   type ColumnDef,
 } from '@tanstack/react-table';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -236,15 +236,7 @@ export function GroupResultsTable({
   });
 
   const { rows } = table.getRowModel();
-
-  // Virtualization setup
-  const parentRef = useRef<HTMLDivElement | null>(null);
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 50,
-    overscan: 10,
-  });
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // Keyboard navigation
   useEffect(() => {
@@ -313,78 +305,91 @@ export function GroupResultsTable({
 
   return (
     <div className="space-y-2">
-      <div
-        ref={parentRef}
-        className="h-[500px] overflow-auto border rounded-lg bg-card"
-        tabIndex={0}
-      >
-        <table className="w-full">
-          <thead className="bg-muted/50 sticky top-0 z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="text-left px-4 py-3 text-sm font-medium text-foreground"
-                    style={{ width: header.getSize() }}
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const row = rows[virtualRow.index];
-              const contactId = row.original.id;
-              const isFocused = focusedContactId === contactId;
-              const isKeyboardFocused = focusedRowIndex === virtualRow.index;
-              
-              return (
-                <tr
-                  key={row.id}
-                  className={`border-b transition-colors cursor-pointer ${
-                    isFocused 
-                      ? 'bg-primary/10 ring-2 ring-primary ring-inset' 
-                      : isKeyboardFocused
-                      ? 'bg-muted/50'
-                      : 'hover:bg-muted/30'
-                  }`}
-                  style={{
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                  onClick={() => {
-                    setFocusedRowIndex(virtualRow.index);
-                    onFocusChange(contactId);
-                  }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-2 text-sm">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
+      <div className="border rounded-lg bg-card overflow-hidden">
+        {/* Fixed Header */}
+        <div className="sticky top-0 z-10 bg-muted/50 border-b backdrop-blur-sm">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      style={{ width: header.getSize() }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
                   ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                </TableRow>
+              ))}
+            </TableHeader>
+          </Table>
+        </div>
+
+        {/* Scrollable Body */}
+        <div
+          ref={scrollRef}
+          className="max-h-[600px] overflow-y-auto"
+          style={{ scrollBehavior: 'smooth' }}
+          tabIndex={0}
+        >
+          <Table>
+            <TableBody>
+              {rows.map((row, index) => {
+                const contactId = row.original.id;
+                const isFocused = focusedContactId === contactId;
+                const isKeyboardFocused = focusedRowIndex === index;
+                
+                return (
+                  <TableRow
+                    key={row.id}
+                    onClick={() => {
+                      setFocusedRowIndex(index);
+                      onFocusChange(contactId);
+                    }}
+                    className={`
+                      cursor-pointer transition-colors
+                      ${isFocused ? 'bg-primary/10 ring-2 ring-primary ring-inset' : ''}
+                      ${isKeyboardFocused ? 'bg-muted/50' : ''}
+                    `}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        style={{ width: cell.column.getSize() }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </div>
-      
-      {/* Keyboard shortcuts hint */}
-      <div className="text-xs text-muted-foreground space-y-1">
-        <p>
-          <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">↑↓</kbd> Navigate •{' '}
-          <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Space/Enter</kbd> Select •{' '}
-          <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">C</kbd> Customize •{' '}
-          <span className="text-xs">Click row to preview</span>
-        </p>
-      </div>
-      
-      <div className="text-sm text-muted-foreground">
-        Showing {contacts.length.toLocaleString()} contacts
-        {selectedContactIds.size > 0 && ` • ${selectedContactIds.size} selected`}
+
+      {/* Footer with contact count and keyboard hints */}
+      <div className="flex items-center justify-between text-sm text-muted-foreground px-2">
+        <div>
+          Showing <span className="font-medium text-foreground">{contacts.length.toLocaleString()}</span> contact{contacts.length !== 1 ? 's' : ''}
+          {selectedContactIds.size > 0 && (
+            <> · <span className="font-medium text-foreground">{selectedContactIds.size}</span> selected</>
+          )}
+        </div>
+        <div className="text-xs">
+          Use <kbd className="px-1.5 py-0.5 bg-muted rounded border">↑↓</kbd> to navigate, 
+          <kbd className="px-1.5 py-0.5 bg-muted rounded border ml-1">Space</kbd> to select, 
+          <kbd className="px-1.5 py-0.5 bg-muted rounded border ml-1">C</kbd> to customize
+        </div>
       </div>
     </div>
   );

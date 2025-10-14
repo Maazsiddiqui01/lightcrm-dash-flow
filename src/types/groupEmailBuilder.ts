@@ -94,6 +94,7 @@ export interface BatchPayload {
 }
 
 export interface FilterValues {
+  searchTerm?: string;
   focusAreas?: string[];
   sectors?: string[];
   areasOfSpecialization?: string[];
