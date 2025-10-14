@@ -96,7 +96,11 @@ export function ModuleConfigDrawer({
             contactName={contactData?.first_name || 'this contact'}
             defaultPhraseId={tempSelection?.defaultPhraseId}
             onDefaultToggle={(phraseId) => {
-              setTempSelection(prev => prev ? { ...prev, defaultPhraseId: phraseId || undefined } : null);
+              setTempSelection(prev => prev ? { 
+                ...prev, 
+                defaultPhraseId: phraseId || undefined,
+                defaultSubjectId: phraseId || undefined 
+              } : null);
             }}
           />
         );

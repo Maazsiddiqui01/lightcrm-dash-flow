@@ -35,12 +35,25 @@ export function useAutoSelectPhrases({
     // Skip if no phrases/subjects available yet
     if (allPhrases.length === 0 && allSubjects.length === 0) return;
     
-    // ONLY auto-select when switching to a NEW contact
+    // Only auto-select when switching to a *new* contact OR when defaults need filling
     const isNewContact = contactId !== previousContactRef.current;
-    if (!isNewContact) {
-      // Same contact - preserve user selections, don't re-auto-select
-      return;
-    }
+    
+    // Check if any module has a saved default but no active selection
+    const needsFill =
+      Array.from(SINGLE_SELECT_MODULES).some(k => {
+        const sel = moduleSelections[k];
+        return sel && !sel.phraseId && !!sel.defaultPhraseId;
+      }) ||
+      Array.from(MULTI_SELECT_MODULES).some(k => {
+        const sel = moduleSelections[k];
+        return sel && !sel.phraseId && !!sel.defaultPhraseId;
+      }) ||
+      (() => {
+        const sel = moduleSelections.subject_line;
+        return !!sel && !sel.phraseId && (sel.defaultPhraseId || sel.defaultSubjectId);
+      })();
+    
+    if (!isNewContact && !needsFill) return;
 
     // NEW CONTACT: Always run auto-selection to set defaults
     // (Don't check needsAutoSelection - just select defaults for all modules)
@@ -237,5 +250,6 @@ export function useAutoSelectPhrases({
     allSubjects,        // Detect library loading
     toneOverride,       // Affects subject filtering
     onSelectionChange,  // Stable callback
+    moduleSelections,   // Detect when defaults need filling
   ]);
 }

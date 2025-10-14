@@ -879,16 +879,56 @@ export function EmailBuilder() {
             });
           }
 
-          // Restore subject_default_id (special field for subject line)
-          if (contactSettings.subject_default_id) {
-            if (!selectionsWithDefaults.subject_line) {
-              selectionsWithDefaults.subject_line = { type: 'phrase', category: 'subject' };
-            }
-            selectionsWithDefaults.subject_line.defaultSubjectId = contactSettings.subject_default_id;
-            selectionsWithDefaults.subject_line.defaultPhraseId = contactSettings.subject_default_id;
+        // Restore subject_default_id (special field for subject line)
+        if (contactSettings.subject_default_id) {
+          if (!selectionsWithDefaults.subject_line) {
+            selectionsWithDefaults.subject_line = { type: 'phrase', category: 'subject' };
           }
+          selectionsWithDefaults.subject_line.defaultSubjectId = contactSettings.subject_default_id;
+          selectionsWithDefaults.subject_line.defaultPhraseId = contactSettings.subject_default_id;
+        }
 
-          setModuleSelections(selectionsWithDefaults);
+        // Promote defaults into active selections when phraseId is missing
+        const finalSelections = { ...selectionsWithDefaults };
+
+        // Handle subject_line
+        {
+          const sel = finalSelections.subject_line;
+          const defaultId = sel?.defaultPhraseId || sel?.defaultSubjectId;
+          if (defaultId && !sel?.phraseId) {
+            const s = allSubjects.find(sub => sub.id === defaultId);
+            if (s) {
+              finalSelections.subject_line = {
+                ...(sel || { type: 'phrase', category: 'subject' }),
+                phraseId: s.id,
+                phraseText: s.subject_template,
+                defaultPhraseId: defaultId,
+                defaultSubjectId: defaultId,
+              };
+            }
+          }
+        }
+
+        // Handle all other phrase-driven modules
+        for (const moduleKey of [...Array.from(SINGLE_SELECT_MODULES), ...Array.from(MULTI_SELECT_MODULES)]) {
+          if (moduleKey === 'subject_line') continue;
+          const sel = finalSelections[moduleKey];
+          const defaultId = sel?.defaultPhraseId;
+          if (defaultId && !sel?.phraseId) {
+            const category = MODULE_LIBRARY_MAP[moduleKey];
+            const phrase = allPhrases.find(p => p.category === category && p.id === defaultId);
+            if (phrase) {
+              finalSelections[moduleKey] = {
+                ...(sel || { type: 'phrase', category }),
+                phraseId: phrase.id,
+                phraseText: phrase.phrase_text,
+                defaultPhraseId: defaultId,
+              };
+            }
+          }
+        }
+
+        setModuleSelections(finalSelections);
         } else {
           setModuleSelections({});
         }

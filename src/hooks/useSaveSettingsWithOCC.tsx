@@ -104,6 +104,17 @@ export function useSaveSettingsWithOCC() {
       
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Build module_defaults and subject_default_id from moduleSelections
+      const moduleDefaults: Record<string, string> = {};
+      Object.entries(payload.moduleSelections || {}).forEach(([key, selection]: any) => {
+        if (selection?.defaultPhraseId) {
+          moduleDefaults[key] = selection.defaultPhraseId;
+        }
+      });
+      const subjectDefaultId =
+        (payload.moduleSelections as any)?.subject_line?.defaultSubjectId ||
+        (payload.moduleSelections as any)?.subject_line?.defaultPhraseId || null;
+      
       const result = await saveWithOCC(
         'contact_email_builder_settings',
         payload.contactId,
@@ -115,6 +126,8 @@ export function useSaveSettingsWithOCC() {
           module_order: payload.moduleOrder as any,
           module_selections: payload.moduleSelections as any,
           curated_recipients: payload.curatedRecipients as any,
+          module_defaults: moduleDefaults as any,
+          subject_default_id: subjectDefaultId,
           revision: payload.currentRevision,
         },
         {
