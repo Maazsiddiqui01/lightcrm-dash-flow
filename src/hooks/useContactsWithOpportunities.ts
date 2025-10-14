@@ -311,12 +311,22 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         }
       }
 
-      // Performance: sort by most recent and limit result set to avoid timeouts
-      contactsQuery = contactsQuery
-        .order('most_recent_contact', { ascending: false, nullsFirst: false })
-        .limit(hasOpportunityFilters ? 5000 : 2000);
+      // Performance: sort by most recent and fetch up to 2,000 rows by paging (PostgREST max 1,000 per request)
+      contactsQuery = contactsQuery.order('most_recent_contact', { ascending: false, nullsFirst: false });
 
-      const { data: contactsData, error: contactsError } = await contactsQuery;
+      const MAX_ROWS = 2000;
+      const PAGE_SIZE = 1000;
+
+      const { data: page1, error: contactsError } = await (contactsQuery as any).range(0, Math.min(PAGE_SIZE - 1, MAX_ROWS - 1));
+
+      let contactsData = page1 || [];
+
+      if (!contactsError && (contactsData?.length || 0) === PAGE_SIZE && MAX_ROWS > PAGE_SIZE) {
+        const { data: page2, error: contactsError2 } = await (contactsQuery as any).range(PAGE_SIZE, MAX_ROWS - 1);
+        if (!contactsError2 && page2) {
+          contactsData = contactsData.concat(page2);
+        }
+      }
 
       if (contactsError) {
         console.error(`[Contacts#${reqId}] Error fetching contacts:`, contactsError);
@@ -385,15 +395,25 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           if (groupContacts.length > 0) fallbackQuery = fallbackQuery.in('group_contact', groupContacts);
           
           fallbackQuery = fallbackQuery
-            .order('most_recent_contact', { ascending: false, nullsFirst: false })
-            .limit(2000);
-          
-          const { data: fallbackData, error: fallbackError } = await fallbackQuery;
-          
-          if (fallbackError) {
-            console.error(`[Contacts#${reqId}] Fallback query (contacts_raw) failed:`, fallbackError);
-            return;
+            .order('most_recent_contact', { ascending: false, nullsFirst: false });
+
+          const MAX_ROWS = 2000;
+          const PAGE_SIZE = 1000;
+
+          const { data: fbPage1, error: fbErr1 } = await (fallbackQuery as any).range(0, Math.min(PAGE_SIZE - 1, MAX_ROWS - 1));
+          if (fbErr1) {
+            throw fbErr1;
           }
+
+          let fallbackData = fbPage1 || [];
+          if ((fallbackData?.length || 0) === PAGE_SIZE && MAX_ROWS > PAGE_SIZE) {
+            const { data: fbPage2, error: fbErr2 } = await (fallbackQuery as any).range(PAGE_SIZE, MAX_ROWS - 1);
+            if (!fbErr2 && fbPage2) {
+              fallbackData = fallbackData.concat(fbPage2);
+            }
+          }
+          
+          
 
           // Check if this request is still the latest before updating state
           if (reqId !== requestIdRef.current) {
