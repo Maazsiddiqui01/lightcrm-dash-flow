@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import type { ModuleStates } from '@/components/email-builder/ModulesCard';
 import type { ModuleSelections, ModuleSelection } from '@/types/moduleSelections';
-import type { PhraseLibraryItem } from '@/types/phraseLibrary';
+import type { PhraseLibraryItem, TriState } from '@/types/phraseLibrary';
 import type { SubjectLibraryItem } from '@/hooks/useSubjectLibrary';
 import { MODULE_LIBRARY_MAP } from '@/config/moduleCategoryMap';
 import { SINGLE_SELECT_MODULES, MULTI_SELECT_MODULES } from '@/config/moduleCategoryMap';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseAutoSelectPhrasesProps {
   contactId: string | null;
@@ -163,8 +164,34 @@ export function useAutoSelectPhrases({
         return;
       }
 
-      // Auto-select first phrase
-      const firstPhrase = categoryPhrases[0];
+      // Filter phrases by tri-state (respecting global tri_state from phrase_library)
+      const availablePhrases = categoryPhrases.filter(phrase => {
+        // "never" phrases are excluded from auto-selection
+        if (phrase.tri_state === 'never') return false;
+        
+        // "always" phrases are always included
+        if (phrase.tri_state === 'always') return true;
+        
+        // "sometimes" phrases have a 50% chance
+        return Math.random() > 0.5;
+      });
+
+      if (availablePhrases.length === 0) {
+        console.warn(`⚠️ No available phrases for ${moduleKey} after tri-state filtering, using all phrases`);
+        // Fallback to all phrases if filtering excludes everything
+        const firstPhrase = categoryPhrases[0];
+        updates[moduleKey] = {
+          type: 'phrase',
+          category,
+          phraseId: firstPhrase.id,
+          phraseText: firstPhrase.phrase_text,
+        };
+        hasUpdates = true;
+        return;
+      }
+
+      // Auto-select first available phrase after filtering
+      const firstPhrase = availablePhrases[0];
       updates[moduleKey] = {
         type: 'phrase',
         category,
@@ -172,6 +199,7 @@ export function useAutoSelectPhrases({
         phraseText: firstPhrase.phrase_text,
       };
       hasUpdates = true;
+      console.log(`✅ Auto-selected phrase for ${moduleKey}:`, firstPhrase.phrase_text.substring(0, 50), `(tri-state: ${firstPhrase.tri_state})`);
     });
 
     // Iterate through all multi-select modules - now enforcing exactly 1 selection (using phraseId)
@@ -220,8 +248,28 @@ export function useAutoSelectPhrases({
         return;
       }
 
+      // Filter phrases by tri-state
+      const availablePhrases = categoryPhrases.filter(phrase => {
+        if (phrase.tri_state === 'never') return false;
+        if (phrase.tri_state === 'always') return true;
+        return Math.random() > 0.5;
+      });
+
+      if (availablePhrases.length === 0) {
+        console.warn(`⚠️ No available phrases for ${moduleKey} after tri-state filtering, using all phrases`);
+        const firstPhrase = categoryPhrases[0];
+        updates[moduleKey] = {
+          type: 'phrase',
+          category,
+          phraseId: firstPhrase.id,
+          phraseText: firstPhrase.phrase_text,
+        };
+        hasUpdates = true;
+        return;
+      }
+
       // Auto-select exactly 1 phrase (single selection, not array)
-      const firstPhrase = categoryPhrases[0];
+      const firstPhrase = availablePhrases[0];
       updates[moduleKey] = {
         type: 'phrase',
         category,
@@ -229,6 +277,7 @@ export function useAutoSelectPhrases({
         phraseText: firstPhrase.phrase_text,
       };
       hasUpdates = true;
+      console.log(`✅ Auto-selected phrase for ${moduleKey}:`, firstPhrase.phrase_text.substring(0, 50), `(tri-state: ${firstPhrase.tri_state})`);
     });
 
     // Apply all updates at once
