@@ -98,37 +98,8 @@ export function ContactInfoPanel({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Case and Type Row */}
-        <div className="flex items-center justify-between gap-4 pb-2 border-b">
-          {/* Case Badge */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Case:</span>
-            {caseKey ? (
-              <Badge variant="outline" className="font-mono">
-                {caseKey.replace('case_', '')}
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="text-xs">
-                N/A
-              </Badge>
-            )}
-            {caseKey && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <HelpCircle className="h-3 w-3 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{CASE_LABELS[caseKey]}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-
-          {/* Delta Type Selector - Hidden but kept in payload */}
-          {/* Removed from UI per user request - delta_type is still passed in props and used in payload */}
-        </div>
+        {/* Case and Delta Type - Hidden but kept in payload/logic */}
+        {/* Both removed from UI per user request - caseKey calculated from composerData, delta_type passed in props */}
         
         {/* Basic Info */}
         <div className="space-y-2">
