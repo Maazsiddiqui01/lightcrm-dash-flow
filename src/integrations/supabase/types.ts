@@ -3855,6 +3855,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      refresh_contact_interaction_counts: {
+        Args: { p_contact_id: string }
+        Returns: undefined
+      }
       refresh_missing_contacts: {
         Args: { p_exclude_domain?: string }
         Returns: number

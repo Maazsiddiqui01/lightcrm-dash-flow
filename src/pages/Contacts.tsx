@@ -1,4 +1,4 @@
-import { ContactsTable } from "@/components/contacts/ContactsTable";
+import { ContactsTableWithErrorBoundary } from "@/components/contacts/ContactsTableWithErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useContactStats } from "@/hooks/useContactStats";
@@ -172,7 +172,7 @@ export function Contacts() {
           />
         </div>
 
-        <ContactsTable 
+        <ContactsTableWithErrorBoundary 
           filters={stableContactFilters}
           onOpportunityColumnVisibilityChange={setShowOpportunityFilters}
         />

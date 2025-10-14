@@ -462,10 +462,16 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             {filteredContacts.length} Contact{filteredContacts.length !== 1 ? 's' : ''}
-            {isRefreshing && (
-              <div className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-xs text-muted-foreground">
+            {loading && !isRefreshing && (
+              <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full text-xs text-blue-700 dark:text-blue-300">
                 <div className="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full" />
-                Updating...
+                Loading...
+              </div>
+            )}
+            {isRefreshing && (
+              <div className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 rounded-full text-xs text-amber-700 dark:text-amber-300">
+                <div className="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full" />
+                Refreshing...
               </div>
             )}
           </h3>
