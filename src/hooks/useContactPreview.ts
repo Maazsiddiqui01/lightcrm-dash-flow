@@ -43,6 +43,26 @@ export function useContactPreview(
   return useMemo(() => {
     if (!contactData) return null;
 
-    return mergeEffectiveConfig(sharedSettings, contactOverride, contactData);
+    console.log('[CONTACT_PREVIEW_DEBUG] Computing effective config:', {
+      contactId: contactData.id,
+      contactName: contactData.full_name || contactData.first_name,
+      hasOverride: !!contactOverride,
+      sharedModuleKeys: Object.keys(sharedSettings.moduleSelections || {}),
+      overrideModuleKeys: Object.keys(contactOverride?.moduleSelections || {}),
+      timestamp: new Date().toISOString(),
+    });
+
+    const result = mergeEffectiveConfig(sharedSettings, contactOverride, contactData);
+    
+    console.log('[CONTACT_PREVIEW_DEBUG] Effective config computed:', {
+      contactId: contactData.id,
+      resultModuleKeys: Object.keys(result.moduleSelections || {}),
+      defaultPhraseIds: Object.entries(result.moduleSelections || {}).reduce((acc, [key, sel]) => {
+        if (sel?.defaultPhraseId) acc[key] = sel.defaultPhraseId;
+        return acc;
+      }, {} as Record<string, string>),
+    });
+
+    return result;
   }, [contactData, sharedSettings, contactOverride]);
 }

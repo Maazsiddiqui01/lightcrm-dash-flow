@@ -140,15 +140,37 @@ export function PhraseSelectorGeneric({
     if (!onDefaultToggle) return;
     
     if (defaultPhraseId === id) {
+      console.log('[DEFAULT_PHRASE_DEBUG] Removing default phrase:', {
+        phraseId: id,
+        contactId: effectiveContactId,
+        contactName,
+        moduleKey,
+        timestamp: new Date().toISOString(),
+      });
       onDefaultToggle(null);
       toast({
         title: "Default removed",
         description: `Removed default for ${contactName}`,
       });
     } else {
+      console.log('[DEFAULT_PHRASE_DEBUG] Setting default phrase:', {
+        phraseId: id,
+        previousDefaultId: defaultPhraseId,
+        contactId: effectiveContactId,
+        contactName,
+        moduleKey,
+        willSavePreference: !!(contactData?.id && moduleKey),
+        timestamp: new Date().toISOString(),
+      });
       onDefaultToggle(id);
       // Automatically set tri-state to 'always' for default phrases
       if (contactData?.id && moduleKey) {
+        console.log('[DEFAULT_PHRASE_DEBUG] Auto-saving tri-state preference:', {
+          phraseId: id,
+          triState: 'always',
+          contactId: contactData.id,
+          moduleKey,
+        });
         savePreference({ phraseId: id, triState: 'always' });
       }
       toast({

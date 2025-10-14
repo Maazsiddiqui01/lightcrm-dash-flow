@@ -30,6 +30,14 @@ export function useContactPhrasePreferences(contactId: string | null, moduleKey:
     mutationFn: async ({ phraseId, triState }: { phraseId: string; triState: TriState }) => {
       if (!contactId) throw new Error('No contact ID');
       
+      console.log('[PHRASE_PREF_DEBUG] Saving phrase preference:', {
+        contactId,
+        moduleKey,
+        phraseId,
+        triState,
+        timestamp: new Date().toISOString(),
+      });
+      
       const { data, error } = await supabase
         .from('contact_phrase_preferences')
         .upsert({
@@ -44,16 +52,28 @@ export function useContactPhrasePreferences(contactId: string | null, moduleKey:
         .select()
         .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('[PHRASE_PREF_DEBUG] Save failed:', { contactId, moduleKey, phraseId, error });
+        throw error;
+      }
+      
+      console.log('[PHRASE_PREF_DEBUG] Preference saved successfully:', {
+        contactId,
+        moduleKey,
+        phraseId,
+        result: data,
+      });
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ 
         queryKey: ['contact-phrase-preferences', contactId, moduleKey] 
       });
+      console.log('[PHRASE_PREF_DEBUG] Query cache invalidated for:', { contactId, moduleKey });
     },
     onError: (error: any) => {
-      console.error('Failed to save phrase preference:', { contactId, moduleKey, error });
+      console.error('[PHRASE_PREF_DEBUG] Mutation error:', { contactId, moduleKey, error });
       toast({
         title: "Save Failed",
         description: error.message || "Failed to save phrase preference",
@@ -117,7 +137,18 @@ export function useContactPhrasePreferences(contactId: string | null, moduleKey:
   // Helper to get tri-state for a specific phrase
   const getTriState = (phraseId: string): TriState | null => {
     const pref = preferences?.find(p => p.phrase_id === phraseId);
-    return pref?.tri_state || null;
+    const result = pref?.tri_state || null;
+    
+    console.log('[PHRASE_PREF_DEBUG] Getting tri-state:', {
+      contactId,
+      moduleKey,
+      phraseId,
+      foundPreference: !!pref,
+      triState: result,
+      totalPreferences: preferences?.length || 0,
+    });
+    
+    return result;
   };
 
   return {

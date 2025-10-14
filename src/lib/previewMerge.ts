@@ -66,6 +66,19 @@ export function mergeEffectiveConfig(
                                      Object.keys(contactOverride.moduleSelections).length > 0
     ? { ...sharedSettings.moduleSelections, ...contactOverride.moduleSelections }
     : sharedSettings.moduleSelections;
+  
+  console.log('[PREVIEW_MERGE_DEBUG] Merging effective config:', {
+    contactId: contactData.id,
+    contactName: contactData.full_name || contactData.first_name,
+    hasOverride: !!contactOverride,
+    overrideKeys: contactOverride ? Object.keys(contactOverride) : [],
+    moduleSelectionKeys: Object.keys(effectiveModuleSelections),
+    defaultPhraseIds: Object.entries(effectiveModuleSelections).reduce((acc, [key, sel]) => {
+      if (sel?.defaultPhraseId) acc[key] = sel.defaultPhraseId;
+      return acc;
+    }, {} as Record<string, string>),
+    timestamp: new Date().toISOString(),
+  });
 
   // Module Order - validate array structure (HIGH-9 fix)
   const effectiveModuleOrder = contactOverride?.moduleOrder && 

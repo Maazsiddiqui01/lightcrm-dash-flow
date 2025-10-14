@@ -290,6 +290,20 @@ export function ContactOverrideDrawer({
       moduleOrder: (moduleOrder.length > 0 ? moduleOrder : sharedSettings.moduleOrder) as string[],
       team,
     };
+    
+    console.log('[OVERRIDE_DRAWER_DEBUG] Saving contact override:', {
+      contactId,
+      contactName,
+      hasModuleSelections: !!moduleSelections && Object.keys(moduleSelections).length > 0,
+      moduleSelectionKeys: Object.keys(moduleSelections || {}),
+      defaultPhraseIds: Object.entries(moduleSelections || {}).reduce((acc, [key, sel]) => {
+        if (sel?.defaultPhraseId) acc[key] = sel.defaultPhraseId;
+        return acc;
+      }, {} as Record<string, string>),
+      moduleOrderLength: override.moduleOrder?.length || 0,
+      timestamp: new Date().toISOString(),
+    });
+    
     onSave(override);
     onOpenChange(false);
   };
@@ -428,6 +442,16 @@ export function ContactOverrideDrawer({
                 moduleSelections={moduleSelections}
                 onModuleSelectionChange={(module, selection) => {
                   // FIX #3: Properly persist defaultPhraseId when handling selection changes
+                  console.log('[OVERRIDE_DRAWER_DEBUG] Module selection changed:', {
+                    contactId,
+                    module,
+                    newSelection: selection,
+                    previousDefaultPhraseId: moduleSelections[module]?.defaultPhraseId,
+                    newDefaultPhraseId: selection?.defaultPhraseId,
+                    willPreserve: !selection?.defaultPhraseId && !!moduleSelections[module]?.defaultPhraseId,
+                    timestamp: new Date().toISOString(),
+                  });
+                  
                   setModuleSelections(prev => ({ 
                     ...prev, 
                     [module]: {
