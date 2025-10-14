@@ -866,7 +866,29 @@ export function EmailBuilder() {
             });
           }
           
-          setModuleSelections(validation.cleanedSelections);
+          // Merge saved defaults back into cleaned selections
+          const selectionsWithDefaults = { ...validation.cleanedSelections };
+
+          // Restore module_defaults (for all content modules)
+          if (contactSettings.module_defaults) {
+            Object.entries(contactSettings.module_defaults).forEach(([moduleKey, defaultId]) => {
+              if (!selectionsWithDefaults[moduleKey]) {
+                selectionsWithDefaults[moduleKey] = { type: 'phrase', category: MODULE_LIBRARY_MAP[moduleKey] };
+              }
+              selectionsWithDefaults[moduleKey].defaultPhraseId = defaultId as string;
+            });
+          }
+
+          // Restore subject_default_id (special field for subject line)
+          if (contactSettings.subject_default_id) {
+            if (!selectionsWithDefaults.subject_line) {
+              selectionsWithDefaults.subject_line = { type: 'phrase', category: 'subject' };
+            }
+            selectionsWithDefaults.subject_line.defaultSubjectId = contactSettings.subject_default_id;
+            selectionsWithDefaults.subject_line.defaultPhraseId = contactSettings.subject_default_id;
+          }
+
+          setModuleSelections(selectionsWithDefaults);
         } else {
           setModuleSelections({});
         }
