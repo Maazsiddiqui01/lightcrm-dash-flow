@@ -1479,7 +1479,9 @@ ${draftResult.signature}`;
                       toneOverride,
                       lengthOverride,
                       daysSinceContact,
-                      masterTemplate: masterTemplates?.find(t => t.master_key === masterTemplate?.master_key) || {} as any,
+                      masterTemplate: masterTemplates?.find(
+                        t => t.master_key === (groupMasterTemplateKey || masterTemplate?.master_key)
+                      ) || masterTemplates?.[0] || null as any,
                       moduleSelections,
                       moduleOrder,
                       moduleStates: moduleStates as Record<string, any>,

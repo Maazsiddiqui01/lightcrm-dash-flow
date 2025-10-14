@@ -43,10 +43,10 @@ export function mergeEffectiveConfig(
   contactOverride: ContactOverride | undefined,
   contactData: ContactData
 ): EffectiveConfig {
-  // Master Template - return the whole template
+  // Master Template - return the whole template with defensive fallback
   const effectiveMasterTemplate = contactOverride?.masterTemplate
     ? sharedSettings.masterTemplate // For now, keep the shared template even if override exists
-    : sharedSettings.masterTemplate;
+    : (sharedSettings.masterTemplate || {} as any);
 
   // Core Settings
   const effectiveTone = contactOverride?.coreSettings?.tone || sharedSettings.toneOverride || 'hybrid';

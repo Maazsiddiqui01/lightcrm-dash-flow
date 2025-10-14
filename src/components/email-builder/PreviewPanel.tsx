@@ -85,7 +85,9 @@ export function PreviewPanel({ config, contactName, onEdit }: PreviewPanelProps)
       <CardContent className="space-y-4 text-sm">
         {/* Master Template */}
         <Section title="Master Template">
-          <Badge variant="secondary">{config.masterTemplate.master_key.replace(/_/g, ' ')}</Badge>
+          <Badge variant="secondary">
+            {config.masterTemplate?.master_key?.replace(/_/g, ' ') || 'Template'}
+          </Badge>
           <KeyValue label="Days Since Contact" value={config.coreSettings.daysSince} />
         </Section>
 
