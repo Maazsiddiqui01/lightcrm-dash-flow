@@ -110,23 +110,7 @@ export function ModuleConfigDrawer({
           />
         );
       }
-      // Legacy subject_line_pool (deprecated - redirects to subject_line)
-      // Show ALL subject phrases, don't filter by style
-      const subjectPhrases = allPhrases.filter(p => p.category === 'subject');
-      
-      
-      return (
-        <PhraseSelectorGeneric
-          category="subject"
-          categoryLabel="Subject Pool"
-          phrases={subjectPhrases}
-          currentSelection={tempSelection}
-          onSelectionChange={setTempSelection}
-          contactName={contactName}
-          moduleKey="subject_line"
-          allowInlineManagement={true}
-        />
-      );
+      // FIX #5: Removed deprecated subject_line_pool handling - it now redirects to subject_line above
     }
 
     switch (moduleKey) {

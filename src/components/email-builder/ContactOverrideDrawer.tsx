@@ -42,6 +42,33 @@ import {
 } from "@/config/moduleCategoryMap";
 import { useToast } from "@/hooks/use-toast";
 
+// FIX #4: Helper function to create minimal ContactEmailComposer data
+function createMinimalContactData(contactId: string, contactName: string, contactEmail: string): ContactEmailComposer {
+  return {
+    contact_id: contactId,
+    first_name: contactName.split(' ')[0] || contactName,
+    email: contactEmail,
+    full_name: contactName,
+    organization: null,
+    lg_emails_cc: null,
+    focus_areas: [],
+    fa_count: 0,
+    fa_sectors: [],
+    fa_descriptions: [],
+    gb_present: false,
+    hs_present: false,
+    ls_present: false,
+    has_opps: false,
+    opps: [],
+    articles: [],
+    lead_emails: [],
+    assistant_names: [],
+    assistant_emails: [],
+    most_recent_contact: null,
+    outreach_date: null,
+  };
+}
+
 interface ContactOverrideDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -241,6 +268,7 @@ export function ContactOverrideDrawer({
   }, [open, contactId, contactEmail]); // Add contactId and contactEmail to re-initialize when switching contacts
 
   const handleSave = () => {
+    // FIX #2: Always include sharedSettings.moduleOrder as fallback to prevent undefined
     const override: ContactOverride = {
       contactId,
       recipients: { to, cc },
@@ -258,7 +286,8 @@ export function ContactOverrideDrawer({
       },
       subjectLinePool: subjectPool,
       moduleSelections,
-      moduleOrder: moduleOrder.length > 0 ? moduleOrder as string[] : undefined, // Save module order
+      // FIX #2: Use local moduleOrder if set, otherwise fallback to sharedSettings.moduleOrder
+      moduleOrder: (moduleOrder.length > 0 ? moduleOrder : sharedSettings.moduleOrder) as string[],
       team,
     };
     onSave(override);
@@ -398,10 +427,18 @@ export function ContactOverrideDrawer({
                 }}
                 moduleSelections={moduleSelections}
                 onModuleSelectionChange={(module, selection) => {
-                  setModuleSelections(prev => ({ ...prev, [module]: selection }));
+                  // FIX #3: Properly persist defaultPhraseId when handling selection changes
+                  setModuleSelections(prev => ({ 
+                    ...prev, 
+                    [module]: {
+                      ...selection,
+                      // Preserve existing defaultPhraseId if not explicitly changed
+                      defaultPhraseId: selection?.defaultPhraseId ?? prev[module]?.defaultPhraseId,
+                    }
+                  }));
                 }}
                 focusedContactId={contactId}
-                contactData={{ contact_id: contactId, first_name: contactName, email: contactEmail, full_name: contactName, organization: null, lg_emails_cc: null, focus_areas: [], fa_count: 0, fa_sectors: [], fa_descriptions: [], gb_present: false, hs_present: false, ls_present: false, has_opps: false, opps: [], articles: [], lead_emails: [], assistant_names: [], assistant_emails: [], most_recent_contact: null, outreach_date: null }}
+                contactData={createMinimalContactData(contactId, contactName, contactEmail)}
                 allPhrases={allPhrases}
                 allInquiries={allInquiries}
                 allSubjects={allSubjects}

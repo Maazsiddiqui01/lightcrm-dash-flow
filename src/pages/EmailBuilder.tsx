@@ -1179,12 +1179,13 @@ ${draftResult.signature}`;
     });
   };
   
-  // Fetch group contacts when filters change (NO LIMIT)
+  // FIX #1: Fetch complete contact data for Group mode including all necessary fields
   useEffect(() => {
     if (mode === 'group') {
       const fetchGroupContacts = async () => {
         setLoadingGroupContacts(true);
         try {
+          // Fetch all fields from contacts_raw to ensure complete ContactEmailComposer compatibility
           let query = supabase.from('contacts_raw').select('*');
           
           // Apply filters (simplified for MVP)
