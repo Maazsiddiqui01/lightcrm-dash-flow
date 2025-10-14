@@ -10,7 +10,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { MessageSquare, Search, ExternalLink, Plus, Star, RefreshCw, Pencil, Trash2 } from "lucide-react";
 import { InlinePhraseForm } from "./InlinePhraseForm";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { TriStateToggle } from "./TriStateToggle";
 import { useCreatePhrase, useUpdatePhrase, useDeletePhrase } from "@/hooks/usePhraseLibrary";
+import { useContactPhrasePreferences } from "@/hooks/useContactPhrasePreferences";
 import type { PhraseLibraryItem, PhraseCategory, TriState } from "@/types/phraseLibrary";
 import type { ModuleSelection } from "@/types/moduleSelections";
 import { cn } from "@/lib/utils";
@@ -25,6 +27,7 @@ interface PhraseSelectorGenericProps {
   onSelectionChange: (selection: ModuleSelection | null) => void;
   multiSelect?: boolean;
   contactData?: {
+    id?: string;
     firstName?: string;
     organization?: string;
     focusAreas?: string[];
@@ -35,6 +38,7 @@ interface PhraseSelectorGenericProps {
   defaultPhraseId?: string;
   onDefaultToggle?: (phraseId: string | null) => void;
   allowInlineManagement?: boolean;
+  moduleKey?: string;
 }
 
 export function PhraseSelectorGeneric({
@@ -50,6 +54,7 @@ export function PhraseSelectorGeneric({
   defaultPhraseId,
   onDefaultToggle,
   allowInlineManagement = true,
+  moduleKey = '',
 }: PhraseSelectorGenericProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -57,6 +62,12 @@ export function PhraseSelectorGeneric({
   const [deletingPhraseId, setDeletingPhraseId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Load contact-specific phrase preferences
+  const { getTriState, savePreference, isSaving } = useContactPhrasePreferences(
+    contactData?.id || null,
+    moduleKey
+  );
 
   const createPhrase = useCreatePhrase();
   const updatePhrase = useUpdatePhrase();
@@ -128,11 +139,30 @@ export function PhraseSelectorGeneric({
       });
     } else {
       onDefaultToggle(phraseId);
+      // Automatically set tri-state to 'always' for default phrases
+      if (contactData?.id && moduleKey) {
+        savePreference({ phraseId, triState: 'always' });
+      }
       toast({
         title: "Default set",
         description: `Set as default for ${contactName}`,
       });
     }
+  };
+
+  // Handle tri-state change for contact-specific preferences
+  const handleTriStateChange = (phraseId: string, newTriState: TriState) => {
+    // Validation: Default phrase must be "always"
+    if (phraseId === defaultPhraseId && newTriState !== 'always') {
+      toast({
+        title: "Invalid Selection",
+        description: "Default phrase must be set to 'Always'. Remove default first to change this.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    savePreference({ phraseId, triState: newTriState });
   };
 
   // Handle multi-select change
@@ -396,20 +426,30 @@ export function PhraseSelectorGeneric({
                               <Badge variant="secondary" className="text-xs">Default</Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant={phrase.is_global ? "secondary" : "outline"} className="text-xs">
-                              {phrase.is_global ? "Global" : "Custom"}
-                            </Badge>
-                            {phrase.tri_state && (
-                              <Badge variant="outline" className="text-xs capitalize">
-                                {phrase.tri_state}
+                          <div className="flex flex-col gap-2 mt-2">
+                            {/* Row 1: Scope Badge (Global or Contact) */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge 
+                                variant={phrase.id === defaultPhraseId ? "default" : "secondary"} 
+                                className="text-xs"
+                              >
+                                {phrase.id === defaultPhraseId ? "Contact" : "Global"}
                               </Badge>
+                              {extractVariables(phrase.phrase_text).map(variable => (
+                                <Badge key={variable} variant="outline" className="text-xs font-mono">
+                                  {`{${variable}}`}
+                                </Badge>
+                              ))}
+                            </div>
+                            
+                            {/* Row 2: Tri-State Toggle */}
+                            {contactData?.id && moduleKey && (
+                              <TriStateToggle
+                                value={getTriState(phrase.id) || phrase.tri_state}
+                                onChange={(newTriState) => handleTriStateChange(phrase.id, newTriState)}
+                                disabled={phrase.id === defaultPhraseId || isSaving}
+                              />
                             )}
-                            {extractVariables(phrase.phrase_text).map(variable => (
-                              <Badge key={variable} variant="outline" className="text-xs font-mono">
-                                {`{${variable}}`}
-                              </Badge>
-                            ))}
                           </div>
                         </div>
                       </Label>
