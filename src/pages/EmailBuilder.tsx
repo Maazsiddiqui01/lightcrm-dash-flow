@@ -1377,62 +1377,7 @@ ${draftResult.signature}`;
         {/* Group Mode Layout */}
         {mode === 'group' && (
           <div className="space-y-6">
-            {/* Shared Settings Panel */}
-            <SharedSettingsPanel
-              masterTemplateKey={groupMasterTemplateKey || masterTemplate?.master_key || null}
-              masterTemplate={masterTemplates?.find(t => t.master_key === (groupMasterTemplateKey || masterTemplate?.master_key)) || null}
-              onMasterTemplateChange={(masterKey) => {
-                setGroupMasterTemplateKey(masterKey);
-                const defaults = getModuleDefaultsFromMaster(masterKey, masterTemplates || []);
-                if (defaults) {
-                  setModuleStates(defaults);
-                  // REMOVED: setModuleOrder(DEFAULT_MODULE_ORDER)
-                  // Only reset order when user clicks "Reset" button explicitly
-                }
-                toast({
-                  title: "Master Template Updated",
-                  description: `All ${selectedContactIds.size} contacts will use "${masterKey}"`,
-                });
-              }}
-              daysSinceContact={daysSinceContact}
-              onDaysSinceContactChange={setDaysSinceContact}
-              toneOverride={toneOverride}
-              onToneOverrideChange={setToneOverride}
-              lengthOverride={lengthOverride}
-              onLengthOverrideChange={setLengthOverride}
-              moduleStates={moduleStates}
-              moduleOrder={moduleOrder}
-              moduleSelections={moduleSelections}
-              onModuleChange={handleModuleChange}
-              onModuleOrderChange={handleModuleOrderChange}
-              onModuleSelectionChange={handleModuleSelectionChange}
-              onResetToDefaults={handleResetToDefaults}
-              allPhrases={allPhrases}
-              allInquiries={allInquiries}
-              allSubjects={allSubjects}
-              subjectPoolOverride={subjectPoolOverride}
-              onSubjectPoolChange={setSubjectPoolOverride}
-              team={curatedTeam}
-              onTeamChange={setCuratedTeam}
-              cc={curatedCc}
-              onCcChange={setCuratedCc}
-              onRandomize={handleRandomize}
-              onRestoreToDefault={handleRestoreToDefault}
-              isRandomized={isRandomized}
-              changedModules={changedModules}
-              customModuleLabels={customModuleLabels}
-              onCustomModuleLabelChange={(moduleKey, newLabel) => {
-                const updatedLabels = { ...customModuleLabels, [moduleKey]: newLabel };
-                setCustomModuleLabels(updatedLabels);
-                autoSaveLabels.mutate({
-                  customLabels: updatedLabels,
-                  currentRevision: templateSettings?.revision,
-                });
-              }}
-              selectedContactCount={selectedContactIds.size}
-              defaultOpen={true}
-            />
-            
+            {/* Contacts and Filters Section - Moved above Shared Settings */}
             <GroupFilterBar
               filters={groupFilters}
               onFiltersChange={setGroupFilters}
@@ -1511,6 +1456,62 @@ ${draftResult.signature}`;
                 )}
               </div>
             </div>
+            
+            {/* Shared Settings Panel - Moved below Contacts and Filters */}
+            <SharedSettingsPanel
+              masterTemplateKey={groupMasterTemplateKey || masterTemplate?.master_key || null}
+              masterTemplate={masterTemplates?.find(t => t.master_key === (groupMasterTemplateKey || masterTemplate?.master_key)) || null}
+              onMasterTemplateChange={(masterKey) => {
+                setGroupMasterTemplateKey(masterKey);
+                const defaults = getModuleDefaultsFromMaster(masterKey, masterTemplates || []);
+                if (defaults) {
+                  setModuleStates(defaults);
+                  // REMOVED: setModuleOrder(DEFAULT_MODULE_ORDER)
+                  // Only reset order when user clicks "Reset" button explicitly
+                }
+                toast({
+                  title: "Master Template Updated",
+                  description: `All ${selectedContactIds.size} contacts will use "${masterKey}"`,
+                });
+              }}
+              daysSinceContact={daysSinceContact}
+              onDaysSinceContactChange={setDaysSinceContact}
+              toneOverride={toneOverride}
+              onToneOverrideChange={setToneOverride}
+              lengthOverride={lengthOverride}
+              onLengthOverrideChange={setLengthOverride}
+              moduleStates={moduleStates}
+              moduleOrder={moduleOrder}
+              moduleSelections={moduleSelections}
+              onModuleChange={handleModuleChange}
+              onModuleOrderChange={handleModuleOrderChange}
+              onModuleSelectionChange={handleModuleSelectionChange}
+              onResetToDefaults={handleResetToDefaults}
+              allPhrases={allPhrases}
+              allInquiries={allInquiries}
+              allSubjects={allSubjects}
+              subjectPoolOverride={subjectPoolOverride}
+              onSubjectPoolChange={setSubjectPoolOverride}
+              team={curatedTeam}
+              onTeamChange={setCuratedTeam}
+              cc={curatedCc}
+              onCcChange={setCuratedCc}
+              onRandomize={handleRandomize}
+              onRestoreToDefault={handleRestoreToDefault}
+              isRandomized={isRandomized}
+              changedModules={changedModules}
+              customModuleLabels={customModuleLabels}
+              onCustomModuleLabelChange={(moduleKey, newLabel) => {
+                const updatedLabels = { ...customModuleLabels, [moduleKey]: newLabel };
+                setCustomModuleLabels(updatedLabels);
+                autoSaveLabels.mutate({
+                  customLabels: updatedLabels,
+                  currentRevision: templateSettings?.revision,
+                });
+              }}
+              selectedContactCount={selectedContactIds.size}
+              defaultOpen={true}
+            />
             
             <SelectionTray
               selectedCount={selectedContactIds.size}
