@@ -84,11 +84,10 @@ export function ModuleConfigDrawer({
   const renderContent = () => {
     if (isSubjectPool || moduleKey === 'subject_line') {
       if (moduleKey === 'subject_line') {
-        // Subject Line - now unified as a standard phrase module
-        const subjectPhrases = allPhrases.filter(p => 
-          p.category === 'subject' && 
-          (!toneOverride || (p as any).style === toneOverride)
-        );
+        // Subject Line - show ALL subject phrases, don't filter by style
+        // The style/tone preference is used for weighting during selection, not for filtering the UI
+        const subjectPhrases = allPhrases.filter(p => p.category === 'subject');
+        
         
         return (
           <PhraseSelectorGeneric
@@ -112,10 +111,9 @@ export function ModuleConfigDrawer({
         );
       }
       // Legacy subject_line_pool (deprecated - redirects to subject_line)
-      const subjectPhrases = allPhrases.filter(p => 
-        p.category === 'subject' && 
-        (!toneOverride || (p as any).style === toneOverride)
-      );
+      // Show ALL subject phrases, don't filter by style
+      const subjectPhrases = allPhrases.filter(p => p.category === 'subject');
+      
       
       return (
         <PhraseSelectorGeneric
