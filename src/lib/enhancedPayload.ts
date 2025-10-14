@@ -728,16 +728,15 @@ export async function buildEnhancedDraftPayload(
       groupEmailRole: (contact as any).group_email_role || null,
     },
     groupMembers,
-    recipients: curatedRecipients,
     teamCuration,
     focusAreas: {
       list: contact.focus_areas,
       descriptions: metadata.focusAreaDescriptions,
-      platforms: metadata.platforms,
-      addons: metadata.addons,
+      platforms: [], // TODO: Extract from focus area descriptions
+      addons: [], // TODO: Extract from focus area descriptions
     },
     opportunities: {
-      hasOpps: metadata.hasOpps,
+      hasOpps: contact.focus_areas.length > 0 && metadata.topOpportunities.length > 0,
       active_tier1: metadata.topOpportunities,
       // Legacy field: first 3 for backward compatibility
       top_opportunities_legacy: metadata.topOpportunities.slice(0, 3).map(opp => ({
