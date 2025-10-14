@@ -224,7 +224,7 @@ export function ContactOverrideDrawer({
         setModuleStates(sharedSettings.moduleStates);
       } else {
         // Load from shared settings
-        const masterFromShared = allMasterTemplates.find(t => t.master_key === sharedSettings.masterTemplate.master_key);
+        const masterFromShared = allMasterTemplates.find(t => t.master_key === sharedSettings.masterTemplate?.master_key) || allMasterTemplates[0] || null;
         setSelectedMasterTemplate(masterFromShared || null);
         setToneOverride(sharedSettings.toneOverride || 'hybrid');
         setLengthOverride(sharedSettings.lengthOverride || 'standard');
@@ -290,10 +290,9 @@ export function ContactOverrideDrawer({
         </SheetHeader>
 
         <Tabs defaultValue="recipients" className="mt-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5">
             <TabsTrigger value="master">Master</TabsTrigger>
             <TabsTrigger value="core">Core</TabsTrigger>
-            <TabsTrigger value="subject">Subject</TabsTrigger>
             <TabsTrigger value="modules">Modules</TabsTrigger>
             <TabsTrigger value="recipients">Recipients</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
@@ -303,7 +302,7 @@ export function ContactOverrideDrawer({
           <TabsContent value="master" className="space-y-4 mt-4">
             <div className="text-sm text-muted-foreground mb-2">
               <p className="mb-1">
-                <strong>Inherited:</strong> {sharedSettings.masterTemplate?.master_key.replace(/_/g, ' ') || 'None'}
+                <strong>Inherited:</strong> {sharedSettings.masterTemplate?.master_key?.replace(/_/g, ' ') || 'None'}
               </p>
             </div>
             <div className="space-y-2">
@@ -378,31 +377,7 @@ export function ContactOverrideDrawer({
             </div>
           </TabsContent>
 
-          {/* Tab 3: Subject Line */}
-          <TabsContent value="subject" className="space-y-4 mt-4">
-            <div className="text-sm text-muted-foreground mb-2">
-              <p className="mb-1">
-                <strong>Inherited from shared settings:</strong>
-              </p>
-              <p>Style: {sharedSettings.subjectLinePool.style}</p>
-              <p>Subjects: {sharedSettings.subjectLinePool.selectedIds.length} selected</p>
-            </div>
-            
-            <SubjectPoolSelector
-              allSubjects={allSubjects}
-              currentSelection={{
-                subjectIds: subjectPool.selectedIds,
-                style: subjectPool.style,
-              }}
-              toneOverride={subjectPool.style}
-              onSelectionChange={(selection) => setSubjectPool({
-                selectedIds: selection.subjectIds || [],
-                style: selection.style || 'hybrid',
-              })}
-            />
-          </TabsContent>
-
-          {/* Tab 4: Email Modules */}
+          {/* Tab 3: Email Modules */}
           <TabsContent value="modules" className="space-y-4 mt-4">
             <div className="text-sm text-muted-foreground mb-2">
               <p className="mb-1">
@@ -425,7 +400,8 @@ export function ContactOverrideDrawer({
                 onModuleSelectionChange={(module, selection) => {
                   setModuleSelections(prev => ({ ...prev, [module]: selection }));
                 }}
-                contactData={null}
+                focusedContactId={contactId}
+                contactData={{ contact_id: contactId, first_name: contactName, email: contactEmail, full_name: contactName, organization: null, lg_emails_cc: null, focus_areas: [], fa_count: 0, fa_sectors: [], fa_descriptions: [], gb_present: false, hs_present: false, ls_present: false, has_opps: false, opps: [], articles: [], lead_emails: [], assistant_names: [], assistant_emails: [], most_recent_contact: null, outreach_date: null }}
                 allPhrases={allPhrases}
                 allInquiries={allInquiries}
                 allSubjects={allSubjects}
@@ -434,7 +410,7 @@ export function ContactOverrideDrawer({
             )}
           </TabsContent>
 
-          {/* Tab 5: Recipients */}
+          {/* Tab 4: Recipients */}
           <TabsContent value="recipients" className="space-y-4 mt-4">
             <div className="text-sm text-muted-foreground mb-2">
               <p className="mb-1">
@@ -454,7 +430,7 @@ export function ContactOverrideDrawer({
             />
           </TabsContent>
 
-          {/* Tab 6: Team */}
+          {/* Tab 5: Team */}
           <TabsContent value="team" className="space-y-4 mt-4">
             <div className="text-sm text-muted-foreground mb-2">
               <p className="mb-1">
