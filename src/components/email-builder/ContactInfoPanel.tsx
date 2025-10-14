@@ -126,19 +126,8 @@ export function ContactInfoPanel({
             )}
           </div>
 
-          {/* Delta Type Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Type:</span>
-            <Select value={deltaType} onValueChange={(value: 'Email' | 'Meeting') => onDeltaTypeChange(value)}>
-              <SelectTrigger className="w-24 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="z-50 bg-background">
-                <SelectItem value="Email">Email</SelectItem>
-                <SelectItem value="Meeting">Meeting</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Delta Type Selector - Hidden but kept in payload */}
+          {/* Removed from UI per user request - delta_type is still passed in props and used in payload */}
         </div>
         
         {/* Basic Info */}
