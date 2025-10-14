@@ -70,6 +70,9 @@ interface SharedSettingsPanelProps {
   // UI State
   selectedContactCount: number;
   defaultOpen?: boolean;
+  
+  // Save handler for group mode
+  onSaveSharedSettings?: () => void;
 }
 
 export function SharedSettingsPanel({
@@ -106,6 +109,7 @@ export function SharedSettingsPanel({
   onCustomModuleLabelChange,
   selectedContactCount,
   defaultOpen = true,
+  onSaveSharedSettings,
 }: SharedSettingsPanelProps) {
   const [subjectPoolDialogOpen, setSubjectPoolDialogOpen] = useState(false);
   const [accordionValue, setAccordionValue] = useState<string>(defaultOpen ? "settings" : "");
@@ -126,6 +130,17 @@ export function SharedSettingsPanel({
             <div className="flex items-center gap-2">
               {selectedContactCount > 0 && (
                 <>
+                  {onSaveSharedSettings && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={onSaveSharedSettings}
+                      className="flex items-center gap-2"
+                      title="Save settings to all selected contacts"
+                    >
+                      Save Settings
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

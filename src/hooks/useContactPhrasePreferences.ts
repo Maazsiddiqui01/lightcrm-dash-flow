@@ -62,22 +62,32 @@ export function useContactPhrasePreferences(contactId: string | null, moduleKey:
     },
   });
 
-  // Bulk save multiple preferences
+  // Bulk save multiple preferences (can also handle multiple contacts)
   const bulkSaveMutation = useMutation({
-    mutationFn: async (preferences: Array<{ phraseId: string; triState: TriState }>) => {
-      if (!contactId) throw new Error('No contact ID');
-      
+    mutationFn: async (
+      preferences: Array<{ 
+        contactId?: string; 
+        phraseId: string; 
+        triState: TriState 
+      }>
+    ) => {
+      // If contactId is provided in preference, use it; otherwise use hook's contactId
       const records = preferences.map(pref => ({
-        contact_id: contactId,
+        contact_id: pref.contactId || contactId,
         module_key: moduleKey,
         phrase_id: pref.phraseId,
         tri_state: pref.triState,
         updated_at: new Date().toISOString(),
       }));
       
+      // Filter out any records without contactId
+      const validRecords = records.filter(r => r.contact_id);
+      
+      if (validRecords.length === 0) throw new Error('No valid contact IDs');
+      
       const { data, error } = await supabase
         .from('contact_phrase_preferences')
-        .upsert(records, {
+        .upsert(validRecords, {
           onConflict: 'contact_id,module_key,phrase_id'
         })
         .select();

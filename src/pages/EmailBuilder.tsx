@@ -258,7 +258,7 @@ export function EmailBuilder() {
   // Auto-set module defaults when master template changes
   const masterTemplate = contactData ? routeMaster(contactData.most_recent_contact) : null;
   
-  // Load and save contact-specific settings
+  // Load and save contact-specific settings for individual mode
   const {
     settings: contactSettings,
     isLoading: isLoadingSettings,
@@ -268,6 +268,14 @@ export function EmailBuilder() {
     isResetting,
   } = useContactSettings(selectedContact?.contact_id || null);
   const [initializedContactId, setInitializedContactId] = useState<string | null>(null);
+  
+  // Load settings for focused contact in group mode
+  const {
+    settings: groupContactSettings,
+    isLoading: isLoadingGroupSettings,
+  } = useContactSettings(
+    mode === 'group' && focusedContactId ? focusedContactId : null
+  );
   
   // Dual-scope save functionality with OCC
   const { saveContact, saveGlobal, isSaving: isSavingSettings, ConflictDialog } = useSaveSettingsWithOCC();
@@ -302,6 +310,50 @@ export function EmailBuilder() {
     setConfirmDialogOpen(true);
     setPendingSaveScope('global');
     setSavingWithShortcut(false);
+  };
+  
+  // Save shared settings to all selected contacts in group mode
+  const handleSaveSharedSettings = async () => {
+    if (selectedContactIds.size === 0) {
+      toast({
+        title: "No Contacts Selected",
+        description: "Please select contacts to save settings to.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const contactIds = Array.from(selectedContactIds);
+    let savedCount = 0;
+    
+    try {
+      for (const contactId of contactIds) {
+        await saveSettings({
+          contactId,
+          moduleStates,
+          deltaType: 'Email',
+          moduleOrder,
+          moduleSelections,
+          curatedTeam,
+          curatedTo: '', // Contact-specific, don't override
+          curatedCc,
+          customModuleLabels,
+        });
+        savedCount++;
+      }
+      
+      toast({
+        title: "Settings Saved",
+        description: `Successfully saved settings to ${savedCount} contact${savedCount !== 1 ? 's' : ''}`,
+      });
+    } catch (error) {
+      console.error('Failed to save shared settings:', error);
+      toast({
+        title: "Save Failed",
+        description: `Saved to ${savedCount} of ${contactIds.length} contacts`,
+        variant: "destructive",
+      });
+    }
   };
   
   // Handle module change
@@ -1511,6 +1563,7 @@ ${draftResult.signature}`;
               }}
               selectedContactCount={selectedContactIds.size}
               defaultOpen={true}
+              onSaveSharedSettings={handleSaveSharedSettings}
             />
             
             <SelectionTray

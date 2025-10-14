@@ -95,33 +95,43 @@ export function useSaveContactModuleDefaults() {
       contactId,
       templateId,
       defaults,
+      contactIds,
     }: {
-      contactId: string;
+      contactId?: string;
       templateId: string;
       defaults: ModuleDefault[];
+      contactIds?: string[]; // For bulk saving to multiple contacts
     }) => {
-      // Delete existing defaults for this contact+template
+      const targetContactIds = contactIds || (contactId ? [contactId] : []);
+      
+      if (targetContactIds.length === 0) {
+        throw new Error('No contact IDs provided');
+      }
+      
+      // Delete existing defaults for all target contacts+template
       const { error: deleteError } = await supabase
         .from('contact_module_defaults')
         .delete()
-        .eq('contact_id', contactId)
+        .in('contact_id', targetContactIds)
         .eq('template_id', templateId);
       
       if (deleteError) throw deleteError;
       
-      // Insert new defaults
+      // Insert new defaults for all target contacts
       if (defaults.length > 0) {
+        const records = targetContactIds.flatMap(cId =>
+          defaults.map(d => ({
+            contact_id: cId,
+            template_id: templateId,
+            module_key: d.module_key,
+            phrase_id: d.phrase_id,
+            phrase_text: d.phrase_text,
+          }))
+        );
+        
         const { error: insertError } = await supabase
           .from('contact_module_defaults')
-          .insert(
-            defaults.map(d => ({
-              contact_id: contactId,
-              template_id: templateId,
-              module_key: d.module_key,
-              phrase_id: d.phrase_id,
-              phrase_text: d.phrase_text,
-            }))
-          );
+          .insert(records);
         
         if (insertError) throw insertError;
       }
