@@ -150,6 +150,7 @@ export function ModuleConfigDrawer({
             contactData={contactData ? {
               id: contactData.contact_id,
               firstName: contactData.first_name,
+              organization: contactData.organization,
             } : undefined}
             contactName={contactName}
             defaultPhraseId={tempSelection?.defaultPhraseId}

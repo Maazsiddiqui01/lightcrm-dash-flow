@@ -10,6 +10,7 @@ interface GreetingSelectorProps {
   contactData?: {
     id?: string;
     firstName?: string;
+    organization?: string;
   };
   contactName?: string;
   defaultPhraseId?: string;

@@ -15,6 +15,7 @@ import { TriStateToggle } from "./TriStateToggle";
 import { useCreatePhrase, useUpdatePhrase, useDeletePhrase } from "@/hooks/usePhraseLibrary";
 import { useCreateSubject, useUpdateSubject, useDeleteSubject } from "@/hooks/useSubjectLibrary";
 import { useContactPhrasePreferences } from "@/hooks/useContactPhrasePreferences";
+import { useContactSubjectPreferences } from "@/hooks/useContactSubjectPreferences";
 import type { PhraseLibraryItem, PhraseCategory, TriState } from "@/types/phraseLibrary";
 import type { ModuleSelection } from "@/types/moduleSelections";
 import { cn } from "@/lib/utils";
@@ -67,11 +68,35 @@ export function PhraseSelectorGeneric({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Load contact-specific phrase preferences
-  const { getTriState, savePreference, isSaving } = useContactPhrasePreferences(
-    contactData?.id || null,
+  const isSubjectCategory = category === 'subject';
+
+  // Load contact-specific phrase preferences (for non-subject categories)
+  const phrasePrefs = useContactPhrasePreferences(
+    !isSubjectCategory && contactData?.id ? contactData.id : null,
     moduleKey
   );
+
+  // Load contact-specific subject preferences (for subject category)
+  const subjectPrefs = useContactSubjectPreferences(
+    isSubjectCategory && contactData?.id ? contactData.id : null,
+    moduleKey
+  );
+
+  // Route to the correct preference hook based on category
+  const { getTriState: getTriStateFromHook, isSaving } = isSubjectCategory ? subjectPrefs : phrasePrefs;
+
+  // Wrapper function to save preferences correctly
+  const saveContactPreference = (id: string, triState: TriState) => {
+    if (isSubjectCategory) {
+      subjectPrefs.savePreference({ subjectId: id, triState });
+    } else {
+      phrasePrefs.savePreference({ phraseId: id, triState });
+    }
+  };
+
+  const getTriState = (id: string): TriState | null => {
+    return getTriStateFromHook(id);
+  };
 
   const createPhrase = useCreatePhrase();
   const updatePhrase = useUpdatePhrase();
@@ -81,8 +106,6 @@ export function PhraseSelectorGeneric({
   const createSubject = useCreateSubject();
   const updateSubject = useUpdateSubject();
   const deleteSubject = useDeleteSubject();
-  
-  const isSubjectCategory = category === 'subject';
 
   // Filter phrases by category
   const categoryPhrases = phrases.filter(p => p.category === category);
@@ -139,20 +162,20 @@ export function PhraseSelectorGeneric({
   };
   
   // Handle default toggle
-  const handleDefaultToggle = (phraseId: string) => {
+  const handleDefaultToggle = (id: string) => {
     if (!onDefaultToggle) return;
     
-    if (defaultPhraseId === phraseId) {
+    if (defaultPhraseId === id) {
       onDefaultToggle(null);
       toast({
         title: "Default removed",
         description: `Removed default for ${contactName}`,
       });
     } else {
-      onDefaultToggle(phraseId);
-      // Automatically set tri-state to 'always' for default phrases
+      onDefaultToggle(id);
+      // Automatically set tri-state to 'always' for default phrases/subjects
       if (contactData?.id && moduleKey) {
-        savePreference({ phraseId, triState: 'always' });
+        saveContactPreference(id, 'always');
       }
       toast({
         title: "Default set",
@@ -162,18 +185,18 @@ export function PhraseSelectorGeneric({
   };
 
   // Handle tri-state change for contact-specific preferences
-  const handleTriStateChange = (phraseId: string, newTriState: TriState) => {
-    // Validation: Default phrase must be "always"
-    if (phraseId === defaultPhraseId && newTriState !== 'always') {
+  const handleTriStateChange = (id: string, newTriState: TriState) => {
+    // Validation: Default phrase/subject must be "always"
+    if (id === defaultPhraseId && newTriState !== 'always') {
       toast({
         title: "Invalid Selection",
-        description: "Default phrase must be set to 'Always'. Remove default first to change this.",
+        description: `Default ${isSubjectCategory ? 'subject' : 'phrase'} must be set to 'Always'. Remove default first to change this.`,
         variant: "destructive",
       });
       return;
     }
     
-    savePreference({ phraseId, triState: newTriState });
+    saveContactPreference(id, newTriState);
   };
 
   // Handle multi-select change
