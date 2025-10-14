@@ -324,7 +324,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       // Performance: sort by most recent and limit result set to avoid timeouts
       contactsQuery = contactsQuery
         .order('most_recent_contact', { ascending: false, nullsFirst: false })
-        .limit(hasOpportunityFilters ? 5000 : 1000);
+        .limit(hasOpportunityFilters ? 5000 : 2000);
 
       const { data: contactsData, error: contactsError } = await contactsQuery;
 
@@ -406,7 +406,7 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           
           fallbackQuery = fallbackQuery
             .order('most_recent_contact', { ascending: false, nullsFirst: false })
-            .limit(1000);
+            .limit(2000);
           
           const { data: fallbackData, error: fallbackError } = await fallbackQuery;
           
