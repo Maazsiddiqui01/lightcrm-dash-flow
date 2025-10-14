@@ -64,6 +64,9 @@ export function interpolateContent(
   opportunities?: Opportunity[],
   focusAreaDescriptions?: FocusAreaDescription[]
 ): string {
+  // Guard against undefined/null text
+  if (!text) return '';
+  
   let result = text;
 
   // ===== 1. Name Tokens =====
