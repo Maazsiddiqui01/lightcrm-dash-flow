@@ -431,7 +431,7 @@ export function ModulesCard({
           onSave={handleSaveSelection}
           allPhrases={allPhrases}
           allInquiries={allInquiries}
-          allSubjects={allSubjects}
+          
           toneOverride={toneOverride}
           isSubjectPool={activeDrawer === 'subject_line'}
         />

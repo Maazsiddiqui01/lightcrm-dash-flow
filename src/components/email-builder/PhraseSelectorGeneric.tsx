@@ -9,13 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MessageSquare, Search, ExternalLink, Plus, Star, RefreshCw, Pencil, Trash2 } from "lucide-react";
 import { InlinePhraseForm } from "./InlinePhraseForm";
-import { InlineSubjectForm } from "./InlineSubjectForm";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { TriStateToggle } from "./TriStateToggle";
 import { useCreatePhrase, useUpdatePhrase, useDeletePhrase } from "@/hooks/usePhraseLibrary";
-import { useCreateSubject, useUpdateSubject, useDeleteSubject } from "@/hooks/useSubjectLibrary";
 import { useContactPhrasePreferences } from "@/hooks/useContactPhrasePreferences";
-import { useContactSubjectPreferences } from "@/hooks/useContactSubjectPreferences";
 import type { PhraseLibraryItem, PhraseCategory, TriState } from "@/types/phraseLibrary";
 import type { ModuleSelection } from "@/types/moduleSelections";
 import { cn } from "@/lib/utils";
@@ -68,44 +65,17 @@ export function PhraseSelectorGeneric({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const isSubjectCategory = category === 'subject';
-
-  // Load contact-specific phrase preferences (for non-subject categories)
+  // Load contact-specific phrase preferences (unified for all categories including subject)
   const phrasePrefs = useContactPhrasePreferences(
-    !isSubjectCategory && contactData?.id ? contactData.id : null,
+    contactData?.id ? contactData.id : null,
     moduleKey
   );
 
-  // Load contact-specific subject preferences (for subject category)
-  const subjectPrefs = useContactSubjectPreferences(
-    isSubjectCategory && contactData?.id ? contactData.id : null,
-    moduleKey
-  );
-
-  // Route to the correct preference hook based on category
-  const { getTriState: getTriStateFromHook, isSaving } = isSubjectCategory ? subjectPrefs : phrasePrefs;
-
-  // Wrapper function to save preferences correctly
-  const saveContactPreference = (id: string, triState: TriState) => {
-    if (isSubjectCategory) {
-      subjectPrefs.savePreference({ subjectId: id, triState });
-    } else {
-      phrasePrefs.savePreference({ phraseId: id, triState });
-    }
-  };
-
-  const getTriState = (id: string): TriState | null => {
-    return getTriStateFromHook(id);
-  };
+  const { getTriState, savePreference, isSaving } = phrasePrefs;
 
   const createPhrase = useCreatePhrase();
   const updatePhrase = useUpdatePhrase();
   const deletePhrase = useDeletePhrase();
-  
-  // Subject mutations
-  const createSubject = useCreateSubject();
-  const updateSubject = useUpdateSubject();
-  const deleteSubject = useDeleteSubject();
 
   // Filter phrases by category
   const categoryPhrases = phrases.filter(p => p.category === category);
@@ -173,9 +143,9 @@ export function PhraseSelectorGeneric({
       });
     } else {
       onDefaultToggle(id);
-      // Automatically set tri-state to 'always' for default phrases/subjects
+      // Automatically set tri-state to 'always' for default phrases
       if (contactData?.id && moduleKey) {
-        saveContactPreference(id, 'always');
+        savePreference({ phraseId: id, triState: 'always' });
       }
       toast({
         title: "Default set",
@@ -186,17 +156,17 @@ export function PhraseSelectorGeneric({
 
   // Handle tri-state change for contact-specific preferences
   const handleTriStateChange = (id: string, newTriState: TriState) => {
-    // Validation: Default phrase/subject must be "always"
+    // Validation: Default phrase must be "always"
     if (id === defaultPhraseId && newTriState !== 'always') {
       toast({
         title: "Invalid Selection",
-        description: `Default ${isSubjectCategory ? 'subject' : 'phrase'} must be set to 'Always'. Remove default first to change this.`,
+        description: `Default phrase must be set to 'Always'. Remove default first to change this.`,
         variant: "destructive",
       });
       return;
     }
     
-    saveContactPreference(id, newTriState);
+    savePreference({ phraseId: id, triState: newTriState });
   };
 
   // Handle multi-select change
@@ -217,8 +187,8 @@ export function PhraseSelectorGeneric({
     } : null);
   };
 
-  // Handle create phrase
-  const handleCreatePhrase = async (phraseText: string, triState: TriState) => {
+  // Handle create phrase (unified for all categories including subject)
+  const handleCreatePhrase = async (phraseText: string, triState: TriState, style?: 'formal' | 'hybrid' | 'casual') => {
     try {
       const newPhrase = await createPhrase.mutateAsync({
         category,
@@ -228,6 +198,7 @@ export function PhraseSelectorGeneric({
         sync_behavior: 'inherit',
         template_id: null,
         weight: null,
+        style: style || null, // Include style for subject category
       });
 
       setIsAdding(false);
@@ -247,40 +218,16 @@ export function PhraseSelectorGeneric({
     }
   };
 
-  // Handle create subject
-  const handleCreateSubject = async (template: string, style: 'formal' | 'hybrid' | 'casual') => {
-    try {
-      const newSubject = await createSubject.mutateAsync({
-        subject_template: template,
-        style,
-      });
-
-      setIsAdding(false);
-      
-      // Auto-select the new subject
-      if (newSubject) {
-        onSelectionChange({
-          type: 'phrase',
-          category: 'subject',
-          phraseId: (newSubject as any).id,
-          phraseText: (newSubject as any).subject_template,
-          variables: previewVariables,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to create subject:', error);
-    }
-  };
-
-  // Handle update phrase
-  const handleUpdatePhrase = async (phraseId: string, phraseText: string, triState: TriState) => {
+  // Handle update phrase (unified for all categories including subject)
+  const handleUpdatePhrase = async (phraseId: string, phraseText: string, triState: TriState, style?: 'formal' | 'hybrid' | 'casual') => {
     try {
       await updatePhrase.mutateAsync({
         id: phraseId,
         updates: {
           phrase_text: phraseText,
           tri_state: triState,
-        },
+          ...(style ? { style } : {}),
+        } as any,
         applyToAll: false,
       });
       setEditingPhraseId(null);
@@ -289,38 +236,20 @@ export function PhraseSelectorGeneric({
     }
   };
 
-  // Handle update subject
-  const handleUpdateSubject = async (subjectId: string, template: string, style: 'formal' | 'hybrid' | 'casual') => {
-    try {
-      await updateSubject.mutateAsync({
-        id: subjectId,
-        subject_template: template,
-        style,
-      });
-      setEditingPhraseId(null);
-    } catch (error) {
-      console.error('Failed to update subject:', error);
-    }
-  };
-
-  // Handle delete phrase or subject
+  // Handle delete phrase (unified for all categories including subject)
   const handleDeletePhrase = async (phraseId: string) => {
     const isCurrentSelection = selectedIds === phraseId || (Array.isArray(selectedIds) && selectedIds.includes(phraseId));
     const isDefault = defaultPhraseId === phraseId;
 
     try {
-      if (isSubjectCategory) {
-        await deleteSubject.mutateAsync(phraseId);
-      } else {
-        await deletePhrase.mutateAsync(phraseId);
-      }
+      await deletePhrase.mutateAsync(phraseId);
       
       // Clear selection if deleted phrase was selected
       if (isCurrentSelection) {
         onSelectionChange(null);
         toast({
           title: "Selection cleared",
-          description: `Please select another ${isSubjectCategory ? 'subject' : 'phrase'}`,
+          description: `Please select another phrase`,
           variant: "destructive",
         });
       }
@@ -332,19 +261,16 @@ export function PhraseSelectorGeneric({
 
       setDeletingPhraseId(null);
     } catch (error) {
-      console.error(`Failed to delete ${isSubjectCategory ? 'subject' : 'phrase'}:`, error);
+      console.error('Failed to delete phrase:', error);
     }
   };
 
   // Handle refresh
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['phrase-library'] });
-    if (isSubjectCategory) {
-      queryClient.invalidateQueries({ queryKey: ['subject-library'] });
-    }
     toast({
       title: "Refreshed",
-      description: `${isSubjectCategory ? 'Subject' : 'Phrase'} library updated`,
+      description: `Phrase library updated`,
     });
   };
 
@@ -422,23 +348,14 @@ export function PhraseSelectorGeneric({
 
         {/* Inline Add Form */}
         {isAdding && allowInlineManagement && (
-          isSubjectCategory ? (
-            <InlineSubjectForm
-              mode="create"
-              onSave={handleCreateSubject}
-              onCancel={() => setIsAdding(false)}
-              isLoading={createSubject.isPending}
-              defaultStyle={subjectStyle}
-            />
-          ) : (
-            <InlinePhraseForm
-              category={category}
-              mode="create"
-              onSave={handleCreatePhrase}
-              onCancel={() => setIsAdding(false)}
-              isLoading={createPhrase.isPending}
-            />
-          )
+          <InlinePhraseForm
+            category={category}
+            mode="create"
+            initialStyle={category === 'subject' ? (subjectStyle || 'hybrid') : undefined}
+            onSave={handleCreatePhrase}
+            onCancel={() => setIsAdding(false)}
+            isLoading={createPhrase.isPending}
+          />
         )}
 
         {/* Single-select mode only - no count needed */}
@@ -469,27 +386,16 @@ export function PhraseSelectorGeneric({
               {filteredPhrases.map((phrase) => (
                 <div key={phrase.id} className="mb-3 pb-3 border-b last:border-0">
                   {editingPhraseId === phrase.id ? (
-                    isSubjectCategory ? (
-                      <InlineSubjectForm
-                        mode="edit"
-                        initialTemplate={phrase.phrase_text}
-                        initialStyle={(phrase as any).style || subjectStyle}
-                        onSave={(template, style) => handleUpdateSubject(phrase.id, template, style)}
-                        onCancel={() => setEditingPhraseId(null)}
-                        isLoading={updateSubject.isPending}
-                        defaultStyle={subjectStyle}
-                      />
-                    ) : (
-                      <InlinePhraseForm
-                        category={category}
-                        mode="edit"
-                        initialText={phrase.phrase_text}
-                        initialTriState={phrase.tri_state}
-                        onSave={(text, triState) => handleUpdatePhrase(phrase.id, text, triState)}
-                        onCancel={() => setEditingPhraseId(null)}
-                        isLoading={updatePhrase.isPending}
-                      />
-                    )
+                    <InlinePhraseForm
+                      category={category}
+                      mode="edit"
+                      initialText={phrase.phrase_text}
+                      initialTriState={phrase.tri_state}
+                      initialStyle={(phrase as any).style || (category === 'subject' ? 'hybrid' : undefined)}
+                      onSave={(text, triState, style) => handleUpdatePhrase(phrase.id, text, triState, style)}
+                      onCancel={() => setEditingPhraseId(null)}
+                      isLoading={updatePhrase.isPending}
+                    />
                   ) : (
                     <div className="flex items-start space-x-2">
                       <RadioGroupItem value={phrase.id} id={`phrase-${phrase.id}`} className="mt-1" />

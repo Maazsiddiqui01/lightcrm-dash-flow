@@ -694,246 +694,6 @@ export type Database = {
           },
         ]
       }
-      contact_subject_defaults: {
-        Row: {
-          contact_id: string
-          created_at: string
-          id: string
-          subject_id: string | null
-          subject_text: string | null
-          template_id: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          contact_id: string
-          created_at?: string
-          id?: string
-          subject_id?: string | null
-          subject_text?: string | null
-          template_id: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          contact_id?: string
-          created_at?: string
-          id?: string
-          subject_id?: string | null
-          subject_text?: string | null
-          template_id?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_ai"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_app"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_computed"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_norm"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_raw"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_with_dynamic_interactions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_with_opportunities_v"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "tom_new_view"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "v_contact_email_composer"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "v_contact_lag"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "v_contact_top_opps"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subject_library"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_defaults_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "email_templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      contact_subject_preferences: {
-        Row: {
-          contact_id: string
-          created_at: string
-          id: string
-          module_key: string
-          subject_id: string
-          tri_state: string
-          updated_at: string
-        }
-        Insert: {
-          contact_id: string
-          created_at?: string
-          id?: string
-          module_key?: string
-          subject_id: string
-          tri_state?: string
-          updated_at?: string
-        }
-        Update: {
-          contact_id?: string
-          created_at?: string
-          id?: string
-          module_key?: string
-          subject_id?: string
-          tri_state?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_ai"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_app"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_computed"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_norm"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_raw"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_with_dynamic_interactions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_with_opportunities_v"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "tom_new_view"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "v_contact_email_composer"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "v_contact_lag"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "v_contact_top_opps"
-            referencedColumns: ["contact_id"]
-          },
-          {
-            foreignKeyName: "contact_subject_preferences_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subject_library"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       contacts_dismissed_emails: {
         Row: {
           dismissed_at: string | null
@@ -2315,6 +2075,7 @@ export type Database = {
           id: string
           is_global: boolean | null
           phrase_text: string
+          style: string | null
           sync_behavior: string | null
           template_id: string | null
           tri_state: string
@@ -2327,6 +2088,7 @@ export type Database = {
           id?: string
           is_global?: boolean | null
           phrase_text: string
+          style?: string | null
           sync_behavior?: string | null
           template_id?: string | null
           tri_state?: string
@@ -2339,6 +2101,7 @@ export type Database = {
           id?: string
           is_global?: boolean | null
           phrase_text?: string
+          style?: string | null
           sync_behavior?: string | null
           template_id?: string | null
           tri_state?: string
@@ -2592,47 +2355,6 @@ export type Database = {
           },
         ]
       }
-      subject_library: {
-        Row: {
-          created_at: string
-          id: string
-          is_global: boolean
-          style: string
-          subject_template: string
-          sync_behavior: string | null
-          template_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_global?: boolean
-          style: string
-          subject_template: string
-          sync_behavior?: string | null
-          template_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_global?: boolean
-          style?: string
-          subject_template?: string
-          sync_behavior?: string | null
-          template_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subject_library_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "email_templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       template_module_defaults: {
         Row: {
           created_at: string
@@ -2710,13 +2432,6 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "template_subject_defaults_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subject_library"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "template_subject_defaults_template_id_fkey"
             columns: ["template_id"]

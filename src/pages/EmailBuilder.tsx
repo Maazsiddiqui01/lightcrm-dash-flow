@@ -794,7 +794,6 @@ export function EmailBuilder() {
     moduleStates,
     moduleSelections,
     allPhrases,
-    allSubjects,
     toneOverride,
     onSelectionChange: (updates) => {
       setModuleSelections(prev => ({

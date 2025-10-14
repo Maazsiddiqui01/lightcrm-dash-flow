@@ -57,7 +57,7 @@ export function useCreatePhrase() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (phrase: Omit<PhraseLibraryItem, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (phrase: Omit<PhraseLibraryItem, 'id' | 'created_at' | 'updated_at'> & { style?: 'formal' | 'hybrid' | 'casual' | null }) => {
       const { data, error } = await supabase
         .from('phrase_library' as any)
         .insert(phrase as any)

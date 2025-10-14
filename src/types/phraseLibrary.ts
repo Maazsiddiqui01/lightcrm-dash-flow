@@ -34,6 +34,7 @@ export interface PhraseLibraryItem {
   weight: number;
   is_global: boolean;
   sync_behavior: SyncBehavior;
+  style?: 'formal' | 'hybrid' | 'casual' | null; // For subject category
   created_at: string;
   updated_at: string;
 }

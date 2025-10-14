@@ -9,13 +9,12 @@ import type { ModuleSelection } from "@/types/moduleSelections";
 import type { ContactEmailComposer } from "@/types/emailComposer";
 import type { PhraseLibraryItem } from "@/types/phraseLibrary";
 import type { InquiryLibraryItem } from "@/hooks/useInquiryLibrary";
-import type { SubjectLibraryItem } from "@/hooks/useSubjectLibrary";
 import { ArticleRecommendationSelector } from "./ArticleRecommendationSelector";
 import { GreetingSelector } from "./GreetingSelector";
 import { TalkingPointsSelector } from "./TalkingPointsSelector";
 import { AddonsSelector } from "./AddonsSelector";
 import { SubjectPoolSelector } from "./SubjectPoolSelector";
-import { SubjectLineSelector } from "./SubjectLineSelector";
+import { PhraseSelectorGeneric } from "./PhraseSelectorGeneric";
 import { TopOpportunitiesSelector } from "./TopOpportunitiesSelector";
 import { SelfPersonalizationSelector } from "./SelfPersonalizationSelector";
 import { PlatformsSelector } from "./PlatformsSelector";
@@ -23,7 +22,6 @@ import { GeneralOrgUpdateSelector } from "./GeneralOrgUpdateSelector";
 import { AttachmentsSelector } from "./AttachmentsSelector";
 import { MeetingRequestSelector } from "./MeetingRequestSelector";
 import { AIBackupSelector } from "./AIBackupSelector";
-import { PhraseSelectorGeneric } from "./PhraseSelectorGeneric";
 
 interface ModuleConfigDrawerProps {
   isOpen: boolean;
@@ -35,7 +33,6 @@ interface ModuleConfigDrawerProps {
   onSave: (selection: ModuleSelection | null) => void;
   allPhrases: PhraseLibraryItem[];
   allInquiries: InquiryLibraryItem[];
-  allSubjects: SubjectLibraryItem[];
   toneOverride?: 'casual' | 'hybrid' | 'formal' | null;
   isSubjectPool?: boolean;
 }
@@ -49,7 +46,6 @@ export function ModuleConfigDrawer({
   currentSelection,
   onSave,
   allPhrases,
-  allSubjects,
   toneOverride,
   isSubjectPool = false,
 }: ModuleConfigDrawerProps) {
@@ -86,37 +82,48 @@ export function ModuleConfigDrawer({
   const renderContent = () => {
     if (isSubjectPool || moduleKey === 'subject_line') {
       if (moduleKey === 'subject_line') {
-        // New single-select subject line
+        // Subject Line - now unified as a standard phrase module
+        const subjectPhrases = allPhrases.filter(p => 
+          p.category === 'subject' && 
+          (!toneOverride || (p as any).style === toneOverride)
+        );
+        
         return (
-          <SubjectLineSelector
-            allSubjects={allSubjects}
+          <PhraseSelectorGeneric
+            category="subject"
+            categoryLabel="Subject Line"
+            phrases={subjectPhrases}
             currentSelection={tempSelection}
             onSelectionChange={setTempSelection}
-            toneOverride={toneOverride}
             contactName={contactData?.first_name || 'this contact'}
             defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={handleDefaultToggle}
             contactData={contactData ? {
               id: contactData.contact_id,
               firstName: contactData.first_name,
             } : undefined}
-            onDefaultToggle={(phraseId) => {
-              setTempSelection(prev => prev ? { 
-                ...prev, 
-                defaultPhraseId: phraseId || undefined,
-                defaultSubjectId: phraseId || undefined 
-              } : null);
-            }}
+            moduleKey="subject_line"
+            subjectStyle={toneOverride || 'hybrid'}
+            allowInlineManagement={true}
           />
         );
       }
-      // Legacy subject_line_pool
+      // Legacy subject_line_pool (deprecated - redirects to subject_line)
+      const subjectPhrases = allPhrases.filter(p => 
+        p.category === 'subject' && 
+        (!toneOverride || (p as any).style === toneOverride)
+      );
+      
       return (
-        <SubjectPoolSelector
-          allSubjects={allSubjects}
+        <PhraseSelectorGeneric
+          category="subject"
+          categoryLabel="Subject Pool"
+          phrases={subjectPhrases}
           currentSelection={tempSelection}
-          toneOverride={toneOverride}
           onSelectionChange={setTempSelection}
           contactName={contactName}
+          moduleKey="subject_line"
+          allowInlineManagement={true}
         />
       );
     }
