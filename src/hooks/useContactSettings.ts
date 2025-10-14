@@ -20,6 +20,7 @@ export interface ContactSettings {
   // Default tracking
   module_defaults?: Record<string, string>;  // { "top_opportunities": "phr_123" }
   subject_default_id?: string | null;
+  module_tri_states?: Record<string, string>; // Per-module tri-state
   
   last_updated: string;
   created_at: string;
@@ -61,6 +62,7 @@ export function useContactSettings(contactId: string | null) {
         custom_module_labels: data.custom_module_labels as Record<string, string> | undefined,
         module_defaults: data.module_defaults as Record<string, string> | undefined,
         subject_default_id: data.subject_default_id as string | null | undefined,
+        module_tri_states: data.module_tri_states as Record<string, string> | undefined,
       };
     },
     enabled: !!contactId,
@@ -125,6 +127,7 @@ export function useContactSettings(contactId: string | null) {
         custom_module_labels: data.custom_module_labels as Record<string, string> | undefined,
         module_defaults: data.module_defaults as Record<string, string> | undefined,
         subject_default_id: data.subject_default_id as string | null | undefined,
+        module_tri_states: data.module_tri_states as Record<string, string> | undefined,
       };
     },
     onSuccess: (data) => {

@@ -140,6 +140,7 @@ export type Database = {
           module_order: Json | null
           module_selections: Json | null
           module_states: Json
+          module_tri_states: Json | null
           revision: number | null
           selected_article_id: string | null
           subject_default_id: string | null
@@ -157,6 +158,7 @@ export type Database = {
           module_order?: Json | null
           module_selections?: Json | null
           module_states?: Json
+          module_tri_states?: Json | null
           revision?: number | null
           selected_article_id?: string | null
           subject_default_id?: string | null
@@ -174,6 +176,7 @@ export type Database = {
           module_order?: Json | null
           module_selections?: Json | null
           module_states?: Json
+          module_tri_states?: Json | null
           revision?: number | null
           selected_article_id?: string | null
           subject_default_id?: string | null
@@ -572,6 +575,121 @@ export type Database = {
             columns: ["duplicate_id"]
             isOneToOne: false
             referencedRelation: "contact_duplicates_detailed"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_phrase_preferences: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          module_key: string
+          phrase_id: string
+          tri_state: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          module_key: string
+          phrase_id: string
+          tri_state?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          module_key?: string
+          phrase_id?: string
+          tri_state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_phrase_id_fkey"
+            columns: ["phrase_id"]
+            isOneToOne: false
+            referencedRelation: "phrase_library"
             referencedColumns: ["id"]
           },
         ]

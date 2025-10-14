@@ -46,6 +46,16 @@ export interface PhraseRotationLog {
   email_type: 'Email' | 'Meeting';
 }
 
+export interface ContactPhrasePreference {
+  id: string;
+  contact_id: string;
+  module_key: string;
+  phrase_id: string;
+  tri_state: TriState;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MasterTemplateDefaults {
   id: string;
   master_key: 'relationship_maintenance' | 'business_development' | 'hybrid_neutral';
