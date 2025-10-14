@@ -7,6 +7,7 @@ interface MeetingRequestSelectorProps {
   currentSelection: ModuleSelection | null;
   onSelectionChange: (selection: ModuleSelection | null) => void;
   contactData?: {
+    id?: string;
     firstName?: string;
   };
   contactName?: string;
@@ -41,6 +42,7 @@ export function MeetingRequestSelector({
       contactName={contactName}
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
+      moduleKey="meeting_request"
     />
   );
 }

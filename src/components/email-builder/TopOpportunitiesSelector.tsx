@@ -7,6 +7,7 @@ interface TopOpportunitiesSelectorProps {
   currentSelection: ModuleSelection | null;
   onSelectionChange: (selection: ModuleSelection | null) => void;
   contactData?: {
+    id?: string;
     firstName?: string;
     organization?: string;
     opportunities?: Array<{ dealName: string; monthsSince?: number }>;
@@ -47,6 +48,7 @@ export function TopOpportunitiesSelector({
       contactName={contactName}
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
+      moduleKey="top_opportunities"
     />
   );
 }

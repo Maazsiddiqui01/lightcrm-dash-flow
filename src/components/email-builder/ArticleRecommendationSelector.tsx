@@ -7,6 +7,7 @@ interface ArticleRecommendationSelectorProps {
   currentSelection: ModuleSelection | null;
   onSelectionChange: (selection: ModuleSelection | null) => void;
   contactData?: {
+    id?: string;
     firstName?: string;
     organization?: string;
     focusAreas?: string[];
@@ -48,6 +49,7 @@ export function ArticleRecommendationSelector({
       contactName={contactName}
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
+      moduleKey="article_recommendations"
     />
   );
 }

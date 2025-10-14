@@ -7,6 +7,7 @@ interface SelfPersonalizationSelectorProps {
   currentSelection: ModuleSelection | null;
   onSelectionChange: (selection: ModuleSelection | null) => void;
   contactData?: {
+    id?: string;
     firstName?: string;
     organization?: string;
     focusAreas?: string[];
@@ -44,6 +45,7 @@ export function SelfPersonalizationSelector({
       contactName={contactName}
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
+      moduleKey="self_personalization"
     />
   );
 }

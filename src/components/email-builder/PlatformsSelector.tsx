@@ -7,6 +7,7 @@ interface PlatformsSelectorProps {
   currentSelection: ModuleSelection | null;
   onSelectionChange: (selection: ModuleSelection | null) => void;
   contactData?: {
+    id?: string;
     firstName?: string;
     organization?: string;
     focusAreas?: string[];
@@ -34,6 +35,7 @@ export function PlatformsSelector({
       multiSelect={false}
       contactData={contactData}
       previewVariables={previewVariables}
+      moduleKey="platforms"
     />
   );
 }

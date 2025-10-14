@@ -95,6 +95,10 @@ export function ModuleConfigDrawer({
             toneOverride={toneOverride}
             contactName={contactData?.first_name || 'this contact'}
             defaultPhraseId={tempSelection?.defaultPhraseId}
+            contactData={contactData ? {
+              id: contactData.contact_id,
+              firstName: contactData.first_name,
+            } : undefined}
             onDefaultToggle={(phraseId) => {
               setTempSelection(prev => prev ? { 
                 ...prev, 
@@ -125,6 +129,7 @@ export function ModuleConfigDrawer({
             currentSelection={tempSelection}
             onSelectionChange={setTempSelection}
             contactData={contactData ? {
+              id: contactData.contact_id,
               firstName: contactData.first_name,
               organization: contactData.organization,
               focusAreas: contactData.focus_areas || [],
@@ -170,6 +175,7 @@ export function ModuleConfigDrawer({
             currentSelection={tempSelection}
             onSelectionChange={setTempSelection}
             contactData={contactData ? {
+              id: contactData.contact_id,
               firstName: contactData.first_name,
               organization: contactData.organization,
               focusAreas: contactData.focus_areas || [],
@@ -187,6 +193,7 @@ export function ModuleConfigDrawer({
             currentSelection={tempSelection}
             onSelectionChange={setTempSelection}
             contactData={contactData ? {
+              id: contactData.contact_id,
               firstName: contactData.first_name,
               organization: contactData.organization,
               opportunities: (contactData as any).opportunities || [],
@@ -204,6 +211,7 @@ export function ModuleConfigDrawer({
             currentSelection={tempSelection}
             onSelectionChange={setTempSelection}
             contactData={contactData ? {
+              id: contactData.contact_id,
               firstName: contactData.first_name,
               organization: contactData.organization,
               focusAreas: contactData.focus_areas || [],
@@ -218,6 +226,7 @@ export function ModuleConfigDrawer({
             currentSelection={tempSelection}
             onSelectionChange={setTempSelection}
             contactData={contactData ? {
+              id: contactData.contact_id,
               firstName: contactData.first_name,
               organization: contactData.organization,
             } : undefined}
@@ -234,6 +243,7 @@ export function ModuleConfigDrawer({
             currentSelection={tempSelection}
             onSelectionChange={setTempSelection}
             contactData={contactData ? {
+              id: contactData.contact_id,
               firstName: contactData.first_name,
             } : undefined}
             contactName={contactName}

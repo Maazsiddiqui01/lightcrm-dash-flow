@@ -7,6 +7,7 @@ interface GeneralOrgUpdateSelectorProps {
   currentSelection: ModuleSelection | null;
   onSelectionChange: (selection: ModuleSelection | null) => void;
   contactData?: {
+    id?: string;
     firstName?: string;
     organization?: string;
   };
@@ -42,6 +43,7 @@ export function GeneralOrgUpdateSelector({
       contactName={contactName}
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
+      moduleKey="general_org_update"
     />
   );
 }

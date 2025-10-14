@@ -11,6 +11,10 @@ interface SubjectLineSelectorProps {
   contactName?: string;
   defaultPhraseId?: string;
   onDefaultToggle?: (phraseId: string | null) => void;
+  contactData?: {
+    id?: string;
+    firstName?: string;
+  };
 }
 
 export function SubjectLineSelector({
@@ -21,6 +25,7 @@ export function SubjectLineSelector({
   contactName,
   defaultPhraseId,
   onDefaultToggle,
+  contactData,
 }: SubjectLineSelectorProps) {
   // Convert SubjectLibraryItem[] to PhraseLibraryItem[] format with all required fields
   const subjectsAsPhrases: PhraseLibraryItem[] = allSubjects.map(s => ({
@@ -54,7 +59,9 @@ export function SubjectLineSelector({
       contactName={contactName}
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
-      allowInlineManagement={false}
+      allowInlineManagement={true}
+      contactData={contactData}
+      moduleKey="subject_line"
     />
   );
 }
