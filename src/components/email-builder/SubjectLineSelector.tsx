@@ -62,6 +62,7 @@ export function SubjectLineSelector({
       allowInlineManagement={true}
       contactData={contactData}
       moduleKey="subject_line"
+      subjectStyle={toneOverride ?? 'hybrid'}
     />
   );
 }

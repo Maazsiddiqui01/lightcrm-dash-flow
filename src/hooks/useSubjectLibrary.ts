@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export interface SubjectLibraryItem {
   id: string;
@@ -102,4 +103,128 @@ export async function pickSubject({
   }
 
   return subject;
+}
+
+/**
+ * Create a new subject in the library
+ */
+export function useCreateSubject() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (newSubject: {
+      subject_template: string;
+      style: 'formal' | 'hybrid' | 'casual';
+    }) => {
+      const { data, error } = await supabase
+        .from('subject_library' as any)
+        .insert({
+          subject_template: newSubject.subject_template,
+          style: newSubject.style,
+          is_global: true,
+          template_id: null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subject-library'] });
+      toast({
+        title: "Subject created",
+        description: "New subject line added to library",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create subject",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+/**
+ * Update an existing subject in the library
+ */
+export function useUpdateSubject() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (params: {
+      id: string;
+      subject_template?: string;
+      style?: 'formal' | 'hybrid' | 'casual';
+    }) => {
+      const updates: any = {};
+      if (params.subject_template !== undefined) {
+        updates.subject_template = params.subject_template;
+      }
+      if (params.style !== undefined) {
+        updates.style = params.style;
+      }
+
+      const { data, error } = await supabase
+        .from('subject_library' as any)
+        .update(updates)
+        .eq('id', params.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subject-library'] });
+      toast({
+        title: "Subject updated",
+        description: "Subject line has been updated",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update subject",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+/**
+ * Delete a subject from the library
+ */
+export function useDeleteSubject() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('subject_library' as any)
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subject-library'] });
+      toast({
+        title: "Subject deleted",
+        description: "Subject line removed from library",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete subject",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 }

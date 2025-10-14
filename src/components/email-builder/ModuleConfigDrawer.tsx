@@ -147,6 +147,13 @@ export function ModuleConfigDrawer({
             phrases={allPhrases}
             currentSelection={tempSelection}
             onSelectionChange={setTempSelection}
+            contactData={contactData ? {
+              id: contactData.contact_id,
+              firstName: contactData.first_name,
+            } : undefined}
+            contactName={contactName}
+            defaultPhraseId={tempSelection?.defaultPhraseId}
+            onDefaultToggle={handleDefaultToggle}
           />
         );
       

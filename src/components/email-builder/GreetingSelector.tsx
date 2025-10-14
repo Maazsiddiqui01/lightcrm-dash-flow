@@ -8,6 +8,7 @@ interface GreetingSelectorProps {
   currentSelection: ModuleSelection | null;
   onSelectionChange: (selection: ModuleSelection | null) => void;
   contactData?: {
+    id?: string;
     firstName?: string;
   };
   contactName?: string;
@@ -65,6 +66,7 @@ export function GreetingSelector({
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
       allowInlineManagement={true}
+      moduleKey="initial_greeting"
     />
   );
 }

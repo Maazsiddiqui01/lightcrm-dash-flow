@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MessageSquare, Search, ExternalLink, Plus, Star, RefreshCw, Pencil, Trash2 } from "lucide-react";
 import { InlinePhraseForm } from "./InlinePhraseForm";
+import { InlineSubjectForm } from "./InlineSubjectForm";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { TriStateToggle } from "./TriStateToggle";
 import { useCreatePhrase, useUpdatePhrase, useDeletePhrase } from "@/hooks/usePhraseLibrary";
+import { useCreateSubject, useUpdateSubject, useDeleteSubject } from "@/hooks/useSubjectLibrary";
 import { useContactPhrasePreferences } from "@/hooks/useContactPhrasePreferences";
 import type { PhraseLibraryItem, PhraseCategory, TriState } from "@/types/phraseLibrary";
 import type { ModuleSelection } from "@/types/moduleSelections";
@@ -39,6 +41,7 @@ interface PhraseSelectorGenericProps {
   onDefaultToggle?: (phraseId: string | null) => void;
   allowInlineManagement?: boolean;
   moduleKey?: string;
+  subjectStyle?: 'formal' | 'hybrid' | 'casual';
 }
 
 export function PhraseSelectorGeneric({
@@ -55,6 +58,7 @@ export function PhraseSelectorGeneric({
   onDefaultToggle,
   allowInlineManagement = true,
   moduleKey = '',
+  subjectStyle = 'hybrid',
 }: PhraseSelectorGenericProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -72,6 +76,13 @@ export function PhraseSelectorGeneric({
   const createPhrase = useCreatePhrase();
   const updatePhrase = useUpdatePhrase();
   const deletePhrase = useDeletePhrase();
+  
+  // Subject mutations
+  const createSubject = useCreateSubject();
+  const updateSubject = useUpdateSubject();
+  const deleteSubject = useDeleteSubject();
+  
+  const isSubjectCategory = category === 'subject';
 
   // Filter phrases by category
   const categoryPhrases = phrases.filter(p => p.category === category);
@@ -213,6 +224,31 @@ export function PhraseSelectorGeneric({
     }
   };
 
+  // Handle create subject
+  const handleCreateSubject = async (template: string, style: 'formal' | 'hybrid' | 'casual') => {
+    try {
+      const newSubject = await createSubject.mutateAsync({
+        subject_template: template,
+        style,
+      });
+
+      setIsAdding(false);
+      
+      // Auto-select the new subject
+      if (newSubject) {
+        onSelectionChange({
+          type: 'phrase',
+          category: 'subject',
+          phraseId: (newSubject as any).id,
+          phraseText: (newSubject as any).subject_template,
+          variables: previewVariables,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to create subject:', error);
+    }
+  };
+
   // Handle update phrase
   const handleUpdatePhrase = async (phraseId: string, phraseText: string, triState: TriState) => {
     try {
@@ -230,20 +266,38 @@ export function PhraseSelectorGeneric({
     }
   };
 
-  // Handle delete phrase
+  // Handle update subject
+  const handleUpdateSubject = async (subjectId: string, template: string, style: 'formal' | 'hybrid' | 'casual') => {
+    try {
+      await updateSubject.mutateAsync({
+        id: subjectId,
+        subject_template: template,
+        style,
+      });
+      setEditingPhraseId(null);
+    } catch (error) {
+      console.error('Failed to update subject:', error);
+    }
+  };
+
+  // Handle delete phrase or subject
   const handleDeletePhrase = async (phraseId: string) => {
     const isCurrentSelection = selectedIds === phraseId || (Array.isArray(selectedIds) && selectedIds.includes(phraseId));
     const isDefault = defaultPhraseId === phraseId;
 
     try {
-      await deletePhrase.mutateAsync(phraseId);
+      if (isSubjectCategory) {
+        await deleteSubject.mutateAsync(phraseId);
+      } else {
+        await deletePhrase.mutateAsync(phraseId);
+      }
       
       // Clear selection if deleted phrase was selected
       if (isCurrentSelection) {
         onSelectionChange(null);
         toast({
           title: "Selection cleared",
-          description: "Please select another phrase",
+          description: `Please select another ${isSubjectCategory ? 'subject' : 'phrase'}`,
           variant: "destructive",
         });
       }
@@ -255,16 +309,19 @@ export function PhraseSelectorGeneric({
 
       setDeletingPhraseId(null);
     } catch (error) {
-      console.error('Failed to delete phrase:', error);
+      console.error(`Failed to delete ${isSubjectCategory ? 'subject' : 'phrase'}:`, error);
     }
   };
 
   // Handle refresh
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['phrase-library'] });
+    if (isSubjectCategory) {
+      queryClient.invalidateQueries({ queryKey: ['subject-library'] });
+    }
     toast({
       title: "Refreshed",
-      description: "Phrase library updated",
+      description: `${isSubjectCategory ? 'Subject' : 'Phrase'} library updated`,
     });
   };
 
@@ -342,13 +399,23 @@ export function PhraseSelectorGeneric({
 
         {/* Inline Add Form */}
         {isAdding && allowInlineManagement && (
-          <InlinePhraseForm
-            category={category}
-            mode="create"
-            onSave={handleCreatePhrase}
-            onCancel={() => setIsAdding(false)}
-            isLoading={createPhrase.isPending}
-          />
+          isSubjectCategory ? (
+            <InlineSubjectForm
+              mode="create"
+              onSave={handleCreateSubject}
+              onCancel={() => setIsAdding(false)}
+              isLoading={createSubject.isPending}
+              defaultStyle={subjectStyle}
+            />
+          ) : (
+            <InlinePhraseForm
+              category={category}
+              mode="create"
+              onSave={handleCreatePhrase}
+              onCancel={() => setIsAdding(false)}
+              isLoading={createPhrase.isPending}
+            />
+          )
         )}
 
         {/* Single-select mode only - no count needed */}
@@ -379,15 +446,27 @@ export function PhraseSelectorGeneric({
               {filteredPhrases.map((phrase) => (
                 <div key={phrase.id} className="mb-3 pb-3 border-b last:border-0">
                   {editingPhraseId === phrase.id ? (
-                    <InlinePhraseForm
-                      category={category}
-                      mode="edit"
-                      initialText={phrase.phrase_text}
-                      initialTriState={phrase.tri_state}
-                      onSave={(text, triState) => handleUpdatePhrase(phrase.id, text, triState)}
-                      onCancel={() => setEditingPhraseId(null)}
-                      isLoading={updatePhrase.isPending}
-                    />
+                    isSubjectCategory ? (
+                      <InlineSubjectForm
+                        mode="edit"
+                        initialTemplate={phrase.phrase_text}
+                        initialStyle={(phrase as any).style || subjectStyle}
+                        onSave={(template, style) => handleUpdateSubject(phrase.id, template, style)}
+                        onCancel={() => setEditingPhraseId(null)}
+                        isLoading={updateSubject.isPending}
+                        defaultStyle={subjectStyle}
+                      />
+                    ) : (
+                      <InlinePhraseForm
+                        category={category}
+                        mode="edit"
+                        initialText={phrase.phrase_text}
+                        initialTriState={phrase.tri_state}
+                        onSave={(text, triState) => handleUpdatePhrase(phrase.id, text, triState)}
+                        onCancel={() => setEditingPhraseId(null)}
+                        isLoading={updatePhrase.isPending}
+                      />
+                    )
                   ) : (
                     <div className="flex items-start space-x-2">
                       <RadioGroupItem value={phrase.id} id={`phrase-${phrase.id}`} className="mt-1" />
