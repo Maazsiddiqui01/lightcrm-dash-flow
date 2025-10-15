@@ -258,9 +258,10 @@ export async function buildEnhancedDraftPayload(
   }
 
   // Pick subject line with tone and subject pool override
-  // Enhanced validation: Check for deleted subjects in pool override
+  // Enhanced validation: Check for deleted subjects in pool override (FIX #3: Stale Subject Pool Auto-Recovery)
   let subjectPool: SubjectLibraryItem[];
   const deletedSubjectIds: string[] = [];
+  let notifiedUser = false; // Track if we've shown toast notification
   
   if (subjectPoolOverride && subjectPoolOverride.length > 0) {
     // Filter to override subjects and track deleted ones
@@ -274,14 +275,45 @@ export async function buildEnhancedDraftPayload(
       }
     }
     
-    // Warn about deleted subjects
+    // FIX #3: Show user-friendly notification about deleted subjects
     if (deletedSubjectIds.length > 0) {
-      console.warn(`Subject pool contains ${deletedSubjectIds.length} deleted subject(s): ${deletedSubjectIds.join(', ')}`);
+      console.warn(`⚠️ Subject pool contains ${deletedSubjectIds.length} deleted subject(s): ${deletedSubjectIds.join(', ')}`);
+      
+      // Dynamically import toast to avoid circular dependency
+      import('@/hooks/use-toast').then(({ toast }) => {
+        if (!notifiedUser) {
+          toast({
+            title: "Deleted Subjects Detected",
+            description: `${deletedSubjectIds.length} subject line${deletedSubjectIds.length > 1 ? 's' : ''} in your pool ${deletedSubjectIds.length > 1 ? 'have' : 'has'} been deleted. Auto-selecting from available subjects.`,
+            variant: "destructive",
+            duration: 6000,
+          });
+          notifiedUser = true;
+        }
+      }).catch(err => {
+        console.error('Failed to show toast notification:', err);
+      });
     }
     
     // If filtering resulted in empty pool (all IDs invalid/deleted), fall back to all subjects
     if (subjectPool.length === 0) {
-      console.error('Subject pool override contained only invalid/deleted IDs. Falling back to all available subjects.');
+      console.error('❌ Subject pool override contained only invalid/deleted IDs. Falling back to all available subjects.');
+      
+      // Show recovery notification
+      import('@/hooks/use-toast').then(({ toast }) => {
+        if (!notifiedUser) {
+          toast({
+            title: "Subject Pool Empty",
+            description: "All subjects in your pool were deleted. Using library defaults.",
+            variant: "destructive",
+            duration: 6000,
+          });
+          notifiedUser = true;
+        }
+      }).catch(err => {
+        console.error('Failed to show toast notification:', err);
+      });
+      
       subjectPool = allSubjects;
     }
   } else {
@@ -296,9 +328,24 @@ export async function buildEnhancedDraftPayload(
   // Auto-select primary subject if not specified (renamed from subject_line_pool to subject_line)
   let primarySubjectId = moduleSelections?.subject_line?.defaultSubjectId;
   
-  // Check if primary subject was deleted
+  // Check if primary subject was deleted (FIX #3: Auto-select new primary with notification)
   if (primarySubjectId && deletedSubjectIds.includes(primarySubjectId)) {
-    console.warn(`Primary subject ${primarySubjectId} was deleted. Auto-selecting new primary.`);
+    console.warn(`⚠️ Primary subject ${primarySubjectId} was deleted. Auto-selecting new primary: ${subjectPool[0].subject_template}`);
+    
+    // Show confirmation notification
+    import('@/hooks/use-toast').then(({ toast }) => {
+      if (!notifiedUser) {
+        toast({
+          title: "Primary Subject Updated",
+          description: `Your default subject was deleted. New default: "${subjectPool[0].subject_template.slice(0, 50)}${subjectPool[0].subject_template.length > 50 ? '...' : ''}"`,
+          duration: 5000,
+        });
+        notifiedUser = true;
+      }
+    }).catch(err => {
+      console.error('Failed to show toast notification:', err);
+    });
+    
     primarySubjectId = undefined;
   }
   
@@ -310,13 +357,13 @@ export async function buildEnhancedDraftPayload(
   if (!primarySubjectId) {
     // Auto-select first available subject
     primarySubjectId = subjectPool[0].id;
-    console.log(`Auto-selected primary subject: ${subjectPool[0].subject_template}`);
+    console.log(`✓ Auto-selected primary subject: ${subjectPool[0].subject_template}`);
   }
   
   // Validate primary subject exists in pool (final safety check)
   const primaryExists = subjectPool.some(s => s.id === primarySubjectId);
   if (!primaryExists) {
-    console.warn(`Primary subject ${primarySubjectId} not in pool. Auto-selecting first available.`);
+    console.warn(`⚠️ Primary subject ${primarySubjectId} not in pool. Auto-selecting first available.`);
     primarySubjectId = subjectPool[0].id;
   }
     

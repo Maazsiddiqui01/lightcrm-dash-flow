@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 import { useRealtimeLibrarySync } from "@/hooks/useRealtimeSync";
+import { EmailBuilderErrorBoundary } from "@/components/email-builder/EmailBuilderErrorBoundary";
 import { ContactSelector } from "@/components/email-builder/ContactSelector";
 import { ContactInfoPanel } from "@/components/email-builder/ContactInfoPanel";
 import { ModeSwitcher } from "@/components/email-builder/ModeSwitcher";
@@ -86,7 +87,7 @@ import {
   useSaveTemplateModuleDefaults,
 } from "@/hooks/useDefaultsPersistence";
 
-export function EmailBuilder() {
+function EmailBuilderContent() {
   // Enable real-time synchronization with Global Libraries
   useRealtimeLibrarySync();
   
@@ -1934,5 +1935,14 @@ ${draftResult.signature}`;
         onClose={() => setShowShortcutsModal(false)}
       />
     </div>
+  );
+}
+
+// Export EmailBuilder wrapped with Error Boundary
+export function EmailBuilder() {
+  return (
+    <EmailBuilderErrorBoundary>
+      <EmailBuilderContent />
+    </EmailBuilderErrorBoundary>
   );
 }
