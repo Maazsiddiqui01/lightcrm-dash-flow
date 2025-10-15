@@ -21,12 +21,15 @@ export function NormalizationManager() {
 
   const handleScan = async () => {
     try {
+      console.log('[NormalizationManager] Starting scan...');
       await startScan();
+      console.log('[NormalizationManager] Scan completed:', scanResults);
       toast({
         title: "Scan Complete",
         description: "Data normalization opportunities have been identified",
       });
     } catch (error) {
+      console.error('[NormalizationManager] Scan failed:', error);
       toast({
         title: "Scan Failed",
         description: error instanceof Error ? error.message : "Failed to scan for normalization issues",
@@ -43,12 +46,15 @@ export function NormalizationManager() {
     }
 
     try {
+      console.log('[NormalizationManager] Applying normalization...', scanResults);
       await applyNormalization();
+      console.log('[NormalizationManager] Normalization applied successfully');
       toast({
         title: "Normalization Applied",
         description: "Database has been successfully normalized",
       });
     } catch (error) {
+      console.error('[NormalizationManager] Apply failed:', error);
       toast({
         title: "Normalization Failed",
         description: error instanceof Error ? error.message : "Failed to apply normalization",

@@ -23,12 +23,15 @@ export function DeduplicationManager() {
 
   const handleScan = async () => {
     try {
+      console.log(`[DeduplicationManager] Starting scan for ${activeTab}...`);
       await scanForDuplicates();
+      console.log('[DeduplicationManager] Scan completed:', duplicates);
       toast({
         title: "Scan Complete",
         description: `Found ${duplicates?.groups.length || 0} duplicate groups`,
       });
     } catch (error) {
+      console.error('[DeduplicationManager] Scan failed:', error);
       toast({
         title: "Scan Failed",
         description: error instanceof Error ? error.message : "Failed to scan for duplicates",
@@ -46,12 +49,15 @@ export function DeduplicationManager() {
     }
 
     try {
+      console.log(`[DeduplicationManager] Merging group ${groupId}...`, group);
       await mergeDuplicates(groupId);
+      console.log('[DeduplicationManager] Merge completed successfully');
       toast({
         title: "Merge Complete",
         description: "Duplicate records have been merged successfully",
       });
     } catch (error) {
+      console.error('[DeduplicationManager] Merge failed:', error);
       toast({
         title: "Merge Failed",
         description: error instanceof Error ? error.message : "Failed to merge duplicates",
@@ -68,15 +74,19 @@ export function DeduplicationManager() {
     }
 
     try {
+      console.log(`[DeduplicationManager] Merging all ${duplicates.groups.length} groups...`);
       for (const group of duplicates.groups) {
+        console.log(`[DeduplicationManager] Merging group ${group.id}...`);
         await mergeDuplicates(group.id);
       }
+      console.log('[DeduplicationManager] All merges completed successfully');
       
       toast({
         title: "All Merges Complete",
         description: `Merged ${duplicates.groups.length} duplicate groups`,
       });
     } catch (error) {
+      console.error('[DeduplicationManager] Merge all failed:', error);
       toast({
         title: "Merge Failed",
         description: error instanceof Error ? error.message : "Failed to merge all duplicates",
