@@ -3,12 +3,20 @@ import { MissingContactsTable } from "@/components/missing-contacts/MissingConta
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { RefreshCw, Download, UserCheck, UserX, RotateCcw } from "lucide-react";
 import { useRefreshMissingContacts, useMissingCandidates, useApproveMissing, useDismissMissing } from "@/hooks/useMissingContacts";
 import { useToast } from "@/hooks/use-toast";
 
-
 export default function MissingContacts() {
+  return (
+    <PageErrorBoundary pageName="Missing Contacts">
+      <MissingContactsContent />
+    </PageErrorBoundary>
+  );
+}
+
+function MissingContactsContent() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());

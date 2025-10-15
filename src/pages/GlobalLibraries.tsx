@@ -17,6 +17,7 @@ import { EditInquiryModal } from '@/components/global-libraries/EditInquiryModal
 import { TriStateApplyModal } from '@/components/global-libraries/TriStateApplyModal';
 import { TeamDirectoryManager } from '@/components/global-libraries/TeamDirectoryManager';
 import { SubjectLibraryManager } from '@/components/global-libraries/SubjectLibraryManager';
+import { PageErrorBoundary } from '@/components/shared/PageErrorBoundary';
 import { useRealtimeLibrarySync } from '@/hooks/useRealtimeSync';
 import { useSubjectLibrary } from '@/hooks/useSubjectLibrary';
 import { useQuery } from '@tanstack/react-query';
@@ -49,7 +50,15 @@ const INQUIRY_CATEGORIES: { value: InquiryCategory; label: string }[] = [
   { value: 'generic', label: 'Generic Inquiries' },
 ];
 
-export function GlobalLibraries() {
+export default function GlobalLibraries() {
+  return (
+    <PageErrorBoundary pageName="Global Libraries">
+      <GlobalLibrariesContent />
+    </PageErrorBoundary>
+  );
+}
+
+function GlobalLibrariesContent() {
   // Enable real-time synchronization
   useRealtimeLibrarySync();
   

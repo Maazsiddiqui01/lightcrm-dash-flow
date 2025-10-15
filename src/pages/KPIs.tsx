@@ -6,11 +6,20 @@ import { MeetingsChart } from '@/components/kpi/MeetingsChart';
 import { KpiLgLeadsView } from '@/components/kpi/KpiLgLeadsView';
 import { useKpiFilters } from '@/state/useKpiFilters';
 import { useKpiHeader, useKpiMeetingsPerMonth, useKpiLeadsPerformance } from '@/hooks/useKpiQueries';
+import { PageErrorBoundary } from '@/components/shared/PageErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export function KPIs() {
+export default function KPIs() {
+  return (
+    <PageErrorBoundary pageName="KPIs">
+      <KPIsContent />
+    </PageErrorBoundary>
+  );
+}
+
+function KPIsContent() {
   const filters = useKpiFilters();
   
   const { data: headerData, isLoading: headerLoading, refetch: refetchHeader } = useKpiHeader(filters);

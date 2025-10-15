@@ -3,11 +3,19 @@ import { InteractionFilterBar } from "@/components/interactions/InteractionFilte
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useInteractionStats } from "@/hooks/useInteractionStats";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { MessageSquare, Mail, Calendar, Clock } from "lucide-react";
 import { useState } from "react";
 
+export default function Interactions() {
+  return (
+    <PageErrorBoundary pageName="Interactions">
+      <InteractionsContent />
+    </PageErrorBoundary>
+  );
+}
 
-export function Interactions() {
+function InteractionsContent() {
   const stats = useInteractionStats();
   const { filters, updateFilters, clearFilters } = useUrlFilters();
 
