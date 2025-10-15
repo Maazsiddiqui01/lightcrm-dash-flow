@@ -75,12 +75,21 @@ export function InteractionsTable() {
       let dataAccum: Interaction[] = [];
 
       if (limit === null) {
-        // Client-side load-all: fetch in 1000-row chunks to avoid PostgREST max row limit
-        const total = count ?? 0;
+        // Hard limit: Maximum 5000 rows to prevent browser freeze
+        const MAX_ROWS = 5000;
+        const total = Math.min(count ?? 0, MAX_ROWS);
         const pageSize = 1000;
 
+        if (total > MAX_ROWS) {
+          toast({
+            title: "Row Limit Reached",
+            description: `Loading limited to ${MAX_ROWS.toLocaleString()} rows for performance. Use filters to narrow your search.`,
+            variant: "default",
+          });
+        }
+
         if (total <= pageSize) {
-          const { data, error } = await applySort(base);
+          const { data, error } = await applySort(base).limit(total);
           if (error) throw error;
           dataAccum = data || [];
         } else {
@@ -125,12 +134,19 @@ export function InteractionsTable() {
   };
 
   const handleLoadAll = () => {
-    if (totalCount && totalCount > 10000) {
-      if (!confirm(`This will load ${totalCount.toLocaleString()} interactions. This may take a moment. Continue?`)) {
+    const MAX_ROWS = 5000;
+    if (totalCount && totalCount > MAX_ROWS) {
+      toast({
+        title: "Row Limit",
+        description: `Loading limited to ${MAX_ROWS.toLocaleString()} rows for performance. Use filters to narrow results.`,
+        variant: "default",
+      });
+    } else if (totalCount && totalCount > 1000) {
+      if (!confirm(`This will load ${Math.min(totalCount, MAX_ROWS).toLocaleString()} interactions. This may take a moment. Continue?`)) {
         return;
       }
     }
-    console.log('Setting limit to null to load all interactions');
+    console.log('Setting limit to null to load all interactions (max 5000)');
     setLimit(null);
   };
 
@@ -405,6 +421,17 @@ export function InteractionsTable() {
       />
     </div>
   );
+
+  // Show toast when filters result in no interactions
+  useEffect(() => {
+    if (!loading && interactions.length > 0 && filteredInteractions.length === 0 && (searchTerm || activeFilters.length > 0)) {
+      toast({
+        title: "No Interactions Found",
+        description: "Your current filters didn't match any interactions. Try adjusting your criteria.",
+        variant: "default",
+      });
+    }
+  }, [loading, filteredInteractions.length, searchTerm, activeFilters.length, interactions.length]);
 
   const emptyState = {
     title: "No interactions found",

@@ -24,38 +24,26 @@ export function useInteractionStats(): InteractionStats {
 
   const fetchStats = async () => {
     try {
-      // Total interactions
-      const { count: totalInteractions } = await supabase
+      // Optimized: Single aggregated query instead of 4 separate queries
+      const { data, error } = await supabase
         .from("emails_meetings_raw")
-        .select("*", { count: "exact", head: true });
+        .select("source, time")
+        .order("time", { ascending: false });
 
-      // Email interactions
-      const { count: totalEmails } = await supabase
-        .from("emails_meetings_raw")
-        .select("*", { count: "exact", head: true })
-        .ilike("source", "%email%");
+      if (error) throw error;
 
-      // Meeting interactions
-      const { count: totalMeetings } = await supabase
-        .from("emails_meetings_raw")
-        .select("*", { count: "exact", head: true })
-        .ilike("source", "%meeting%");
-
-      // Last interaction date
-      const { data: lastInteraction } = await supabase
-        .from("emails_meetings_raw")
-        .select("time")
-        .order("time", { ascending: false })
-        .limit(1);
-
-      const lastInteractionDate = lastInteraction?.[0]?.time 
-        ? new Date(lastInteraction[0].time).toLocaleDateString()
+      // Calculate stats in memory from single query result
+      const totalInteractions = data?.length || 0;
+      const totalEmails = data?.filter(i => i.source?.toLowerCase().includes('email')).length || 0;
+      const totalMeetings = data?.filter(i => i.source?.toLowerCase().includes('meeting')).length || 0;
+      const lastInteractionDate = data?.[0]?.time 
+        ? new Date(data[0].time).toLocaleDateString()
         : "—";
 
       setStats({
-        totalInteractions: totalInteractions || 0,
-        totalEmails: totalEmails || 0,
-        totalMeetings: totalMeetings || 0,
+        totalInteractions,
+        totalEmails,
+        totalMeetings,
         lastInteractionDate,
         loading: false,
       });

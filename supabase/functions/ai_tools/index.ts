@@ -9,6 +9,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple in-memory rate limiting (per user per minute)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 60; // requests per minute
+const RATE_WINDOW = 60000; // 1 minute in ms
+
+function checkRateLimit(userId: string): { allowed: boolean; remaining: number; resetAt: number } {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(userId);
+
+  // Clean up expired entries
+  if (userLimit && userLimit.resetAt < now) {
+    rateLimitMap.delete(userId);
+  }
+
+  const current = rateLimitMap.get(userId);
+  
+  if (!current) {
+    // First request in window
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_WINDOW });
+    return { allowed: true, remaining: RATE_LIMIT - 1, resetAt: now + RATE_WINDOW };
+  }
+
+  if (current.count >= RATE_LIMIT) {
+    return { allowed: false, remaining: 0, resetAt: current.resetAt };
+  }
+
+  // Increment count
+  current.count++;
+  rateLimitMap.set(userId, current);
+  return { allowed: true, remaining: RATE_LIMIT - current.count, resetAt: current.resetAt };
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -16,6 +48,45 @@ serve(async (req) => {
   }
 
   try {
+    // Extract user ID from auth header
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    let userId = 'anonymous';
+
+    if (token) {
+      // Create Supabase client to verify token and get user
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } }
+      });
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userId = user.id;
+      }
+    }
+
+    // Check rate limit
+    const rateLimit = checkRateLimit(userId);
+    
+    if (!rateLimit.allowed) {
+      const retryAfter = Math.ceil((rateLimit.resetAt - Date.now()) / 1000);
+      return new Response(JSON.stringify({ 
+        error: 'Rate limit exceeded. Please try again later.',
+        retryAfter 
+      }), {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'X-RateLimit-Limit': RATE_LIMIT.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': rateLimit.resetAt.toString(),
+          'Retry-After': retryAfter.toString(),
+        },
+      });
+    }
     const { message, model = 'gpt-4o-mini', output = 'json' } = await req.json();
 
     console.log('AI Tools request:', { message, model, output });
@@ -177,7 +248,13 @@ Example for analytics query:
     }
 
     return new Response(JSON.stringify(parsedResponse), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'X-RateLimit-Limit': RATE_LIMIT.toString(),
+        'X-RateLimit-Remaining': checkRateLimit(userId).remaining.toString(),
+        'X-RateLimit-Reset': checkRateLimit(userId).resetAt.toString(),
+      },
     });
 
   } catch (error) {
