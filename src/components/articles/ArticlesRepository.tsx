@@ -16,6 +16,7 @@ interface Article {
   article_date: string | null;
   last_date_to_use: string | null;
   added_date: string;
+  Title: string | null;
 }
 
 export function ArticlesRepository() {
@@ -38,14 +39,28 @@ export function ArticlesRepository() {
         throw error;
       }
 
-      return (data || []).map(item => ({
-        id: item.id,
-        focus_area: item.focus_area || '',
-        article_link: item.article_link || '',
-        article_date: item.article_date,
-        last_date_to_use: item.last_date_to_use,
-        added_date: item.added_date
-      }));
+      // Fetch Title separately with raw query to work around type issues
+      const articlesWithTitle = await Promise.all(
+        (data || []).map(async (item) => {
+          const { data: titleData } = await supabase
+            .from('articles')
+            .select('"Title"')
+            .eq('id', item.id)
+            .single();
+          
+          return {
+            id: item.id,
+            focus_area: item.focus_area || '',
+            article_link: item.article_link || '',
+            article_date: item.article_date,
+            last_date_to_use: item.last_date_to_use,
+            added_date: item.added_date,
+            Title: (titleData as any)?.Title || null
+          };
+        })
+      );
+
+      return articlesWithTitle;
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
@@ -84,7 +99,8 @@ export function ArticlesRepository() {
   const filteredArticles = articles.filter(article => {
     const matchesSearch = searchTerm === "" || 
       article.focus_area.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.article_link.toLowerCase().includes(searchTerm.toLowerCase());
+      article.article_link.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (article.Title && article.Title.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesFocusArea = selectedFocusArea === "all" || article.focus_area === selectedFocusArea;
     
@@ -183,6 +199,12 @@ export function ArticlesRepository() {
                   </div>
                   
                   <div className="space-y-1">
+                    {article.Title && (
+                      <div className="font-medium text-sm">
+                        {article.Title}
+                      </div>
+                    )}
+                    
                     <div className="flex items-center gap-2">
                       <Button
                         variant="link"
