@@ -13,9 +13,10 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye } from "lucide-react";
 import { EmailTemplate, useCreateTemplateMutation, useUpdateTemplateMutation } from "@/hooks/useEmailTemplates";
+import { useDebounce } from "@/hooks/useDebounce";
+import { DEBOUNCE } from "@/config/performance";
 import { PreviewModal } from "./PreviewModal";
 import { useTemplatePreviewLLM, TemplatePreviewInput } from "@/hooks/useTemplatePreviewLLM";
-import { useDebounce } from "@/hooks/useDebounce";
 
 const templateSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -67,7 +68,7 @@ export function TemplateEditor({ template, onTemplateChange }: TemplateEditorPro
   });
 
   const watchedValues = form.watch();
-  const debouncedValues = useDebounce(watchedValues, 1000);
+  const debouncedValues = useDebounce(watchedValues, DEBOUNCE.AUTO_SAVE);
 
   // Reset form when template changes
   useEffect(() => {

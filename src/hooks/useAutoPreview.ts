@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDebounce } from './useDebounce';
+import { DEBOUNCE } from '@/config/performance';
 import type { ModuleStates } from '@/components/email-builder/ModulesCard';
 import type { Article } from '@/types/emailComposer';
 import { buildModuleConfiguration } from '@/lib/draftGeneration';
@@ -37,8 +38,8 @@ export function useAutoPreview(
   const { data: subjectLibrary = [] } = useSubjectLibrary(subjectStyle);
 
   // Debounce the inputs to avoid too many requests
-  const debouncedModuleStates = useDebounce(moduleStates, 1000);
-  const debouncedDeltaType = useDebounce(deltaType, 500);
+  const debouncedModuleStates = useDebounce(moduleStates, DEBOUNCE.PREVIEW);
+  const debouncedDeltaType = useDebounce(deltaType, DEBOUNCE.FORM_INPUT);
 
   useEffect(() => {
     let cancelled = false;

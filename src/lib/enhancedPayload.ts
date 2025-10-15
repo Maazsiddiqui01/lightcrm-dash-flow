@@ -325,6 +325,28 @@ export async function buildEnhancedDraftPayload(
     throw new Error('Subject Line Pool is empty. Please add at least one subject line to the library.');
   }
   
+  // FIX #2: Enforce subject style from master template
+  // Filter subject pool to match the style if specified (mixed = no filtering)
+  if (masterTemplate?.subject_style && masterTemplate.subject_style !== 'mixed') {
+    const requiredStyle = masterTemplate.subject_style as 'formal' | 'casual';
+    const originalCount = subjectPool.length;
+    subjectPool = subjectPool.filter(s => s.style === requiredStyle || s.style === 'hybrid');
+    
+    // If filtering removes all subjects, warn and use hybrid fallback
+    if (subjectPool.length === 0) {
+      console.warn(`⚠️ No subjects available for style '${requiredStyle}'. Using hybrid subjects as fallback.`);
+      subjectPool = allSubjects.filter(s => s.style === 'hybrid');
+      
+      // If still empty, use all subjects
+      if (subjectPool.length === 0) {
+        console.error('❌ No hybrid subjects available. Using all subjects.');
+        subjectPool = allSubjects;
+      }
+    } else if (originalCount > subjectPool.length) {
+      console.log(`✅ Filtered subject pool to ${subjectPool.length} ${requiredStyle} subjects (from ${originalCount} total)`);
+    }
+  }
+  
   // Auto-select primary subject if not specified (renamed from subject_line_pool to subject_line)
   let primarySubjectId = moduleSelections?.subject_line?.defaultSubjectId;
   

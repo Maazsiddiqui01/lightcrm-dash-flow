@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Search, AlertCircle, Star } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useToast } from "@/hooks/use-toast";
+import { DEBOUNCE } from "@/config/performance";
 import type { ModuleSelection } from "@/types/moduleSelections";
 import type { SubjectLibraryItem } from "@/hooks/useSubjectLibrary";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,7 @@ export function SubjectPoolSelector({
   contactName = "this contact",
 }: SubjectPoolSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearch = useDebounce(searchTerm, 250);
+  const debouncedSearch = useDebounce(searchTerm, DEBOUNCE.SEARCH);
   const { toast } = useToast();
   
   const selectedIds = currentSelection?.subjectIds || [];

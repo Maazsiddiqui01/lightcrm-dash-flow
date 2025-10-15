@@ -158,6 +158,19 @@ export async function buildBatchPayload(
       // Final safety: ensure order contains all required modules
       if (finalModuleOrder.length !== 11) {
         console.warn(`Module order incomplete (${finalModuleOrder.length}/11), using DEFAULT_MODULE_ORDER`);
+        
+        // FIX #5: Show toast notification for module order fallback
+        import('@/hooks/use-toast').then(({ toast }) => {
+          toast({
+            title: "Module Order Reset",
+            description: `Incomplete module configuration detected. Using default order.`,
+            variant: "default",
+            duration: 4000,
+          });
+        }).catch(err => {
+          console.error('Failed to show toast notification:', err);
+        });
+        
         finalModuleOrder = DEFAULT_MODULE_ORDER;
       }
       

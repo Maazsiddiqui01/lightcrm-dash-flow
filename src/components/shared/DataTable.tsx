@@ -286,7 +286,8 @@ const DataTable = ({
         const ariaLive = document.querySelector('[aria-live="polite"]');
         if (ariaLive) {
           ariaLive.textContent = announcement;
-          setTimeout(() => ariaLive.textContent = '', 1000);
+          // FIX #4: Increase ARIA announcement duration
+          setTimeout(() => ariaLive.textContent = '', 5000);
         }
       }
     };
