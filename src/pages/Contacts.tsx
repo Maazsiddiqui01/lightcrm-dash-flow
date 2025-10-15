@@ -10,6 +10,7 @@ import { ContactFilterBar } from "@/components/contacts/ContactFilterBar";
 import { AIContactSearch } from "@/components/contacts/AIContactSearch";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
+import type { ContactFilters } from "@/types/contact";
 
 
 export function Contacts() {
@@ -54,7 +55,7 @@ export function Contacts() {
   };
 
   // Stabilize filters object to prevent infinite re-renders
-  const stableContactFilters = useMemo(() => {
+  const stableContactFilters: ContactFilters = useMemo(() => {
     const toArray = (v: any): string[] => Array.isArray(v) ? v : (v ? [String(v)] : []);
     return {
       ...filters,

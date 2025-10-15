@@ -13,6 +13,7 @@ import { exportCsv } from "@/lib/export/exportService";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { sendContactEmail } from "@/features/contacts/sendEmail";
 import { supabase } from "@/integrations/supabase/client";
+import type { ContactWithOpportunities, ContactFilters } from "@/types/contact";
 
 // Dynamic column imports
 import { CONTACTS_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -38,96 +39,11 @@ import {
   applyClientSort 
 } from "@/lib/sort/customSort";
 
-interface ContactRaw {
-  id: string;
-  full_name: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  email_address: string | null;
-  phone: string | null;
-  title: string | null;
-  organization: string | null;
-  areas_of_specialization: string | null;
-  lg_sector: string | null;
-  lg_focus_area_1: string | null;
-  lg_focus_area_2: string | null;
-  lg_focus_area_3: string | null;
-  lg_focus_area_4: string | null;
-  lg_focus_area_5: string | null;
-  lg_focus_area_6: string | null;
-  lg_focus_area_7: string | null;
-  lg_focus_area_8: string | null;
-  lg_focus_areas_comprehensive_list: string | null;
-  category: string | null;
-  contact_type: string | null;
-  delta_type: string | null;
-  notes: string | null;
-  url_to_online_bio: string | null;
-  most_recent_contact: string | null;
-  most_recent_group_contact: string | null;
-  latest_contact_email: string | null;
-  latest_contact_meeting: string | null;
-  outreach_date: string | null;
-  email_subject: string | null;
-  meeting_title: string | null;
-  total_of_contacts: number | null;
-  of_emails: number | null;
-  of_meetings: number | null;
-  delta: number | null;
-  days_since_last_email: number | null;
-  days_since_last_meeting: number | null;
-  no_of_lg_focus_areas: number | null;
-  all_opps: number | null;
-  no_of_opps_sourced: number | null;
-  email_from: string | null;
-  email_to: string | null;
-  email_cc: string | null;
-  meeting_from: string | null;
-  meeting_to: string | null;
-  meeting_cc: string | null;
-  all_emails: string | null;
-  city: string | null;
-  state: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  lg_lead: string | null;
-  lg_assistant: string | null;
-  group_contact: string | null;
-  linkedin_url: string | null; // Added LinkedIn URL field
-  intentional_no_outreach: boolean | null;
-  intentional_no_outreach_date: string | null;
-  intentional_no_outreach_note: string | null;
-  opportunities: string; // Comma-separated deal names
-  mapped_sectors?: string; // Computed field for sectors mapped from focus areas
-  days_over_under_max_lag?: number | null; // Computed field for days over/under max lag
-}
+// Use consolidated type
+type ContactRaw = ContactWithOpportunities;
 
 interface ContactsTableProps {
-  filters?: {
-    focusAreas?: string[];
-    sectors?: string[];
-    areasOfSpecialization?: string[];
-    organizations?: string[];
-    titles?: string[];
-    categories?: string[];
-    deltaType?: string[];
-    hasOpportunities?: string[];
-    mostRecentContactStart?: string;
-    mostRecentContactEnd?: string;
-    deltaMin?: number;
-    deltaMax?: number;
-    opportunityFilters?: {
-      tier?: string[];
-      platformAddon?: string[];
-      ownershipType?: string[];
-      status?: string[];
-      lgLead?: string[];
-      dateRangeStart?: string;
-      dateRangeEnd?: string;
-      ebitdaMin?: number;
-      ebitdaMax?: number;
-    };
-  };
+  filters?: ContactFilters;
   onOpportunityColumnVisibilityChange?: (visible: boolean) => void;
 }
 
