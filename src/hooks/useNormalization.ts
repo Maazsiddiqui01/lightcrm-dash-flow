@@ -15,6 +15,12 @@ interface ScanResults {
   focusAreaChanges: NormalizationChange[];
   nameChanges: NormalizationChange[];
   companyChanges: NormalizationChange[];
+  previewRecords?: Array<{
+    id: string;
+    full_name: string;
+    organization: string;
+    lg_focus_areas_comprehensive_list: string;
+  }>;
 }
 
 export function useNormalization() {
@@ -23,14 +29,14 @@ export function useNormalization() {
   const [isNormalizing, setIsNormalizing] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const startScan = async () => {
+  const startScan = async (preview: boolean = true) => {
     setIsScanning(true);
     setProgress(0);
 
     try {
       // Call edge function to scan for normalization issues
       const { data, error } = await supabase.functions.invoke('data_normalization', {
-        body: { action: 'scan' }
+        body: { action: 'scan', preview }
       });
 
       if (error) throw error;

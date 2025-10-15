@@ -166,8 +166,8 @@ export function LookupManager({ tableScope }: LookupManagerProps) {
     }
   };
 
-  const handleDeleteValue = async (valueId: string) => {
-    if (!confirm("Are you sure you want to delete this value?")) return;
+  const handleDeactivateValue = async (valueId: string) => {
+    if (!confirm("Are you sure you want to deactivate this value? It will be hidden from dropdowns but can be reactivated later.")) return;
 
     try {
       const { error } = await supabase
@@ -179,15 +179,15 @@ export function LookupManager({ tableScope }: LookupManagerProps) {
 
       toast({
         title: "Success",
-        description: "Value deleted successfully"
+        description: "Value deactivated successfully"
       });
 
       loadLookupValues();
     } catch (error) {
-      console.error('Error deleting value:', error);
+      console.error('Error deactivating value:', error);
       toast({
         title: "Error",
-        description: "Failed to delete value",
+        description: "Failed to deactivate value",
         variant: "destructive"
       });
     }
@@ -315,7 +315,8 @@ export function LookupManager({ tableScope }: LookupManagerProps) {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => handleDeleteValue(value.id)}
+                    onClick={() => handleDeactivateValue(value.id)}
+                    title="Deactivate (hide from dropdowns)"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

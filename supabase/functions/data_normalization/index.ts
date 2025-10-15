@@ -96,10 +96,10 @@ serve(async (req) => {
       }
     );
 
-    const { action, entityType, groupId, changes } = await req.json();
+    const { action, entityType, groupId, changes, preview } = await req.json();
 
     if (action === 'scan') {
-      return await scanForNormalization(supabaseClient);
+      return await scanForNormalization(supabaseClient, preview);
     } else if (action === 'normalize') {
       return await applyNormalization(supabaseClient, changes);
     } else if (action === 'scan_duplicates') {
@@ -130,8 +130,8 @@ serve(async (req) => {
   }
 });
 
-async function scanForNormalization(supabase: any) {
-  console.log('Scanning for normalization issues...');
+async function scanForNormalization(supabase: any, preview: boolean = false) {
+  console.log('Scanning for normalization issues...', preview ? '(PREVIEW MODE)' : '');
 
   // Get focus area master mapping
   const { data: focusAreaMaster } = await supabase
@@ -196,6 +196,17 @@ async function scanForNormalization(supabase: any) {
     }
   }
 
+  // If preview mode, fetch sample records that will be affected
+  let previewRecords = [];
+  if (preview && focusAreaChanges.size > 0) {
+    const { data: samples } = await supabase
+      .from('contacts_raw')
+      .select('id, full_name, organization, lg_focus_areas_comprehensive_list')
+      .not('lg_focus_areas_comprehensive_list', 'is', null)
+      .limit(5);
+    previewRecords = samples || [];
+  }
+
   const results = {
     totalIssues: focusAreaChanges.size + nameChanges.size + companyChanges.size,
     focusAreaIssues: focusAreaChanges.size,
@@ -216,6 +227,7 @@ async function scanForNormalization(supabase: any) {
       to: value.to,
       count: value.count
     })),
+    previewRecords: preview ? previewRecords : undefined,
   };
 
   console.log('Scan complete:', results);

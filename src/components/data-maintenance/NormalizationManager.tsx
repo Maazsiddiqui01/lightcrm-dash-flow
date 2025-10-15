@@ -173,6 +173,17 @@ export function NormalizationManager() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Preview Records */}
+            {scanResults.previewRecords && scanResults.previewRecords.length > 0 && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <Eye className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-900">
+                  <strong>Preview Mode Active:</strong> Showing sample records that will be affected. 
+                  Review changes carefully before applying.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Focus Area Normalizations */}
             {scanResults.focusAreaChanges && scanResults.focusAreaChanges.length > 0 && (
               <div className="space-y-3">

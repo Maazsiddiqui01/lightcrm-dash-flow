@@ -308,9 +308,10 @@ export function ColumnDetailModal({
                         value={columnDetails.displayName}
                         onChange={(e) => setColumnDetails(prev => ({ ...prev, displayName: e.target.value }))}
                         placeholder="e.g., New Field"
+                        disabled
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Note: Display names are currently hardcoded in getTableColumns.ts. Changes here won't take effect until that file is updated.
+                        ⚠️ Display names are currently managed in code (getTableColumns.ts). This field is disabled until proper integration is implemented.
                       </p>
                     </div>
                   </div>
