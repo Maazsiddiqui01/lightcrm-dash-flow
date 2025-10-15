@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AskAI as AskAIComponent } from "@/components/ai/AskAI";
-import { DataMaintenance } from "@/pages/DataMaintenance";
+import DataMaintenance from "@/pages/DataMaintenance";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bot, Database } from "lucide-react";
 

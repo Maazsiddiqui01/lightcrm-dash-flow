@@ -145,6 +145,11 @@ async function createColumn(supabaseClient: any, operation: ColumnOperation) {
   });
 
   if (error) throw error;
+  
+  // FIX: Check result.success instead of assuming success
+  if (!result || result.success === false) {
+    throw new Error(result?.error || 'SQL execution failed');
+  }
 
   // Create configuration entry
   const { error: configError } = await supabaseClient
@@ -200,11 +205,15 @@ async function updateColumn(supabaseClient: any, operation: ColumnOperation) {
     ALTER COLUMN ${columnName} TYPE ${sqlType}
   `;
 
-  const { error } = await supabaseClient.rpc('execute_admin_sql', {
+  const { data: result, error } = await supabaseClient.rpc('execute_admin_sql', {
     sql_statement: alterSQL,
   });
 
   if (error) throw error;
+  
+  if (!result || result.success === false) {
+    throw new Error(result?.error || 'SQL execution failed');
+  }
 
   // Update configuration
   const { error: configError } = await supabaseClient
@@ -251,11 +260,15 @@ async function deleteColumn(supabaseClient: any, operation: ColumnOperation) {
 
   const alterSQL = `ALTER TABLE public.${tableName} DROP COLUMN ${columnName}`;
 
-  const { error } = await supabaseClient.rpc('execute_admin_sql', {
+  const { data: result, error } = await supabaseClient.rpc('execute_admin_sql', {
     sql_statement: alterSQL,
   });
 
   if (error) throw error;
+  
+  if (!result || result.success === false) {
+    throw new Error(result?.error || 'SQL execution failed');
+  }
 
   // Delete configuration
   await supabaseClient
@@ -298,11 +311,15 @@ async function renameColumn(supabaseClient: any, operation: ColumnOperation) {
     RENAME COLUMN ${columnName} TO ${newColumnName}
   `;
 
-  const { error } = await supabaseClient.rpc('execute_admin_sql', {
+  const { data: result, error } = await supabaseClient.rpc('execute_admin_sql', {
     sql_statement: alterSQL,
   });
 
   if (error) throw error;
+  
+  if (!result || result.success === false) {
+    throw new Error(result?.error || 'SQL execution failed');
+  }
 
   // Update configuration
   await supabaseClient
@@ -348,10 +365,12 @@ async function logSchemaChange(supabaseClient: any, change: any) {
   } = await supabaseClient.auth.getUser();
 
   await supabaseClient.from('schema_change_log').insert({
-    action: change.action,
     table_name: change.table_name,
+    operation: change.action,
     column_name: change.column_name,
-    details: change.details,
-    created_by: user?.id,
+    new_value: JSON.stringify(change.details),
+    performed_by: user?.id,
+    performed_at: new Date().toISOString(),
+    success: true
   });
 }

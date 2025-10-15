@@ -130,7 +130,9 @@ export function ColumnDetailModal({
 
       onOpenChange(false);
       // Trigger refresh of parent component
-      window.location.reload();
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       console.error('Error saving column:', error);
       toast({

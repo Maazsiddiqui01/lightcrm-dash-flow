@@ -17,7 +17,7 @@ import { MeetingsWithTeam } from "@/pages/MeetingsWithTeam";
 import Articles from "@/pages/Articles";
 import { EmailBuilder } from "@/pages/EmailBuilder";
 import { ContactsEmail } from "@/pages/ContactsEmail";
-import { DataMaintenance } from "@/pages/DataMaintenance";
+import DataMaintenance from "@/pages/DataMaintenance";
 import GlobalLibraries from "@/pages/GlobalLibraries";
 import { Admin } from "@/pages/Admin";
 import { AdminDuplicates } from "@/pages/AdminDuplicates";

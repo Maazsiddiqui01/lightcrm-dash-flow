@@ -71,8 +71,20 @@ serve(async (req) => {
 
   try {
     // Verify authentication
-    const { user } = await verifyAuth(req);
+    const { user, supabase: authSupabase } = await verifyAuth(req);
     console.log(`Authenticated user: ${user.id}`);
+    
+    // Check if user is admin
+    const { data: isAdmin } = await authSupabase.rpc('is_admin', {
+      _user_id: user.id,
+    });
+
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -382,12 +394,29 @@ async function mergeDuplicates(supabase: any, groupId: string, entityType: strin
   try {
     const tableName = entityType === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
     
-    // Parse group info from groupId (format: email or identifier)
-    // Get all records that match the duplicate criteria
-    const { data: duplicateRecords, error: fetchError } = await supabase
-      .from(tableName)
-      .select('*')
-      .or(groupId.includes('@') ? `email_address.ilike.%${groupId}%` : `id.eq.${groupId}`);
+    // Parse group info from groupId (format: email or UUID)
+    // Get all records that match the duplicate criteria using parameterized queries
+    let query;
+    if (groupId.includes('@')) {
+      // Email-based grouping - use exact match instead of ILIKE to prevent injection
+      const email = groupId.toLowerCase().trim();
+      query = supabase
+        .from(tableName)
+        .select('*')
+        .eq('email_address', email);
+    } else {
+      // UUID-based grouping - validate UUID format first
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(groupId)) {
+        throw new Error('Invalid groupId format');
+      }
+      query = supabase
+        .from(tableName)
+        .select('*')
+        .eq('id', groupId);
+    }
+
+    const { data: duplicateRecords, error: fetchError } = await query;
 
     if (fetchError || !duplicateRecords || duplicateRecords.length < 2) {
       throw new Error('Could not find duplicate records or insufficient records to merge');
