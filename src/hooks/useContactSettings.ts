@@ -82,15 +82,36 @@ export function useContactSettings(contactId: string | null) {
       curatedCc?: string[];
       customModuleLabels?: Record<string, string>;
     }) => {
+      // FIX #6: Validate tri-state consistency for default phrases
+      const moduleSelections = payload.moduleSelections || {};
+      const validationErrors: string[] = [];
+      
+      // Check each module selection for tri-state consistency
+      Object.entries(moduleSelections).forEach(([moduleKey, selection]) => {
+        if (selection?.defaultPhraseId && selection?.triState) {
+          // Default phrases MUST have tri-state = 'always'
+          if (selection.triState !== 'always') {
+            validationErrors.push(
+              `Module "${moduleKey}": Default phrase must be set to 'Always' (currently: '${selection.triState}'). Remove default or change tri-state to 'Always'.`
+            );
+          }
+        }
+      });
+      
+      // Block save if validation fails
+      if (validationErrors.length > 0) {
+        throw new Error(`Tri-state validation failed:\n${validationErrors.join('\n')}`);
+      }
+      
       // Extract defaults from module_selections
       const moduleDefaults: Record<string, string> = {};
-      Object.entries(payload.moduleSelections || {}).forEach(([key, selection]) => {
+      Object.entries(moduleSelections).forEach(([key, selection]) => {
         if (selection?.defaultPhraseId) {
           moduleDefaults[key] = selection.defaultPhraseId;
         }
       });
       
-      const subjectDefaultId = payload.moduleSelections?.subject_line?.defaultSubjectId || null;
+      const subjectDefaultId = moduleSelections?.subject_line?.defaultSubjectId || null;
       
       const curatedRecipients = (payload.curatedTeam || payload.curatedTo || payload.curatedCc) ? {
         team: payload.curatedTeam || [],

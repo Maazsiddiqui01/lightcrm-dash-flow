@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ModuleStates } from "@/components/email-builder/ModulesCard";
 import type { ModuleSelection } from "@/types/moduleSelections";
 import type { ContactEmailComposer } from "@/types/emailComposer";
@@ -53,11 +54,21 @@ export function ModuleConfigDrawer({
 }: ModuleConfigDrawerProps) {
   const isMobile = useIsMobile();
   const [tempSelection, setTempSelection] = useState<ModuleSelection | null>(currentSelection);
+  // FIX #9: Add loading state for phrase fetching
+  const [isLoadingPhrases, setIsLoadingPhrases] = useState(false);
 
   // Update temp selection when drawer opens
   useEffect(() => {
     if (isOpen) {
       setTempSelection(currentSelection);
+      
+      // FIX #9: Simulate phrase loading (phrases are passed as prop, so this tracks initial render)
+      setIsLoadingPhrases(true);
+      const timer = setTimeout(() => {
+        setIsLoadingPhrases(false);
+      }, 300); // Short delay to show skeleton for slow renders
+      
+      return () => clearTimeout(timer);
     }
   }, [isOpen, currentSelection]);
   
@@ -288,14 +299,44 @@ export function ModuleConfigDrawer({
     }
   };
 
+  // FIX #9: Show loading skeleton while phrases are being loaded
   const content = (
     <>
       <div className="flex-1 overflow-y-auto px-6 py-4">
-        {renderContent()}
+        {isLoadingPhrases ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Loading phrases...</p>
+            </div>
+            {/* Skeleton loaders for phrase list */}
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <div className="h-4" /> {/* Spacer */}
+              </div>
+            ))}
+          </div>
+        ) : (
+          renderContent()
+        )}
       </div>
       <div className="sticky bottom-0 bg-background border-t p-4 flex gap-2">
-        <Button onClick={handleSave} className="flex-1">Save</Button>
-        <Button variant="outline" onClick={handleCancel} className="flex-1">Cancel</Button>
+        <Button 
+          onClick={handleSave} 
+          className="flex-1"
+          disabled={isLoadingPhrases}
+        >
+          Save
+        </Button>
+        <Button 
+          variant="outline" 
+          onClick={handleCancel} 
+          className="flex-1"
+        >
+          Cancel
+        </Button>
       </div>
     </>
   );

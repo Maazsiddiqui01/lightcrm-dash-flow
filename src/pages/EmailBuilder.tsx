@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 import { useRealtimeLibrarySync } from "@/hooks/useRealtimeSync";
 import { EmailBuilderErrorBoundary } from "@/components/email-builder/EmailBuilderErrorBoundary";
@@ -243,11 +243,15 @@ function EmailBuilderContent() {
     }
   }, [moduleSelections.subject_line]);
   
-  // Validate module selections whenever they change
-  useEffect(() => {
-    const validation = validateModuleSelections(moduleStates, moduleSelections);
-    setModuleValidationErrors(validation.errors);
+  // FIX #8: Memoize module validation to avoid unnecessary reruns
+  const moduleValidationResult = useMemo(() => {
+    return validateModuleSelections(moduleStates, moduleSelections);
   }, [moduleStates, moduleSelections]);
+  
+  // Update validation errors state when memoized result changes
+  useEffect(() => {
+    setModuleValidationErrors(moduleValidationResult.errors);
+  }, [moduleValidationResult]);
   
   // Dev-only debug log for subject pool sync
   useEffect(() => {
