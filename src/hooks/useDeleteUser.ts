@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { edgeInvoke, formatEdgeError } from "@/lib/edgeInvoke";
 import { useToast } from "@/hooks/use-toast";
 
 export function useDeleteUser() {
@@ -8,12 +8,7 @@ export function useDeleteUser() {
 
   return useMutation({
     mutationFn: async (userId: string) => {
-      const { data, error } = await supabase.functions.invoke('delete_user', {
-        body: { userId }
-      });
-
-      if (error) throw error;
-      return data;
+      return await edgeInvoke('delete_user', { userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -23,6 +18,8 @@ export function useDeleteUser() {
       });
     },
     onError: (error: any) => {
+      const errorMsg = formatEdgeError(error, 'delete_user');
+      console.error('[useDeleteUser]', errorMsg);
       toast({
         title: "Error",
         description: error.message || "Failed to delete user",

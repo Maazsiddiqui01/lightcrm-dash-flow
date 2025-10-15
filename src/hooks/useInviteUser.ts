@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { edgeInvoke, formatEdgeError } from "@/lib/edgeInvoke";
 import { useToast } from "@/hooks/use-toast";
 
 interface InviteUserParams {
@@ -13,12 +13,7 @@ export function useInviteUser() {
 
   return useMutation({
     mutationFn: async ({ email, full_name }: InviteUserParams) => {
-      const { data, error } = await supabase.functions.invoke('invite_user', {
-        body: { email, full_name }
-      });
-
-      if (error) throw error;
-      return data;
+      return await edgeInvoke('invite_user', { email, full_name });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -28,6 +23,8 @@ export function useInviteUser() {
       });
     },
     onError: (error: any) => {
+      const errorMsg = formatEdgeError(error, 'invite_user');
+      console.error('[useInviteUser]', errorMsg);
       toast({
         title: "Error",
         description: error.message || "Failed to invite user",

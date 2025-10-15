@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { edgeInvoke, formatEdgeError } from "@/lib/edgeInvoke";
 
 interface DuplicateRecord {
   id: string;
@@ -35,20 +35,15 @@ export function useDeduplication(entityType: "contacts" | "opportunities") {
     setProgress(0);
 
     try {
-      // Call edge function to scan for duplicates
-      const { data, error } = await supabase.functions.invoke('data_normalization', {
-        body: { 
-          action: 'scan_duplicates',
-          entityType 
-        }
+      const data = await edgeInvoke<DuplicatesResult>('data_normalization', {
+        action: 'scan_duplicates',
+        entityType
       });
-
-      if (error) throw error;
 
       setDuplicates(data);
       setProgress(100);
     } catch (error) {
-      console.error("Duplicate scan error:", error);
+      console.error('[useDeduplication] Scan error:', formatEdgeError(error, 'data_normalization'));
       setDuplicates(null);
       setProgress(0);
       throw error;
@@ -62,16 +57,11 @@ export function useDeduplication(entityType: "contacts" | "opportunities") {
     setProgress(0);
 
     try {
-      // Call edge function to merge duplicates
-      const { data, error } = await supabase.functions.invoke('data_normalization', {
-        body: { 
-          action: 'merge_duplicates',
-          groupId,
-          entityType
-        }
+      const data = await edgeInvoke('data_normalization', {
+        action: 'merge_duplicates',
+        groupId,
+        entityType
       });
-
-      if (error) throw error;
 
       // Remove merged group from results
       if (duplicates) {
@@ -88,7 +78,7 @@ export function useDeduplication(entityType: "contacts" | "opportunities") {
       setProgress(100);
       return data;
     } catch (error) {
-      console.error("Merge error:", error);
+      console.error('[useDeduplication] Merge error:', formatEdgeError(error, 'data_normalization'));
       setProgress(0);
       throw error;
     } finally {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { edgeInvoke, formatEdgeError } from "@/lib/edgeInvoke";
 
 interface NormalizationChange {
   from: string;
@@ -34,17 +34,15 @@ export function useNormalization() {
     setProgress(0);
 
     try {
-      // Call edge function to scan for normalization issues
-      const { data, error } = await supabase.functions.invoke('data_normalization', {
-        body: { action: 'scan', preview }
+      const data = await edgeInvoke<ScanResults>('data_normalization', {
+        action: 'scan',
+        preview
       });
-
-      if (error) throw error;
 
       setScanResults(data);
       setProgress(100);
     } catch (error) {
-      console.error("Scan error:", error);
+      console.error('[useNormalization] Scan error:', formatEdgeError(error, 'data_normalization'));
       setScanResults(null);
       setProgress(0);
       throw error;
@@ -60,21 +58,16 @@ export function useNormalization() {
     setProgress(0);
 
     try {
-      // Call edge function to apply normalization
-      const { data, error } = await supabase.functions.invoke('data_normalization', {
-        body: { 
-          action: 'normalize',
-          changes: scanResults
-        }
+      await edgeInvoke('data_normalization', {
+        action: 'normalize',
+        changes: scanResults
       });
-
-      if (error) throw error;
 
       setProgress(100);
       // Reset results after successful normalization
       setScanResults(null);
     } catch (error) {
-      console.error("Normalization error:", error);
+      console.error('[useNormalization] Apply error:', formatEdgeError(error, 'data_normalization'));
       setProgress(0);
       throw error;
     } finally {
