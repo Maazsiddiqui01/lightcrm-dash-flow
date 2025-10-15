@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateDaysOverUnderMaxLag } from "@/utils/contactCalculations";
+import { useToast } from "@/hooks/use-toast";
 
 interface ContactStats {
   totalContacts: number;
@@ -44,6 +45,7 @@ interface ContactFilters {
 }
 
 export function useContactStats(filters?: ContactFilters): ContactStats {
+  const { toast } = useToast();
   const [stats, setStats] = useState<ContactStats>({
     totalContacts: 0,
     activeContacts: 0,
@@ -253,6 +255,11 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
 
       // Early exit if filters result in zero contacts
       if (finalContactIds !== null && finalContactIds.length === 0) {
+        toast({
+          title: "No Contacts Found",
+          description: "Your current filters didn't match any contacts. Try adjusting your criteria.",
+          variant: "default",
+        });
         setStats({
           totalContacts: 0,
           activeContacts: 0,

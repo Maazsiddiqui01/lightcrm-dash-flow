@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardHero } from '@/components/layout/DashboardHero';
+import { DashboardErrorBoundary } from '@/components/dashboard/DashboardErrorBoundary';
 import { KpiCard } from '@/components/sourcing/KpiCard';
 import { Slicers } from '@/components/sourcing/Slicers';
 import { MeetingsChart } from '@/components/sourcing/MeetingsChart';
@@ -309,128 +310,130 @@ export default function SourceGreatnessPage() {
   const loading = oppsLoading || meetingsLoading;
 
   return (
-    <div className="min-h-0 h-[calc(100vh-140px)] overflow-auto">
-      <div className="space-y-6 p-6">
-        {/* Hero Section */}
-        <DashboardHero />
+    <DashboardErrorBoundary>
+      <div className="min-h-0 h-[calc(100vh-140px)] overflow-auto">
+        <div className="space-y-6 p-6">
+          {/* Hero Section */}
+          <DashboardHero />
 
-        {/* Export Controls */}
-        <div className="flex justify-end">
-          <ExportButtons 
-            opportunities={metrics.filteredOpportunities}
+          {/* Export Controls */}
+          <div className="flex justify-end">
+            <ExportButtons 
+              opportunities={metrics.filteredOpportunities}
+              filters={filterState}
+            />
+          </div>
+
+          {/* Slicers */}
+          <Slicers 
             filters={filterState}
+            onFiltersChange={setFilters}
           />
-        </div>
 
-        {/* Slicers */}
-        <Slicers 
-          filters={filterState}
-          onFiltersChange={setFilters}
-        />
+          {/* KPI Cards Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <KpiCard
+              title="Total Opportunities"
+              value={metrics.totalOpportunities}
+              loading={loading}
+            />
+            <KpiCard
+              title="Platform Opps"
+              value={metrics.platformOpps}
+              loading={loading}
+            />
+            <KpiCard
+              title="Avg Platform EBITDA"
+              value={metrics.avgPlatformEbitda}
+              format="currency"
+              loading={loading}
+            />
+            <KpiCard
+              title="% Family/Founder"
+              value={metrics.familyFounderPercentage}
+              format="percentage"
+              loading={loading}
+            />
+            <KpiCard
+              title="Add-on Opps"
+              value={metrics.addonOpps}
+              loading={loading}
+            />
+            <KpiCard
+              title="Avg Add-on EBITDA"
+              value={metrics.avgAddonEbitda}
+              format="currency"
+              loading={loading}
+            />
+            <KpiCard
+              title="Total Relationships"
+              value={contactsHeadline?.total_contacts || 0}
+              loading={loading}
+            />
+            <KpiCard
+              title="Total Meetings"
+              value={totalMeetings}
+              loading={loading}
+            />
+            <KpiCard
+              title="Meetings (90d)"
+              value={contactsHeadline?.meetings_last_90d || 0}
+              loading={loading}
+            />
+            <KpiCard
+              title="Pipeline Value"
+              value={metrics.pipelineValue}
+              format="currency"
+              loading={loading}
+            />
+          </div>
 
-        {/* KPI Cards Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <KpiCard
-            title="Total Opportunities"
-            value={metrics.totalOpportunities}
-            loading={loading}
-          />
-          <KpiCard
-            title="Platform Opps"
-            value={metrics.platformOpps}
-            loading={loading}
-          />
-          <KpiCard
-            title="Avg Platform EBITDA"
-            value={metrics.avgPlatformEbitda}
-            format="currency"
-            loading={loading}
-          />
-          <KpiCard
-            title="% Family/Founder"
-            value={metrics.familyFounderPercentage}
-            format="percentage"
-            loading={loading}
-          />
-          <KpiCard
-            title="Add-on Opps"
-            value={metrics.addonOpps}
-            loading={loading}
-          />
-          <KpiCard
-            title="Avg Add-on EBITDA"
-            value={metrics.avgAddonEbitda}
-            format="currency"
-            loading={loading}
-          />
-          <KpiCard
-            title="Total Relationships"
-            value={contactsHeadline?.total_contacts || 0}
-            loading={loading}
-          />
-          <KpiCard
-            title="Total Meetings"
-            value={totalMeetings}
-            loading={loading}
-          />
-          <KpiCard
-            title="Meetings (90d)"
-            value={contactsHeadline?.meetings_last_90d || 0}
-            loading={loading}
-          />
-          <KpiCard
-            title="Pipeline Value"
-            value={metrics.pipelineValue}
-            format="currency"
-            loading={loading}
-          />
-        </div>
+          {/* AI Insights Widget */}
+          <AIInsightsWidget />
 
-        {/* AI Insights Widget */}
-        <AIInsightsWidget />
+          {/* Primary Charts Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <MeetingsChart 
+              data={filteredMeetings}
+              loading={loading}
+            />
+            <OppsChart
+              type="tier"
+              data={metrics.filteredOpportunities}
+              loading={loading}
+            />
+            <OppsChart
+              type="status"
+              data={metrics.filteredOpportunities}
+              loading={loading}
+            />
+            <OppsChart
+              type="ebitda"
+              data={metrics.filteredOpportunities}
+              loading={loading}
+            />
+          </div>
 
-        {/* Primary Charts Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <MeetingsChart 
-            data={filteredMeetings}
-            loading={loading}
-          />
-          <OppsChart
-            type="tier"
-            data={metrics.filteredOpportunities}
-            loading={loading}
-          />
-          <OppsChart
-            type="status"
-            data={metrics.filteredOpportunities}
-            loading={loading}
-          />
-          <OppsChart
-            type="ebitda"
-            data={metrics.filteredOpportunities}
-            loading={loading}
-          />
-        </div>
-
-        {/* Enhanced Insights Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <OppsChart
-            type="platform-addon"
-            data={metrics.filteredOpportunities}
-            loading={loading}
-          />
-          <OppsChart
-            type="lg-leads"
-            data={metrics.filteredOpportunities}
-            loading={loading}
-          />
-          <OppsChart
-            type="sector"
-            data={metrics.filteredOpportunities}
-            loading={loading}
-          />
+          {/* Enhanced Insights Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <OppsChart
+              type="platform-addon"
+              data={metrics.filteredOpportunities}
+              loading={loading}
+            />
+            <OppsChart
+              type="lg-leads"
+              data={metrics.filteredOpportunities}
+              loading={loading}
+            />
+            <OppsChart
+              type="sector"
+              data={metrics.filteredOpportunities}
+              loading={loading}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardErrorBoundary>
   );
 }

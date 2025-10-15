@@ -102,9 +102,6 @@ Focus on: engagement trends, follow-up opportunities, pipeline health, and relat
     }
   };
 
-  useEffect(() => {
-    generateInsights();
-  }, []);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -204,9 +201,16 @@ Focus on: engagement trends, follow-up opportunities, pipeline health, and relat
             </div>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No insights available. Click refresh to generate.
-          </p>
+          <div className="text-center py-8">
+            <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground mb-4">
+              Generate AI-powered insights from your CRM data
+            </p>
+            <Button onClick={generateInsights} variant="default" size="sm">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Generate Insights
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>
