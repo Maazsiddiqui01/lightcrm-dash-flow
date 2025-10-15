@@ -1,4 +1,4 @@
-import { OpportunitiesTable } from "@/components/opportunities/OpportunitiesTable";
+import { OpportunitiesTableWithErrorBoundary } from "@/components/opportunities/OpportunitiesTableWithErrorBoundary";
 import { OpportunityFilterBar } from "@/components/opportunities/OpportunityFilterBar";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
@@ -230,9 +230,8 @@ export function Opportunities() {
           />
         </div>
 
-        <OpportunitiesTable 
+        <OpportunitiesTableWithErrorBoundary 
           filters={filters}
-          selectedRows={selectedRows}
           onSelectionChange={setSelectedRows}
         />
 

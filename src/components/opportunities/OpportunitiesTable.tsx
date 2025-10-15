@@ -247,7 +247,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
     }, 200); // Small delay to batch rapid changes
     
     return () => clearTimeout(timeoutId);
-  }, [sortLevels, filtersKey]);
+  }, [sortLevels, filtersKey, searchTerm]);
 
   const fetchOpportunities = async () => {
     // Generate unique request ID to prevent race conditions
@@ -339,6 +339,22 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         query = query.lte('ebitda_in_ms', filters.ebitdaMax);
       }
 
+      // Full-text search across multiple fields (server-side)
+      if (searchTerm.trim() !== '') {
+        const searchLower = searchTerm.toLowerCase().trim();
+        query = query.or(
+          `deal_name.ilike.%${searchLower}%,` +
+          `summary_of_opportunity.ilike.%${searchLower}%,` +
+          `deal_source_company.ilike.%${searchLower}%,` +
+          `deal_source_individual_1.ilike.%${searchLower}%,` +
+          `deal_source_individual_2.ilike.%${searchLower}%,` +
+          `sector.ilike.%${searchLower}%,` +
+          `most_recent_notes.ilike.%${searchLower}%,` +
+          `next_steps.ilike.%${searchLower}%,` +
+          `lg_focus_area.ilike.%${searchLower}%`
+        );
+      }
+
       // Date of origination filter - support both year-only and date ranges
       if (filters.dateOfOrigination.length > 0) {
         const dateConditions = filters.dateOfOrigination.map(dateValue => {
@@ -412,16 +428,8 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
     }
   };
 
-  const filteredOpportunities = useMemo(() => {
-    return opportunities.filter(opportunity =>
-      searchTerm === "" ||
-      opportunity.deal_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      opportunity.deal_source_company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      opportunity.deal_source_individual_1?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      opportunity.deal_source_individual_2?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      opportunity.sector?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [opportunities, searchTerm]);
+  // No longer needed - search is now server-side
+  const filteredOpportunities = opportunities;
 
   const handleRowClick = (opportunity: OpportunityRaw) => {
     setSelectedOpportunity(opportunity);

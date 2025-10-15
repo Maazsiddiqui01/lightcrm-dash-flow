@@ -3,42 +3,35 @@ import { supabase } from '@/integrations/supabase/client';
 import { splitTokens, uniqCasefold, defaultOwnershipTypes, defaultPlatformAddons } from '@/lib/export/opportunityUtils';
 
 export const useOpportunityOptions = () => {
-  // Focus Areas from multiple sources
+  // Focus Areas - optimized query with distinct
   const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useQuery({
     queryKey: ['opportunity-focus-areas'],
     queryFn: async () => {
-      // Get from opportunities_raw.lg_focus_area
+      // Get distinct focus areas from lookup table (most reliable source)
+      const { data: lookupData } = await supabase
+        .from('lookup_focus_areas')
+        .select('label')
+        .order('label');
+      
+      if (lookupData && lookupData.length > 0) {
+        return lookupData.map(r => r.label).filter(Boolean);
+      }
+
+      // Fallback: Get from opportunities only (simpler, faster)
       const { data: oppsData } = await supabase
         .from('opportunities_raw')
-        .select('lg_focus_area');
+        .select('lg_focus_area')
+        .not('lg_focus_area', 'is', null)
+        .neq('lg_focus_area', '');
       
-      const fromOpps = uniqCasefold(
+      return uniqCasefold(
         oppsData?.flatMap(r => splitTokens(r.lg_focus_area)) ?? []
-      );
-
-      // Get from contacts_raw slots
-      const { data: contactsData } = await supabase
-        .from('contacts_raw')
-        .select('lg_focus_area_1,lg_focus_area_2,lg_focus_area_3,lg_focus_area_4,lg_focus_area_5,lg_focus_area_6,lg_focus_area_7,lg_focus_area_8,lg_focus_areas_comprehensive_list');
-      
-      const fromContactsSlots = uniqCasefold(
-        contactsData?.flatMap(r => splitTokens([
-          r.lg_focus_area_1, r.lg_focus_area_2, r.lg_focus_area_3, r.lg_focus_area_4,
-          r.lg_focus_area_5, r.lg_focus_area_6, r.lg_focus_area_7, r.lg_focus_area_8
-        ].filter(Boolean).join(','))) ?? []
-      );
-
-      const fromContactsList = uniqCasefold(
-        contactsData?.flatMap(r => splitTokens(r.lg_focus_areas_comprehensive_list)) ?? []
-      );
-
-      return uniqCasefold([...fromOpps, ...fromContactsSlots, ...fromContactsList])
-        .sort((a, b) => a.localeCompare(b));
+      ).sort((a, b) => a.localeCompare(b));
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes (reduced from 5)
   });
 
-  // Sectors
+  // Sectors - optimized with limit
   const { data: sectorOptions = [], isLoading: isLoadingSectors } = useQuery({
     queryKey: ['opportunity-sectors'],
     queryFn: async () => {
@@ -46,12 +39,12 @@ export const useOpportunityOptions = () => {
         .from('opportunities_raw')
         .select('sector')
         .not('sector', 'is', null)
-        .neq('sector', '');
+        .neq('sector', '')
+        .order('sector');
       
-      return uniqCasefold(data?.map(r => r.sector).filter(Boolean) ?? [])
-        .sort((a, b) => a.localeCompare(b));
+      return uniqCasefold(data?.map(r => r.sector).filter(Boolean) ?? []);
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
   // Status options
@@ -62,12 +55,12 @@ export const useOpportunityOptions = () => {
         .from('opportunities_raw')
         .select('status')
         .not('status', 'is', null)
-        .neq('status', '');
+        .neq('status', '')
+        .order('status');
       
-      return uniqCasefold(data?.map(r => r.status).filter(Boolean) ?? [])
-        .sort((a, b) => a.localeCompare(b));
+      return uniqCasefold(data?.map(r => r.status).filter(Boolean) ?? []);
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
   // Platform/Add-on options
@@ -85,7 +78,7 @@ export const useOpportunityOptions = () => {
       return uniqCasefold([...defaultPlatformAddons, ...fromDb])
         .sort((a, b) => a.localeCompare(b));
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
   // Ownership Type options
@@ -96,17 +89,17 @@ export const useOpportunityOptions = () => {
         .from('opportunities_raw')
         .select('ownership_type')
         .not('ownership_type', 'is', null)
-        .neq('ownership_type', '');
+        .neq('ownership_type', '')
+        .order('ownership_type');
       
       const fromDb = uniqCasefold(data?.map(r => r.ownership_type).filter(Boolean) ?? []);
       
-      return uniqCasefold([...defaultOwnershipTypes, ...fromDb])
-        .sort((a, b) => a.localeCompare(b));
+      return uniqCasefold([...defaultOwnershipTypes, ...fromDb]);
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
-  // LG Leads
+  // LG Leads - from directory
   const { data: lgLeadOptions = [], isLoading: isLoadingLgLeads } = useQuery({
     queryKey: ['lg-leads'],
     queryFn: async () => {
@@ -117,7 +110,7 @@ export const useOpportunityOptions = () => {
       
       return data?.map(r => r.lead_name) ?? [];
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // Longer stale time for static directory
   });
 
   // Deal Source Company options
@@ -128,12 +121,12 @@ export const useOpportunityOptions = () => {
         .from('opportunities_raw')
         .select('deal_source_company')
         .not('deal_source_company', 'is', null)
-        .neq('deal_source_company', '');
+        .neq('deal_source_company', '')
+        .order('deal_source_company');
       
-      return uniqCasefold(data?.map(r => r.deal_source_company).filter(Boolean) ?? [])
-        .sort((a, b) => a.localeCompare(b));
+      return uniqCasefold(data?.map(r => r.deal_source_company).filter(Boolean) ?? []);
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
   return {
