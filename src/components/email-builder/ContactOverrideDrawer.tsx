@@ -66,6 +66,9 @@ function createMinimalContactData(contactId: string, contactName: string, contac
     assistant_emails: [],
     most_recent_contact: null,
     outreach_date: null,
+    email_cc: null,
+    meeting_cc: null,
+    delta_type: null,
   };
 }
 
@@ -75,6 +78,9 @@ interface ContactOverrideDrawerProps {
   contactId: string;
   contactName: string;
   contactEmail: string;
+  contactEmailCc?: string | null;
+  contactMeetingCc?: string | null;
+  contactDeltaType?: 'Email' | 'Meeting' | null;
   sharedSettings: {
     masterTemplate: MasterTemplate | null;
     toneOverride?: 'casual' | 'hybrid' | 'formal';
@@ -102,6 +108,9 @@ export function ContactOverrideDrawer({
   contactId,
   contactName,
   contactEmail,
+  contactEmailCc,
+  contactMeetingCc,
+  contactDeltaType,
   sharedSettings,
   allMasterTemplates,
   allSubjects,
@@ -488,6 +497,9 @@ export function ContactOverrideDrawer({
               onCcChange={setCc}
               teamMembers={team}
               defaultContactEmail={contactEmail}
+              emailCc={contactEmailCc}
+              meetingCc={contactMeetingCc}
+              deltaType={contactDeltaType}
             />
           </TabsContent>
 

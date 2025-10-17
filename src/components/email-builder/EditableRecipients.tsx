@@ -4,8 +4,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { X, Users } from "lucide-react";
+import { X, Users, Mail, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import type { TeamMember } from "./EditableTeam";
 
 interface EditableRecipientsProps {
@@ -15,6 +16,9 @@ interface EditableRecipientsProps {
   onCcChange: (emails: string[]) => void;
   teamMembers: TeamMember[];
   defaultContactEmail: string;
+  emailCc?: string | null;
+  meetingCc?: string | null;
+  deltaType?: 'Email' | 'Meeting' | null;
 }
 
 export function EditableRecipients({
@@ -24,9 +28,13 @@ export function EditableRecipients({
   onCcChange,
   teamMembers,
   defaultContactEmail,
+  emailCc,
+  meetingCc,
+  deltaType,
 }: EditableRecipientsProps) {
   const [ccInput, setCcInput] = useState("");
   const [invalidEmails, setInvalidEmails] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   const validateEmail = (email: string): boolean => {
     const trimmed = email.trim().toLowerCase();
@@ -104,12 +112,81 @@ export function EditableRecipients({
     onCcChange(cc.filter(e => e !== email));
   };
 
+  const handleSyncFromLastEmail = () => {
+    if (!emailCc) {
+      toast({
+        title: "No Email CC Found",
+        description: "No CC recipients from last email interaction",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const emailsFromLastEmail = emailCc
+      .split(/[;,]/)
+      .map(e => normalizeEmail(e))
+      .filter(e => e && !cc.includes(e) && e !== normalizeEmail(to));
+    
+    if (emailsFromLastEmail.length > 0) {
+      onCcChange([...cc, ...emailsFromLastEmail]);
+      toast({
+        title: "Synced from Last Email",
+        description: `Added ${emailsFromLastEmail.length} recipient(s)`,
+      });
+    } else {
+      toast({
+        title: "No New Recipients",
+        description: "All email CC recipients are already added",
+      });
+    }
+  };
+
+  const handleSyncFromLastMeeting = () => {
+    if (!meetingCc) {
+      toast({
+        title: "No Meeting CC Found",
+        description: "No CC recipients from last meeting",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const emailsFromLastMeeting = meetingCc
+      .split(/[;,]/)
+      .map(e => normalizeEmail(e))
+      .filter(e => e && !cc.includes(e) && e !== normalizeEmail(to));
+    
+    if (emailsFromLastMeeting.length > 0) {
+      onCcChange([...cc, ...emailsFromLastMeeting]);
+      toast({
+        title: "Synced from Last Meeting",
+        description: `Added ${emailsFromLastMeeting.length} recipient(s)`,
+      });
+    } else {
+      toast({
+        title: "No New Recipients",
+        description: "All meeting CC recipients are already added",
+      });
+    }
+  };
+
   const handleSyncFromTeam = () => {
     const teamEmails = teamMembers
       .map(m => normalizeEmail(m.email))
       .filter(e => e && !cc.includes(e) && e !== normalizeEmail(to));
     
-    onCcChange([...cc, ...teamEmails]);
+    if (teamEmails.length > 0) {
+      onCcChange([...cc, ...teamEmails]);
+      toast({
+        title: "Synced from Team",
+        description: `Added ${teamEmails.length} recipient(s)`,
+      });
+    } else {
+      toast({
+        title: "No New Recipients",
+        description: teamMembers.length === 0 ? "No team members available" : "All team members are already added",
+      });
+    }
   };
 
   return (
@@ -136,16 +213,87 @@ export function EditableRecipients({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="cc-email">CC</Label>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSyncFromTeam}
-            className="h-7 gap-1.5 text-xs"
-            disabled={teamMembers.length === 0}
-          >
-            <Users className="h-3.5 w-3.5" />
-            Sync from Team
-          </Button>
+          <div className="flex gap-1.5">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={deltaType === 'Email' ? "outline" : "ghost"}
+                    size="sm"
+                    onClick={handleSyncFromLastEmail}
+                    className={cn(
+                      "h-7 gap-1.5 text-xs",
+                      deltaType === 'Email' && "border-primary"
+                    )}
+                    disabled={!emailCc}
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    Last Email
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="max-w-xs">
+                    <p className="font-semibold mb-1">Last Email CC:</p>
+                    <p className="text-xs text-muted-foreground">
+                      {emailCc || 'No CC recipients'}
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={deltaType === 'Meeting' ? "outline" : "ghost"}
+                    size="sm"
+                    onClick={handleSyncFromLastMeeting}
+                    className={cn(
+                      "h-7 gap-1.5 text-xs",
+                      deltaType === 'Meeting' && "border-primary"
+                    )}
+                    disabled={!meetingCc}
+                  >
+                    <Video className="h-3.5 w-3.5" />
+                    Last Meeting
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="max-w-xs">
+                    <p className="font-semibold mb-1">Last Meeting CC:</p>
+                    <p className="text-xs text-muted-foreground">
+                      {meetingCc || 'No CC recipients'}
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSyncFromTeam}
+                    className="h-7 gap-1.5 text-xs"
+                    disabled={teamMembers.length === 0}
+                  >
+                    <Users className="h-3.5 w-3.5" />
+                    Team
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">
+                    {teamMembers.length > 0 
+                      ? `Sync from team (${teamMembers.length} members)` 
+                      : 'No team members available'}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
         
         <div className="min-h-[42px] rounded-md border border-input bg-background px-3 py-2 ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">

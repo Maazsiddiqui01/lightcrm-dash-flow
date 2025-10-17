@@ -38,4 +38,7 @@ export interface ContactEmailComposer {
   assistant_emails: string[];
   most_recent_contact: string | null;
   outreach_date: string | null;
+  email_cc: string | null;
+  meeting_cc: string | null;
+  delta_type: 'Email' | 'Meeting' | null;
 }

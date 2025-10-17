@@ -49,6 +49,9 @@ function replaceTokens(
     assistant_emails: payload.cc.assistants,
     most_recent_contact: null,
     outreach_date: null,
+    email_cc: null,
+    meeting_cc: null,
+    delta_type: null,
   };
 
   return interpolateContent(

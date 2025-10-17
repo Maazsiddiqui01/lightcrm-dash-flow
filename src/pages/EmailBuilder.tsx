@@ -1191,7 +1191,18 @@ ${draftResult.signature}`;
         setLoadingGroupContacts(true);
         try {
           // Fetch all fields from contacts_raw to ensure complete ContactEmailComposer compatibility
-          let query = supabase.from('contacts_raw').select('*');
+          let query = supabase.from('contacts_raw').select(`
+            id,
+            full_name,
+            email_address,
+            organization,
+            lg_focus_areas_comprehensive_list,
+            most_recent_contact,
+            delta_type,
+            email_cc,
+            meeting_cc,
+            outreach_date
+          `);
           
           // Apply filters (simplified for MVP)
           if (groupFilters.sectors && groupFilters.sectors.length > 0) {
@@ -1322,6 +1333,9 @@ ${draftResult.signature}`;
             assistant_emails: [],
             most_recent_contact: contact.most_recent_contact,
             outreach_date: contact.outreach_date,
+            email_cc: null,
+            meeting_cc: null,
+            delta_type: null,
           };
           
           // Get effective module order (override or shared)
@@ -1662,6 +1676,9 @@ ${draftResult.signature}`;
               onCcChange={setCuratedCc}
               teamMembers={curatedTeam}
               defaultContactEmail={selectedContact?.email || ''}
+              emailCc={contactData?.email_cc || null}
+              meetingCc={contactData?.meeting_cc || null}
+              deltaType={contactData?.delta_type || null}
             />
 
             {/* Save Controls with Dual Scope */}
@@ -1825,6 +1842,9 @@ ${draftResult.signature}`;
           contactId={activeOverrideContactId}
           contactName={groupContacts.find(c => c.id === activeOverrideContactId)?.full_name || ''}
           contactEmail={groupContacts.find(c => c.id === activeOverrideContactId)?.email_address || ''}
+          contactEmailCc={groupContacts.find(c => c.id === activeOverrideContactId)?.email_cc || null}
+          contactMeetingCc={groupContacts.find(c => c.id === activeOverrideContactId)?.meeting_cc || null}
+          contactDeltaType={groupContacts.find(c => c.id === activeOverrideContactId)?.delta_type as 'Email' | 'Meeting' | null}
           sharedSettings={{
             masterTemplate: masterTemplate,
             toneOverride: toneOverride || undefined,

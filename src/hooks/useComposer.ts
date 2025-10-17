@@ -36,6 +36,9 @@ export function useSearchContacts(term: string) {
         fa_descriptions: (row.fa_descriptions as any) || [] as FocusAreaDescription[],
         opps: (row.opps as any) || [] as Opportunity[],
         articles: (row.articles as any) || [] as Article[],
+        email_cc: (row as any).email_cc || null,
+        meeting_cc: (row as any).meeting_cc || null,
+        delta_type: ((row as any).delta_type as 'Email' | 'Meeting') || null,
       }));
     },
     enabled: !!term && term.trim().length >= 2,
@@ -75,6 +78,9 @@ export function useComposerRow(email: string | null) {
         fa_descriptions: (data.fa_descriptions as any) || [] as FocusAreaDescription[],
         opps: (data.opps as any) || [] as Opportunity[],
         articles: (data.articles as any) || [] as Article[],
+        email_cc: (data as any).email_cc || null,
+        meeting_cc: (data as any).meeting_cc || null,
+        delta_type: ((data as any).delta_type as 'Email' | 'Meeting') || null,
       };
     },
     enabled: !!email,

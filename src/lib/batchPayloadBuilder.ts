@@ -133,6 +133,9 @@ export async function buildBatchPayload(
         assistant_emails: [],
         most_recent_contact: contact.most_recent_contact,
         outreach_date: contact.outreach_date,
+        email_cc: null,
+        meeting_cc: null,
+        delta_type: null,
       };
 
       // Merge effective config to get contact-specific module order
