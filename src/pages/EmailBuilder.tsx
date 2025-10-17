@@ -26,6 +26,7 @@ import { PreviewModal } from "@/components/email-builder/PreviewModal";
 import { PreviewPanel } from "@/components/email-builder/PreviewPanel";
 import { GroupContactAlert } from "@/components/email-builder/GroupContactAlert";
 import { IndividualContactAlert } from "@/components/email-builder/IndividualContactAlert";
+import { OrganizationLevelAlert } from "@/components/email-builder/OrganizationLevelAlert";
 import { mergeEffectiveConfig } from "@/lib/previewMerge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Save, RotateCcw, Shuffle, Dice5 } from "lucide-react";
 import { useEmailBuilderData } from "@/hooks/useEmailBuilderData";
 import { useContactGroupInfo } from "@/hooks/useContactGroupInfo";
+import { useOrganizationContext } from "@/hooks/useOrganizationContext";
 import { useResolvedTemplateQuery } from "@/hooks/useResolvedTemplate";
 import { useComposerRow } from "@/hooks/useComposer";
 import { useContactSettings } from "@/hooks/useContactSettings";
@@ -193,6 +195,17 @@ function EmailBuilderContent() {
   
   // Get group contact info from contacts_raw
   const { data: groupInfo } = useContactGroupInfo(selectedContact?.contact_id || null);
+  
+  // Organization context for alerts
+  const emailDomain = selectedContact?.email 
+    ? selectedContact.email.split('@')[1] 
+    : null;
+
+  const orgContext = useOrganizationContext(
+    selectedContact?.contact_id || null,
+    contactData?.organization || null,
+    emailDomain
+  );
   
   // Load library data
   const { data: allPhrases = [] } = useGlobalPhrases();
@@ -1664,6 +1677,15 @@ ${draftResult.signature}`;
               deltaType={deltaType}
             />
           )
+        )}
+
+        {/* Organization Level Alert - Shows recent contacts or upcoming meetings with same org */}
+        {selectedContact && contactData && !groupInfo?.group_contact && (
+          <OrganizationLevelAlert
+            pastContact={orgContext.pastContact}
+            upcomingMeeting={orgContext.upcomingMeeting}
+            currentOrgName={contactData.organization || emailDomain || 'this organization'}
+          />
         )}
 
         {/* Responsive 2-Column Grid Layout */}
