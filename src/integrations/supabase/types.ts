@@ -23,6 +23,7 @@ export type Database = {
           focus_area: string
           id: string
           last_date_to_use: string | null
+          Title: string | null
           updated_at: string
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           focus_area: string
           id?: string
           last_date_to_use?: string | null
+          Title?: string | null
           updated_at?: string
         }
         Update: {
@@ -43,6 +45,7 @@ export type Database = {
           focus_area?: string
           id?: string
           last_date_to_use?: string | null
+          Title?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -3845,6 +3848,10 @@ export type Database = {
           tier: string
         }[]
       }
+      refresh_all_contact_interaction_details: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       refresh_all_contact_interactions: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -3856,6 +3863,10 @@ export type Database = {
         Returns: number
       }
       refresh_contact_interaction_counts: {
+        Args: { p_contact_id: string }
+        Returns: undefined
+      }
+      refresh_contact_interaction_details: {
         Args: { p_contact_id: string }
         Returns: undefined
       }
