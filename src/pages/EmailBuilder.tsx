@@ -764,21 +764,35 @@ function EmailBuilderContent() {
   // Initialize team and recipients when contact changes
   useEffect(() => {
     const initializeTeamAndRecipients = async () => {
-      if (!contactData || !selectedContact) return;
+      if (!contactData || !selectedContact) {
+        console.log('❌ Missing contactData or selectedContact');
+        return;
+      }
       
-      // If we have saved curated recipients, use those
-      if (contactSettings?.curated_recipients) {
-        setCuratedTeam(contactSettings.curated_recipients.team || []);
+      console.log('🔍 Initializing team for contact:', {
+        email: selectedContact.email,
+        focus_areas: contactData.focus_areas,
+        has_saved_settings: !!contactSettings?.curated_recipients,
+        saved_team_length: contactSettings?.curated_recipients?.team?.length || 0
+      });
+      
+      // If we have saved curated recipients with a non-empty team, use those
+      if (contactSettings?.curated_recipients && contactSettings.curated_recipients.team?.length > 0) {
+        console.log('✅ Using saved curated recipients');
+        setCuratedTeam(contactSettings.curated_recipients.team);
         setCuratedTo(contactSettings.curated_recipients.to || selectedContact.email || '');
         setCuratedCc(contactSettings.curated_recipients.cc || []);
         return;
       }
       
       // Otherwise, auto-populate from contact's focus areas
+      console.log('🔄 Auto-populating team from focus areas...');
       setCuratedTo(selectedContact.email || '');
       
       // Fetch team members from focus area directory
       const focusAreas = contactData.focus_areas || [];
+      console.log('📋 Focus areas to process:', focusAreas);
+      
       const teamMembers: TeamMember[] = [];
       const ccEmails: string[] = [];
       
@@ -790,6 +804,8 @@ function EmailBuilderContent() {
           .maybeSingle();
         
         if (teamData) {
+          console.log(`✅ Found team data for ${focusArea}:`, teamData);
+          
           // Add lead 1
           if (teamData.lead1_name && teamData.lead1_email) {
             const id = `lead1_${focusArea}`;
@@ -837,8 +853,15 @@ function EmailBuilderContent() {
               }
             }
           }
+        } else {
+          console.log(`⚠️ No team data found for ${focusArea}`);
         }
       }
+      
+      console.log('✅ Team initialization complete:', {
+        team_members: teamMembers.length,
+        cc_emails: ccEmails.length
+      });
       
       setAutoTeam(teamMembers);
       setCuratedTeam(teamMembers);
@@ -846,7 +869,7 @@ function EmailBuilderContent() {
     };
     
     initializeTeamAndRecipients();
-  }, [contactData, selectedContact, contactSettings]);
+  }, [contactData, selectedContact, contactSettings?.curated_recipients]);
 
   // Auto-select first phrase for all single-select modules (runs once per contact)
   useAutoSelectPhrases({

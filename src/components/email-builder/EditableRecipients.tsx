@@ -216,7 +216,7 @@ export function EditableRecipients({
           <div className="flex gap-1.5">
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger>
                   <Button
                     variant={deltaType === 'Email' ? "outline" : "ghost"}
                     size="sm"
@@ -244,7 +244,7 @@ export function EditableRecipients({
             
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger>
                   <Button
                     variant={deltaType === 'Meeting' ? "outline" : "ghost"}
                     size="sm"
@@ -272,7 +272,7 @@ export function EditableRecipients({
             
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger>
                   <Button
                     variant="ghost"
                     size="sm"
