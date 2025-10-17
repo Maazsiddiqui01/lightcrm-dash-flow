@@ -47,6 +47,13 @@ export function EditableRecipients({
     return email.trim().toLowerCase();
   };
 
+  const normalizeList = (emails: string[]): string[] => {
+    const normalized = emails
+      .map(e => e?.trim().toLowerCase())
+      .filter(e => e && validateEmail(e));
+    return Array.from(new Set(normalized));
+  };
+
   const handleToChange = (value: string) => {
     onToChange(value);
   };
@@ -113,7 +120,7 @@ export function EditableRecipients({
   };
 
   const handleSyncFromLastEmail = () => {
-    if (!emailCc) {
+    if (!emailCc || !emailCc.trim()) {
       toast({
         title: "No Email CC Found",
         description: "No CC recipients from last email interaction",
@@ -122,27 +129,18 @@ export function EditableRecipients({
       return;
     }
     
-    const emailsFromLastEmail = emailCc
-      .split(/[;,]/)
-      .map(e => normalizeEmail(e))
-      .filter(e => e && !cc.includes(e) && e !== normalizeEmail(to));
+    const emailsFromLastEmail = normalizeList(emailCc.split(/[;,]/))
+      .filter(e => e !== normalizeEmail(to));
     
-    if (emailsFromLastEmail.length > 0) {
-      onCcChange([...cc, ...emailsFromLastEmail]);
-      toast({
-        title: "Synced from Last Email",
-        description: `Added ${emailsFromLastEmail.length} recipient(s)`,
-      });
-    } else {
-      toast({
-        title: "No New Recipients",
-        description: "All email CC recipients are already added",
-      });
-    }
+    onCcChange(emailsFromLastEmail);
+    toast({
+      title: "CC Replaced with Last Email",
+      description: `Set ${emailsFromLastEmail.length} recipient(s)`,
+    });
   };
 
   const handleSyncFromLastMeeting = () => {
-    if (!meetingCc) {
+    if (!meetingCc || !meetingCc.trim()) {
       toast({
         title: "No Meeting CC Found",
         description: "No CC recipients from last meeting",
@@ -151,42 +149,25 @@ export function EditableRecipients({
       return;
     }
     
-    const emailsFromLastMeeting = meetingCc
-      .split(/[;,]/)
-      .map(e => normalizeEmail(e))
-      .filter(e => e && !cc.includes(e) && e !== normalizeEmail(to));
+    const emailsFromLastMeeting = normalizeList(meetingCc.split(/[;,]/))
+      .filter(e => e !== normalizeEmail(to));
     
-    if (emailsFromLastMeeting.length > 0) {
-      onCcChange([...cc, ...emailsFromLastMeeting]);
-      toast({
-        title: "Synced from Last Meeting",
-        description: `Added ${emailsFromLastMeeting.length} recipient(s)`,
-      });
-    } else {
-      toast({
-        title: "No New Recipients",
-        description: "All meeting CC recipients are already added",
-      });
-    }
+    onCcChange(emailsFromLastMeeting);
+    toast({
+      title: "CC Replaced with Last Meeting",
+      description: `Set ${emailsFromLastMeeting.length} recipient(s)`,
+    });
   };
 
   const handleSyncFromTeam = () => {
-    const teamEmails = teamMembers
-      .map(m => normalizeEmail(m.email))
-      .filter(e => e && !cc.includes(e) && e !== normalizeEmail(to));
+    const teamEmails = normalizeList(teamMembers.map(m => m.email))
+      .filter(e => e !== normalizeEmail(to));
     
-    if (teamEmails.length > 0) {
-      onCcChange([...cc, ...teamEmails]);
-      toast({
-        title: "Synced from Team",
-        description: `Added ${teamEmails.length} recipient(s)`,
-      });
-    } else {
-      toast({
-        title: "No New Recipients",
-        description: teamMembers.length === 0 ? "No team members available" : "All team members are already added",
-      });
-    }
+    onCcChange(teamEmails);
+    toast({
+      title: "CC Replaced with Team",
+      description: `Set ${teamEmails.length} recipient(s)`,
+    });
   };
 
   return (
@@ -233,7 +214,7 @@ export function EditableRecipients({
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="max-w-xs">
-                    <p className="font-semibold mb-1">Last Email CC:</p>
+                    <p className="font-semibold mb-1">Replace CC with Last Email</p>
                     <p className="text-xs text-muted-foreground">
                       {emailCc || 'No CC recipients'}
                     </p>
@@ -261,7 +242,7 @@ export function EditableRecipients({
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="max-w-xs">
-                    <p className="font-semibold mb-1">Last Meeting CC:</p>
+                    <p className="font-semibold mb-1">Replace CC with Last Meeting</p>
                     <p className="text-xs text-muted-foreground">
                       {meetingCc || 'No CC recipients'}
                     </p>
@@ -287,7 +268,7 @@ export function EditableRecipients({
                 <TooltipContent>
                   <p className="text-xs">
                     {teamMembers.length > 0 
-                      ? `Sync from team (${teamMembers.length} members)` 
+                      ? `Replace CC with team (${teamMembers.length} members)` 
                       : 'No team members available'}
                   </p>
                 </TooltipContent>
@@ -331,7 +312,7 @@ export function EditableRecipients({
         </div>
         
         <p className="text-xs text-muted-foreground">
-          Press Enter to add; paste lists with commas or semicolons
+          Click a sync button to replace CC; type to manually add more
         </p>
         
         {invalidEmails.size > 0 && (
