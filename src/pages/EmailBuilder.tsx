@@ -1678,6 +1678,7 @@ ${draftResult.signature}`;
               lastContactDate={contact.most_recent_contact}
               latestEmailDate={contact.latest_contact_email}
               latestMeetingDate={contact.latest_contact_meeting}
+              isLoading={isLoading}
             />
           )
         )}
@@ -1688,6 +1689,7 @@ ${draftResult.signature}`;
             pastContact={orgContext.pastContact}
             upcomingMeeting={orgContext.upcomingMeeting}
             currentOrgName={contactData.organization || emailDomain || 'this organization'}
+            isLoading={orgContext.isLoading}
           />
         )}
 
