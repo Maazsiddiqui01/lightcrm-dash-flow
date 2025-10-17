@@ -674,46 +674,46 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
 
           {/* Team Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Investment Professionals</h3>
+            <h3 className="text-lg font-semibold">LG Leads</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Investment Professional Point Person #1 */}
+              {/* LG Lead 1 */}
               <SingleSelectDropdown
-                label="Investment Professional Point Person #1"
+                label="LG Lead 1"
                 options={lgLeadOptions}
                 value={editedFields.investment_professional_point_person_1 || ""}
                 onChange={(value) => handleFieldChange("investment_professional_point_person_1", value)}
-                placeholder="Select point person #1"
+                placeholder="Select LG lead 1"
                 disabled={isLoading}
               />
 
-              {/* Investment Professional Point Person #2 */}
+              {/* LG Lead 2 */}
               <SingleSelectDropdown
-                label="Investment Professional Point Person #2"
+                label="LG Lead 2"
                 options={lgLeadOptions}
                 value={editedFields.investment_professional_point_person_2 || ""}
                 onChange={(value) => handleFieldChange("investment_professional_point_person_2", value)}
-                placeholder="Select point person #2"
+                placeholder="Select LG lead 2"
                 disabled={isLoading}
               />
 
-              {/* Investment Professional Point Person #3 */}
+              {/* LG Lead 3 */}
               <SingleSelectDropdown
-                label="Investment Professional Point Person #3"
+                label="LG Lead 3"
                 options={lgLeadOptions}
                 value={editedFields.investment_professional_point_person_3 || ""}
                 onChange={(value) => handleFieldChange("investment_professional_point_person_3", value)}
-                placeholder="Select point person #3"
+                placeholder="Select LG lead 3"
                 disabled={isLoading}
               />
 
-              {/* Investment Professional Point Person #4 */}
+              {/* LG Lead 4 */}
               <SingleSelectDropdown
-                label="Investment Professional Point Person #4"
+                label="LG Lead 4"
                 options={lgLeadOptions}
                 value={editedFields.investment_professional_point_person_4 || ""}
                 onChange={(value) => handleFieldChange("investment_professional_point_person_4", value)}
-                placeholder="Select point person #4"
+                placeholder="Select LG lead 4"
                 disabled={isLoading}
               />
             </div>
