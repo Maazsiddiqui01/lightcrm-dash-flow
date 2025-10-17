@@ -1672,12 +1672,12 @@ ${draftResult.signature}`;
             deltaDays={groupInfo.delta || 30}
           />
         ) : (
-          selectedContact && contactData?.most_recent_contact && (
+          selectedContact && contact?.most_recent_contact && (
             <IndividualContactAlert
-              contactFullName={contactData.full_name}
-              lastContactDate={contactData.most_recent_contact}
-              latestEmailDate={contactData.latest_contact_email}
-              latestMeetingDate={contactData.latest_contact_meeting}
+              contactFullName={contact.full_name}
+              lastContactDate={contact.most_recent_contact}
+              latestEmailDate={contact.latest_contact_email}
+              latestMeetingDate={contact.latest_contact_meeting}
             />
           )
         )}

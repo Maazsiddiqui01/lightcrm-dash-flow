@@ -26,8 +26,25 @@ export function IndividualContactAlert({
   // Determine actual most recent contact type by comparing timestamps
   const emailDate = latestEmailDate ? parseFlexibleDate(latestEmailDate)?.getTime() || 0 : 0;
   const meetingDate = latestMeetingDate ? parseFlexibleDate(latestMeetingDate)?.getTime() || 0 : 0;
+  const lastContactTime = lastContact.getTime();
   
-  const actualDeltaType: 'Email' | 'Meeting' = meetingDate > emailDate ? 'Meeting' : 'Email';
+  // Start with the max timestamp logic
+  let actualDeltaType: 'Email' | 'Meeting' = meetingDate > emailDate ? 'Meeting' : 'Email';
+  
+  // Tie-breaker: If both timestamps are within 12 hours of each other, 
+  // choose the one that matches lastContactDate most closely (within 1 minute)
+  if (emailDate > 0 && meetingDate > 0 && Math.abs(emailDate - meetingDate) <= 12 * 60 * 60 * 1000) {
+    const emailDiff = Math.abs(emailDate - lastContactTime);
+    const meetingDiff = Math.abs(meetingDate - lastContactTime);
+    
+    // If one is within 1 minute of lastContactDate, use that
+    if (emailDiff < 60 * 1000 && emailDiff < meetingDiff) {
+      actualDeltaType = 'Email';
+    } else if (meetingDiff < 60 * 1000 && meetingDiff < emailDiff) {
+      actualDeltaType = 'Meeting';
+    }
+  }
+  
   const contactType = actualDeltaType === 'Email' ? 'emailed' : 'met with';
   const ContactIcon = actualDeltaType === 'Email' ? Mail : Calendar;
   
