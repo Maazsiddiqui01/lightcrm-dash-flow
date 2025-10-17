@@ -50,6 +50,8 @@ function replaceTokens(
     assistant_names: [],
     assistant_emails: payload.cc.assistants,
     most_recent_contact: null,
+    latest_contact_email: null,
+    latest_contact_meeting: null,
     outreach_date: null,
   };
 

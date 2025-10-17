@@ -6,13 +6,15 @@ import { formatDistanceToNow } from "date-fns";
 interface IndividualContactAlertProps {
   contactFullName: string;
   lastContactDate: string;
-  deltaType: 'Email' | 'Meeting';
+  latestEmailDate: string | null;
+  latestMeetingDate: string | null;
 }
 
 export function IndividualContactAlert({ 
   contactFullName, 
   lastContactDate,
-  deltaType 
+  latestEmailDate,
+  latestMeetingDate
 }: IndividualContactAlertProps) {
   const lastContact = parseFlexibleDate(lastContactDate);
   
@@ -21,8 +23,13 @@ export function IndividualContactAlert({
   const now = new Date();
   const daysSince = Math.floor((now.getTime() - lastContact.getTime()) / (1000 * 60 * 60 * 24));
   
-  const contactType = deltaType === 'Email' ? 'emailed' : 'met with';
-  const ContactIcon = deltaType === 'Email' ? Mail : Calendar;
+  // Determine actual most recent contact type by comparing timestamps
+  const emailDate = latestEmailDate ? parseFlexibleDate(latestEmailDate)?.getTime() || 0 : 0;
+  const meetingDate = latestMeetingDate ? parseFlexibleDate(latestMeetingDate)?.getTime() || 0 : 0;
+  
+  const actualDeltaType: 'Email' | 'Meeting' = meetingDate > emailDate ? 'Meeting' : 'Email';
+  const contactType = actualDeltaType === 'Email' ? 'emailed' : 'met with';
+  const ContactIcon = actualDeltaType === 'Email' ? Mail : Calendar;
   
   return (
     <Alert className="mb-4 border-amber-500/50 bg-gradient-to-r from-amber-50 to-amber-50/50 dark:from-amber-950/20 dark:to-amber-950/10">

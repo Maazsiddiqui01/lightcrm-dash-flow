@@ -53,6 +53,8 @@ function createMinimalContactData(contactId: string, contactName: string, contac
     email_cc: null,
     meeting_cc: null,
     delta_type: null,
+    latest_contact_email: null,
+    latest_contact_meeting: null,
     focus_areas: [],
     fa_count: 0,
     fa_sectors: [],

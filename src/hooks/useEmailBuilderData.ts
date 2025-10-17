@@ -57,6 +57,8 @@ export function useEmailBuilderData(contactId: string | null, template: EmailTem
           organization,
           email_cc,
           most_recent_contact,
+          latest_contact_email,
+          latest_contact_meeting,
           outreach_date,
           all_opps,
           lg_focus_areas_comprehensive_list,

@@ -1381,6 +1381,8 @@ ${draftResult.signature}`;
             lead_emails: [],
             assistant_names: [],
             assistant_emails: [],
+            latest_contact_email: null,
+            latest_contact_meeting: null,
             most_recent_contact: contact.most_recent_contact,
             outreach_date: contact.outreach_date,
           };
@@ -1674,7 +1676,8 @@ ${draftResult.signature}`;
             <IndividualContactAlert
               contactFullName={contactData.full_name}
               lastContactDate={contactData.most_recent_contact}
-              deltaType={deltaType}
+              latestEmailDate={contactData.latest_contact_email}
+              latestMeetingDate={contactData.latest_contact_meeting}
             />
           )
         )}

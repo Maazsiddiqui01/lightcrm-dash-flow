@@ -118,6 +118,8 @@ export async function buildBatchPayload(
         email_cc: null,
         meeting_cc: null,
         delta_type: null,
+        latest_contact_email: null,
+        latest_contact_meeting: null,
         focus_areas: contact.lg_focus_areas_comprehensive_list
           ? contact.lg_focus_areas_comprehensive_list.split(',').map(fa => fa.trim()).filter(Boolean)
           : [],
