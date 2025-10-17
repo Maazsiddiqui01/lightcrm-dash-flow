@@ -6,6 +6,7 @@ export interface OrgPastContact {
   daysAgo: number;
   deltaType: 'Email' | 'Meeting';
   subject: string;
+  noContactFound?: boolean;
 }
 
 export interface OrgUpcomingMeeting {
@@ -45,7 +46,16 @@ export function useOrganizationContext(
       const { data, error } = await query;
 
       if (error) throw error;
-      if (!data || data.length === 0) return null;
+      if (!data || data.length === 0) {
+        // Return a special object indicating no contact found
+        return {
+          contactName: '',
+          daysAgo: 90,
+          deltaType: 'Email' as const,
+          subject: '',
+          noContactFound: true
+        } as OrgPastContact;
+      }
 
       const contact = data[0];
       const mostRecentDate = new Date(contact.most_recent_contact!);

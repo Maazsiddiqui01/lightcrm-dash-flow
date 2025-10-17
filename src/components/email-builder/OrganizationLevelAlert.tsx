@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Building2, Calendar } from "lucide-react";
+import { Building2, Calendar, Info } from "lucide-react";
 import { format } from "date-fns";
 import type { OrgPastContact, OrgUpcomingMeeting } from "@/hooks/useOrganizationContext";
 
@@ -14,6 +14,18 @@ export function OrganizationLevelAlert({
   upcomingMeeting,
   currentOrgName 
 }: OrganizationLevelAlertProps) {
+  // Handle no contact found case
+  if (pastContact?.noContactFound && !upcomingMeeting) {
+    return (
+      <Alert className="mb-4 border-muted bg-muted/30">
+        <Info className="h-4 w-4 text-muted-foreground" />
+        <AlertDescription className="text-sm text-muted-foreground">
+          No contact with {currentOrgName} in the last 90 days
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   // Prioritize upcoming meeting if it's within 7 days, otherwise show past contact
   const showUpcoming = upcomingMeeting && 
     upcomingMeeting.meetingDate.getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000;
@@ -40,7 +52,7 @@ export function OrganizationLevelAlert({
   }
 
   // Show past contact alert
-  if (pastContact) {
+  if (pastContact && !pastContact.noContactFound) {
     const contactVerb = pastContact.deltaType === 'Email' ? 'emailed' : 'met with';
     
     return (
