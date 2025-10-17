@@ -25,10 +25,10 @@ export function useOrganizationContext(
     queryFn: async () => {
       if (!contactId || (!organization && !emailDomain)) return null;
 
-      // Build organization match condition
+      // Build organization match condition - select both email and meeting timestamps
       let query = supabase
         .from('contacts_raw')
-        .select('full_name, most_recent_contact, delta_type, email_subject, meeting_title, email_address')
+        .select('full_name, most_recent_contact, latest_contact_email, latest_contact_meeting, email_subject, meeting_title, email_address')
         .neq('id', contactId)
         .not('most_recent_contact', 'is', null)
         .gte('most_recent_contact', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
@@ -51,13 +51,30 @@ export function useOrganizationContext(
       const mostRecentDate = new Date(contact.most_recent_contact!);
       const daysAgo = Math.floor((Date.now() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
 
+      // Determine actual most recent contact type by comparing timestamps
+      const emailDate = contact.latest_contact_email 
+        ? new Date(contact.latest_contact_email).getTime() 
+        : 0;
+      const meetingDate = contact.latest_contact_meeting 
+        ? new Date(contact.latest_contact_meeting).getTime() 
+        : 0;
+      
+      let actualDeltaType: 'Email' | 'Meeting' = 'Email';
+      let actualSubject = '';
+      
+      if (meetingDate > emailDate) {
+        actualDeltaType = 'Meeting';
+        actualSubject = contact.meeting_title || 'Untitled Meeting';
+      } else {
+        actualDeltaType = 'Email';
+        actualSubject = contact.email_subject || 'No Subject';
+      }
+
       return {
         contactName: contact.full_name || 'Unknown',
         daysAgo,
-        deltaType: (contact.delta_type as 'Email' | 'Meeting') || 'Email',
-        subject: contact.delta_type === 'Meeting' 
-          ? (contact.meeting_title || 'Untitled Meeting')
-          : (contact.email_subject || 'No Subject')
+        deltaType: actualDeltaType,
+        subject: actualSubject
       } as OrgPastContact;
     },
     enabled: !!contactId && (!!organization || !!emailDomain),
