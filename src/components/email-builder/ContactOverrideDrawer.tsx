@@ -50,7 +50,9 @@ function createMinimalContactData(contactId: string, contactName: string, contac
     email: contactEmail,
     full_name: contactName,
     organization: null,
-    lg_emails_cc: null,
+    email_cc: null,
+    meeting_cc: null,
+    delta_type: null,
     focus_areas: [],
     fa_count: 0,
     fa_sectors: [],
@@ -66,9 +68,6 @@ function createMinimalContactData(contactId: string, contactName: string, contac
     assistant_emails: [],
     most_recent_contact: null,
     outreach_date: null,
-    email_cc: null,
-    meeting_cc: null,
-    delta_type: null,
   };
 }
 

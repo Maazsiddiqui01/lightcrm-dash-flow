@@ -115,7 +115,9 @@ export async function buildBatchPayload(
         full_name: contact.full_name.trim(),
         first_name: firstName,
         organization: contact.organization?.trim() || '',
-        lg_emails_cc: null,
+        email_cc: null,
+        meeting_cc: null,
+        delta_type: null,
         focus_areas: contact.lg_focus_areas_comprehensive_list
           ? contact.lg_focus_areas_comprehensive_list.split(',').map(fa => fa.trim()).filter(Boolean)
           : [],
@@ -133,9 +135,6 @@ export async function buildBatchPayload(
         assistant_emails: [],
         most_recent_contact: contact.most_recent_contact,
         outreach_date: contact.outreach_date,
-        email_cc: null,
-        meeting_cc: null,
-        delta_type: null,
       };
 
       // Merge effective config to get contact-specific module order

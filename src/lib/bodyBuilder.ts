@@ -21,7 +21,9 @@ function replaceTokens(
     first_name: payload.contact.firstName,
     email: payload.contact.email,
     organization: payload.contact.organization,
-    lg_emails_cc: null,
+    email_cc: null,
+    meeting_cc: null,
+    delta_type: null,
     focus_areas: payload.focusAreas.list,
     fa_count: payload.focusAreas.list.length,
     fa_sectors: payload.focusAreas.descriptions.map(d => d.sector),
@@ -49,9 +51,6 @@ function replaceTokens(
     assistant_emails: payload.cc.assistants,
     most_recent_contact: null,
     outreach_date: null,
-    email_cc: null,
-    meeting_cc: null,
-    delta_type: null,
   };
 
   return interpolateContent(

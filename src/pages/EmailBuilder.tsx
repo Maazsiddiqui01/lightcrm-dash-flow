@@ -779,9 +779,21 @@ function EmailBuilderContent() {
       // If we have saved curated recipients with a non-empty team, use those
       if (contactSettings?.curated_recipients && contactSettings.curated_recipients.team?.length > 0) {
         console.log('✅ Using saved curated recipients');
-        setCuratedTeam(contactSettings.curated_recipients.team);
-        setCuratedTo(contactSettings.curated_recipients.to || selectedContact.email || '');
-        setCuratedCc(contactSettings.curated_recipients.cc || []);
+        const saved = contactSettings.curated_recipients;
+        setCuratedTeam(saved.team);
+        const to = saved.to || selectedContact.email || '';
+        setCuratedTo(to);
+        
+        // If saved CC exists and is not empty, use it; otherwise compute from team
+        if (saved.cc && saved.cc.length > 0) {
+          setCuratedCc(saved.cc);
+        } else {
+          // Compute CC from team members, excluding the TO address
+          const teamCc = Array.from(
+            new Set((saved.team || []).map(m => m.email?.trim().toLowerCase()).filter(Boolean))
+          ).filter(e => e !== to?.trim().toLowerCase());
+          setCuratedCc(teamCc);
+        }
         return;
       }
       
@@ -1338,7 +1350,9 @@ ${draftResult.signature}`;
             full_name: contact.full_name || '',
             first_name: contact.first_name || '',
             organization: contact.organization || '',
-            lg_emails_cc: null,
+            email_cc: null,
+            meeting_cc: null,
+            delta_type: null,
             focus_areas: contact.lg_focus_areas_comprehensive_list
               ? contact.lg_focus_areas_comprehensive_list.split(',').map((fa: string) => fa.trim()).filter(Boolean)
               : [],
@@ -1356,9 +1370,6 @@ ${draftResult.signature}`;
             assistant_emails: [],
             most_recent_contact: contact.most_recent_contact,
             outreach_date: contact.outreach_date,
-            email_cc: null,
-            meeting_cc: null,
-            delta_type: null,
           };
           
           // Get effective module order (override or shared)

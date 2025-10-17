@@ -305,7 +305,7 @@ export function buildDraftPayload(
   const faDescriptions = contactData.fa_descriptions;
 
   // Compute helpers
-  const baseCC = uniqueEmails((contactData.lg_emails_cc || '').split(/[;,]/g));
+  const baseCC = uniqueEmails((contactData.email_cc || '').split(/[;,]/g));
   const leadCC = uniqueEmails(contactData.lead_emails || []);
   const assistantCC = uniqueEmails(contactData.assistant_emails || []);
   const ccFinal = uniqueEmails([
@@ -367,7 +367,7 @@ export function buildDraftPayload(
       fullName: contactData.full_name,
       firstName: contactData.first_name,
       organization: contactData.organization || '',
-      lgEmailsCc: contactData.lg_emails_cc || undefined,
+      lgEmailsCc: contactData.email_cc || undefined,
     },
     focus: {
       gb_present: contactData.gb_present,

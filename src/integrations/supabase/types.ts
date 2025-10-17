@@ -3414,7 +3414,9 @@ export type Database = {
           assistant_emails: string[] | null
           assistant_names: string[] | null
           contact_id: string | null
+          delta_type: string | null
           email: string | null
+          email_cc: string | null
           fa_count: number | null
           fa_descriptions: Json | null
           fa_sectors: string[] | null
@@ -3425,8 +3427,8 @@ export type Database = {
           has_opps: boolean | null
           hs_present: boolean | null
           lead_emails: string[] | null
-          lg_emails_cc: string | null
           ls_present: boolean | null
+          meeting_cc: string | null
           most_recent_contact: string | null
           opps: Json | null
           organization: string | null

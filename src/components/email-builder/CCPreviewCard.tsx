@@ -37,7 +37,7 @@ export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
 
   // Build CC list from leads/assistants
   const baseCcList = buildCc(
-    contactData.lg_emails_cc,
+    contactData.email_cc,
     contactData.lead_emails,
     contactData.assistant_emails,
     deltaType,
@@ -144,7 +144,7 @@ export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
         {process.env.NODE_ENV === 'development' && (
           <div className="text-xs text-muted-foreground p-2 bg-yellow-50 rounded">
             <strong>Debug CC Build:</strong><br />
-            LG CC: {contactData.lg_emails_cc || 'None'}<br />
+            Email CC: {contactData.email_cc || 'None'}<br />
             Leads: [{contactData.lead_emails.join(', ') || 'None'}]<br />
             Assistants: [{contactData.assistant_emails.join(', ') || 'None'}]<br />
             Delta: {deltaType}<br />

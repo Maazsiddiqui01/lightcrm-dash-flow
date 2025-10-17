@@ -225,7 +225,7 @@ export function EditableRecipients({
                       "h-7 gap-1.5 text-xs",
                       deltaType === 'Email' && "border-primary"
                     )}
-                    disabled={!emailCc}
+                    disabled={!emailCc || !emailCc.trim()}
                   >
                     <Mail className="h-3.5 w-3.5" />
                     Last Email
@@ -253,7 +253,7 @@ export function EditableRecipients({
                       "h-7 gap-1.5 text-xs",
                       deltaType === 'Meeting' && "border-primary"
                     )}
-                    disabled={!meetingCc}
+                    disabled={!meetingCc || !meetingCc.trim()}
                   >
                     <Video className="h-3.5 w-3.5" />
                     Last Meeting

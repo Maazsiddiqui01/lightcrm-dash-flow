@@ -22,7 +22,6 @@ export interface ContactEmailComposer {
   first_name: string;
   email: string;
   organization: string | null;
-  lg_emails_cc: string | null;
   focus_areas: string[];
   fa_count: number;
   fa_sectors: string[];

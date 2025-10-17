@@ -317,7 +317,7 @@ export function DraftGenerateButton({
     if (!draftResult) return;
 
     const ccList = contactData ? buildCc(
-      contactData.lg_emails_cc,
+      contactData.email_cc,
       contactData.lead_emails || [],
       contactData.assistant_emails || [],
       deltaType,
@@ -454,7 +454,7 @@ export function DraftGenerateButton({
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">
                     {draftResult.cc || buildCc(
-                      contactData.lg_emails_cc,
+                      contactData.email_cc,
                       contactData.lead_emails || [],
                       contactData.assistant_emails || [],
                       deltaType,
