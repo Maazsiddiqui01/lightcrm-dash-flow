@@ -63,15 +63,26 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
   // Save next steps mutation
   const saveNextStepsMutation = useMutation({
     mutationFn: async ({ opportunityId, content, dueDate, addInToDo }: { opportunityId: string; content: string; dueDate?: string; addInToDo?: boolean }) => {
-      const { error } = await supabase.rpc('add_opportunity_note', {
+      console.log('[useOpportunityNotes] Attempting to save next steps:', { opportunityId, content, dueDate, addInToDo });
+      const { data, error } = await supabase.rpc('add_opportunity_note', {
         p_opportunity_id: opportunityId,
         p_field: 'next_steps',
         p_content: content,
         p_due_date: dueDate || null,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useOpportunityNotes] RPC Error for next steps:', error);
+        console.error('[useOpportunityNotes] Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw error;
+      }
       
+      console.log('[useOpportunityNotes] Successfully saved next steps, response:', data);
       return { content, dueDate, addInToDo };
     },
     onSuccess: async (data) => {
@@ -118,13 +129,25 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
   // Save most recent notes mutation
   const saveMostRecentNotesMutation = useMutation({
     mutationFn: async ({ opportunityId, content }: { opportunityId: string; content: string }) => {
-      const { error } = await supabase.rpc('add_opportunity_note', {
+      console.log('[useOpportunityNotes] Attempting to save most recent notes:', { opportunityId, content });
+      const { data, error } = await supabase.rpc('add_opportunity_note', {
         p_opportunity_id: opportunityId,
         p_field: 'most_recent_notes',
         p_content: content,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useOpportunityNotes] RPC Error:', error);
+        console.error('[useOpportunityNotes] Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw error;
+      }
+      
+      console.log('[useOpportunityNotes] Successfully saved, response:', data);
     },
     onSuccess: () => {
       toast({
@@ -136,11 +159,12 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
       queryClient.invalidateQueries({ queryKey: ['opportunity-current-notes', opportunityId] });
       queryClient.invalidateQueries({ queryKey: ['opportunity-notes-timeline', opportunityId] });
     },
-    onError: (error) => {
-      console.error('Error saving notes:', error);
+    onError: (error: any) => {
+      console.error('[useOpportunityNotes] Mutation error:', error);
+      const errorMessage = error?.message || error?.details || 'Failed to save notes';
       toast({
         title: "Error",
-        description: "Failed to save notes",
+        description: errorMessage,
         variant: "destructive",
       });
     },
