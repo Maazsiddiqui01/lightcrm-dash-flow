@@ -294,7 +294,85 @@ export type Database = {
           performed_at?: string
           performed_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+        ]
       }
       contact_module_defaults: {
         Row: {
@@ -449,7 +527,85 @@ export type Database = {
           field?: string
           id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+        ]
       }
       contact_notifications: {
         Row: {
@@ -2517,7 +2673,85 @@ export type Database = {
           created_by?: string | null
           field?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+        ]
       }
       contacts_ai: {
         Row: {

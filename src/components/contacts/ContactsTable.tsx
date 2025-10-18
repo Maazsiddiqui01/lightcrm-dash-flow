@@ -6,9 +6,11 @@ import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
 import { IntentionalNoOutreachModal } from "./IntentionalNoOutreachModal";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { useDeleteContact } from "@/hooks/useDeleteContact";
 import { exportCsv } from "@/lib/export/exportService";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { sendContactEmail } from "@/features/contacts/sendEmail";
@@ -70,7 +72,23 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const [showBulkGroupModal, setShowBulkGroupModal] = useState(false);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const [isRefreshingInteractions, setIsRefreshingInteractions] = useState(false);
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
+    open: boolean;
+    contactIds: string[];
+    contactNames: string[];
+    isBulk: boolean;
+  }>({ open: false, contactIds: [], contactNames: [], isBulk: false });
   const { toast } = useToast();
+  
+  const { deleteContact, deleteBulk, isDeleting } = useDeleteContact({
+    onSuccess: () => {
+      setDeleteConfirmDialog({ open: false, contactIds: [], contactNames: [], isBulk: false });
+      if (deleteConfirmDialog.isBulk) {
+        setSelectedRows([]);
+      }
+      refetch();
+    }
+  });
   
   // Load sort state on mount
   useEffect(() => {
@@ -223,21 +241,37 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
                   Reset Outreach
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIntentionalNoOutreachModal({
-                      open: true,
-                      contactId: row.id,
-                      contactName: row.full_name || 'Unknown',
-                      isCurrentlySkipped: false
-                    });
-                  }}
-                >
-                  <UserX className="mr-2 h-4 w-4" />
-                  Skip Outreach
-                </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIntentionalNoOutreachModal({
+                    open: true,
+                    contactId: row.id,
+                    contactName: row.full_name || 'Unknown',
+                    isCurrentlySkipped: false
+                  });
+                }}
+              >
+                <UserX className="mr-2 h-4 w-4" />
+                Skip Outreach
+              </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeleteConfirmDialog({
+                    open: true,
+                    contactIds: [row.id],
+                    contactNames: [row.full_name || row.email_address || 'Unknown'],
+                    isBulk: false
+                  });
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -408,6 +442,21 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
                 Add to Group
               </Button>
               <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setDeleteConfirmDialog({
+                    open: true,
+                    contactIds: selectedRows.map(r => r.id),
+                    contactNames: selectedRows.map(r => r.full_name || r.email_address || 'Unknown'),
+                    isBulk: true
+                  });
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Selected
+              </Button>
+              <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedRows([])}
@@ -575,6 +624,28 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
           refetch();
           setSelectedRows([]);
         }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirmDialog.open}
+        onOpenChange={(open) => !isDeleting && setDeleteConfirmDialog({ ...deleteConfirmDialog, open })}
+        onConfirm={() => {
+          if (deleteConfirmDialog.isBulk) {
+            deleteBulk(deleteConfirmDialog.contactIds);
+          } else {
+            deleteContact(deleteConfirmDialog.contactIds[0]);
+          }
+        }}
+        title={deleteConfirmDialog.isBulk ? "Delete Contacts?" : "Delete Contact?"}
+        description={
+          deleteConfirmDialog.isBulk
+            ? `Are you sure you want to delete ${deleteConfirmDialog.contactIds.length} contact${deleteConfirmDialog.contactIds.length !== 1 ? 's' : ''}? This action cannot be undone.`
+            : `Are you sure you want to delete ${deleteConfirmDialog.contactNames[0]}? This action cannot be undone.`
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
       />
     </div>
   );

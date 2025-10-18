@@ -19,13 +19,15 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX } from "lucide-react";
+import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX, Trash2 } from "lucide-react";
 import { useContactOpps } from "@/hooks/useContactOpps";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { useSectors, useFocusAreasBySector, findMatchingOption } from "@/hooks/useLookups";
 import { DuplicateWarningBanner } from "./DuplicateWarningBanner";
 import { ContactLockBanner } from "./ContactLockBanner";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { useDeleteContact } from "@/hooks/useDeleteContact";
 
 interface ContactRaw {
   id: string;
@@ -106,7 +108,16 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   const [loadingInteractions, setLoadingInteractions] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const { toast } = useToast();
+  
+  const { deleteContact, isDeleting } = useDeleteContact({
+    onSuccess: () => {
+      setDeleteConfirmOpen(false);
+      onContactUpdated();
+      onClose();
+    }
+  });
   
   // Contact notes hook
   const {
@@ -789,25 +800,46 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
             </div>
 
             {/* Action Buttons */}
-            <div className="flex space-x-2 pt-4">
-              <Button onClick={handleSave} disabled={saving || loading} className="flex-1">
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save
-                  </>
-                )}
+            <div className="flex justify-between pt-4">
+              <Button 
+                variant="destructive" 
+                onClick={() => setDeleteConfirmOpen(true)} 
+                disabled={saving || loading || isDeleting}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
               </Button>
-              <Button variant="ghost" onClick={onClose} disabled={saving}>
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
+              <div className="flex space-x-2">
+                <Button onClick={handleSave} disabled={saving || loading || isDeleting}>
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save
+                    </>
+                  )}
+                </Button>
+                <Button variant="ghost" onClick={onClose} disabled={saving || isDeleting}>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              </div>
             </div>
+
+            <ConfirmDialog
+              open={deleteConfirmOpen}
+              onOpenChange={(open) => !isDeleting && setDeleteConfirmOpen(open)}
+              onConfirm={() => contactData && deleteContact(contactData.id)}
+              title="Delete Contact?"
+              description={`Are you sure you want to delete ${contactData?.full_name || 'this contact'}? This action cannot be undone.`}
+              confirmText="Delete"
+              cancelText="Cancel"
+              variant="destructive"
+            />
           </div>
         ) : !loading ? (
           <div className="flex items-center justify-center py-8">
