@@ -28,7 +28,12 @@ import { useContactsWithOpportunities } from "@/hooks/useContactsWithOpportuniti
 import { BulkGroupAssignmentModal } from "./BulkGroupAssignmentModal";
 import { useFocusAreaSectorMapping } from "@/hooks/useFocusAreaSectorMapping";
 import { mapFocusAreasToSectors, getAllFocusAreas } from "@/utils/sectorMapping";
-import { calculateDaysOverUnderMaxLag } from "@/utils/contactCalculations";
+import { 
+  calculateDaysOverUnderMaxLag, 
+  formatDaysOverUnder, 
+  getDaysOverUnderColorClass, 
+  calculateEffectiveOutreachData 
+} from "@/utils/contactCalculations";
 
 // Multi-sort imports
 import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
@@ -119,17 +124,31 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const contactsWithComputedSectors = useMemo(() => {
     if (!sectorMapping) return contacts;
     
-    return contacts.map(contact => ({
-      ...contact,
-      mapped_sectors: mapFocusAreasToSectors(
-        getAllFocusAreas(contact),
-        sectorMapping,
-        contact.lg_sector
-      ),
-      days_over_under_max_lag: contact.intentional_no_outreach 
-        ? null 
-        : calculateDaysOverUnderMaxLag(contact.most_recent_contact, contact.delta)
-    }));
+    return contacts.map(contact => {
+      // Calculate effective values using group logic if applicable
+      const effective = calculateEffectiveOutreachData({
+        group_contact: contact.group_contact,
+        most_recent_contact: contact.most_recent_contact,
+        most_recent_group_contact: contact.most_recent_group_contact,
+        delta: contact.delta,
+        group_delta: contact.group_delta
+      });
+      
+      return {
+        ...contact,
+        mapped_sectors: mapFocusAreasToSectors(
+          getAllFocusAreas(contact),
+          sectorMapping,
+          contact.lg_sector
+        ),
+        days_over_under_max_lag: contact.intentional_no_outreach 
+          ? null 
+          : calculateDaysOverUnderMaxLag(
+              effective.effectiveMostRecentContact,
+              effective.effectiveMaxLagDays
+            )
+      };
+    });
   }, [contacts, sectorMapping]);
 
   // Get table columns metadata and add opportunities column
@@ -190,7 +209,18 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       width: 120,
       enableHiding: false,
       render: (value: any, row: ContactRaw) => {
-        const daysOverUnder = calculateDaysOverUnderMaxLag(row.most_recent_contact, row.delta);
+        // Use effective values for actions
+        const effective = calculateEffectiveOutreachData({
+          group_contact: row.group_contact,
+          most_recent_contact: row.most_recent_contact,
+          most_recent_group_contact: row.most_recent_group_contact,
+          delta: row.delta,
+          group_delta: row.group_delta
+        });
+        const daysOverUnder = calculateDaysOverUnderMaxLag(
+          effective.effectiveMostRecentContact,
+          effective.effectiveMaxLagDays
+        );
         const isOverdue = daysOverUnder !== null && daysOverUnder < 0;
         const isCurrentlySkipped = row.intentional_no_outreach;
         

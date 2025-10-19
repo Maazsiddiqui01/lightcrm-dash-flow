@@ -924,6 +924,7 @@ export type Database = {
           first_name: string | null
           full_name: string | null
           group_contact: string | null
+          group_delta: number | null
           group_email_role: string | null
           id: string
           intentional_no_outreach: boolean | null
@@ -992,6 +993,7 @@ export type Database = {
           first_name?: string | null
           full_name?: string | null
           group_contact?: string | null
+          group_delta?: number | null
           group_email_role?: string | null
           id?: string
           intentional_no_outreach?: boolean | null
@@ -1060,6 +1062,7 @@ export type Database = {
           first_name?: string | null
           full_name?: string | null
           group_contact?: string | null
+          group_delta?: number | null
           group_email_role?: string | null
           id?: string
           intentional_no_outreach?: boolean | null
@@ -4083,6 +4086,10 @@ export type Database = {
           status: string
           tier: string
         }[]
+      }
+      recalculate_group_contact_date: {
+        Args: { p_group_name: string }
+        Returns: undefined
       }
       refresh_all_contact_interaction_details: {
         Args: Record<PropertyKey, never>

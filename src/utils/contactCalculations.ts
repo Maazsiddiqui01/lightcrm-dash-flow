@@ -57,3 +57,27 @@ export function getDaysOverUnderColorClass(days: number | null): string {
 export function isIntentionallySkipped(contact: { intentional_no_outreach?: boolean | null }): boolean {
   return Boolean(contact.intentional_no_outreach);
 }
+
+/**
+ * Calculate effective outreach data for a contact
+ * Prioritizes group values if contact is in a group, otherwise uses individual values
+ */
+export function calculateEffectiveOutreachData(contact: {
+  group_contact?: string | null;
+  most_recent_contact?: string | null;
+  most_recent_group_contact?: string | null;
+  delta?: number | null;
+  group_delta?: number | null;
+}) {
+  const isGroup = !!contact.group_contact;
+  
+  return {
+    effectiveMostRecentContact: isGroup 
+      ? contact.most_recent_group_contact 
+      : contact.most_recent_contact,
+    effectiveMaxLagDays: isGroup 
+      ? contact.group_delta 
+      : contact.delta,
+    isUsingGroupValues: isGroup
+  };
+}

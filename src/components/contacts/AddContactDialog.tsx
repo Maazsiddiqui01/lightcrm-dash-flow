@@ -70,6 +70,7 @@ const emptyContactForm: IndividualContactForm = {
 export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDialogProps) {
   const [contactType, setContactType] = useState<"individual" | "group">("individual");
   const [groupName, setGroupName] = useState("");
+  const [groupDelta, setGroupDelta] = useState("");
   const [contacts, setContacts] = useState<IndividualContactForm[]>([emptyContactForm]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -131,8 +132,35 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     return null;
   };
 
+  const validateGroupSettings = () => {
+    if (contactType === "group") {
+      if (!groupName.trim()) {
+        return "Group name is required";
+      }
+      if (!groupDelta || !groupDelta.trim()) {
+        return "Group max lag days is required";
+      }
+      const deltaValue = parseInt(groupDelta);
+      if (isNaN(deltaValue) || deltaValue < 0) {
+        return "Group max lag days must be a valid positive number";
+      }
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate group settings first
+    const groupError = validateGroupSettings();
+    if (groupError) {
+      toast({
+        title: "Error",
+        description: groupError,
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Validate contacts
     for (let i = 0; i < contacts.length; i++) {
@@ -145,16 +173,6 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
         });
         return;
       }
-    }
-
-    // Validate group name if group type
-    if (contactType === "group" && !groupName.trim()) {
-      toast({
-        title: "Error",
-        description: "Group name is required for group contacts",
-        variant: "destructive",
-      });
-      return;
     }
 
     try {
@@ -194,6 +212,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           lg_assistant: opt(contact.lg_assistant),
           group_contact: contactType === "group" ? groupName.trim() : null,
           group_email_role: contactType === "group" ? opt(contact.group_email_role) : null,
+          group_delta: contactType === "group" ? numOrNull(groupDelta) : null,
         };
       });
 
@@ -217,6 +236,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
       // Reset form
       setContactType("individual");
       setGroupName("");
+      setGroupDelta("");
       setContacts([emptyContactForm]);
 
       // Pass the newly created contact data back (first contact for individual, or first group member)
@@ -245,6 +265,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
   const handleClose = () => {
     setContactType("individual");
     setGroupName("");
+    setGroupDelta("");
     setContacts([emptyContactForm]);
     onClose();
   };
@@ -291,18 +312,36 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
               </RadioGroup>
             </div>
 
-            {/* Group Name - Only show if group type */}
+            {/* Group Settings - Only show if group type */}
             {contactType === "group" && (
-              <div className="space-y-2">
-                <Label htmlFor="group_name">Group Name *</Label>
-                <Input
-                  id="group_name"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
-                  placeholder="Enter group name"
-                  required
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="group_name">Group Name *</Label>
+                  <Input
+                    id="group_name"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="Enter group name"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="group_delta_input">Group Max Lag (Days) *</Label>
+                  <Input
+                    id="group_delta_input"
+                    type="number"
+                    min="0"
+                    value={groupDelta}
+                    onChange={(e) => setGroupDelta(e.target.value)}
+                    placeholder="e.g., 90"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This max lag applies to all contacts in this group
+                  </p>
+                </div>
+              </>
             )}
 
             {/* Contacts */}

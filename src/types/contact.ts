@@ -59,6 +59,7 @@ export interface ContactBase {
   lg_assistant: string | null;
   group_contact: string | null;
   group_email_role: string | null;
+  group_delta: number | null;
   linkedin_url: string | null;
   x_twitter_url: string | null;
   intentional_no_outreach: boolean | null;

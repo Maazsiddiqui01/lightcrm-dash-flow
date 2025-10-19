@@ -58,6 +58,7 @@ interface ContactRaw {
   lg_assistant: string | null;
   group_contact: string | null;
   group_email_role: string | null;
+  group_delta: number | null;
   linkedin_url: string | null;
   x_twitter_url: string | null;
   intentional_no_outreach: boolean | null;
@@ -679,7 +680,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 </div>
 
                 <div>
-                  <Label htmlFor="delta">Outreach Cadence (Days)</Label>
+                  <Label htmlFor="delta">Individual Max Lag (Days)</Label>
                   <Input
                     id="delta"
                     type="number"
@@ -687,6 +688,42 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     onChange={(e) => updateField("delta", e.target.value)}
                   />
                 </div>
+
+                {contactData.group_contact && (
+                  <div>
+                    <Label htmlFor="group_delta">Group Max Lag (Days)</Label>
+                    <Input
+                      id="group_delta"
+                      type="number"
+                      value={contactData.group_delta || ""}
+                      onChange={(e) => updateField("group_delta", e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Applies to all members of {contactData.group_contact}
+                    </p>
+                  </div>
+                )}
+                
+                {contactData.group_contact && (
+                  <div className="col-span-2 p-3 bg-muted/50 rounded-md">
+                    <p className="text-sm font-medium mb-2">Effective Values (Using Group)</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Effective Most Recent:</span>
+                        <p className="font-medium">
+                          {contactData.most_recent_group_contact 
+                            ? format(parseFlexibleDate(contactData.most_recent_group_contact) || new Date(), 'MMM dd, yyyy')
+                            : '—'
+                          }
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Effective Max Lag:</span>
+                        <p className="font-medium">{contactData.group_delta || '—'} days</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="intentional_no_outreach">Intentional No Outreach</Label>

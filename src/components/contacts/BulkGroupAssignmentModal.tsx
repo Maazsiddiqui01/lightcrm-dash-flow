@@ -27,6 +27,8 @@ export function BulkGroupAssignmentModal({
   const [mode, setMode] = useState<"existing" | "new">("existing");
   const [selectedGroup, setSelectedGroup] = useState<string>("");
   const [newGroupName, setNewGroupName] = useState<string>("");
+  const [groupDelta, setGroupDelta] = useState<string>("");
+  const [emailRoles, setEmailRoles] = useState<Record<string, string>>({});
   const [isUpdating, setIsUpdating] = useState(false);
 
   const queryClient = useQueryClient();
@@ -54,6 +56,39 @@ export function BulkGroupAssignmentModal({
       return;
     }
 
+    // Validate group_delta for NEW groups
+    if (mode === "new") {
+      if (!groupDelta || !groupDelta.trim()) {
+        toast({
+          title: "Group max lag days required",
+          description: "Please enter the max lag days for this group",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const deltaValue = parseInt(groupDelta);
+      if (isNaN(deltaValue) || deltaValue < 0) {
+        toast({
+          title: "Invalid max lag days",
+          description: "Please enter a valid positive number",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Validate email roles
+    const missingRoles = selectedContacts.filter(c => !emailRoles[c.id]);
+    if (missingRoles.length > 0) {
+      toast({
+        title: "Email roles required",
+        description: `Please assign email roles to all contacts (${missingRoles.length} missing)`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUpdating(true);
 
     try {
@@ -63,24 +98,46 @@ export function BulkGroupAssignmentModal({
         throw new Error("No valid contact IDs found");
       }
 
-      console.log('Assigning contacts to group:', { groupName, contactIds });
+      console.log('Assigning contacts to group:', { groupName, groupDelta, emailRoles, contactIds });
 
-      const { data, error } = await supabase
-        .from("contacts_raw")
-        .update({ group_contact: groupName })
-        .in("id", contactIds)
-        .select();
-
-      if (error) {
-        console.error("Supabase error details:", error);
-        throw new Error(`Database error: ${error.message} (Code: ${error.code})`);
+      // For new groups, get group_delta from input; for existing groups, fetch from DB
+      let finalGroupDelta: number | null = null;
+      if (mode === "new") {
+        finalGroupDelta = parseInt(groupDelta);
+      } else {
+        // Fetch group_delta from an existing member of this group
+        const { data: existingMember } = await supabase
+          .from("contacts_raw")
+          .select("group_delta")
+          .eq("group_contact", groupName)
+          .limit(1)
+          .maybeSingle();
+        
+        finalGroupDelta = existingMember?.group_delta || null;
       }
 
-      if (!data || data.length === 0) {
-        console.warn("Update returned no data, but no error");
-      }
+      // Update each contact individually with their specific email role
+      const updates = selectedContacts.map(async (contact) => {
+        const { error } = await supabase
+          .from("contacts_raw")
+          .update({
+            group_contact: groupName,
+            group_email_role: emailRoles[contact.id],
+            group_delta: finalGroupDelta,
+          })
+          .eq("id", contact.id);
 
-      console.log('Successfully updated contacts:', data?.length || 0);
+        if (error) throw error;
+      });
+
+      await Promise.all(updates);
+
+      // After all updates, recalculate group contact date
+      await supabase.rpc('recalculate_group_contact_date', {
+        p_group_name: groupName
+      });
+
+      console.log('Successfully updated all contacts in group');
 
       toast({
         title: "Success",
@@ -100,6 +157,8 @@ export function BulkGroupAssignmentModal({
       // Reset state
       setSelectedGroup("");
       setNewGroupName("");
+      setGroupDelta("");
+      setEmailRoles({});
       setMode("existing");
     } catch (error: any) {
       console.error("Error assigning contacts to group:", error);
@@ -176,16 +235,59 @@ export function BulkGroupAssignmentModal({
               )}
             </div>
           ) : (
-            <div className="space-y-2">
-              <Label htmlFor="new-group">New Group Name</Label>
-              <Input
-                id="new-group"
-                placeholder="Enter group name..."
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="new-group">New Group Name</Label>
+                <Input
+                  id="new-group"
+                  placeholder="Enter group name..."
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="group-delta">Group Max Lag (Days) *</Label>
+                <Input
+                  id="group-delta"
+                  type="number"
+                  min="0"
+                  placeholder="e.g., 90"
+                  value={groupDelta}
+                  onChange={(e) => setGroupDelta(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  This applies to all contacts in the group
+                </p>
+              </div>
+            </>
           )}
+
+          {/* Email Role Assignment for Each Contact */}
+          <div className="space-y-3">
+            <Label>Assign Email Roles *</Label>
+            <div className="space-y-2 border rounded-md p-3">
+              {selectedContacts.map((contact) => (
+                <div key={contact.id} className="flex items-center justify-between gap-3">
+                  <span className="text-sm flex-1 truncate">{contact.full_name || "Unknown"}</span>
+                  <Select
+                    value={emailRoles[contact.id] || ""}
+                    onValueChange={(value) => setEmailRoles({ ...emailRoles, [contact.id]: value })}
+                  >
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="to">To</SelectItem>
+                      <SelectItem value="cc">CC</SelectItem>
+                      <SelectItem value="bcc">BCC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="space-y-2">
             <Label>Selected Contacts ({selectedContacts.length})</Label>
