@@ -8,6 +8,7 @@ import { useGroupContactsView } from "@/hooks/useGroupContactsView";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
+import { buildGroupEmailPayload } from "@/lib/groupEmailPayload";
 
 export function GroupContactsTable() {
   const [selectedGroup, setSelectedGroup] = useState<GroupContactView | null>(null);
@@ -22,12 +23,34 @@ export function GroupContactsTable() {
     setIsDrawerOpen(true);
   };
 
-  const handleSendEmail = (group: GroupContactView) => {
-    toast({
-      title: "Email Draft",
-      description: `Opening email builder for group: ${group.group_name}`,
-    });
-    // TODO: Navigate to email builder with group context
+  const handleSendEmail = async (group: GroupContactView) => {
+    try {
+      const payload = buildGroupEmailPayload(group);
+      
+      const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Group-Contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Webhook failed: ${response.statusText}`);
+      }
+      
+      toast({
+        title: "Email Sent",
+        description: `Group email sent for: ${group.group_name}`,
+      });
+    } catch (error) {
+      console.error('Error sending group email:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send group email. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const columns = [
@@ -49,12 +72,14 @@ export function GroupContactsTable() {
       cell: ({ row }: any) => {
         const group = row.original as GroupContactView;
         return (
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span>{group.member_count}</span>
-            <Badge variant="outline" className="text-xs">
-              {group.to_members ? `To: ${group.to_members.split(',').length}` : 'No TO'}
-            </Badge>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{group.member_count} member{group.member_count !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="text-sm text-muted-foreground truncate max-w-[250px]">
+              {group.member_names || 'No members'}
+            </div>
           </div>
         );
       },

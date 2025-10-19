@@ -13,6 +13,7 @@ import { Mail, Users, Calendar, Target, ExternalLink, Clock } from "lucide-react
 import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { useToast } from "@/hooks/use-toast";
+import { buildGroupEmailPayload } from "@/lib/groupEmailPayload";
 
 interface GroupContactDrawerProps {
   group: GroupContactView | null;
@@ -26,12 +27,34 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
 
   if (!group) return null;
 
-  const handleSendEmail = () => {
-    toast({
-      title: "Email Builder",
-      description: `Opening email builder for group: ${group.group_name}`,
-    });
-    // TODO: Navigate to email builder with group context
+  const handleSendEmail = async () => {
+    try {
+      const payload = buildGroupEmailPayload(group);
+      
+      const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Group-Contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Webhook failed: ${response.statusText}`);
+      }
+      
+      toast({
+        title: "Email Sent",
+        description: `Group email sent for: ${group.group_name}`,
+      });
+    } catch (error) {
+      console.error('Error sending group email:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send group email. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const toMembers = group.members.filter(m => m.group_email_role === 'to');

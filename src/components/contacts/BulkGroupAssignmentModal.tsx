@@ -117,6 +117,16 @@ export function BulkGroupAssignmentModal({
 
       await Promise.all(updates);
 
+      // Update ALL members of the group with the new group_delta (not just selected contacts)
+      const { error: groupDeltaError } = await supabase
+        .from('contacts_raw')
+        .update({ group_delta: finalGroupDelta })
+        .eq('group_contact', groupName);
+
+      if (groupDeltaError) {
+        console.error('Error updating group_delta for all members:', groupDeltaError);
+      }
+
       // After all updates, recalculate group contact date
       await supabase.rpc('recalculate_group_contact_date', {
         p_group_name: groupName
@@ -132,6 +142,7 @@ export function BulkGroupAssignmentModal({
       // Invalidate related queries for immediate UI update
       queryClient.invalidateQueries({ queryKey: ['group-members', groupName] });
       queryClient.invalidateQueries({ queryKey: ['group-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
       contactIds.forEach(id => {
         queryClient.invalidateQueries({ queryKey: ['contact-group-info', id] });
       });
