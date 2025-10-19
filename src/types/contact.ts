@@ -141,3 +141,42 @@ export interface ContactQueryResult {
   prevPage: () => void;
   setPageSize: (size: number) => void;
 }
+
+/**
+ * Group contact member info
+ */
+export interface GroupContactMember {
+  id: string;
+  full_name: string;
+  email_address: string;
+  group_email_role: string;
+  most_recent_contact: string | null;
+  title: string | null;
+  organization: string | null;
+}
+
+/**
+ * Group contacts aggregated view
+ */
+export interface GroupContactView {
+  group_name: string;
+  max_lag_days: number | null;
+  most_recent_contact: string | null;
+  most_recent_email: string | null;
+  most_recent_meeting: string | null;
+  next_outreach_date: string | null;
+  member_count: number;
+  members: GroupContactMember[];
+  member_names: string;
+  to_members: string | null;
+  cc_members: string | null;
+  bcc_members: string | null;
+  opportunities: string | null;
+  opportunity_count: number;
+  all_focus_areas: string | null;
+  all_sectors: string | null;
+  last_updated: string;
+  group_created_at: string;
+  assigned_to: string | null;
+  created_by: string | null;
+}

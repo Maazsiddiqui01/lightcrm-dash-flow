@@ -2984,6 +2984,31 @@ export type Database = {
         }
         Relationships: []
       }
+      group_contacts_view: {
+        Row: {
+          all_focus_areas: string | null
+          all_sectors: string | null
+          assigned_to: string | null
+          bcc_members: string | null
+          cc_members: string | null
+          created_by: string | null
+          group_created_at: string | null
+          group_name: string | null
+          last_updated: string | null
+          max_lag_days: number | null
+          member_count: number | null
+          member_names: string | null
+          members: Json | null
+          most_recent_contact: string | null
+          most_recent_email: string | null
+          most_recent_meeting: string | null
+          next_outreach_date: string | null
+          opportunities: string | null
+          opportunity_count: number | null
+          to_members: string | null
+        }
+        Relationships: []
+      }
       interactions_ai: {
         Row: {
           email: string | null
@@ -3843,6 +3868,31 @@ export type Database = {
           lead2_email: string
           lead2_name: string
           sector_id: string
+        }[]
+      }
+      get_group_contacts_view: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          all_focus_areas: string
+          all_sectors: string
+          assigned_to: string
+          bcc_members: string
+          cc_members: string
+          created_by: string
+          group_created_at: string
+          group_name: string
+          last_updated: string
+          max_lag_days: number
+          member_count: number
+          member_names: string
+          members: Json
+          most_recent_contact: string
+          most_recent_email: string
+          most_recent_meeting: string
+          next_outreach_date: string
+          opportunities: string
+          opportunity_count: number
+          to_members: string
         }[]
       }
       get_latest_contact_email: {
