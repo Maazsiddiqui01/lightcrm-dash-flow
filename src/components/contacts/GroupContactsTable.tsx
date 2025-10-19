@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { buildGroupEmailPayload } from "@/lib/groupEmailPayload";
+import { parseFlexibleDate } from "@/utils/dateUtils";
 
 export function GroupContactsTable() {
   const [selectedGroup, setSelectedGroup] = useState<GroupContactView | null>(null);
@@ -71,14 +72,18 @@ export function GroupContactsTable() {
       header: "Members",
       cell: ({ row }: any) => {
         const group = row.original as GroupContactView;
+        const names = Array.isArray(group.member_names)
+          ? group.member_names.map((n: any) => typeof n === 'string' ? n : n.first_name || n.full_name).join(', ')
+          : group.member_names;
+        
         return (
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium">{group.member_count} member{group.member_count !== 1 ? 's' : ''}</span>
             </div>
-            <div className="text-sm text-muted-foreground truncate max-w-[250px]">
-              {group.member_names || 'No members'}
+            <div className="text-sm text-muted-foreground truncate max-w-[250px]" title={names || undefined}>
+              {names || 'No members'}
             </div>
           </div>
         );
@@ -108,14 +113,48 @@ export function GroupContactsTable() {
       header: "Most Recent Contact",
       accessorKey: "most_recent_contact",
       cell: ({ row }: any) => {
-        const date = row.original.most_recent_contact;
+        const date = parseFlexibleDate(row.original.most_recent_contact);
         return date ? (
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            {format(new Date(date), 'MMM dd, yyyy')}
+            {format(date, 'yyyy-MM-dd')}
           </div>
         ) : (
           <span className="text-muted-foreground">Never</span>
+        );
+      },
+    },
+    {
+      key: "days_since_last_contact",
+      id: "days_since_last_contact",
+      label: "Days Since",
+      header: "Days Since",
+      accessorKey: "days_since_last_contact",
+      cell: ({ row }: any) => {
+        const days = row.original.days_since_last_contact;
+        return days !== null && days !== undefined ? (
+          <Badge variant="secondary">{days}d</Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
+      },
+    },
+    {
+      key: "days_over_under_max_lag",
+      id: "days_over_under_max_lag",
+      label: "Over/Under",
+      header: "Over/Under",
+      accessorKey: "days_over_under_max_lag",
+      cell: ({ row }: any) => {
+        const days = row.original.days_over_under_max_lag;
+        if (days === null || days === undefined) {
+          return <span className="text-muted-foreground">—</span>;
+        }
+        const isNegative = days < 0;
+        return (
+          <Badge variant={isNegative ? "destructive" : "default"}>
+            {days > 0 ? '+' : ''}{days}
+          </Badge>
         );
       },
     },
@@ -126,14 +165,29 @@ export function GroupContactsTable() {
       header: "Next Outreach",
       accessorKey: "next_outreach_date",
       cell: ({ row }: any) => {
-        const date = row.original.next_outreach_date;
-        if (!date) return <span className="text-muted-foreground">-</span>;
-        
-        const isOverdue = new Date(date) < new Date();
-        return (
-          <Badge variant={isOverdue ? "destructive" : "default"}>
-            {format(new Date(date), 'MMM dd, yyyy')}
+        const group = row.original as GroupContactView;
+        const date = parseFlexibleDate(group.next_outreach_date);
+        return date ? (
+          <Badge variant={group.is_overdue ? "destructive" : "secondary"}>
+            {format(date, 'yyyy-MM-dd')}
           </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
+      },
+    },
+    {
+      key: "is_over_max_lag",
+      id: "is_over_max_lag",
+      label: "Over Max Lag",
+      header: "Over Max Lag",
+      accessorKey: "is_over_max_lag",
+      cell: ({ row }: any) => {
+        const isOver = row.original.is_over_max_lag;
+        return isOver ? (
+          <Badge variant="destructive">Yes</Badge>
+        ) : (
+          <span className="text-muted-foreground">No</span>
         );
       },
     },

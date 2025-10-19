@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { useToast } from "@/hooks/use-toast";
 import { buildGroupEmailPayload } from "@/lib/groupEmailPayload";
+import { parseFlexibleDate } from "@/utils/dateUtils";
 
 interface GroupContactDrawerProps {
   group: GroupContactView | null;
@@ -103,7 +104,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                 {group.most_recent_contact ? (
                   <>
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{format(new Date(group.most_recent_contact), 'MMM dd, yyyy')}</span>
+                    <span>{format(parseFlexibleDate(group.most_recent_contact)!, 'yyyy-MM-dd')}</span>
                   </>
                 ) : (
                   <span className="text-muted-foreground">Never</span>
@@ -116,7 +117,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
               <div>
                 {group.next_outreach_date ? (
                   <Badge variant={isOverdue ? "destructive" : "default"}>
-                    {format(new Date(group.next_outreach_date), 'MMM dd, yyyy')}
+                    {format(parseFlexibleDate(group.next_outreach_date)!, 'yyyy-MM-dd')}
                     {isOverdue && " (Overdue)"}
                   </Badge>
                 ) : (
@@ -261,7 +262,7 @@ function MemberCard({ member }: { member: any }) {
       {member.most_recent_contact && (
         <div className="text-xs text-muted-foreground flex items-center gap-1">
           <Calendar className="h-3 w-3" />
-          Last contact: {format(new Date(member.most_recent_contact), 'MMM dd, yyyy')}
+          Last contact: {format(parseFlexibleDate(member.most_recent_contact)!, 'yyyy-MM-dd')}
         </div>
       )}
     </div>

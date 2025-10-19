@@ -179,4 +179,8 @@ export interface GroupContactView {
   group_created_at: string;
   assigned_to: string | null;
   created_by: string | null;
+  days_since_last_contact: number | null;
+  days_over_under_max_lag: number | null;
+  is_overdue: boolean;
+  is_over_max_lag: boolean;
 }
