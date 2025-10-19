@@ -1,8 +1,9 @@
 import { ContactsTableWithErrorBoundary } from "@/components/contacts/ContactsTableWithErrorBoundary";
+import { GroupContactsTable } from "@/components/contacts/GroupContactsTable";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useContactStats } from "@/hooks/useContactStats";
-import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX, Sparkles } from "lucide-react";
+import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX, Sparkles, ListTree } from "lucide-react";
 import { useState, useMemo } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { SuggestGroupsModal } from "@/components/contacts/SuggestGroupsModal";
@@ -11,12 +12,14 @@ import { AIContactSearch } from "@/components/contacts/AIContactSearch";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 import type { ContactFilters } from "@/types/contact";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 export function Contacts() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuggestGroupsOpen, setIsSuggestGroupsOpen] = useState(false);
   const [showOpportunityFilters, setShowOpportunityFilters] = useState(true);
+  const [viewMode, setViewMode] = useState<'individual' | 'group'>('individual');
   
   const { filters, updateFilters, clearFilters } = useUrlFilters({
     focusAreas: [],
@@ -104,6 +107,20 @@ export function Contacts() {
           </div>
         </div>
 
+        {/* View Mode Toggle */}
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'individual' | 'group')} className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="individual" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Individual Contacts
+            </TabsTrigger>
+            <TabsTrigger value="group" className="flex items-center gap-2">
+              <ListTree className="h-4 w-4" />
+              Group Contacts
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* AI Contact Search */}
         <AIContactSearch 
           onSearchResults={(query, aiFilters) => {
@@ -173,10 +190,15 @@ export function Contacts() {
           />
         </div>
 
-        <ContactsTableWithErrorBoundary 
-          filters={stableContactFilters}
-          onOpportunityColumnVisibilityChange={setShowOpportunityFilters}
-        />
+        {/* Conditionally render table based on view mode */}
+        {viewMode === 'individual' ? (
+          <ContactsTableWithErrorBoundary 
+            filters={stableContactFilters}
+            onOpportunityColumnVisibilityChange={setShowOpportunityFilters}
+          />
+        ) : (
+          <GroupContactsTable />
+        )}
 
         <AddContactDialog 
           open={isAddDialogOpen} 
