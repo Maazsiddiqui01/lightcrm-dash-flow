@@ -57,30 +57,33 @@ export function GroupContactsTable() {
   const columns = [
     {
       key: "group_name",
-      id: "group_name",
       label: "Group Name",
-      header: "Group Name",
-      accessorKey: "group_name",
-      cell: ({ row }: any) => (
-        <div className="font-medium">{row.original.group_name}</div>
+      render: (value: any, row: GroupContactView) => (
+        <div className="font-medium">{row.group_name}</div>
       ),
+      sortable: true,
+      sticky: true,
     },
     {
       key: "members",
-      id: "members",
       label: "Members",
-      header: "Members",
-      cell: ({ row }: any) => {
-        const group = row.original as GroupContactView;
-        const names = Array.isArray(group.member_names)
-          ? group.member_names.map((n: any) => typeof n === 'string' ? n : n.first_name || n.full_name).join(', ')
-          : group.member_names;
-        
+      render: (value: any, row: GroupContactView) => {
+        const names = typeof row.member_names === 'string' && row.member_names.trim().length > 0
+          ? row.member_names
+          : Array.isArray(row.members)
+            ? row.members
+                .map(m => (m.full_name || '').split(' ')[0])
+                .filter(Boolean)
+                .join(', ')
+            : 'No members';
+
         return (
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{group.member_count} member{group.member_count !== 1 ? 's' : ''}</span>
+              <span className="font-medium">
+                {row.member_count} member{row.member_count !== 1 ? 's' : ''}
+              </span>
             </div>
             <div className="text-sm text-muted-foreground truncate max-w-[250px]" title={names || undefined}>
               {names || 'No members'}
@@ -91,65 +94,48 @@ export function GroupContactsTable() {
     },
     {
       key: "max_lag_days",
-      id: "max_lag_days",
       label: "Max Lag Days",
-      header: "Max Lag Days",
-      accessorKey: "max_lag_days",
-      cell: ({ row }: any) => {
-        const days = row.original.max_lag_days;
+      render: (value: any, row: GroupContactView) => {
+        const days = row.max_lag_days;
         return days ? (
           <Badge variant={days > 90 ? "destructive" : "secondary"}>
             {days} days
           </Badge>
-        ) : (
-          <span className="text-muted-foreground">-</span>
-        );
+        ) : <span className="text-muted-foreground">-</span>;
       },
+      sortable: true,
     },
     {
       key: "most_recent_contact",
-      id: "most_recent_contact",
       label: "Most Recent Contact",
-      header: "Most Recent Contact",
-      accessorKey: "most_recent_contact",
-      cell: ({ row }: any) => {
-        const date = parseFlexibleDate(row.original.most_recent_contact);
+      render: (value: any, row: GroupContactView) => {
+        const date = parseFlexibleDate(row.most_recent_contact);
         return date ? (
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             {format(date, 'yyyy-MM-dd')}
           </div>
-        ) : (
-          <span className="text-muted-foreground">Never</span>
-        );
+        ) : <span className="text-muted-foreground">Never</span>;
       },
+      sortable: true,
     },
     {
       key: "days_since_last_contact",
-      id: "days_since_last_contact",
       label: "Days Since",
-      header: "Days Since",
-      accessorKey: "days_since_last_contact",
-      cell: ({ row }: any) => {
-        const days = row.original.days_since_last_contact;
-        return days !== null && days !== undefined ? (
-          <Badge variant="secondary">{days}d</Badge>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        );
+      render: (value: any, row: GroupContactView) => {
+        const days = row.days_since_last_contact;
+        return days !== null && days !== undefined
+          ? <Badge variant="secondary">{days}d</Badge>
+          : <span className="text-muted-foreground">—</span>;
       },
+      sortable: true,
     },
     {
       key: "days_over_under_max_lag",
-      id: "days_over_under_max_lag",
       label: "Over/Under",
-      header: "Over/Under",
-      accessorKey: "days_over_under_max_lag",
-      cell: ({ row }: any) => {
-        const days = row.original.days_over_under_max_lag;
-        if (days === null || days === undefined) {
-          return <span className="text-muted-foreground">—</span>;
-        }
+      render: (value: any, row: GroupContactView) => {
+        const days = row.days_over_under_max_lag;
+        if (days === null || days === undefined) return <span className="text-muted-foreground">—</span>;
         const isNegative = days < 0;
         return (
           <Badge variant={isNegative ? "destructive" : "default"}>
@@ -157,95 +143,76 @@ export function GroupContactsTable() {
           </Badge>
         );
       },
+      sortable: true,
     },
     {
       key: "next_outreach_date",
-      id: "next_outreach_date",
       label: "Next Outreach",
-      header: "Next Outreach",
-      accessorKey: "next_outreach_date",
-      cell: ({ row }: any) => {
-        const group = row.original as GroupContactView;
-        const date = parseFlexibleDate(group.next_outreach_date);
+      render: (value: any, row: GroupContactView) => {
+        const date = parseFlexibleDate(row.next_outreach_date);
         return date ? (
-          <Badge variant={group.is_overdue ? "destructive" : "secondary"}>
+          <Badge variant={row.is_overdue ? "destructive" : "secondary"}>
             {format(date, 'yyyy-MM-dd')}
           </Badge>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        );
+        ) : <span className="text-muted-foreground">—</span>;
       },
+      sortable: true,
     },
     {
       key: "is_over_max_lag",
-      id: "is_over_max_lag",
       label: "Over Max Lag",
-      header: "Over Max Lag",
-      accessorKey: "is_over_max_lag",
-      cell: ({ row }: any) => {
-        const isOver = row.original.is_over_max_lag;
-        return isOver ? (
-          <Badge variant="destructive">Yes</Badge>
-        ) : (
-          <span className="text-muted-foreground">No</span>
-        );
-      },
+      render: (value: any, row: GroupContactView) => (
+        row.is_over_max_lag
+          ? <Badge variant="destructive">Yes</Badge>
+          : <span className="text-muted-foreground">No</span>
+      ),
     },
     {
       key: "opportunities",
-      id: "opportunities",
       label: "Opportunities",
-      header: "Opportunities",
-      cell: ({ row }: any) => {
-        const group = row.original as GroupContactView;
-        return (
-          <div className="flex items-center gap-2">
-            {group.opportunity_count > 0 ? (
-              <>
-                <Badge variant="secondary">{group.opportunity_count}</Badge>
-                <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                  {group.opportunities}
-                </span>
-              </>
-            ) : (
-              <span className="text-muted-foreground">None</span>
-            )}
-          </div>
-        );
-      },
+      render: (value: any, row: GroupContactView) => (
+        <div className="flex items-center gap-2">
+          {row.opportunity_count > 0 ? (
+            <>
+              <Badge variant="secondary">{row.opportunity_count}</Badge>
+              <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                {row.opportunities}
+              </span>
+            </>
+          ) : (
+            <span className="text-muted-foreground">None</span>
+          )}
+        </div>
+      ),
     },
     {
       key: "actions",
-      id: "actions",
       label: "Actions",
-      header: "Actions",
-      cell: ({ row }: any) => {
-        const group = row.original as GroupContactView;
-        return (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRowClick(group);
-              }}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSendEmail(group);
-              }}
-            >
-              <Mail className="h-4 w-4" />
-            </Button>
-          </div>
-        );
-      },
+      enableHiding: false,
+      render: (_: any, row: GroupContactView) => (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRowClick(row);
+            }}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSendEmail(row);
+            }}
+          >
+            <Mail className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
     },
   ];
 
