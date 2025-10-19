@@ -56,26 +56,24 @@ export function BulkGroupAssignmentModal({
       return;
     }
 
-    // Validate group_delta for NEW groups
-    if (mode === "new") {
-      if (!groupDelta || !groupDelta.trim()) {
-        toast({
-          title: "Group max lag days required",
-          description: "Please enter the max lag days for this group",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const deltaValue = parseInt(groupDelta);
-      if (isNaN(deltaValue) || deltaValue < 0) {
-        toast({
-          title: "Invalid max lag days",
-          description: "Please enter a valid positive number",
-          variant: "destructive",
-        });
-        return;
-      }
+    // Validate group_delta for ALL groups (new and existing)
+    if (!groupDelta || !groupDelta.trim()) {
+      toast({
+        title: "Group max lag days required",
+        description: "Please enter the max lag days for this group",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const deltaValue = parseInt(groupDelta);
+    if (isNaN(deltaValue) || deltaValue < 0) {
+      toast({
+        title: "Invalid max lag days",
+        description: "Please enter a valid positive number",
+        variant: "destructive",
+      });
+      return;
     }
 
     // Validate email roles
@@ -100,21 +98,8 @@ export function BulkGroupAssignmentModal({
 
       console.log('Assigning contacts to group:', { groupName, groupDelta, emailRoles, contactIds });
 
-      // For new groups, get group_delta from input; for existing groups, fetch from DB
-      let finalGroupDelta: number | null = null;
-      if (mode === "new") {
-        finalGroupDelta = parseInt(groupDelta);
-      } else {
-        // Fetch group_delta from an existing member of this group
-        const { data: existingMember } = await supabase
-          .from("contacts_raw")
-          .select("group_delta")
-          .eq("group_contact", groupName)
-          .limit(1)
-          .maybeSingle();
-        
-        finalGroupDelta = existingMember?.group_delta || null;
-      }
+      // Use groupDelta from input for both new and existing groups
+      const finalGroupDelta = parseInt(groupDelta);
 
       // Update each contact individually with their specific email role
       const updates = selectedContacts.map(async (contact) => {
@@ -220,7 +205,23 @@ export function BulkGroupAssignmentModal({
                   Loading groups...
                 </div>
               ) : (
-                <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                <Select value={selectedGroup} onValueChange={(value) => {
+                  setSelectedGroup(value);
+                  // When selecting an existing group, fetch its group_delta
+                  if (value) {
+                    supabase
+                      .from("contacts_raw")
+                      .select("group_delta")
+                      .eq("group_contact", value)
+                      .limit(1)
+                      .maybeSingle()
+                      .then(({ data }) => {
+                        if (data?.group_delta) {
+                          setGroupDelta(data.group_delta.toString());
+                        }
+                      });
+                  }
+                }}>
                   <SelectTrigger id="group-select">
                     <SelectValue placeholder="Choose a group..." />
                   </SelectTrigger>
@@ -245,24 +246,28 @@ export function BulkGroupAssignmentModal({
                   onChange={(e) => setNewGroupName(e.target.value)}
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="group-delta">Group Max Lag (Days) *</Label>
-                <Input
-                  id="group-delta"
-                  type="number"
-                  min="0"
-                  placeholder="e.g., 90"
-                  value={groupDelta}
-                  onChange={(e) => setGroupDelta(e.target.value)}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  This applies to all contacts in the group
-                </p>
-              </div>
             </>
           )}
+          
+          {/* Group Max Lag - shown for BOTH new and existing groups */}
+          <div className="space-y-2">
+            <Label htmlFor="group-delta">Group Max Lag (Days) *</Label>
+            <Input
+              id="group-delta"
+              type="number"
+              min="0"
+              placeholder="e.g., 90"
+              value={groupDelta}
+              onChange={(e) => setGroupDelta(e.target.value)}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              {mode === "existing" 
+                ? "This will update the max lag for all contacts in this group" 
+                : "This applies to all contacts in the group"
+              }
+            </p>
+          </div>
 
           {/* Email Role Assignment for Each Contact */}
           <div className="space-y-3">
