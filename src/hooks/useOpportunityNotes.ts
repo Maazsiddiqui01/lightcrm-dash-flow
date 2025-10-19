@@ -134,6 +134,7 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
         p_opportunity_id: opportunityId,
         p_field: 'most_recent_notes',
         p_content: content,
+        p_due_date: null,
       });
 
       if (error) {
