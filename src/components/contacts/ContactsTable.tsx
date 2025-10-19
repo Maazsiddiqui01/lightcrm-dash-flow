@@ -6,6 +6,7 @@ import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
 import { IntentionalNoOutreachModal } from "./IntentionalNoOutreachModal";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
@@ -201,7 +202,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     }
   };
 
-  // Add actions column
+  // Add actions column and customize group_delta display
   const columns = useMemo(() => {
     const actionsColumn = {
       key: "actions",
@@ -308,7 +309,27 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       },
     };
 
-    return [actionsColumn, ...dynamicColumns];
+    // Customize group_delta column to display next to group_contact with better formatting
+    const enhancedColumns = dynamicColumns.map(col => {
+      if (col.key === 'group_delta') {
+        return {
+          ...col,
+          label: 'Group Max Lag',
+          render: (value: any, row: ContactRaw) => {
+            const days = row.group_delta;
+            if (!days) return <span className="text-muted-foreground">—</span>;
+            return (
+              <Badge variant={days > 90 ? "destructive" : "secondary"}>
+                {days} days
+              </Badge>
+            );
+          }
+        };
+      }
+      return col;
+    });
+
+    return [actionsColumn, ...enhancedColumns];
   }, [dynamicColumns, toast]);
   
   // Create column options for sort dialog
