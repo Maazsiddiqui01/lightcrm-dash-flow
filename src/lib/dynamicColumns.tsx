@@ -7,7 +7,7 @@ import { parseFlexibleDate } from '@/utils/dateUtils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EditableCell } from '@/components/shared/EditableCell';
 import { Badge } from '@/components/ui/badge';
-import { formatDaysOverUnder, getDaysOverUnderColorClass } from '@/utils/contactCalculations';
+import { formatDaysOverUnder, getDaysOverUnderColorClass, calculateEffectiveOutreachData } from '@/utils/contactCalculations';
 import { getTierDisplayValue } from '@/lib/export/opportunityUtils';
 import { addDays } from 'date-fns';
 
@@ -135,29 +135,20 @@ export function createDynamicColumns<T extends Record<string, any>>(
         // Get display value and modification state first
         let displayValue = formatCellValue(editedValue, tableColumn);
         
-        // Special handling for outreach_date - calculate from MAX(most_recent_contact, most_recent_group_contact) + delta
+        // Special handling for outreach_date - use group logic
         if (tableColumn.name === 'outreach_date') {
-          const mostRecentContact = row.most_recent_contact;
-          const mostRecentGroupContact = row.most_recent_group_contact;
-          const delta = row.delta;
+          const effective = calculateEffectiveOutreachData({
+            group_contact: row.group_contact,
+            most_recent_contact: row.most_recent_contact,
+            most_recent_group_contact: row.most_recent_group_contact,
+            delta: row.delta,
+            group_delta: row.group_delta
+          });
           
-          if (delta) {
-            // Get the higher of the two dates
-            let effectiveContactDate: Date | null = null;
-            
-            const contactDate = mostRecentContact ? parseFlexibleDate(mostRecentContact) : null;
-            const groupContactDate = mostRecentGroupContact ? parseFlexibleDate(mostRecentGroupContact) : null;
-            
-            if (contactDate && groupContactDate) {
-              effectiveContactDate = contactDate > groupContactDate ? contactDate : groupContactDate;
-            } else if (contactDate) {
-              effectiveContactDate = contactDate;
-            } else if (groupContactDate) {
-              effectiveContactDate = groupContactDate;
-            }
-            
-            if (effectiveContactDate) {
-              const outreachDate = addDays(effectiveContactDate, delta);
+          if (effective.effectiveMaxLagDays) {
+            const contactDate = parseFlexibleDate(effective.effectiveMostRecentContact);
+            if (contactDate) {
+              const outreachDate = addDays(contactDate, effective.effectiveMaxLagDays);
               displayValue = format(outreachDate, 'MMM dd, yyyy');
             } else {
               displayValue = '';

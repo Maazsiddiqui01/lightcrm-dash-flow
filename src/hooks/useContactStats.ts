@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateDaysOverUnderMaxLag } from "@/utils/contactCalculations";
+import { calculateDaysOverUnderMaxLag, calculateEffectiveOutreachData } from "@/utils/contactCalculations";
 import { useToast } from "@/hooks/use-toast";
 
 interface ContactStats {
@@ -319,9 +319,17 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
             return;
           }
           
+          const effective = calculateEffectiveOutreachData({
+            group_contact: contact.group_contact,
+            most_recent_contact: contact.most_recent_contact,
+            most_recent_group_contact: contact.most_recent_group_contact,
+            delta: contact.delta,
+            group_delta: contact.group_delta
+          });
+          
           const daysOverUnder = calculateDaysOverUnderMaxLag(
-            contact.most_recent_contact,
-            contact.delta
+            effective.effectiveMostRecentContact,
+            effective.effectiveMaxLagDays
           );
           
           if (daysOverUnder !== null) {
