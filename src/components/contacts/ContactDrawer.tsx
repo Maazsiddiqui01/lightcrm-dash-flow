@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useContactNotes } from "@/hooks/useContactNotes";
 import { useGroupNotes } from "@/hooks/useGroupNotes";
+import { useContactGroups } from "@/hooks/useContactGroups";
+import { useRemoveContactFromGroup } from "@/hooks/useRemoveContactFromGroup";
 import { ContactNotesSection } from "./ContactNotesSection";
 import { GroupNotesSection } from "./GroupNotesSection";
 import { format } from 'date-fns';
@@ -21,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX, Trash2 } from "lucide-react";
+import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX, Trash2, Users } from "lucide-react";
 import { useContactOpps } from "@/hooks/useContactOpps";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
@@ -142,6 +144,10 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     saveNotes: saveGroupNotes,
     isSavingNotes: isSavingGroupNotes,
   } = useGroupNotes(contactData?.group_contact || undefined);
+
+  // Fetch all groups this contact belongs to (new many-to-many schema)
+  const { data: contactGroupMemberships = [], isLoading: isLoadingGroups } = useContactGroups(contact?.id || null);
+  const removeFromGroupMutation = useRemoveContactFromGroup();
 
   // Use canonical lookup options
   const sectorsQuery = useSectors();
@@ -803,7 +809,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
               <>
                 <Separator />
                 <GroupNotesSection
-                  title="Group Notes"
+                  title="Group Notes (Legacy)"
                   field="group_notes"
                   currentValue={groupCurrentNotes?.notes || null}
                   timeline={groupTimeline}
@@ -813,6 +819,63 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                   isSaving={isSavingGroupNotes}
                   showSharedIndicator={true}
                 />
+              </>
+            )}
+
+            {/* New Many-to-Many Groups Section */}
+            {contactGroupMemberships.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="font-semibold">Group Memberships</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {contactGroupMemberships.map((membership) => (
+                      <div key={membership.group_id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{membership.group_name}</span>
+                            {membership.email_role && (
+                              <Badge variant="outline" className="text-xs">
+                                {membership.email_role.toUpperCase()}
+                              </Badge>
+                            )}
+                          </div>
+                          {(membership.max_lag_days || membership.focus_area || membership.sector) && (
+                            <div className="flex gap-2 text-xs text-muted-foreground">
+                              {membership.max_lag_days && (
+                                <span>Max Lag: {membership.max_lag_days}d</span>
+                              )}
+                              {membership.focus_area && (
+                                <span>• {membership.focus_area}</span>
+                              )}
+                              {membership.sector && (
+                                <span>• {membership.sector}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (contact?.id && membership.group_id) {
+                              removeFromGroupMutation.mutate({
+                                contactId: contact.id,
+                                groupId: membership.group_id,
+                              });
+                            }
+                          }}
+                          disabled={removeFromGroupMutation.isPending}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
 

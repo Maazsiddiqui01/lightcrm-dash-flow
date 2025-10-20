@@ -54,57 +54,48 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const handleSaveEdits = async () => {
     setIsSaving(true);
     try {
-      // Get all member IDs for this group
-      const { data: members, error: membersError } = await supabase
-        .from('contacts_raw')
-        .select('id')
-        .eq('group_contact', group.group_name);
+      // Prepare group-level updates
+      const groupUpdates: any = {};
+      let hasGroupUpdates = false;
 
-      if (membersError) throw membersError;
+      // Update max lag if changed
+      if (editedMaxLag !== null && editedMaxLag !== group.max_lag_days) {
+        groupUpdates.max_lag_days = editedMaxLag;
+        hasGroupUpdates = true;
+      }
 
-      if (members && members.length > 0) {
-        // Prepare update object for group-level fields
-        const groupUpdateData: any = { updated_at: new Date().toISOString() };
-        let hasGroupUpdates = false;
+      // Update group focus area if changed
+      if (editedGroupFocusArea && editedGroupFocusArea !== (group.group_focus_area || '')) {
+        groupUpdates.focus_area = editedGroupFocusArea;
+        hasGroupUpdates = true;
+      }
 
-        // Update max lag for all members if changed
-        if (editedMaxLag !== null && editedMaxLag !== group.max_lag_days) {
-          groupUpdateData.group_delta = editedMaxLag;
-          hasGroupUpdates = true;
-        }
+      // Update group sector if changed
+      if (editedGroupSector && editedGroupSector !== (group.group_sector || '')) {
+        groupUpdates.sector = editedGroupSector;
+        hasGroupUpdates = true;
+      }
 
-        // Update group focus area for all members if changed
-        if (editedGroupFocusArea && editedGroupFocusArea !== (group.group_focus_area || '')) {
-          groupUpdateData.group_focus_area = editedGroupFocusArea;
-          hasGroupUpdates = true;
-        }
+      // Apply group-level updates if any
+      if (hasGroupUpdates) {
+        const { error: updateError } = await supabase
+          .from('groups')
+          .update({
+            ...groupUpdates,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', group.group_id);
 
-        // Update group sector for all members if changed
-        if (editedGroupSector && editedGroupSector !== (group.group_sector || '')) {
-          groupUpdateData.group_sector = editedGroupSector;
-          hasGroupUpdates = true;
-        }
-
-        // Apply group-level updates if any
-        if (hasGroupUpdates) {
-          const { error: updateError } = await supabase
-            .from('contacts_raw')
-            .update(groupUpdateData)
-            .in('id', members.map(m => m.id));
-
-          if (updateError) throw updateError;
-        }
+        if (updateError) throw updateError;
       }
 
       // Update individual member roles
       for (const [memberId, newRole] of Object.entries(editedRoles)) {
         const { error: roleError } = await supabase
-          .from('contacts_raw')
-          .update({ 
-            group_email_role: newRole,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', memberId);
+          .from('contact_group_memberships')
+          .update({ email_role: newRole })
+          .eq('contact_id', memberId)
+          .eq('group_id', group.group_id);
 
         if (roleError) throw roleError;
       }
@@ -123,6 +114,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
       // Invalidate both group contacts view and individual contacts queries
       queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['group-members-new'] });
       onUpdate?.();
     } catch (error) {
       console.error('Error saving changes:', error);
