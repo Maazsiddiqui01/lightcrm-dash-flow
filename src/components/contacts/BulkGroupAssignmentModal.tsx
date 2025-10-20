@@ -28,6 +28,8 @@ export function BulkGroupAssignmentModal({
   const [selectedGroup, setSelectedGroup] = useState<string>("");
   const [newGroupName, setNewGroupName] = useState<string>("");
   const [groupDelta, setGroupDelta] = useState<string>("");
+  const [groupFocusArea, setGroupFocusArea] = useState<string>("");
+  const [groupSector, setGroupSector] = useState<string>("");
   const [emailRoles, setEmailRoles] = useState<Record<string, string>>({});
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -109,6 +111,8 @@ export function BulkGroupAssignmentModal({
             group_contact: groupName,
             group_email_role: emailRoles[contact.id],
             group_delta: finalGroupDelta,
+            group_focus_area: groupFocusArea.trim() || null,
+            group_sector: groupSector.trim() || null,
           })
           .eq("id", contact.id);
 
@@ -117,14 +121,18 @@ export function BulkGroupAssignmentModal({
 
       await Promise.all(updates);
 
-      // Update ALL members of the group with the new group_delta (not just selected contacts)
-      const { error: groupDeltaError } = await supabase
+      // Update ALL members of the group with the new group-level fields
+      const { error: groupFieldsError } = await supabase
         .from('contacts_raw')
-        .update({ group_delta: finalGroupDelta })
+        .update({ 
+          group_delta: finalGroupDelta,
+          group_focus_area: groupFocusArea.trim() || null,
+          group_sector: groupSector.trim() || null,
+        })
         .eq('group_contact', groupName);
 
-      if (groupDeltaError) {
-        console.error('Error updating group_delta for all members:', groupDeltaError);
+      if (groupFieldsError) {
+        console.error('Error updating group fields for all members:', groupFieldsError);
       }
 
       // After all updates, recalculate group contact date
@@ -277,6 +285,34 @@ export function BulkGroupAssignmentModal({
                 ? "This will update the max lag for all contacts in this group" 
                 : "This applies to all contacts in the group"
               }
+            </p>
+          </div>
+
+          {/* Group Focus Area */}
+          <div className="space-y-2">
+            <Label htmlFor="group-focus-area">Group Focus Area</Label>
+            <Input
+              id="group-focus-area"
+              placeholder="e.g., Healthcare IT"
+              value={groupFocusArea}
+              onChange={(e) => setGroupFocusArea(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Shared focus area for all group members
+            </p>
+          </div>
+
+          {/* Group Sector */}
+          <div className="space-y-2">
+            <Label htmlFor="group-sector">Group Sector</Label>
+            <Input
+              id="group-sector"
+              placeholder="e.g., Technology"
+              value={groupSector}
+              onChange={(e) => setGroupSector(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Shared sector for all group members
             </p>
           </div>
 

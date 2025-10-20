@@ -32,6 +32,8 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
   const [editedMaxLag, setEditedMaxLag] = useState<number | null>(null);
+  const [editedGroupFocusArea, setEditedGroupFocusArea] = useState<string>('');
+  const [editedGroupSector, setEditedGroupSector] = useState<string>('');
   const [editedRoles, setEditedRoles] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -40,22 +42,42 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const handleSaveEdits = async () => {
     setIsSaving(true);
     try {
-      // Update max lag for all members if changed
-      if (editedMaxLag !== null && editedMaxLag !== group.max_lag_days) {
-        const { data: members, error: membersError } = await supabase
-          .from('contacts_raw')
-          .select('id')
-          .eq('group_contact', group.group_name);
+      // Get all member IDs for this group
+      const { data: members, error: membersError } = await supabase
+        .from('contacts_raw')
+        .select('id')
+        .eq('group_contact', group.group_name);
 
-        if (membersError) throw membersError;
+      if (membersError) throw membersError;
 
-        if (members && members.length > 0) {
+      if (members && members.length > 0) {
+        // Prepare update object for group-level fields
+        const groupUpdateData: any = { updated_at: new Date().toISOString() };
+        let hasGroupUpdates = false;
+
+        // Update max lag for all members if changed
+        if (editedMaxLag !== null && editedMaxLag !== group.max_lag_days) {
+          groupUpdateData.group_delta = editedMaxLag;
+          hasGroupUpdates = true;
+        }
+
+        // Update group focus area for all members if changed
+        if (editedGroupFocusArea && editedGroupFocusArea !== (group.group_focus_area || '')) {
+          groupUpdateData.group_focus_area = editedGroupFocusArea;
+          hasGroupUpdates = true;
+        }
+
+        // Update group sector for all members if changed
+        if (editedGroupSector && editedGroupSector !== (group.group_sector || '')) {
+          groupUpdateData.group_sector = editedGroupSector;
+          hasGroupUpdates = true;
+        }
+
+        // Apply group-level updates if any
+        if (hasGroupUpdates) {
           const { error: updateError } = await supabase
             .from('contacts_raw')
-            .update({ 
-              group_delta: editedMaxLag,
-              updated_at: new Date().toISOString()
-            })
+            .update(groupUpdateData)
             .in('id', members.map(m => m.id));
 
           if (updateError) throw updateError;
@@ -82,6 +104,8 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
 
       setEditMode(false);
       setEditedMaxLag(null);
+      setEditedGroupFocusArea('');
+      setEditedGroupSector('');
       setEditedRoles({});
       
       // Invalidate both group contacts view and individual contacts queries
@@ -103,6 +127,8 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const handleCancelEdit = () => {
     setEditMode(false);
     setEditedMaxLag(null);
+    setEditedGroupFocusArea('');
+    setEditedGroupSector('');
     setEditedRoles({});
   };
 
@@ -223,15 +249,47 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
             </div>
 
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Next Outreach</Label>
+              <Label className="text-muted-foreground">Group Focus Area</Label>
               <div>
-                {group.next_outreach_date ? (
-                  <Badge variant={isOverdue ? "destructive" : "default"}>
-                    {format(parseFlexibleDate(group.next_outreach_date)!, 'yyyy-MM-dd')}
-                    {isOverdue && " (Overdue)"}
-                  </Badge>
+                {editMode ? (
+                  <Input
+                    type="text"
+                    value={editedGroupFocusArea || group.group_focus_area || ''}
+                    onChange={(e) => setEditedGroupFocusArea(e.target.value)}
+                    placeholder="Enter focus area"
+                    className="w-full"
+                  />
                 ) : (
-                  <span className="text-muted-foreground">-</span>
+                  group.group_focus_area ? (
+                    <Badge variant="outline" className="text-base">
+                      {group.group_focus_area}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground">Not set</span>
+                  )
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Group Sector</Label>
+              <div>
+                {editMode ? (
+                  <Input
+                    type="text"
+                    value={editedGroupSector || group.group_sector || ''}
+                    onChange={(e) => setEditedGroupSector(e.target.value)}
+                    placeholder="Enter sector"
+                    className="w-full"
+                  />
+                ) : (
+                  group.group_sector ? (
+                    <Badge variant="outline" className="text-base">
+                      {group.group_sector}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground">Not set</span>
+                  )
                 )}
               </div>
             </div>

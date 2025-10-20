@@ -926,6 +926,8 @@ export type Database = {
           group_contact: string | null
           group_delta: number | null
           group_email_role: string | null
+          group_focus_area: string | null
+          group_sector: string | null
           id: string
           intentional_no_outreach: boolean | null
           intentional_no_outreach_date: string | null
@@ -995,6 +997,8 @@ export type Database = {
           group_contact?: string | null
           group_delta?: number | null
           group_email_role?: string | null
+          group_focus_area?: string | null
+          group_sector?: string | null
           id?: string
           intentional_no_outreach?: boolean | null
           intentional_no_outreach_date?: string | null
@@ -1064,6 +1068,8 @@ export type Database = {
           group_contact?: string | null
           group_delta?: number | null
           group_email_role?: string | null
+          group_focus_area?: string | null
+          group_sector?: string | null
           id?: string
           intentional_no_outreach?: boolean | null
           intentional_no_outreach_date?: string | null

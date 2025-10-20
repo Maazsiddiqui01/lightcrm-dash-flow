@@ -20,7 +20,11 @@ export function GroupContactsTable() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editMode, setEditMode] = useState(false);
-  const [editedRows, setEditedRows] = useState<Record<string, { max_lag_days?: number }>>({});
+  const [editedRows, setEditedRows] = useState<Record<string, { 
+    max_lag_days?: number;
+    group_focus_area?: string;
+    group_sector?: string;
+  }>>({});
   const [editingCell, setEditingCell] = useState<{ groupName: string; field: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -37,27 +41,35 @@ export function GroupContactsTable() {
     setIsSaving(true);
     try {
       for (const [groupName, edits] of Object.entries(editedRows)) {
-        if ('max_lag_days' in edits) {
-          // Get all member IDs for this group
-          const { data: members, error: membersError } = await supabase
-            .from('contacts_raw')
-            .select('id')
-            .eq('group_contact', groupName);
+        // Get all member IDs for this group
+        const { data: members, error: membersError } = await supabase
+          .from('contacts_raw')
+          .select('id')
+          .eq('group_contact', groupName);
 
-          if (membersError) throw membersError;
+        if (membersError) throw membersError;
 
-          if (members && members.length > 0) {
-            // Update group_delta for all members
-            const { error: updateError } = await supabase
-              .from('contacts_raw')
-              .update({ 
-                group_delta: edits.max_lag_days,
-                updated_at: new Date().toISOString()
-              })
-              .in('id', members.map(m => m.id));
-
-            if (updateError) throw updateError;
+        if (members && members.length > 0) {
+          // Prepare the update object
+          const updateData: any = { updated_at: new Date().toISOString() };
+          
+          if ('max_lag_days' in edits) {
+            updateData.group_delta = edits.max_lag_days;
           }
+          if ('group_focus_area' in edits) {
+            updateData.group_focus_area = edits.group_focus_area;
+          }
+          if ('group_sector' in edits) {
+            updateData.group_sector = edits.group_sector;
+          }
+
+          // Update all members with the new values
+          const { error: updateError } = await supabase
+            .from('contacts_raw')
+            .update(updateData)
+            .in('id', members.map(m => m.id));
+
+          if (updateError) throw updateError;
         }
       }
 
@@ -222,6 +234,130 @@ export function GroupContactsTable() {
           <Badge variant={days > 90 ? "destructive" : "secondary"}>
             {days} days
           </Badge>
+        ) : <span className="text-muted-foreground">-</span>;
+      },
+      sortable: true,
+    },
+    {
+      key: "group_focus_area",
+      label: "Group Focus Area",
+      render: (value: any, row: GroupContactView) => {
+        const isEditing = editingCell?.groupName === row.group_name && editingCell?.field === 'group_focus_area';
+        const currentValue = editedRows[row.group_name]?.group_focus_area ?? row.group_focus_area;
+
+        if (editMode && !isEditing) {
+          return (
+            <div 
+              onClick={() => setEditingCell({ groupName: row.group_name, field: 'group_focus_area' })}
+              className="cursor-pointer hover:bg-accent p-1 rounded"
+            >
+              {currentValue ? (
+                <Badge variant="outline">{currentValue}</Badge>
+              ) : (
+                <span className="text-muted-foreground">-</span>
+              )}
+            </div>
+          );
+        }
+
+        if (isEditing) {
+          return (
+            <Input
+              type="text"
+              value={currentValue || ''}
+              onChange={(e) => {
+                setEditedRows(prev => ({
+                  ...prev,
+                  [row.group_name]: { ...prev[row.group_name], group_focus_area: e.target.value }
+                }));
+              }}
+              onBlur={() => setEditingCell(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') setEditingCell(null);
+                if (e.key === 'Escape') {
+                  setEditedRows(prev => {
+                    const newRows = { ...prev };
+                    if (newRows[row.group_name]) {
+                      delete newRows[row.group_name].group_focus_area;
+                      if (Object.keys(newRows[row.group_name]).length === 0) {
+                        delete newRows[row.group_name];
+                      }
+                    }
+                    return newRows;
+                  });
+                  setEditingCell(null);
+                }
+              }}
+              autoFocus
+              className="w-full"
+            />
+          );
+        }
+
+        return row.group_focus_area ? (
+          <Badge variant="outline">{row.group_focus_area}</Badge>
+        ) : <span className="text-muted-foreground">-</span>;
+      },
+      sortable: true,
+    },
+    {
+      key: "group_sector",
+      label: "Group Sector",
+      render: (value: any, row: GroupContactView) => {
+        const isEditing = editingCell?.groupName === row.group_name && editingCell?.field === 'group_sector';
+        const currentValue = editedRows[row.group_name]?.group_sector ?? row.group_sector;
+
+        if (editMode && !isEditing) {
+          return (
+            <div 
+              onClick={() => setEditingCell({ groupName: row.group_name, field: 'group_sector' })}
+              className="cursor-pointer hover:bg-accent p-1 rounded"
+            >
+              {currentValue ? (
+                <Badge variant="outline">{currentValue}</Badge>
+              ) : (
+                <span className="text-muted-foreground">-</span>
+              )}
+            </div>
+          );
+        }
+
+        if (isEditing) {
+          return (
+            <Input
+              type="text"
+              value={currentValue || ''}
+              onChange={(e) => {
+                setEditedRows(prev => ({
+                  ...prev,
+                  [row.group_name]: { ...prev[row.group_name], group_sector: e.target.value }
+                }));
+              }}
+              onBlur={() => setEditingCell(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') setEditingCell(null);
+                if (e.key === 'Escape') {
+                  setEditedRows(prev => {
+                    const newRows = { ...prev };
+                    if (newRows[row.group_name]) {
+                      delete newRows[row.group_name].group_sector;
+                      if (Object.keys(newRows[row.group_name]).length === 0) {
+                        delete newRows[row.group_name];
+                      }
+                    }
+                    return newRows;
+                  });
+                  setEditingCell(null);
+                }
+              }}
+              autoFocus
+              className="w-full"
+            />
+          );
+        }
+
+        return row.group_sector ? (
+          <Badge variant="outline">{row.group_sector}</Badge>
         ) : <span className="text-muted-foreground">-</span>;
       },
       sortable: true,

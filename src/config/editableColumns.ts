@@ -358,6 +358,8 @@ export const editableColumns: EditableConfig = {
       type: 'select',
       options: ['to', 'cc', 'bcc']
     },
+    group_focus_area: { type: 'text' },
+    group_sector: { type: 'text' },
     city: { type: 'text' },
     state: { type: 'text' },
     delta: { type: 'number', validation: validateNumber },

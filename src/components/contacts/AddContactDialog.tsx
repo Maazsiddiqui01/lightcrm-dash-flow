@@ -71,6 +71,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
   const [contactType, setContactType] = useState<"individual" | "group">("individual");
   const [groupName, setGroupName] = useState("");
   const [groupDelta, setGroupDelta] = useState("");
+  const [groupFocusArea, setGroupFocusArea] = useState("");
+  const [groupSector, setGroupSector] = useState("");
   const [contacts, setContacts] = useState<IndividualContactForm[]>([emptyContactForm]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -213,6 +215,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           group_contact: contactType === "group" ? groupName.trim() : null,
           group_email_role: contactType === "group" ? opt(contact.group_email_role) : null,
           group_delta: contactType === "group" ? numOrNull(groupDelta) : null,
+          group_focus_area: contactType === "group" ? opt(groupFocusArea) : null,
+          group_sector: contactType === "group" ? opt(groupSector) : null,
         };
       });
 
@@ -237,6 +241,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
       setContactType("individual");
       setGroupName("");
       setGroupDelta("");
+      setGroupFocusArea("");
+      setGroupSector("");
       setContacts([emptyContactForm]);
 
       // Pass the newly created contact data back (first contact for individual, or first group member)
@@ -340,6 +346,34 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                   <p className="text-xs text-muted-foreground">
                     This max lag applies to all contacts in this group
                   </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="group_focus_area">Group Focus Area</Label>
+                    <Input
+                      id="group_focus_area"
+                      value={groupFocusArea}
+                      onChange={(e) => setGroupFocusArea(e.target.value)}
+                      placeholder="e.g., Healthcare IT"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Shared focus area for all group members
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="group_sector">Group Sector</Label>
+                    <Input
+                      id="group_sector"
+                      value={groupSector}
+                      onChange={(e) => setGroupSector(e.target.value)}
+                      placeholder="e.g., Technology"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Shared sector for all group members
+                    </p>
+                  </div>
                 </div>
               </>
             )}
