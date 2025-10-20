@@ -266,6 +266,115 @@ export type Database = {
           },
         ]
       }
+      contact_group_memberships: {
+        Row: {
+          contact_id: string
+          created_at: string
+          email_role: string | null
+          group_id: string
+          id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          email_role?: string | null
+          group_id: string
+          id?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          email_role?: string | null
+          group_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_intentional_no_outreach_events: {
         Row: {
           action_type: string
@@ -1500,6 +1609,45 @@ export type Database = {
           field?: string
           group_name?: string
           id?: string
+        }
+        Relationships: []
+      }
+      groups: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          focus_area: string | null
+          id: string
+          max_lag_days: number | null
+          name: string
+          notes: string | null
+          sector: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          focus_area?: string | null
+          id?: string
+          max_lag_days?: number | null
+          name: string
+          notes?: string | null
+          sector?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          focus_area?: string | null
+          id?: string
+          max_lag_days?: number | null
+          name?: string
+          notes?: string | null
+          sector?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3813,6 +3961,14 @@ export type Database = {
         Args: { p_contact_id: string; p_content: string; p_field: string }
         Returns: undefined
       }
+      add_contact_to_group: {
+        Args: {
+          p_contact_id: string
+          p_email_role?: string
+          p_group_id: string
+        }
+        Returns: string
+      }
       add_group_note: {
         Args: { p_content: string; p_field: string; p_group_name: string }
         Returns: undefined
@@ -3927,6 +4083,17 @@ export type Database = {
         Args: { contact_id: string; opp_limit?: number }
         Returns: Json
       }
+      get_contact_groups: {
+        Args: { p_contact_id: string }
+        Returns: {
+          email_role: string
+          focus_area: string
+          group_id: string
+          group_name: string
+          max_lag_days: number
+          sector: string
+        }[]
+      }
       get_focus_meta: {
         Args: { focus_areas: string[] }
         Returns: {
@@ -3964,6 +4131,18 @@ export type Database = {
           opportunities: string
           opportunity_count: number
           to_members: string
+        }[]
+      }
+      get_group_members: {
+        Args: { p_group_id: string }
+        Returns: {
+          contact_id: string
+          email_address: string
+          email_role: string
+          full_name: string
+          most_recent_contact: string
+          organization: string
+          title: string
         }[]
       }
       get_latest_contact_email: {
@@ -4245,6 +4424,10 @@ export type Database = {
       release_expired_locks: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      remove_contact_from_group: {
+        Args: { p_contact_id: string; p_group_id: string }
+        Returns: boolean
       }
       replace_text_in_column: {
         Args: {

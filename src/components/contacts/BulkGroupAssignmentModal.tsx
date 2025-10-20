@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useGroupContacts } from "@/hooks/useGroupContacts";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useGroups } from "@/hooks/useGroups";
+import { useAddContactToGroup } from "@/hooks/useAddContactToGroup";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Users } from "lucide-react";
+import { Loader2, Users, Plus } from "lucide-react";
 
 interface BulkGroupAssignmentModalProps {
   open: boolean;
@@ -26,7 +28,7 @@ export function BulkGroupAssignmentModal({
   onSuccess,
 }: BulkGroupAssignmentModalProps) {
   const [mode, setMode] = useState<"existing" | "new">("existing");
-  const [selectedGroup, setSelectedGroup] = useState<string>("");
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [newGroupName, setNewGroupName] = useState<string>("");
   const [groupDelta, setGroupDelta] = useState<string>("");
   const [groupFocusArea, setGroupFocusArea] = useState<string>("");
@@ -36,45 +38,43 @@ export function BulkGroupAssignmentModal({
   const [isUpdating, setIsUpdating] = useState(false);
 
   const queryClient = useQueryClient();
-  const { data: groupOptions, isLoading: loadingGroups } = useGroupContacts();
+  const { data: groups, isLoading: loadingGroups } = useGroups();
+  const addToGroup = useAddContactToGroup();
 
   const handleAssign = async () => {
-    const groupName = mode === "existing" ? selectedGroup : newGroupName.trim();
-
     // Validation
-    if (!groupName) {
-      toast({
-        title: "Group name required",
-        description: "Please select or enter a group name",
-        variant: "destructive",
-      });
-      return;
+    if (mode === "new") {
+      if (!newGroupName.trim()) {
+        toast({
+          title: "Group name required",
+          description: "Please enter a group name",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!groupDelta || !groupDelta.trim()) {
+        toast({
+          title: "Group max lag days required",
+          description: "Please enter the max lag days for this group",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      if (selectedGroupIds.length === 0) {
+        toast({
+          title: "No groups selected",
+          description: "Please select at least one group",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     if (!selectedContacts || selectedContacts.length === 0) {
       toast({
         title: "No contacts selected",
         description: "Please select at least one contact",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate group_delta for ALL groups (new and existing)
-    if (!groupDelta || !groupDelta.trim()) {
-      toast({
-        title: "Group max lag days required",
-        description: "Please enter the max lag days for this group",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const deltaValue = parseInt(groupDelta);
-    if (isNaN(deltaValue) || deltaValue < 0) {
-      toast({
-        title: "Invalid max lag days",
-        description: "Please enter a valid positive number",
         variant: "destructive",
       });
       return;
@@ -94,98 +94,79 @@ export function BulkGroupAssignmentModal({
     setIsUpdating(true);
 
     try {
-      const contactIds = selectedContacts.map(c => c.id).filter(Boolean);
-      
-      if (contactIds.length === 0) {
-        throw new Error("No valid contact IDs found");
-      }
-
-      console.log('Assigning contacts to group:', { groupName, groupDelta, emailRoles, contactIds });
-
-      // Use groupDelta from input for both new and existing groups
-      const finalGroupDelta = parseInt(groupDelta);
-
-      // Update each contact individually with their specific email role
-      const updates = selectedContacts.map(async (contact) => {
-        const { error } = await supabase
-          .from("contacts_raw")
-          .update({
-            group_contact: groupName,
-            group_email_role: emailRoles[contact.id],
-            group_delta: finalGroupDelta,
-            group_focus_area: groupFocusArea.trim() || null,
-            group_sector: groupSector.trim() || null,
-            group_notes: groupNotes.trim() || null,
+      if (mode === "new") {
+        // Create new group first
+        const { data: newGroup, error: groupError } = await supabase
+          .from('groups')
+          .insert({
+            name: newGroupName.trim(),
+            max_lag_days: parseInt(groupDelta),
+            focus_area: groupFocusArea.trim() || null,
+            sector: groupSector.trim() || null,
+            notes: groupNotes.trim() || null,
           })
-          .eq("id", contact.id);
+          .select()
+          .single();
 
-        if (error) throw error;
-      });
+        if (groupError) throw groupError;
 
-      await Promise.all(updates);
+        // Add all contacts to this new group
+        for (const contact of selectedContacts) {
+          await addToGroup.mutateAsync({
+            contactId: contact.id,
+            groupId: newGroup.id,
+            emailRole: emailRoles[contact.id] as 'to' | 'cc' | 'bcc',
+          });
+        }
 
-      // Update ALL members of the group with the new group-level fields
-      const { error: groupFieldsError } = await supabase
-        .from('contacts_raw')
-        .update({ 
-          group_delta: finalGroupDelta,
-          group_focus_area: groupFocusArea.trim() || null,
-          group_sector: groupSector.trim() || null,
-          group_notes: groupNotes.trim() || null,
-        })
-        .eq('group_contact', groupName);
+        toast({
+          title: "Success",
+          description: `Created group "${newGroupName}" with ${selectedContacts.length} member${selectedContacts.length > 1 ? 's' : ''}`,
+        });
+      } else {
+        // Add contacts to selected existing groups
+        let totalAdded = 0;
+        for (const groupId of selectedGroupIds) {
+          for (const contact of selectedContacts) {
+            await addToGroup.mutateAsync({
+              contactId: contact.id,
+              groupId: groupId,
+              emailRole: emailRoles[contact.id] as 'to' | 'cc' | 'bcc',
+            });
+            totalAdded++;
+          }
+        }
 
-      if (groupFieldsError) {
-        console.error('Error updating group fields for all members:', groupFieldsError);
-      }
-
-      // Add group note to timeline if provided
-      if (groupNotes.trim()) {
-        await supabase.rpc('add_group_note', {
-          p_group_name: groupName,
-          p_field: 'group_notes',
-          p_content: groupNotes.trim(),
+        toast({
+          title: "Success",
+          description: `Added ${selectedContacts.length} contact${selectedContacts.length > 1 ? 's' : ''} to ${selectedGroupIds.length} group${selectedGroupIds.length > 1 ? 's' : ''}`,
         });
       }
 
-      // After all updates, recalculate group contact date
-      await supabase.rpc('recalculate_group_contact_date', {
-        p_group_name: groupName
-      });
-
-      console.log('Successfully updated all contacts in group');
-
-      toast({
-        title: "Success",
-        description: `${selectedContacts.length} contact${selectedContacts.length > 1 ? 's' : ''} assigned to ${groupName}`,
-      });
-
-      // Invalidate related queries for immediate UI update
-      queryClient.invalidateQueries({ queryKey: ['group-members', groupName] });
-      queryClient.invalidateQueries({ queryKey: ['group-contacts'] });
-      queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
-      contactIds.forEach(id => {
-        queryClient.invalidateQueries({ queryKey: ['contact-group-info', id] });
-      });
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['contact-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['group-members-new'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
 
       onSuccess();
       onOpenChange(false);
       
       // Reset state
-      setSelectedGroup("");
+      setSelectedGroupIds([]);
       setNewGroupName("");
       setGroupDelta("");
+      setGroupFocusArea("");
+      setGroupSector("");
+      setGroupNotes("");
       setEmailRoles({});
       setMode("existing");
     } catch (error: any) {
-      console.error("Error assigning contacts to group:", error);
-      
-      const errorMessage = error?.message || "Failed to assign contacts to group";
-      const errorDetails = error?.details || error?.hint || "";
+      console.error("Error managing group memberships:", error);
       
       toast({
         title: "Error",
-        description: errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage,
+        description: error?.message || "Failed to manage group memberships",
         variant: "destructive",
       });
     } finally {
@@ -193,24 +174,24 @@ export function BulkGroupAssignmentModal({
     }
   };
 
-  const contactsWithGroups = selectedContacts.filter(c => c.group_contact);
-  const hasExistingGroups = contactsWithGroups.length > 0;
+  const toggleGroupSelection = (groupId: string) => {
+    setSelectedGroupIds(prev => 
+      prev.includes(groupId) 
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Assign to Group Contact
+            <Plus className="h-5 w-5" />
+            Add to Group{selectedContacts.length > 1 ? 's' : ''}
           </DialogTitle>
           <DialogDescription>
-            Assign {selectedContacts.length} contact{selectedContacts.length > 1 ? 's' : ''} to a group.
-            {hasExistingGroups && (
-              <span className="block mt-1 text-warning">
-                Warning: {contactsWithGroups.length} contact{contactsWithGroups.length > 1 ? 's are' : ' is'} already in a group and will be reassigned.
-              </span>
-            )}
+            Add {selectedContacts.length} contact{selectedContacts.length > 1 ? 's' : ''} to one or more groups. Contacts can be in multiple groups simultaneously.
           </DialogDescription>
         </DialogHeader>
 
@@ -230,42 +211,41 @@ export function BulkGroupAssignmentModal({
 
           {mode === "existing" ? (
             <div className="space-y-2">
-              <Label htmlFor="group-select">Select Group</Label>
+              <Label>Select Groups (can select multiple)</Label>
               {loadingGroups ? (
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Loading groups...
                 </div>
               ) : (
-                <Select value={selectedGroup} onValueChange={(value) => {
-                  setSelectedGroup(value);
-                  // When selecting an existing group, fetch its group_delta
-                  if (value) {
-                    supabase
-                      .from("contacts_raw")
-                      .select("group_delta")
-                      .eq("group_contact", value)
-                      .limit(1)
-                      .maybeSingle()
-                      .then(({ data }) => {
-                        if (data?.group_delta) {
-                          setGroupDelta(data.group_delta.toString());
-                        }
-                      });
-                  }
-                }}>
-                  <SelectTrigger id="group-select">
-                    <SelectValue placeholder="Choose a group..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {groupOptions?.map((group) => (
-                      <SelectItem key={group.value} value={group.value}>
-                        {group.label}
-                      </SelectItem>
+                <ScrollArea className="h-[200px] rounded-md border p-3">
+                  <div className="space-y-2">
+                    {groups?.map((group) => (
+                      <div key={group.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`group-${group.id}`}
+                          checked={selectedGroupIds.includes(group.id)}
+                          onCheckedChange={() => toggleGroupSelection(group.id)}
+                        />
+                        <label
+                          htmlFor={`group-${group.id}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                        >
+                          {group.name}
+                          {group.max_lag_days && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              (Max lag: {group.max_lag_days} days)
+                            </span>
+                          )}
+                        </label>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                </ScrollArea>
               )}
+              <p className="text-xs text-muted-foreground">
+                Selected: {selectedGroupIds.length} group{selectedGroupIds.length !== 1 ? 's' : ''}
+              </p>
             </div>
           ) : (
             <>
@@ -281,68 +261,57 @@ export function BulkGroupAssignmentModal({
             </>
           )}
           
-          {/* Group Max Lag - shown for BOTH new and existing groups */}
-          <div className="space-y-2">
-            <Label htmlFor="group-delta">Group Max Lag (Days) *</Label>
-            <Input
-              id="group-delta"
-              type="number"
-              min="0"
-              placeholder="e.g., 90"
-              value={groupDelta}
-              onChange={(e) => setGroupDelta(e.target.value)}
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              {mode === "existing" 
-                ? "This will update the max lag for all contacts in this group" 
-                : "This applies to all contacts in the group"
-              }
-            </p>
-          </div>
+          {/* Show group metadata fields only for NEW groups */}
+          {mode === "new" && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="group-delta">Group Max Lag (Days) *</Label>
+                <Input
+                  id="group-delta"
+                  type="number"
+                  min="0"
+                  placeholder="e.g., 90"
+                  value={groupDelta}
+                  onChange={(e) => setGroupDelta(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  This applies to all contacts in the group
+                </p>
+              </div>
 
-          {/* Group Focus Area */}
-          <div className="space-y-2">
-            <Label htmlFor="group-focus-area">Group Focus Area</Label>
-            <Input
-              id="group-focus-area"
-              placeholder="e.g., Healthcare IT"
-              value={groupFocusArea}
-              onChange={(e) => setGroupFocusArea(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Shared focus area for all group members
-            </p>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="group-focus-area">Group Focus Area</Label>
+                <Input
+                  id="group-focus-area"
+                  placeholder="e.g., Healthcare IT"
+                  value={groupFocusArea}
+                  onChange={(e) => setGroupFocusArea(e.target.value)}
+                />
+              </div>
 
-          {/* Group Sector */}
-          <div className="space-y-2">
-            <Label htmlFor="group-sector">Group Sector</Label>
-            <Input
-              id="group-sector"
-              placeholder="e.g., Technology"
-              value={groupSector}
-              onChange={(e) => setGroupSector(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Shared sector for all group members
-            </p>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="group-sector">Group Sector</Label>
+                <Input
+                  id="group-sector"
+                  placeholder="e.g., Technology"
+                  value={groupSector}
+                  onChange={(e) => setGroupSector(e.target.value)}
+                />
+              </div>
 
-          {/* Group Notes */}
-          <div className="space-y-2 col-span-2">
-            <Label htmlFor="group-notes">Group Notes</Label>
-            <Textarea
-              id="group-notes"
-              placeholder="Add notes for this group..."
-              value={groupNotes}
-              onChange={(e) => setGroupNotes(e.target.value)}
-              rows={3}
-            />
-            <p className="text-xs text-muted-foreground">
-              Shared notes for all group members
-            </p>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="group-notes">Group Notes</Label>
+                <Textarea
+                  id="group-notes"
+                  placeholder="Add notes for this group..."
+                  value={groupNotes}
+                  onChange={(e) => setGroupNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </>
+          )}
 
           {/* Email Role Assignment for Each Contact */}
           <div className="space-y-3">
@@ -371,16 +340,11 @@ export function BulkGroupAssignmentModal({
 
           <div className="space-y-2">
             <Label>Selected Contacts ({selectedContacts.length})</Label>
-            <ScrollArea className="h-[200px] rounded-md border p-4">
-              <div className="space-y-2">
+            <ScrollArea className="h-[120px] rounded-md border p-4">
+              <div className="space-y-1">
                 {selectedContacts.map((contact) => (
-                  <div key={contact.id} className="flex items-center justify-between text-sm">
-                    <span>{contact.full_name || "Unknown"}</span>
-                    {contact.group_contact && (
-                      <span className="text-xs text-muted-foreground">
-                        Currently in: {contact.group_contact}
-                      </span>
-                    )}
+                  <div key={contact.id} className="text-sm">
+                    {contact.full_name || "Unknown"}
                   </div>
                 ))}
               </div>
@@ -396,10 +360,10 @@ export function BulkGroupAssignmentModal({
             {isUpdating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Assigning...
+                {mode === "new" ? "Creating..." : "Adding..."}
               </>
             ) : (
-              "Assign to Group"
+              mode === "new" ? "Create Group & Add Contacts" : "Add to Selected Groups"
             )}
           </Button>
         </DialogFooter>
