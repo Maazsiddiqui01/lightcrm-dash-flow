@@ -4117,8 +4117,15 @@ export type Database = {
           bcc_members: string
           cc_members: string
           created_by: string
+          days_over_under_max_lag: number
+          days_since_last_contact: number
           group_created_at: string
+          group_focus_area: string
           group_name: string
+          group_notes: string
+          group_sector: string
+          is_over_max_lag: boolean
+          is_overdue: boolean
           last_updated: string
           max_lag_days: number
           member_count: number
