@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { editableColumns } from '@/config/editableColumns';
 import { EditState } from '@/lib/dynamicColumns';
@@ -22,6 +23,7 @@ export function useEditMode<T extends { id: string }>(
   data: T[],
   onDataUpdate?: (updatedData: T[]) => void
 ): UseEditModeReturn {
+  const queryClient = useQueryClient();
   const [editState, setEditState] = useState<EditState>({
     editMode: false,
     editingCell: null,
@@ -181,6 +183,16 @@ export function useEditMode<T extends { id: string }>(
         description: `${editedRowIds.length} row${editedRowIds.length !== 1 ? 's' : ''} updated successfully.`,
       });
 
+      // Check if any group-related fields were edited and trigger group view refresh
+      const hasGroupFieldEdits = editedRowIds.some(rowId => {
+        const edits = editState.editedRows[rowId];
+        return edits && ('group_delta' in edits || 'group_email_role' in edits || 'group_contact' in edits);
+      });
+
+      if (hasGroupFieldEdits) {
+        queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+      }
+
     } catch (error) {
       console.error('Unexpected save error:', error);
       toast({
@@ -191,7 +203,7 @@ export function useEditMode<T extends { id: string }>(
     } finally {
       setIsSaving(false);
     }
-  }, [editState, tableName, data, onDataUpdate]);
+  }, [editState, tableName, data, onDataUpdate, queryClient]);
 
   const discardChanges = useCallback(() => {
     setEditState(prev => ({

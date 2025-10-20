@@ -52,7 +52,10 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
         if (members && members.length > 0) {
           const { error: updateError } = await supabase
             .from('contacts_raw')
-            .update({ group_delta: editedMaxLag })
+            .update({ 
+              group_delta: editedMaxLag,
+              updated_at: new Date().toISOString()
+            })
             .in('id', members.map(m => m.id));
 
           if (updateError) throw updateError;
@@ -63,7 +66,10 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
       for (const [memberId, newRole] of Object.entries(editedRoles)) {
         const { error: roleError } = await supabase
           .from('contacts_raw')
-          .update({ group_email_role: newRole })
+          .update({ 
+            group_email_role: newRole,
+            updated_at: new Date().toISOString()
+          })
           .eq('id', memberId);
 
         if (roleError) throw roleError;
@@ -77,7 +83,10 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
       setEditMode(false);
       setEditedMaxLag(null);
       setEditedRoles({});
+      
+      // Invalidate both group contacts view and individual contacts queries
       queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       onUpdate?.();
     } catch (error) {
       console.error('Error saving changes:', error);

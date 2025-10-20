@@ -50,7 +50,10 @@ export function GroupContactsTable() {
             // Update group_delta for all members
             const { error: updateError } = await supabase
               .from('contacts_raw')
-              .update({ group_delta: edits.max_lag_days })
+              .update({ 
+                group_delta: edits.max_lag_days,
+                updated_at: new Date().toISOString()
+              })
               .in('id', members.map(m => m.id));
 
             if (updateError) throw updateError;
@@ -65,7 +68,10 @@ export function GroupContactsTable() {
 
       setEditedRows({});
       setEditMode(false);
+      
+      // Invalidate both group contacts view and individual contacts queries
       queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       refetch();
     } catch (error) {
       console.error('Error saving changes:', error);
