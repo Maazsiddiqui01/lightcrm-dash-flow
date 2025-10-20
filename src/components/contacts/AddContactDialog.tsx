@@ -232,12 +232,8 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           x_twitter_url: opt(contact.x_twitter_url),
           lg_lead: opt(contact.lg_lead),
           lg_assistant: opt(contact.lg_assistant),
-          group_contact: contactType === "group" ? groupName.trim() : null,
-          group_email_role: contactType === "group" ? opt(contact.group_email_role) : null,
-          group_delta: contactType === "group" ? numOrNull(groupDelta) : null,
-          group_focus_area: contactType === "group" ? opt(groupFocusArea) : null,
-          group_sector: contactType === "group" ? opt(groupSector) : null,
-          group_notes: contactType === "group" ? opt(groupNotes) : null,
+          // ✅ Legacy fields removed - now handled by groups table and contact_group_memberships junction table
+          // group_delta is automatically synced via database triggers
         };
       });
 

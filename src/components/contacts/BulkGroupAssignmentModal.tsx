@@ -9,10 +9,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useGroups } from "@/hooks/useGroups";
 import { useAddContactToGroup } from "@/hooks/useAddContactToGroup";
+import { useValidateGroupMembership } from "@/hooks/useValidateGroupMembership";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Users, Plus } from "lucide-react";
+import { Loader2, Users, Plus, AlertTriangle } from "lucide-react";
 
 interface BulkGroupAssignmentModalProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function BulkGroupAssignmentModal({
   const queryClient = useQueryClient();
   const { data: groups, isLoading: loadingGroups } = useGroups();
   const addToGroup = useAddContactToGroup();
+  const validateMembership = useValidateGroupMembership();
 
   const handleAssign = async () => {
     // Validation
@@ -124,17 +126,51 @@ export function BulkGroupAssignmentModal({
           description: `Created group "${newGroupName}" with ${selectedContacts.length} member${selectedContacts.length > 1 ? 's' : ''}`,
         });
       } else {
-        // Add contacts to selected existing groups
+        // Add contacts to selected existing groups with validation
         let totalAdded = 0;
+        const validationErrors: string[] = [];
+        
         for (const groupId of selectedGroupIds) {
           for (const contact of selectedContacts) {
-            await addToGroup.mutateAsync({
-              contactId: contact.id,
-              groupId: groupId,
-              emailRole: emailRoles[contact.id] as 'to' | 'cc' | 'bcc',
-            });
-            totalAdded++;
+            try {
+              // Validate before adding
+              await validateMembership.mutateAsync({
+                contactId: contact.id,
+                newGroupId: groupId,
+              });
+              
+              // If validation passes, add to group
+              await addToGroup.mutateAsync({
+                contactId: contact.id,
+                groupId: groupId,
+                emailRole: emailRoles[contact.id] as 'to' | 'cc' | 'bcc',
+              });
+              totalAdded++;
+            } catch (validationError: any) {
+              validationErrors.push(`${contact.full_name}: ${validationError.message}`);
+            }
           }
+        }
+        
+        // Show validation errors if any
+        if (validationErrors.length > 0) {
+          toast({
+            title: "Validation Warnings",
+            description: (
+              <div className="space-y-1">
+                <p>Some contacts could not be added:</p>
+                <ul className="list-disc list-inside text-xs">
+                  {validationErrors.slice(0, 3).map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                  {validationErrors.length > 3 && (
+                    <li>...and {validationErrors.length - 3} more</li>
+                  )}
+                </ul>
+              </div>
+            ),
+            variant: "destructive",
+          });
         }
 
         toast({

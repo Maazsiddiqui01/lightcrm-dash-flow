@@ -3,6 +3,7 @@ export interface EditableFieldConfig {
   options?: string[];
   allowCustom?: boolean;
   required?: boolean;
+  readOnly?: boolean;
   validation?: (value: any) => string | null;
 }
 
@@ -367,6 +368,7 @@ export const editableColumns: EditableConfig = {
     group_delta: { 
       type: 'number', 
       validation: validateNumber,
+      readOnly: true,
       // Read-only: automatically synced from group via database triggers
     },
     contact_type: { type: 'text' },

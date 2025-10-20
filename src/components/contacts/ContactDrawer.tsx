@@ -709,7 +709,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 </div>
 
                 {contactData.group_contact && (
-                  <div>
+                  <div className="col-span-2 space-y-2">
                     <Label htmlFor="group_delta">Group Max Lag (Days)</Label>
                     <Input
                       id="group_delta"
@@ -721,6 +721,60 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       Inherited from group (edit in Group Contacts view)
+                    </p>
+                  </div>
+                )}
+
+                {/* Display all group memberships for this contact */}
+                {contactGroupMemberships.length > 0 && (
+                  <div className="col-span-2 space-y-3 border-t pt-4 mt-4">
+                    <Label className="text-base font-semibold flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Group Memberships ({contactGroupMemberships.length})
+                    </Label>
+                    <div className="space-y-2">
+                      {contactGroupMemberships.map((membership: any) => (
+                        <div key={membership.group_id} className="border rounded-lg p-3 bg-card space-y-1">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{membership.group_name}</p>
+                              {membership.focus_area && (
+                                <p className="text-xs text-muted-foreground">
+                                  Focus: {membership.focus_area}
+                                </p>
+                              )}
+                              {membership.sector && (
+                                <p className="text-xs text-muted-foreground">
+                                  Sector: {membership.sector}
+                                </p>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="ml-2">
+                              {membership.email_role?.toUpperCase() || 'TO'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Max Lag: {membership.max_lag_days || '—'} days
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      This contact's group_delta is inherited from the first group listed above. 
+                      To change it, edit the group in the Group Contacts view.
+                    </p>
+                  </div>
+                )}
+
+                {/* If contact has group_delta but no memberships, show warning */}
+                {contactData.group_delta && contactGroupMemberships.length === 0 && (
+                  <div className="col-span-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      ⚠️ This contact has a group_delta value but is not assigned to any groups in the new system. 
+                      Legacy data detected.
                     </p>
                   </div>
                 )}
