@@ -164,8 +164,8 @@ export function GroupConfigModal({
               </SelectTrigger>
               <SelectContent>
                 {focusAreas.map((fa) => (
-                  <SelectItem key={fa} value={fa}>
-                    {fa}
+                  <SelectItem key={fa.value} value={fa.value}>
+                    {fa.label}
                   </SelectItem>
                 ))}
               </SelectContent>
