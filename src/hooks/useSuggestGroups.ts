@@ -2,24 +2,36 @@ import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export type SuggestionMode = 'org_sector' | 'interaction';
+
 export interface GroupMember {
   email: string;
   name?: string;
   contactId?: string;
   organization?: string;
+  focusAreas?: string[];
 }
 
 export interface GroupSuggestion {
   id: string;
   suggestedName: string;
   members: GroupMember[];
-  interactionCount: number;
-  lastInteraction: string;
-  firstInteraction: string;
-  score: number;
+  
+  // For interaction mode
+  interactionCount?: number;
+  lastInteraction?: string;
+  firstInteraction?: string;
+  score?: number;
+  sampleSubjects?: string[];
+  
+  // For org/sector mode
+  organization?: string;
+  sector?: string;
+  domain?: string;
+  memberCount?: number;
+  
   confidence: 'high' | 'medium' | 'low';
   sharedOrganization?: string;
-  sampleSubjects: string[];
 }
 
 export interface GroupConflict {
@@ -29,10 +41,14 @@ export interface GroupConflict {
   suggestedGroup: string;
 }
 
-export function useSuggestGroups() {
+export function useSuggestGroups(mode: SuggestionMode = 'org_sector') {
   return useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('suggest_contact_groups');
+      const functionName = mode === 'org_sector' 
+        ? 'suggest_groups_by_org_sector'
+        : 'suggest_contact_groups';
+      
+      const { data, error } = await supabase.functions.invoke(functionName);
       
       if (error) throw error;
       return data.suggestions as GroupSuggestion[];
@@ -114,6 +130,8 @@ export function useCheckGroupConflicts() {
   });
 }
 
+// This hook is deprecated - group creation now goes through the configuration modal
+// which creates entries in the groups table and contact_group_memberships table
 export function useCreateGroupFromSuggestion() {
   return useMutation({
     mutationFn: async ({ 

@@ -1,5 +1,8 @@
 project_id = "wjghdqkxwuyptxzdidtf"
 
+[functions.suggest_groups_by_org_sector]
+verify_jwt = true
+
 [functions.column_manager]
 verify_jwt = true
 
