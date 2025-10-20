@@ -364,7 +364,11 @@ export const editableColumns: EditableConfig = {
     city: { type: 'text' },
     state: { type: 'text' },
     delta: { type: 'number', validation: validateNumber },
-    group_delta: { type: 'number', validation: validateNumber },
+    group_delta: { 
+      type: 'number', 
+      validation: validateNumber,
+      // Read-only: automatically synced from group via database triggers
+    },
     contact_type: { type: 'text' },
     intentional_no_outreach: { type: 'boolean' },
   },

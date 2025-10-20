@@ -184,10 +184,10 @@ export function useEditMode<T extends { id: string }>(
       });
 
       // Check if any group-related fields were edited and trigger group view refresh
+      // Note: group_delta is now auto-synced via database triggers and should not be edited directly
       const hasGroupFieldEdits = editedRowIds.some(rowId => {
         const edits = editState.editedRows[rowId];
         return edits && (
-          'group_delta' in edits || 
           'group_email_role' in edits || 
           'group_contact' in edits ||
           'group_focus_area' in edits ||

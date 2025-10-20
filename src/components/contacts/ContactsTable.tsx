@@ -319,7 +319,10 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
             const days = row.group_delta;
             if (!days) return <span className="text-muted-foreground">—</span>;
             return (
-              <Badge variant={days > 90 ? "destructive" : "secondary"}>
+              <Badge 
+                variant={days > 90 ? "destructive" : "secondary"}
+                title="Group Max Lag is inherited from the group and can only be edited in Group Contacts view"
+              >
                 {days} days
               </Badge>
             );

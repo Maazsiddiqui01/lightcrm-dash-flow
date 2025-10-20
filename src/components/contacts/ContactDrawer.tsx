@@ -715,10 +715,12 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                       id="group_delta"
                       type="number"
                       value={contactData.group_delta || ""}
-                      onChange={(e) => updateField("group_delta", e.target.value)}
+                      disabled
+                      className="bg-muted cursor-not-allowed"
+                      title="Group Max Lag is inherited from the group and can only be edited in Group Contacts view"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Applies to all members of {contactData.group_contact}
+                      Inherited from group (edit in Group Contacts view)
                     </p>
                   </div>
                 )}
