@@ -195,7 +195,7 @@ export function GroupContactsTable() {
                 if (!isNaN(newValue)) {
                   setEditedRows(prev => ({
                     ...prev,
-                    [row.group_name]: { ...prev[row.group_name], max_lag_days: newValue }
+                    [row.group_id]: { ...prev[row.group_id], max_lag_days: newValue }
                   }));
                 }
               }}
@@ -205,7 +205,7 @@ export function GroupContactsTable() {
                 if (e.key === 'Escape') {
                   setEditedRows(prev => {
                     const newRows = { ...prev };
-                    delete newRows[row.group_name];
+                    delete newRows[row.group_id];
                     return newRows;
                   });
                   setEditingCell(null);
@@ -258,7 +258,7 @@ export function GroupContactsTable() {
               onChange={(e) => {
                 setEditedRows(prev => ({
                   ...prev,
-                  [row.group_name]: { ...prev[row.group_name], group_focus_area: e.target.value }
+                  [row.group_id]: { ...prev[row.group_id], group_focus_area: e.target.value }
                 }));
               }}
               onBlur={() => setEditingCell(null)}
@@ -267,10 +267,10 @@ export function GroupContactsTable() {
                 if (e.key === 'Escape') {
                   setEditedRows(prev => {
                     const newRows = { ...prev };
-                    if (newRows[row.group_name]) {
-                      delete newRows[row.group_name].group_focus_area;
-                      if (Object.keys(newRows[row.group_name]).length === 0) {
-                        delete newRows[row.group_name];
+                    if (newRows[row.group_id]) {
+                      delete newRows[row.group_id].group_focus_area;
+                      if (Object.keys(newRows[row.group_id]).length === 0) {
+                        delete newRows[row.group_id];
                       }
                     }
                     return newRows;
@@ -320,7 +320,7 @@ export function GroupContactsTable() {
               onChange={(e) => {
                 setEditedRows(prev => ({
                   ...prev,
-                  [row.group_name]: { ...prev[row.group_name], group_sector: e.target.value }
+                  [row.group_id]: { ...prev[row.group_id], group_sector: e.target.value }
                 }));
               }}
               onBlur={() => setEditingCell(null)}
@@ -329,10 +329,10 @@ export function GroupContactsTable() {
                 if (e.key === 'Escape') {
                   setEditedRows(prev => {
                     const newRows = { ...prev };
-                    if (newRows[row.group_name]) {
-                      delete newRows[row.group_name].group_sector;
-                      if (Object.keys(newRows[row.group_name]).length === 0) {
-                        delete newRows[row.group_name];
+                    if (newRows[row.group_id]) {
+                      delete newRows[row.group_id].group_sector;
+                      if (Object.keys(newRows[row.group_id]).length === 0) {
+                        delete newRows[row.group_id];
                       }
                     }
                     return newRows;
