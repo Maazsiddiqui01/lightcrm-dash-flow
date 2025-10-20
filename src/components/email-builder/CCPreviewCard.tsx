@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Mail, Users } from "lucide-react";
 import { buildCc } from "@/lib/buildCc";
 import type { ContactEmailComposer } from "@/types/emailComposer";
-import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { useContactGroups } from "@/hooks/useContactGroups";
+import { useGroupMembersNew } from "@/hooks/useGroupMembersNew";
 
 interface CCPreviewCardProps {
   contactData: ContactEmailComposer | null;
@@ -11,10 +12,12 @@ interface CCPreviewCardProps {
 }
 
 export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
-  // Fetch group members if contact is part of a group
-  const { data: groupMembers, isLoading: loadingGroupMembers } = useGroupMembers(
-    (contactData as any)?.group_contact
-  );
+  // Get all groups this contact belongs to
+  const { data: contactGroups } = useContactGroups(contactData?.contact_id || null);
+  
+  // Get members from all groups
+  const firstGroupId = contactGroups?.[0]?.group_id;
+  const { data: groupMembers } = useGroupMembersNew(firstGroupId || null);
 
   if (!contactData) {
     return (
@@ -47,16 +50,19 @@ export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
   const baseCcEmails = baseCcList ? baseCcList.split(';').map(e => e.trim()).filter(e => e) : [];
 
   // Add group CC members if they exist
-  const groupCcEmails = groupMembers?.cc.map(m => m.email_address) || [];
+  const groupCcEmails = groupMembers?.filter(m => m.email_role === 'cc').map(m => m.email_address) || [];
   const allCcEmails = [...baseCcEmails, ...groupCcEmails].filter((e, i, arr) => arr.indexOf(e) === i);
 
   // Get group BCC members
-  const groupBccEmails = groupMembers?.bcc.map(m => m.email_address) || [];
+  const groupBccEmails = groupMembers?.filter(m => m.email_role === 'bcc').map(m => m.email_address) || [];
 
   // Determine primary TO recipient(s)
-  const toEmails = groupMembers?.to.length 
-    ? groupMembers.to.map(m => m.email_address)
+  const groupToMembers = groupMembers?.filter(m => m.email_role === 'to') || [];
+  const toEmails = groupToMembers.length > 0
+    ? groupToMembers.map(m => m.email_address)
     : [contactData.email];
+
+  const isGroupEmail = contactGroups && contactGroups.length > 0;
 
   return (
     <Card>
@@ -64,29 +70,30 @@ export function CCPreviewCard({ contactData, deltaType }: CCPreviewCardProps) {
         <CardTitle className="flex items-center gap-2">
           <Users className="h-4 w-4" />
           Recipients Preview
+          {isGroupEmail && contactGroups && (
+            <Badge variant="secondary" className="text-xs ml-2">
+              Group: {contactGroups[0].group_name}
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {loadingGroupMembers && (
-          <div className="text-sm text-muted-foreground">Loading group members...</div>
-        )}
-
         {/* To Address */}
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="default" className="text-xs">TO</Badge>
             <span className="text-sm font-medium">
               Primary Recipient{toEmails.length > 1 ? 's' : ''}
-              {groupMembers?.to.length ? ' (Group)' : ''}
+              {isGroupEmail ? ' (Group)' : ''}
             </span>
           </div>
           <div className="p-2 bg-muted rounded text-sm">
             {toEmails.map((email, i) => (
               <div key={i}>
                 {email}
-                {groupMembers?.to[i] && (
+                {groupToMembers[i] && (
                   <span className="text-xs text-muted-foreground ml-2">
-                    ({groupMembers.to[i].full_name})
+                    ({groupToMembers[i].full_name})
                   </span>
                 )}
               </div>

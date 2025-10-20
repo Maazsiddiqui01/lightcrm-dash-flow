@@ -7,7 +7,8 @@ import { Copy, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface GroupNote {
-  group_name: string;
+  group_id?: string;  // New many-to-many system
+  group_name?: string;  // Legacy support
   field: string;
   content: string;
   created_at: string;

@@ -1,6 +1,7 @@
 import { useContactEnriched } from "@/hooks/useContactEnriched";
 import { useContactGroupInfo } from "@/hooks/useContactGroupInfo";
-import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { useContactGroups } from "@/hooks/useContactGroups";
+import { useGroupMembersNew } from "@/hooks/useGroupMembersNew";
 import { useComposerRow } from "@/hooks/useComposer";
 import { GroupMembersBadge } from "@/components/email-builder/GroupMembersBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,7 +44,9 @@ export function ContactInfoPanel({
 }: ContactInfoPanelProps) {
   const { data: enrichedData, isLoading } = useContactEnriched(contactId);
   const { data: groupInfo } = useContactGroupInfo(contactId);
-  const { data: groupMembers } = useGroupMembers(groupInfo?.group_contact);
+  const { data: contactGroups } = useContactGroups(contactId);
+  const firstGroupId = contactGroups?.[0]?.group_id;
+  const { data: groupMembers } = useGroupMembersNew(firstGroupId || null);
   const { data: composerData } = useComposerRow(contactEmail || null);
 
   if (isLoading) {
@@ -115,23 +118,57 @@ export function ContactInfoPanel({
 
         <Separator />
 
-        {/* Group Contact */}
-        {groupInfo?.group_contact && (
+        {/* Group Contact - New Many-to-Many System */}
+        {contactGroups && contactGroups.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">Group Contact</span>
+              <span className="font-medium">Group Memberships</span>
+            </div>
+            <div className="space-y-2">
+              {contactGroups.map((group) => (
+                <div key={group.group_id} className="border rounded p-2">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="text-sm">
+                      {group.group_name}
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      Role: {group.email_role?.toUpperCase() || 'TO'}
+                    </Badge>
+                  </div>
+                  {(group.max_lag_days || group.focus_area || group.sector) && (
+                    <div className="text-xs text-muted-foreground mt-2 space-y-1">
+                      {group.max_lag_days && <div>Max Lag: {group.max_lag_days} days</div>}
+                      {group.focus_area && <div>Focus: {group.focus_area}</div>}
+                      {group.sector && <div>Sector: {group.sector}</div>}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {groupMembers && groupMembers.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  Other members: {groupMembers
+                    .filter(m => m.contact_id !== contactId)
+                    .map(m => m.full_name || m.email_address)
+                    .join(', ')}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Legacy Group Contact - Keep for backward compatibility */}
+        {groupInfo?.group_contact && !contactGroups?.length && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">Group Contact (Legacy)</span>
             </div>
             <div className="space-y-2">
               <Badge variant="outline" className="text-sm">
                 {groupInfo.group_contact}
               </Badge>
               <GroupMembersBadge groupName={groupInfo.group_contact} compact />
-              {groupMembers?.all && groupMembers.all.length > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  Members: {groupMembers.all.map(m => m.full_name || m.email_address).join(', ')}
-                </div>
-              )}
             </div>
           </div>
         )}

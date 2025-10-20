@@ -181,6 +181,25 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     try {
       setIsSubmitting(true);
 
+      // For group contacts, create the group first in the new groups table
+      let newGroupId: string | null = null;
+      if (contactType === "group") {
+        const { data: groupData, error: groupError } = await supabase
+          .from('groups')
+          .insert({
+            name: groupName.trim(),
+            max_lag_days: groupDelta ? parseInt(groupDelta) : null,
+            focus_area: groupFocusArea || null,
+            sector: groupSector || null,
+            notes: groupNotes || null,
+          })
+          .select()
+          .single();
+
+        if (groupError) throw groupError;
+        newGroupId = groupData.id;
+      }
+
       const contactsToInsert = contacts.map(contact => {
         // Helper functions
         const opt = (v?: string) => (v && v.trim() !== "" ? v.trim() : null);
@@ -229,6 +248,24 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
         .select();
 
       if (error) throw error;
+
+      // For group contacts, add memberships to the new junction table
+      if (contactType === "group" && newGroupId && data) {
+        const memberships = data.map(contact => ({
+          contact_id: contact.id,
+          group_id: newGroupId,
+          email_role: contacts.find(c => c.email_address.toLowerCase() === contact.email_address.toLowerCase())?.group_email_role || 'to'
+        }));
+
+        const { error: membershipError } = await supabase
+          .from('contact_group_memberships')
+          .insert(memberships);
+
+        if (membershipError) {
+          console.error('Error creating group memberships:', membershipError);
+          // Don't throw - contacts were created successfully, just log the error
+        }
+      }
 
       const successMessage = contactType === "group" 
         ? `${contacts.length} contacts added to group "${groupName}"`
