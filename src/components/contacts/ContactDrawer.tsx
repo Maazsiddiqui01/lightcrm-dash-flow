@@ -5,6 +5,7 @@ import { useContactNotes } from "@/hooks/useContactNotes";
 import { useGroupNotes } from "@/hooks/useGroupNotes";
 import { useContactGroups } from "@/hooks/useContactGroups";
 import { useRemoveContactFromGroup } from "@/hooks/useRemoveContactFromGroup";
+import { useContactEmails } from "@/hooks/useContactEmails";
 import { ContactNotesSection } from "./ContactNotesSection";
 import { GroupNotesSection } from "./GroupNotesSection";
 import { format } from 'date-fns';
@@ -23,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX, Trash2, Users } from "lucide-react";
+import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX, Trash2, Users, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { useContactOpps } from "@/hooks/useContactOpps";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
@@ -115,6 +116,10 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   const [saving, setSaving] = useState(false);
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [showAllEmails, setShowAllEmails] = useState(false);
+  const [isAddingEmail, setIsAddingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newEmailType, setNewEmailType] = useState<'work' | 'personal' | 'alternate'>('work');
   const { toast } = useToast();
   
   const { deleteContact, isDeleting } = useDeleteContact({
@@ -148,6 +153,18 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   // Fetch all groups this contact belongs to (new many-to-many schema)
   const { data: contactGroupMemberships = [], isLoading: isLoadingGroups } = useContactGroups(contact?.id || null);
   const removeFromGroupMutation = useRemoveContactFromGroup();
+  
+  // Hook for managing contact email addresses
+  const { 
+    emails, 
+    isLoading: isLoadingEmails, 
+    addEmail, 
+    setAsPrimary, 
+    deleteEmail,
+    isAdding: isAddingNewEmail,
+    isSettingPrimary,
+    isDeleting: isDeletingEmail
+  } = useContactEmails(contact?.id);
 
   // Use canonical lookup options
   const sectorsQuery = useSectors();
@@ -312,6 +329,32 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
       setContactData({ ...contactData, [field]: value });
     }
   };
+  
+  const handleAddEmail = () => {
+    if (!newEmail.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter an email address',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail.trim())) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid email address',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    addEmail({ email: newEmail.trim(), type: newEmailType });
+    setNewEmail('');
+    setNewEmailType('work');
+    setIsAddingEmail(false);
+  };
 
   if (!contact) {
     return null;
@@ -391,13 +434,162 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 </div>
 
                 <div>
-                  <Label htmlFor="email_address">Email Address</Label>
+                  <Label htmlFor="email_address">Primary Email Address</Label>
                   <Input
                     id="email_address"
                     type="email"
                     value={contactData.email_address || ""}
                     onChange={(e) => updateField("email_address", e.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This is your primary email address for this contact
+                  </p>
+                </div>
+                
+                {/* All Email Addresses Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base">All Email Addresses ({emails.length})</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAllEmails(!showAllEmails)}
+                    >
+                      {showAllEmails ? (
+                        <>
+                          <ChevronUp className="h-4 w-4 mr-1" />
+                          Hide
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4 mr-1" />
+                          Show
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {showAllEmails && (
+                    <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                      {isLoadingEmails ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <span className="text-sm text-muted-foreground">Loading emails...</span>
+                        </div>
+                      ) : emails.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-2">
+                          No email addresses found
+                        </p>
+                      ) : (
+                        emails.map((email) => (
+                          <div key={email.id} className="flex items-center justify-between p-2 border rounded bg-background">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <Mail className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                              <span className="text-sm truncate">{email.email_address}</span>
+                              {email.is_primary && (
+                                <Badge variant="default" className="flex-shrink-0">Primary</Badge>
+                              )}
+                              <Badge variant="outline" className="flex-shrink-0 capitalize">{email.email_type}</Badge>
+                              {email.source === 'merge' && (
+                                <Badge variant="secondary" className="flex-shrink-0">From Merge</Badge>
+                              )}
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              {!email.is_primary && (
+                                <>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setAsPrimary(email.id)}
+                                    disabled={isSettingPrimary}
+                                    title="Set as primary email"
+                                  >
+                                    Set Primary
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => deleteEmail(email.id)}
+                                    disabled={isDeletingEmail}
+                                    title="Delete this email"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      
+                      {/* Add Email Form */}
+                      {isAddingEmail ? (
+                        <div className="space-y-2 p-3 border rounded bg-background">
+                          <Label htmlFor="new_email">New Email Address</Label>
+                          <Input
+                            id="new_email"
+                            type="email"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            placeholder="email@example.com"
+                          />
+                          <Label htmlFor="new_email_type">Type</Label>
+                          <Select value={newEmailType} onValueChange={(value: any) => setNewEmailType(value)}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="work">Work</SelectItem>
+                              <SelectItem value="personal">Personal</SelectItem>
+                              <SelectItem value="alternate">Alternate</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={handleAddEmail}
+                              disabled={isAddingNewEmail}
+                            >
+                              {isAddingNewEmail ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  Adding...
+                                </>
+                              ) : (
+                                'Add Email'
+                              )}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setIsAddingEmail(false);
+                                setNewEmail('');
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsAddingEmail(true)}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Email Address
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>

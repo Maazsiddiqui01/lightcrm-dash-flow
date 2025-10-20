@@ -17,6 +17,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { sendContactEmail } from "@/features/contacts/sendEmail";
 import { supabase } from "@/integrations/supabase/client";
 import type { ContactWithOpportunities, ContactFilters } from "@/types/contact";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useQuery } from "@tanstack/react-query";
 
 // Dynamic column imports
 import { CONTACTS_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -201,8 +203,58 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       });
     }
   };
+  
+  // Create column options for sort dialog
+  const columnOptions: ColumnOption[] = useMemo(() => {
+    return tableColumns.map(col => ({
+      key: col.name,
+      label: col.displayName,
+    }));
+  }, [tableColumns]);
+  
+  // No need for fetchContacts anymore since we're using the hook
 
-  // Add actions column and customize group_delta display
+  const filteredContacts = useMemo(() => {
+    const filtered = contactsWithComputedSectors.filter(contact =>
+      searchTerm === "" ||
+      contact.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.email_address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.organization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.lg_sector?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.mapped_sectors?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Apply client-side sorting for proper numeric and date handling
+    return applyClientSort(filtered, sortLevels);
+  }, [contactsWithComputedSectors, searchTerm, sortLevels]);
+  
+  // Fetch email counts for all filtered contacts
+  const { data: emailCounts = {} } = useQuery({
+    queryKey: ['contact-email-counts', filteredContacts.map(c => c.id)],
+    queryFn: async () => {
+      const contactIds = filteredContacts.map(c => c.id);
+      if (contactIds.length === 0) return {};
+      
+      const { data, error } = await supabase
+        .from('contact_email_addresses')
+        .select('contact_id')
+        .in('contact_id', contactIds);
+      
+      if (error) throw error;
+      
+      // Count emails per contact
+      const counts: Record<string, number> = {};
+      data.forEach((row) => {
+        counts[row.contact_id] = (counts[row.contact_id] || 0) + 1;
+      });
+      
+      return counts;
+    },
+    enabled: filteredContacts.length > 0,
+  });
+  
+  // Add actions column and customize group_delta display and email_address column
   const columns = useMemo(() => {
     const actionsColumn = {
       key: "actions",
@@ -309,8 +361,42 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       },
     };
 
-    // Customize group_delta column to display next to group_contact with better formatting
+    // Customize columns
     const enhancedColumns = dynamicColumns.map(col => {
+      // Customize email_address to show multiple email indicator
+      if (col.key === 'email_address') {
+        return {
+          ...col,
+          render: (value: any, row: ContactRaw) => {
+            const emailCount = emailCounts[row.id] || 0;
+            const hasMultiple = emailCount > 1;
+            
+            if (!value) return <span className="text-muted-foreground">—</span>;
+            
+            return (
+              <div className="flex items-center gap-2">
+                <span className="truncate">{value}</span>
+                {hasMultiple && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="secondary" className="text-xs">
+                          +{emailCount - 1}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>This contact has {emailCount} email addresses</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+            );
+          }
+        };
+      }
+      
+      // Customize group_delta display
       if (col.key === 'group_delta') {
         return {
           ...col,
@@ -329,36 +415,12 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
           }
         };
       }
+      
       return col;
     });
 
     return [actionsColumn, ...enhancedColumns];
-  }, [dynamicColumns, toast]);
-  
-  // Create column options for sort dialog
-  const columnOptions: ColumnOption[] = useMemo(() => {
-    return tableColumns.map(col => ({
-      key: col.name,
-      label: col.displayName,
-    }));
-  }, [tableColumns]);
-  
-  // No need for fetchContacts anymore since we're using the hook
-
-  const filteredContacts = useMemo(() => {
-    const filtered = contactsWithComputedSectors.filter(contact =>
-      searchTerm === "" ||
-      contact.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.email_address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.organization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.lg_sector?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.mapped_sectors?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    // Apply client-side sorting for proper numeric and date handling
-    return applyClientSort(filtered, sortLevels);
-  }, [contactsWithComputedSectors, searchTerm, sortLevels]);
+  }, [dynamicColumns, toast, emailCounts]);
 
   const handleRowClick = (contact: ContactRaw) => {
     setSelectedContact(contact);

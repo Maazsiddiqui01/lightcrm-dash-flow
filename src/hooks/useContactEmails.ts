@@ -1,0 +1,160 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+export interface ContactEmail {
+  id: string;
+  contact_id: string;
+  email_address: string;
+  email_type: 'primary' | 'work' | 'personal' | 'alternate';
+  is_primary: boolean;
+  verified: boolean;
+  source: string | null;
+  added_at: string;
+  added_by: string | null;
+}
+
+export function useContactEmails(contactId: string | null | undefined) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch all email addresses for a contact
+  const { data: emails = [], isLoading } = useQuery({
+    queryKey: ['contact-emails', contactId],
+    queryFn: async () => {
+      if (!contactId) return [];
+      
+      const { data, error } = await supabase
+        .from('contact_email_addresses')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('is_primary', { ascending: false })
+        .order('added_at', { ascending: true });
+
+      if (error) throw error;
+      return data as ContactEmail[];
+    },
+    enabled: !!contactId,
+  });
+
+  // Add email mutation
+  const addEmailMutation = useMutation({
+    mutationFn: async ({ email, type }: { email: string; type: ContactEmail['email_type'] }) => {
+      if (!contactId) throw new Error('No contact ID');
+
+      const { data, error } = await supabase
+        .from('contact_email_addresses')
+        .insert({
+          contact_id: contactId,
+          email_address: email.toLowerCase(),
+          email_type: type,
+          is_primary: false,
+          source: 'manual',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-emails', contactId] });
+      toast({
+        title: 'Success',
+        description: 'Email address added successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add email address',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Set as primary mutation
+  const setAsPrimaryMutation = useMutation({
+    mutationFn: async (emailId: string) => {
+      if (!contactId) throw new Error('No contact ID');
+
+      const email = emails.find(e => e.id === emailId);
+      if (!email) throw new Error('Email not found');
+
+      // Update the selected email to be primary
+      const { error: updateError } = await supabase
+        .from('contact_email_addresses')
+        .update({ is_primary: true })
+        .eq('id', emailId);
+
+      if (updateError) throw updateError;
+
+      // Update contacts_raw to reflect the new primary email
+      const { error: contactError } = await supabase
+        .from('contacts_raw')
+        .update({ email_address: email.email_address })
+        .eq('id', contactId);
+
+      if (contactError) throw contactError;
+
+      return email.email_address;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-emails', contactId] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast({
+        title: 'Success',
+        description: 'Primary email updated successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to set primary email',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete email mutation
+  const deleteEmailMutation = useMutation({
+    mutationFn: async (emailId: string) => {
+      const email = emails.find(e => e.id === emailId);
+      if (email?.is_primary) {
+        throw new Error('Cannot delete primary email');
+      }
+
+      const { error } = await supabase
+        .from('contact_email_addresses')
+        .delete()
+        .eq('id', emailId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-emails', contactId] });
+      toast({
+        title: 'Success',
+        description: 'Email address deleted successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete email address',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  return {
+    emails,
+    isLoading,
+    addEmail: addEmailMutation.mutate,
+    setAsPrimary: setAsPrimaryMutation.mutate,
+    deleteEmail: deleteEmailMutation.mutate,
+    isAdding: addEmailMutation.isPending,
+    isSettingPrimary: setAsPrimaryMutation.isPending,
+    isDeleting: deleteEmailMutation.isPending,
+  };
+}

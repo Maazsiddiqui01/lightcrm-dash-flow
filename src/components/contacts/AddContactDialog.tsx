@@ -244,6 +244,26 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
         .select();
 
       if (error) throw error;
+      
+      // Insert primary email addresses into contact_email_addresses table
+      if (data) {
+        const emailEntries = data.map(contact => ({
+          contact_id: contact.id,
+          email_address: contact.email_address,
+          email_type: 'primary' as const,
+          is_primary: true,
+          source: 'manual',
+        }));
+        
+        const { error: emailError } = await supabase
+          .from('contact_email_addresses')
+          .insert(emailEntries);
+        
+        if (emailError) {
+          console.error('Error creating email addresses:', emailError);
+          // Don't throw - contacts were created successfully
+        }
+      }
 
       // For group contacts, add memberships to the new junction table
       if (contactType === "group" && newGroupId && data) {
