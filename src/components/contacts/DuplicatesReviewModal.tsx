@@ -16,6 +16,7 @@ import { Loader2, Users, Mail, Calendar, Check, AlertTriangle, Merge, ShieldChec
 import { useFuzzyDuplicates } from '@/hooks/useFuzzyDuplicates';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { X } from 'lucide-react';
 
 interface DuplicatesReviewModalProps {
   open: boolean;
@@ -23,9 +24,9 @@ interface DuplicatesReviewModalProps {
 }
 
 export function DuplicatesReviewModal({ open, onOpenChange }: DuplicatesReviewModalProps) {
-  const { duplicates, isScanning, isMerging, scanForDuplicates, mergeDuplicates } = useFuzzyDuplicates();
+  const { duplicates, isScanning, isMerging, isDismissing, scanForDuplicates, mergeDuplicates, dismissDuplicates } = useFuzzyDuplicates();
   const [selectedPrimary, setSelectedPrimary] = useState<Record<string, string>>({});
-  const [mergedGroups, setMergedGroups] = useState<Set<string>>(new Set());
+  const [processedGroups, setProcessedGroups] = useState<Set<string>>(new Set());
 
   const handleScan = () => {
     scanForDuplicates();
@@ -39,16 +40,24 @@ export function DuplicatesReviewModal({ open, onOpenChange }: DuplicatesReviewMo
       { groupId, primaryId },
       {
         onSuccess: () => {
-          setMergedGroups(prev => new Set(prev).add(groupId));
+          setProcessedGroups(prev => new Set(prev).add(groupId));
         },
       }
     );
   };
 
+  const handleDismiss = (groupId: string) => {
+    dismissDuplicates(groupId, {
+      onSuccess: () => {
+        setProcessedGroups(prev => new Set(prev).add(groupId));
+      },
+    });
+  };
+
   const getConfidenceBadge = (confidence: number) => {
-    if (confidence >= 90) {
+    if (confidence >= 95) {
       return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">High ({confidence}%)</Badge>;
-    } else if (confidence >= 75) {
+    } else if (confidence >= 85) {
       return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Medium ({confidence}%)</Badge>;
     } else {
       return <Badge className="bg-slate-500/10 text-slate-600 border-slate-500/20">Low ({confidence}%)</Badge>;
@@ -56,9 +65,9 @@ export function DuplicatesReviewModal({ open, onOpenChange }: DuplicatesReviewMo
   };
 
   const groupedDuplicates = {
-    high: duplicates?.groups.filter(g => g.confidence >= 90) || [],
-    medium: duplicates?.groups.filter(g => g.confidence >= 75 && g.confidence < 90) || [],
-    low: duplicates?.groups.filter(g => g.confidence < 75) || [],
+    high: duplicates?.groups.filter(g => g.confidence >= 95) || [],
+    medium: duplicates?.groups.filter(g => g.confidence >= 85 && g.confidence < 95) || [],
+    low: duplicates?.groups.filter(g => g.confidence >= 70 && g.confidence < 85) || [],
   };
 
   return (
@@ -119,11 +128,13 @@ export function DuplicatesReviewModal({ open, onOpenChange }: DuplicatesReviewMo
                       <DuplicateGroupCard
                         key={group.id}
                         group={group}
-                        isMerged={mergedGroups.has(group.id)}
+                        isProcessed={processedGroups.has(group.id)}
                         isMerging={isMerging}
+                        isDismissing={isDismissing}
                         selectedPrimary={selectedPrimary[group.id] || group.suggestedPrimary}
                         onSelectPrimary={(id) => setSelectedPrimary(prev => ({ ...prev, [group.id]: id }))}
                         onMerge={() => handleMerge(group.id)}
+                        onDismiss={() => handleDismiss(group.id)}
                         getConfidenceBadge={getConfidenceBadge}
                       />
                     ))}
@@ -143,11 +154,13 @@ export function DuplicatesReviewModal({ open, onOpenChange }: DuplicatesReviewMo
                         <DuplicateGroupCard
                           key={group.id}
                           group={group}
-                          isMerged={mergedGroups.has(group.id)}
+                          isProcessed={processedGroups.has(group.id)}
                           isMerging={isMerging}
+                          isDismissing={isDismissing}
                           selectedPrimary={selectedPrimary[group.id] || group.suggestedPrimary}
                           onSelectPrimary={(id) => setSelectedPrimary(prev => ({ ...prev, [group.id]: id }))}
                           onMerge={() => handleMerge(group.id)}
+                          onDismiss={() => handleDismiss(group.id)}
                           getConfidenceBadge={getConfidenceBadge}
                         />
                       ))}
@@ -168,11 +181,13 @@ export function DuplicatesReviewModal({ open, onOpenChange }: DuplicatesReviewMo
                         <DuplicateGroupCard
                           key={group.id}
                           group={group}
-                          isMerged={mergedGroups.has(group.id)}
+                          isProcessed={processedGroups.has(group.id)}
                           isMerging={isMerging}
+                          isDismissing={isDismissing}
                           selectedPrimary={selectedPrimary[group.id] || group.suggestedPrimary}
                           onSelectPrimary={(id) => setSelectedPrimary(prev => ({ ...prev, [group.id]: id }))}
                           onMerge={() => handleMerge(group.id)}
+                          onDismiss={() => handleDismiss(group.id)}
                           getConfidenceBadge={getConfidenceBadge}
                         />
                       ))}
@@ -201,21 +216,25 @@ export function DuplicatesReviewModal({ open, onOpenChange }: DuplicatesReviewMo
 
 interface DuplicateGroupCardProps {
   group: any;
-  isMerged: boolean;
+  isProcessed: boolean;
   isMerging: boolean;
+  isDismissing: boolean;
   selectedPrimary: string;
   onSelectPrimary: (id: string) => void;
   onMerge: () => void;
+  onDismiss: () => void;
   getConfidenceBadge: (confidence: number) => JSX.Element;
 }
 
 function DuplicateGroupCard({
   group,
-  isMerged,
+  isProcessed,
   isMerging,
+  isDismissing,
   selectedPrimary,
   onSelectPrimary,
   onMerge,
+  onDismiss,
   getConfidenceBadge,
 }: DuplicateGroupCardProps) {
   return (
@@ -238,27 +257,45 @@ function DuplicateGroupCard({
         </div>
 
         <div className="flex flex-col gap-2">
-          {isMerged ? (
+          {isProcessed ? (
             <Button size="sm" variant="outline" disabled className="gap-1">
               <Check className="h-4 w-4" />
-              Merged
+              Processed
             </Button>
           ) : (
-            <Button 
-              size="sm" 
-              onClick={onMerge}
-              disabled={isMerging || !selectedPrimary}
-              className="gap-1"
-            >
-              {isMerging ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Merge className="h-4 w-4" />
-                  Merge
-                </>
-              )}
-            </Button>
+            <>
+              <Button 
+                size="sm" 
+                onClick={onMerge}
+                disabled={isMerging || isDismissing || !selectedPrimary}
+                className="gap-1"
+              >
+                {isMerging ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Merge className="h-4 w-4" />
+                    Approve
+                  </>
+                )}
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={onDismiss}
+                disabled={isMerging || isDismissing}
+                className="gap-1"
+              >
+                {isDismissing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <X className="h-4 w-4" />
+                    Dismiss
+                  </>
+                )}
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -281,9 +318,23 @@ function DuplicateGroupCard({
                 <div className="flex items-center justify-between gap-2">
                   <div className="space-y-1">
                     <div className="font-medium">{record.full_name}</div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Mail className="h-3 w-3" />
-                      {record.email}
+                    <div className="text-sm text-muted-foreground space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-3 w-3" />
+                        <span className="font-medium">{record.email}</span>
+                        {record.all_emails && record.all_emails.length > 1 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{record.all_emails.length - 1} more
+                          </Badge>
+                        )}
+                      </div>
+                      {record.all_emails && record.all_emails.length > 1 && (
+                        <div className="ml-5 text-xs space-y-0.5">
+                          {record.all_emails.slice(1).map((email: string, i: number) => (
+                            <div key={i}>{email}</div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     {record.organization && (
                       <div className="text-sm text-muted-foreground">
@@ -315,11 +366,16 @@ function DuplicateGroupCard({
       </RadioGroup>
 
       <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
-        <p className="font-medium mb-1">What happens when you merge:</p>
+        <p className="font-medium mb-1">What happens when you approve:</p>
         <ul className="list-disc list-inside space-y-1">
           <li>Primary contact keeps all data + gets all email addresses from duplicates</li>
-          <li>All opportunities, notes, and interactions will be linked to primary contact</li>
-          <li>Duplicate contacts will be permanently deleted</li>
+          <li>All opportunities, notes, and interactions linked to primary</li>
+          <li>Duplicate contacts permanently deleted</li>
+        </ul>
+        <p className="font-medium mt-2 mb-1">What happens when you dismiss:</p>
+        <ul className="list-disc list-inside space-y-1">
+          <li>These contacts won't be flagged as duplicates in future scans</li>
+          <li>No data will be changed or deleted</li>
         </ul>
       </div>
     </div>

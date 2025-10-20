@@ -94,11 +94,45 @@ export function useFuzzyDuplicates() {
     },
   });
 
+  const dismissMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      const data = await edgeInvoke('data_normalization', {
+        action: 'dismiss_duplicate_group',
+        groupId
+      });
+      return data;
+    },
+    onSuccess: (data, groupId) => {
+      // Remove dismissed group from results
+      if (duplicates) {
+        setDuplicates({
+          ...duplicates,
+          groups: duplicates.groups.filter(g => g.id !== groupId),
+        });
+      }
+      
+      toast({
+        title: "Duplicate dismissed",
+        description: "This group won't appear in future scans",
+      });
+    },
+    onError: (error) => {
+      console.error('[useFuzzyDuplicates] Dismiss error:', formatEdgeError(error, 'data_normalization'));
+      toast({
+        title: "Dismiss failed",
+        description: "Failed to dismiss duplicate group. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     duplicates,
     isScanning: scanMutation.isPending,
     isMerging: mergeMutation.isPending,
+    isDismissing: dismissMutation.isPending,
     scanForDuplicates: scanMutation.mutate,
     mergeDuplicates: mergeMutation.mutate,
+    dismissDuplicates: dismissMutation.mutate,
   };
 }

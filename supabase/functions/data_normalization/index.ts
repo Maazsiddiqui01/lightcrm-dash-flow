@@ -141,11 +141,13 @@ serve(async (req) => {
     } else if (action === 'scan_duplicates') {
       return await scanForDuplicates(supabaseClient, entityType);
     } else if (action === 'scan_fuzzy_duplicates') {
-      return await scanForFuzzyDuplicates(supabaseClient, user.id);
+      return await scanForFuzzyDuplicates(authSupabase, user.id, isAdmin);
     } else if (action === 'merge_duplicates') {
       return await mergeDuplicates(supabaseClient, groupId, entityType);
     } else if (action === 'merge_contacts') {
-      return await mergeContacts(supabaseClient, groupId, primaryId, user.id);
+      return await mergeContacts(authSupabase, groupId, primaryId, user.id);
+    } else if (action === 'dismiss_duplicate_group') {
+      return await dismissDuplicateGroup(authSupabase, groupId, user.id);
     }
 
     return new Response(
@@ -441,37 +443,145 @@ async function scanForDuplicates(supabase: any, entityType: string) {
 }
 
 // Fuzzy duplicate detection with human-in-the-loop
-async function scanForFuzzyDuplicates(supabase: any, userId: string) {
+async function scanForFuzzyDuplicates(supabase: any, userId: string, isAdmin: boolean) {
   console.log('Scanning for fuzzy duplicate contacts...');
 
-  // Get all contacts for the user
-  const { data: contacts } = await supabase
+  // Get all contacts for the user (using authenticated client for RLS)
+  let query = supabase
     .from('contacts_raw')
     .select('id, full_name, email_address, organization, most_recent_contact, of_emails, of_meetings, assigned_to, created_by')
-    .or(`assigned_to.eq.${userId},created_by.eq.${userId}`)
     .not('email_address', 'is', null)
-    .not('full_name', 'is', null)
-    .order('full_name');
+    .not('full_name', 'is', null);
+
+  // If not admin, filter by user access
+  if (!isAdmin) {
+    query = query.or(`assigned_to.eq.${userId},created_by.eq.${userId}`);
+  }
+
+  const { data: contacts, error: contactsError } = await query.order('full_name');
+
+  if (contactsError) {
+    console.error('Error fetching contacts:', contactsError);
+    throw new Error(`Failed to fetch contacts: ${contactsError.message}`);
+  }
 
   console.log(`Found ${contacts?.length || 0} contacts to analyze`);
 
+  if (!contacts || contacts.length === 0) {
+    return new Response(
+      JSON.stringify({ groups: [], totalDuplicates: 0, avgConfidence: 0 }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Fetch all email addresses for contacts
+  const { data: allEmails } = await supabase
+    .from('contact_email_addresses')
+    .select('contact_id, email_address, email_type, is_primary')
+    .in('contact_id', contacts.map(c => c.id));
+
+  const emailsByContact = new Map<string, string[]>();
+  for (const emailRec of allEmails || []) {
+    if (!emailsByContact.has(emailRec.contact_id)) {
+      emailsByContact.set(emailRec.contact_id, []);
+    }
+    emailsByContact.get(emailRec.contact_id)!.push(emailRec.email_address);
+  }
+
+  // Fetch dismissed duplicate groups to exclude
+  const { data: dismissed } = await supabase
+    .from('contact_duplicates')
+    .select('contact_ids')
+    .eq('status', 'dismissed');
+
+  const dismissedPairs = new Set<string>();
+  for (const d of dismissed || []) {
+    const ids = d.contact_ids.sort();
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        dismissedPairs.add(`${ids[i]}-${ids[j]}`);
+      }
+    }
+  }
+
+  // Candidate bucketing for performance
+  const domainBuckets = new Map<string, string[]>();
+  const orgBuckets = new Map<string, string[]>();
+  const nameBuckets = new Map<string, string[]>();
+
+  for (const contact of contacts) {
+    const domain = contact.email_address.split('@')[1]?.toLowerCase();
+    if (domain) {
+      if (!domainBuckets.has(domain)) domainBuckets.set(domain, []);
+      domainBuckets.get(domain)!.push(contact.id);
+    }
+
+    const orgNorm = contact.organization?.toLowerCase().trim();
+    if (orgNorm) {
+      if (!orgBuckets.has(orgNorm)) orgBuckets.set(orgNorm, []);
+      orgBuckets.get(orgNorm)!.push(contact.id);
+    }
+
+    const nameParts = contact.full_name.toLowerCase().split(' ');
+    const lastName = nameParts[nameParts.length - 1];
+    const nameKey = lastName[0] + lastName.slice(0, 3);
+    if (!nameBuckets.has(nameKey)) nameBuckets.set(nameKey, []);
+    nameBuckets.get(nameKey)!.push(contact.id);
+  }
+
   const groups: any[] = [];
   const processed = new Set<string>();
+  const contactMap = new Map(contacts.map(c => [c.id, c]));
 
-  for (let i = 0; i < (contacts || []).length; i++) {
+  for (let i = 0; i < contacts.length; i++) {
     const contact1 = contacts[i];
     if (processed.has(contact1.id)) continue;
 
     const potentialDuplicates: any[] = [contact1];
 
-    for (let j = i + 1; j < contacts.length; j++) {
-      const contact2 = contacts[j];
-      if (processed.has(contact2.id)) continue;
+    // Get candidate contacts from buckets
+    const candidates = new Set<string>();
+    const domain1 = contact1.email_address.split('@')[1]?.toLowerCase();
+    if (domain1 && domainBuckets.has(domain1)) {
+      domainBuckets.get(domain1)!.forEach(id => candidates.add(id));
+    }
+    const org1 = contact1.organization?.toLowerCase().trim();
+    if (org1 && orgBuckets.has(org1)) {
+      orgBuckets.get(org1)!.forEach(id => candidates.add(id));
+    }
+    const name1Parts = contact1.full_name.toLowerCase().split(' ');
+    const lastName1 = name1Parts[name1Parts.length - 1];
+    const nameKey1 = lastName1[0] + lastName1.slice(0, 3);
+    if (nameBuckets.has(nameKey1)) {
+      nameBuckets.get(nameKey1)!.forEach(id => candidates.add(id));
+    }
+
+    for (const candidateId of candidates) {
+      if (candidateId === contact1.id || processed.has(candidateId)) continue;
+
+      const contact2 = contactMap.get(candidateId);
+      if (!contact2) continue;
+
+      // Check if this pair was dismissed
+      const pairKey = [contact1.id, contact2.id].sort().join('-');
+      if (dismissedPairs.has(pairKey)) continue;
 
       const nameSimilarity = similarityScore(contact1.full_name, contact2.full_name);
+      
+      // Get all emails for both contacts
+      const emails1 = emailsByContact.get(contact1.id) || [contact1.email_address];
+      const emails2 = emailsByContact.get(contact2.id) || [contact2.email_address];
+      
+      // Calculate max email similarity
+      let maxEmailSim = 0;
+      for (const e1 of emails1) {
+        for (const e2 of emails2) {
+          maxEmailSim = Math.max(maxEmailSim, similarityScore(e1, e2));
+        }
+      }
+
       const emailDomain1 = contact1.email_address.split('@')[1]?.toLowerCase();
       const emailDomain2 = contact2.email_address.split('@')[1]?.toLowerCase();
-      const emailSimilarity = similarityScore(contact1.email_address, contact2.email_address);
       const orgSimilarity = contact1.organization && contact2.organization
         ? similarityScore(contact1.organization, contact2.organization)
         : 0;
@@ -479,61 +589,85 @@ async function scanForFuzzyDuplicates(supabase: any, userId: string) {
       let confidence = 0;
       let matchReasons: string[] = [];
 
-      // High confidence: 95%+ name match + same email domain
+      // High confidence: 95-100% name match + same email domain
       if (nameSimilarity >= 95 && emailDomain1 === emailDomain2) {
-        confidence = 95;
+        confidence = Math.round(nameSimilarity);
         matchReasons.push(`${nameSimilarity}% name match, same email domain (@${emailDomain1})`);
       }
-      // Medium-high confidence: 85%+ name match + same organization + 70%+ email similarity
-      else if (nameSimilarity >= 85 && orgSimilarity >= 80 && emailSimilarity >= 70) {
-        confidence = 85;
-        matchReasons.push(`${nameSimilarity}% name match, ${orgSimilarity}% org match, ${emailSimilarity}% email match`);
+      // Medium confidence: 85-94% name match + (same org OR high email similarity)
+      else if (nameSimilarity >= 85 && nameSimilarity < 95) {
+        if (orgSimilarity >= 80 && maxEmailSim >= 70) {
+          confidence = Math.round((nameSimilarity + orgSimilarity + maxEmailSim) / 3);
+          matchReasons.push(`${nameSimilarity}% name, ${orgSimilarity}% org, ${maxEmailSim}% email match`);
+        } else if (emailDomain1 === emailDomain2) {
+          confidence = Math.round(nameSimilarity);
+          matchReasons.push(`${nameSimilarity}% name match, same domain`);
+        }
       }
-      // Medium confidence: 90%+ name match + different domain
-      else if (nameSimilarity >= 90 && emailDomain1 !== emailDomain2) {
-        confidence = 75;
-        matchReasons.push(`${nameSimilarity}% name match, different email domains`);
+      // Low confidence: 70-84% name match + strong supporting evidence
+      else if (nameSimilarity >= 70 && nameSimilarity < 85) {
+        if (orgSimilarity >= 80 && maxEmailSim >= 70) {
+          confidence = Math.round((nameSimilarity + orgSimilarity * 0.5 + maxEmailSim * 0.5) / 2);
+          matchReasons.push(`${nameSimilarity}% name, ${orgSimilarity}% org, ${maxEmailSim}% email match`);
+        } else if (emailDomain1 === emailDomain2 && nameSimilarity >= 80) {
+          confidence = Math.round(nameSimilarity * 0.9);
+          matchReasons.push(`${nameSimilarity}% name match, same domain`);
+        }
       }
 
-      if (confidence > 0) {
+      // Only include if >= 70% confidence
+      if (confidence >= 70) {
         potentialDuplicates.push({
           ...contact2,
           matchConfidence: confidence,
-          matchReasons: matchReasons.join('; ')
+          matchReasons: matchReasons.join('; '),
+          allEmails: emails2
         });
         processed.add(contact2.id);
       }
     }
 
     if (potentialDuplicates.length > 1) {
-      // Sort by most_recent_contact to suggest primary
+      // Sort by most_recent_contact, then by total interactions
       potentialDuplicates.sort((a, b) => {
         const dateA = a.most_recent_contact ? new Date(a.most_recent_contact).getTime() : 0;
         const dateB = b.most_recent_contact ? new Date(b.most_recent_contact).getTime() : 0;
-        return dateB - dateA;
+        if (dateB !== dateA) return dateB - dateA;
+        
+        const interactionsA = (a.of_emails || 0) + (a.of_meetings || 0);
+        const interactionsB = (b.of_emails || 0) + (b.of_meetings || 0);
+        return interactionsB - interactionsA;
       });
 
       const suggestedPrimary = potentialDuplicates[0];
-      const avgConfidence = potentialDuplicates.slice(1).reduce((sum, c) => sum + (c.matchConfidence || 95), 0) / (potentialDuplicates.length - 1);
+      const totalInteractions = (suggestedPrimary.of_emails || 0) + (suggestedPrimary.of_meetings || 0);
+      const avgConfidence = potentialDuplicates.slice(1).reduce((sum, c) => sum + (c.matchConfidence || 70), 0) / (potentialDuplicates.length - 1);
+
+      const allContactIds = potentialDuplicates.map(c => c.id);
+      const emails1 = emailsByContact.get(contact1.id) || [contact1.email_address];
 
       groups.push({
-        id: `fuzzy-${contact1.id}`,
+        id: `fuzzy-${allContactIds.join(',')}`,
         confidence: Math.round(avgConfidence),
         matchReason: potentialDuplicates[1]?.matchReasons || 'Similar names and email domains',
         suggestedPrimary: suggestedPrimary.id,
         suggestedReason: suggestedPrimary.most_recent_contact 
-          ? `Most recent contact: ${new Date(suggestedPrimary.most_recent_contact).toLocaleDateString()}`
-          : 'First in list',
-        records: potentialDuplicates.map(c => ({
-          id: c.id,
-          full_name: c.full_name,
-          email: c.email_address,
-          organization: c.organization,
-          most_recent_contact: c.most_recent_contact,
-          emails_count: c.of_emails || 0,
-          meetings_count: c.of_meetings || 0,
-          owner: c.assigned_to || c.created_by
-        }))
+          ? `Most recent: ${new Date(suggestedPrimary.most_recent_contact).toLocaleDateString()} (${totalInteractions} interactions)`
+          : `${totalInteractions} total interactions`,
+        records: potentialDuplicates.map(c => {
+          const cEmails = emailsByContact.get(c.id) || [c.email_address];
+          return {
+            id: c.id,
+            full_name: c.full_name,
+            email: c.email_address,
+            all_emails: cEmails,
+            organization: c.organization,
+            most_recent_contact: c.most_recent_contact,
+            emails_count: c.of_emails || 0,
+            meetings_count: c.of_meetings || 0,
+            owner: c.assigned_to || c.created_by
+          };
+        })
       });
       
       processed.add(contact1.id);
@@ -545,7 +679,7 @@ async function scanForFuzzyDuplicates(supabase: any, userId: string) {
     ? groups.reduce((sum, g) => sum + g.confidence, 0) / groups.length 
     : 0;
 
-  console.log(`Found ${groups.length} potential duplicate groups`);
+  console.log(`Found ${groups.length} potential duplicate groups (${totalDuplicates} total duplicates)`);
 
   return new Response(
     JSON.stringify({ groups, totalDuplicates, avgConfidence }),
@@ -558,41 +692,63 @@ async function mergeContacts(supabase: any, groupId: string, primaryId: string, 
   console.log(`Merging contacts for group ${groupId}, primary: ${primaryId}`);
 
   try {
-    // Get all contacts in the group
+    const contactIds = groupId.replace('fuzzy-', '').split(',');
+    console.log(`Contact IDs to merge: ${contactIds.join(', ')}`);
+
+    // Get all contacts in the group (using authenticated client)
     const { data: groupContacts, error: fetchError } = await supabase
       .from('contacts_raw')
       .select('*')
-      .in('id', groupId.replace('fuzzy-', '').split(','))
-      .or(`assigned_to.eq.${userId},created_by.eq.${userId}`);
+      .in('id', contactIds);
 
-    if (fetchError || !groupContacts || groupContacts.length < 2) {
-      throw new Error('Could not find contacts to merge or insufficient permissions');
+    if (fetchError) {
+      console.error('Fetch error:', fetchError);
+      throw new Error(`Failed to fetch contacts: ${fetchError.message}`);
+    }
+
+    if (!groupContacts || groupContacts.length < 2) {
+      throw new Error(`Insufficient contacts found (${groupContacts?.length || 0})`);
     }
 
     const primaryContact = groupContacts.find(c => c.id === primaryId);
     if (!primaryContact) {
-      throw new Error('Primary contact not found');
+      throw new Error('Primary contact not found in group');
     }
 
     const duplicateIds = groupContacts.filter(c => c.id !== primaryId).map(c => c.id);
+    console.log(`Merging ${duplicateIds.length} duplicates into primary ${primaryId}`);
+
+    // Fetch all existing emails from contact_email_addresses
+    const { data: existingEmails } = await supabase
+      .from('contact_email_addresses')
+      .select('contact_id, email_address')
+      .in('contact_id', contactIds);
+
     const allEmails = new Set<string>();
 
-    // Collect all unique emails
+    // Collect from contact_email_addresses table
+    for (const emailRec of existingEmails || []) {
+      allEmails.add(emailRec.email_address.toLowerCase().trim());
+    }
+
+    // Also collect from main email_address and all_emails fields
     for (const contact of groupContacts) {
       if (contact.email_address) {
         allEmails.add(contact.email_address.toLowerCase().trim());
       }
       if (contact.all_emails) {
-        const emails = contact.all_emails.split(';').map((e: string) => e.trim().toLowerCase());
-        emails.forEach((e: string) => e && allEmails.add(e));
+        const emails = contact.all_emails.split(';').map((e: string) => e.trim().toLowerCase()).filter((e: string) => e);
+        emails.forEach((e: string) => allEmails.add(e));
       }
     }
 
-    // Insert all emails into contact_email_addresses
+    console.log(`Collected ${allEmails.size} unique emails`);
+
+    // Insert/update all emails into contact_email_addresses for primary contact
     const primaryEmail = primaryContact.email_address?.toLowerCase().trim();
     for (const email of Array.from(allEmails)) {
       const isPrimary = email === primaryEmail;
-      await supabase
+      const { error: upsertError } = await supabase
         .from('contact_email_addresses')
         .upsert({
           contact_id: primaryId,
@@ -602,11 +758,16 @@ async function mergeContacts(supabase: any, groupId: string, primaryId: string, 
           source: 'merge',
           added_by: userId
         }, {
-          onConflict: 'contact_id,email_address'
+          onConflict: 'contact_id,email_address',
+          ignoreDuplicates: false
         });
+
+      if (upsertError) {
+        console.error(`Error upserting email ${email}:`, upsertError);
+      }
     }
 
-    // Merge data from duplicates into primary
+    // Merge data from duplicates into primary (keep non-null values)
     const mergedData = { ...primaryContact };
     for (const duplicate of groupContacts) {
       if (duplicate.id === primaryId) continue;
@@ -619,17 +780,29 @@ async function mergeContacts(supabase: any, groupId: string, primaryId: string, 
       }
     }
 
-    // Update primary contact
-    await supabase
+    // Update primary contact with merged data
+    const { error: updateError } = await supabase
       .from('contacts_raw')
       .update(mergedData)
       .eq('id', primaryId);
 
+    if (updateError) {
+      console.error('Update error:', updateError);
+      throw new Error(`Failed to update primary contact: ${updateError.message}`);
+    }
+
     // Update foreign key references
+    const fullNames = groupContacts.map(c => c.full_name).filter(n => n);
+
     await supabase
       .from('opportunities_raw')
       .update({ deal_source_individual_1: primaryContact.full_name })
-      .in('deal_source_individual_1', groupContacts.map(d => d.full_name));
+      .in('deal_source_individual_1', fullNames);
+
+    await supabase
+      .from('opportunities_raw')
+      .update({ deal_source_individual_2: primaryContact.full_name })
+      .in('deal_source_individual_2', fullNames);
 
     await supabase
       .from('contact_note_events')
@@ -646,23 +819,37 @@ async function mergeContacts(supabase: any, groupId: string, primaryId: string, 
       .update({ contact_id: primaryId })
       .in('contact_id', duplicateIds);
 
-    // Log the merge
     await supabase
+      .from('contact_intentional_no_outreach_events')
+      .update({ contact_id: primaryId })
+      .in('contact_id', duplicateIds);
+
+    // Log the merge
+    const { error: logError } = await supabase
       .from('duplicate_merge_log')
       .insert({
         entity_type: 'contacts',
         primary_record_id: primaryId,
         merged_record_ids: duplicateIds,
-        merge_reason: `Fuzzy match merge - group ${groupId}`,
-        data_preserved: { emails: Array.from(allEmails) },
+        merge_reason: `Fuzzy match merge - user approved`,
+        data_preserved: { emails: Array.from(allEmails), full_names: fullNames },
         merged_by: userId
       });
 
+    if (logError) {
+      console.error('Log error:', logError);
+    }
+
     // Delete duplicate contacts
-    await supabase
+    const { error: deleteError } = await supabase
       .from('contacts_raw')
       .delete()
       .in('id', duplicateIds);
+
+    if (deleteError) {
+      console.error('Delete error:', deleteError);
+      throw new Error(`Failed to delete duplicates: ${deleteError.message}`);
+    }
 
     console.log(`Successfully merged ${duplicateIds.length} contacts into ${primaryId}`);
 
@@ -677,6 +864,57 @@ async function mergeContacts(supabase: any, groupId: string, primaryId: string, 
     );
   } catch (error) {
     console.error('Merge error:', error);
+    throw error;
+  }
+}
+
+// Dismiss a duplicate group so it won't appear in future scans
+async function dismissDuplicateGroup(supabase: any, groupId: string, userId: string) {
+  console.log(`Dismissing duplicate group ${groupId}`);
+
+  try {
+    const contactIds = groupId.replace('fuzzy-', '').split(',');
+
+    // Fetch contacts to get email for the duplicate record
+    const { data: contacts } = await supabase
+      .from('contacts_raw')
+      .select('id, email_address, assigned_to, created_by')
+      .in('id', contactIds);
+
+    if (!contacts || contacts.length === 0) {
+      throw new Error('Contacts not found');
+    }
+
+    const userIds = [...new Set(contacts.map(c => c.assigned_to || c.created_by).filter(Boolean))];
+    const representativeEmail = contacts[0].email_address;
+
+    // Insert or update in contact_duplicates
+    const { error: upsertError } = await supabase
+      .from('contact_duplicates')
+      .upsert({
+        email_address: representativeEmail,
+        contact_ids: contactIds,
+        user_ids: userIds,
+        user_count: userIds.length,
+        status: 'dismissed',
+        resolution_note: 'Dismissed by user - not duplicates'
+      }, {
+        onConflict: 'email_address'
+      });
+
+    if (upsertError) {
+      console.error('Dismiss error:', upsertError);
+      throw new Error(`Failed to dismiss: ${upsertError.message}`);
+    }
+
+    console.log(`Successfully dismissed group ${groupId}`);
+
+    return new Response(
+      JSON.stringify({ success: true, groupId }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Dismiss error:', error);
     throw error;
   }
 }
