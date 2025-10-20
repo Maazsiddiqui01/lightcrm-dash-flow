@@ -3,10 +3,11 @@ import { GroupContactsTable } from "@/components/contacts/GroupContactsTable";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useContactStats } from "@/hooks/useContactStats";
-import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX, Sparkles, ListTree } from "lucide-react";
+import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX, Sparkles, ListTree, Merge } from "lucide-react";
 import { useState, useMemo } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { SuggestGroupsModal } from "@/components/contacts/SuggestGroupsModal";
+import { DuplicatesReviewModal } from "@/components/contacts/DuplicatesReviewModal";
 import { ContactFilterBar } from "@/components/contacts/ContactFilterBar";
 import { AIContactSearch } from "@/components/contacts/AIContactSearch";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
@@ -18,6 +19,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export function Contacts() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuggestGroupsOpen, setIsSuggestGroupsOpen] = useState(false);
+  const [isDuplicatesOpen, setIsDuplicatesOpen] = useState(false);
   const [showOpportunityFilters, setShowOpportunityFilters] = useState(true);
   const [viewMode, setViewMode] = useState<'individual' | 'group'>('individual');
   
@@ -96,6 +98,10 @@ export function Contacts() {
             <p className="text-muted-foreground">Manage your professional contacts and relationships</p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={() => setIsDuplicatesOpen(true)} variant="outline" className="touch-target">
+              <Merge className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Detect Duplicates</span>
+            </Button>
             <Button onClick={() => setIsSuggestGroupsOpen(true)} variant="outline" className="touch-target">
               <Sparkles className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Suggest Groups</span>
@@ -211,6 +217,11 @@ export function Contacts() {
         <SuggestGroupsModal
           open={isSuggestGroupsOpen}
           onOpenChange={setIsSuggestGroupsOpen}
+        />
+
+        <DuplicatesReviewModal
+          open={isDuplicatesOpen}
+          onOpenChange={setIsDuplicatesOpen}
         />
       </ResponsiveContainer>
     </div>

@@ -64,6 +64,42 @@ const companySuffixes: Record<string, string> = {
   'plc': 'Public Limited Company',
 };
 
+// Levenshtein distance for fuzzy string matching
+function levenshteinDistance(str1: string, str2: string): number {
+  const m = str1.length;
+  const n = str2.length;
+  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (str1[i - 1] === str2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]) + 1;
+      }
+    }
+  }
+
+  return dp[m][n];
+}
+
+// Calculate similarity score (0-100)
+function similarityScore(str1: string, str2: string): number {
+  if (!str1 || !str2) return 0;
+  const s1 = str1.toLowerCase().trim();
+  const s2 = str2.toLowerCase().trim();
+  if (s1 === s2) return 100;
+  
+  const maxLen = Math.max(s1.length, s2.length);
+  if (maxLen === 0) return 100;
+  
+  const distance = levenshteinDistance(s1, s2);
+  return Math.round((1 - distance / maxLen) * 100);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -96,7 +132,7 @@ serve(async (req) => {
       }
     );
 
-    const { action, entityType, groupId, changes, preview } = await req.json();
+    const { action, entityType, groupId, changes, preview, primaryId } = await req.json();
 
     if (action === 'scan') {
       return await scanForNormalization(supabaseClient, preview);
@@ -104,8 +140,12 @@ serve(async (req) => {
       return await applyNormalization(supabaseClient, changes);
     } else if (action === 'scan_duplicates') {
       return await scanForDuplicates(supabaseClient, entityType);
+    } else if (action === 'scan_fuzzy_duplicates') {
+      return await scanForFuzzyDuplicates(supabaseClient, user.id);
     } else if (action === 'merge_duplicates') {
       return await mergeDuplicates(supabaseClient, groupId, entityType);
+    } else if (action === 'merge_contacts') {
+      return await mergeContacts(supabaseClient, groupId, primaryId, user.id);
     }
 
     return new Response(
@@ -397,6 +437,247 @@ async function scanForDuplicates(supabase: any, entityType: string) {
       JSON.stringify({ groups: [], totalDuplicates: 0, avgConfidence: 0 }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+  }
+}
+
+// Fuzzy duplicate detection with human-in-the-loop
+async function scanForFuzzyDuplicates(supabase: any, userId: string) {
+  console.log('Scanning for fuzzy duplicate contacts...');
+
+  // Get all contacts for the user
+  const { data: contacts } = await supabase
+    .from('contacts_raw')
+    .select('id, full_name, email_address, organization, most_recent_contact, of_emails, of_meetings, assigned_to, created_by')
+    .or(`assigned_to.eq.${userId},created_by.eq.${userId}`)
+    .not('email_address', 'is', null)
+    .not('full_name', 'is', null)
+    .order('full_name');
+
+  console.log(`Found ${contacts?.length || 0} contacts to analyze`);
+
+  const groups: any[] = [];
+  const processed = new Set<string>();
+
+  for (let i = 0; i < (contacts || []).length; i++) {
+    const contact1 = contacts[i];
+    if (processed.has(contact1.id)) continue;
+
+    const potentialDuplicates: any[] = [contact1];
+
+    for (let j = i + 1; j < contacts.length; j++) {
+      const contact2 = contacts[j];
+      if (processed.has(contact2.id)) continue;
+
+      const nameSimilarity = similarityScore(contact1.full_name, contact2.full_name);
+      const emailDomain1 = contact1.email_address.split('@')[1]?.toLowerCase();
+      const emailDomain2 = contact2.email_address.split('@')[1]?.toLowerCase();
+      const emailSimilarity = similarityScore(contact1.email_address, contact2.email_address);
+      const orgSimilarity = contact1.organization && contact2.organization
+        ? similarityScore(contact1.organization, contact2.organization)
+        : 0;
+
+      let confidence = 0;
+      let matchReasons: string[] = [];
+
+      // High confidence: 95%+ name match + same email domain
+      if (nameSimilarity >= 95 && emailDomain1 === emailDomain2) {
+        confidence = 95;
+        matchReasons.push(`${nameSimilarity}% name match, same email domain (@${emailDomain1})`);
+      }
+      // Medium-high confidence: 85%+ name match + same organization + 70%+ email similarity
+      else if (nameSimilarity >= 85 && orgSimilarity >= 80 && emailSimilarity >= 70) {
+        confidence = 85;
+        matchReasons.push(`${nameSimilarity}% name match, ${orgSimilarity}% org match, ${emailSimilarity}% email match`);
+      }
+      // Medium confidence: 90%+ name match + different domain
+      else if (nameSimilarity >= 90 && emailDomain1 !== emailDomain2) {
+        confidence = 75;
+        matchReasons.push(`${nameSimilarity}% name match, different email domains`);
+      }
+
+      if (confidence > 0) {
+        potentialDuplicates.push({
+          ...contact2,
+          matchConfidence: confidence,
+          matchReasons: matchReasons.join('; ')
+        });
+        processed.add(contact2.id);
+      }
+    }
+
+    if (potentialDuplicates.length > 1) {
+      // Sort by most_recent_contact to suggest primary
+      potentialDuplicates.sort((a, b) => {
+        const dateA = a.most_recent_contact ? new Date(a.most_recent_contact).getTime() : 0;
+        const dateB = b.most_recent_contact ? new Date(b.most_recent_contact).getTime() : 0;
+        return dateB - dateA;
+      });
+
+      const suggestedPrimary = potentialDuplicates[0];
+      const avgConfidence = potentialDuplicates.slice(1).reduce((sum, c) => sum + (c.matchConfidence || 95), 0) / (potentialDuplicates.length - 1);
+
+      groups.push({
+        id: `fuzzy-${contact1.id}`,
+        confidence: Math.round(avgConfidence),
+        matchReason: potentialDuplicates[1]?.matchReasons || 'Similar names and email domains',
+        suggestedPrimary: suggestedPrimary.id,
+        suggestedReason: suggestedPrimary.most_recent_contact 
+          ? `Most recent contact: ${new Date(suggestedPrimary.most_recent_contact).toLocaleDateString()}`
+          : 'First in list',
+        records: potentialDuplicates.map(c => ({
+          id: c.id,
+          full_name: c.full_name,
+          email: c.email_address,
+          organization: c.organization,
+          most_recent_contact: c.most_recent_contact,
+          emails_count: c.of_emails || 0,
+          meetings_count: c.of_meetings || 0,
+          owner: c.assigned_to || c.created_by
+        }))
+      });
+      
+      processed.add(contact1.id);
+    }
+  }
+
+  const totalDuplicates = groups.reduce((sum, g) => sum + g.records.length, 0);
+  const avgConfidence = groups.length > 0 
+    ? groups.reduce((sum, g) => sum + g.confidence, 0) / groups.length 
+    : 0;
+
+  console.log(`Found ${groups.length} potential duplicate groups`);
+
+  return new Response(
+    JSON.stringify({ groups, totalDuplicates, avgConfidence }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+// Enhanced merge contacts with multi-email support
+async function mergeContacts(supabase: any, groupId: string, primaryId: string, userId: string) {
+  console.log(`Merging contacts for group ${groupId}, primary: ${primaryId}`);
+
+  try {
+    // Get all contacts in the group
+    const { data: groupContacts, error: fetchError } = await supabase
+      .from('contacts_raw')
+      .select('*')
+      .in('id', groupId.replace('fuzzy-', '').split(','))
+      .or(`assigned_to.eq.${userId},created_by.eq.${userId}`);
+
+    if (fetchError || !groupContacts || groupContacts.length < 2) {
+      throw new Error('Could not find contacts to merge or insufficient permissions');
+    }
+
+    const primaryContact = groupContacts.find(c => c.id === primaryId);
+    if (!primaryContact) {
+      throw new Error('Primary contact not found');
+    }
+
+    const duplicateIds = groupContacts.filter(c => c.id !== primaryId).map(c => c.id);
+    const allEmails = new Set<string>();
+
+    // Collect all unique emails
+    for (const contact of groupContacts) {
+      if (contact.email_address) {
+        allEmails.add(contact.email_address.toLowerCase().trim());
+      }
+      if (contact.all_emails) {
+        const emails = contact.all_emails.split(';').map((e: string) => e.trim().toLowerCase());
+        emails.forEach((e: string) => e && allEmails.add(e));
+      }
+    }
+
+    // Insert all emails into contact_email_addresses
+    const primaryEmail = primaryContact.email_address?.toLowerCase().trim();
+    for (const email of Array.from(allEmails)) {
+      const isPrimary = email === primaryEmail;
+      await supabase
+        .from('contact_email_addresses')
+        .upsert({
+          contact_id: primaryId,
+          email_address: email,
+          email_type: isPrimary ? 'primary' : 'alternate',
+          is_primary: isPrimary,
+          source: 'merge',
+          added_by: userId
+        }, {
+          onConflict: 'contact_id,email_address'
+        });
+    }
+
+    // Merge data from duplicates into primary
+    const mergedData = { ...primaryContact };
+    for (const duplicate of groupContacts) {
+      if (duplicate.id === primaryId) continue;
+      
+      for (const [key, value] of Object.entries(duplicate)) {
+        if (value !== null && value !== '' && 
+            (mergedData[key] === null || mergedData[key] === '')) {
+          mergedData[key] = value;
+        }
+      }
+    }
+
+    // Update primary contact
+    await supabase
+      .from('contacts_raw')
+      .update(mergedData)
+      .eq('id', primaryId);
+
+    // Update foreign key references
+    await supabase
+      .from('opportunities_raw')
+      .update({ deal_source_individual_1: primaryContact.full_name })
+      .in('deal_source_individual_1', groupContacts.map(d => d.full_name));
+
+    await supabase
+      .from('contact_note_events')
+      .update({ contact_id: primaryId })
+      .in('contact_id', duplicateIds);
+
+    await supabase
+      .from('contact_email_builder_settings')
+      .update({ contact_id: primaryId })
+      .in('contact_id', duplicateIds);
+
+    await supabase
+      .from('contact_group_memberships')
+      .update({ contact_id: primaryId })
+      .in('contact_id', duplicateIds);
+
+    // Log the merge
+    await supabase
+      .from('duplicate_merge_log')
+      .insert({
+        entity_type: 'contacts',
+        primary_record_id: primaryId,
+        merged_record_ids: duplicateIds,
+        merge_reason: `Fuzzy match merge - group ${groupId}`,
+        data_preserved: { emails: Array.from(allEmails) },
+        merged_by: userId
+      });
+
+    // Delete duplicate contacts
+    await supabase
+      .from('contacts_raw')
+      .delete()
+      .in('id', duplicateIds);
+
+    console.log(`Successfully merged ${duplicateIds.length} contacts into ${primaryId}`);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        primaryId,
+        mergedIds: duplicateIds,
+        emailsPreserved: Array.from(allEmails).length
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Merge error:', error);
+    throw error;
   }
 }
 
