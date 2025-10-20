@@ -6,22 +6,83 @@ import { Mail, Users, Eye, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useGroupContactsView } from "@/hooks/useGroupContactsView";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { buildGroupEmailPayload } from "@/lib/groupEmailPayload";
 import { parseFlexibleDate } from "@/utils/dateUtils";
+import { EditToolbar } from "@/components/shared/EditToolbar";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function GroupContactsTable() {
   const [selectedGroup, setSelectedGroup] = useState<GroupContactView | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [editedRows, setEditedRows] = useState<Record<string, { max_lag_days?: number }>>({});
+  const [editingCell, setEditingCell] = useState<{ groupName: string; field: string } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: groups = [], isLoading, error, refetch } = useGroupContactsView();
 
   const handleRowClick = (group: GroupContactView) => {
     setSelectedGroup(group);
     setIsDrawerOpen(true);
+  };
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    try {
+      for (const [groupName, edits] of Object.entries(editedRows)) {
+        if ('max_lag_days' in edits) {
+          // Get all member IDs for this group
+          const { data: members, error: membersError } = await supabase
+            .from('contacts_raw')
+            .select('id')
+            .eq('group_contact', groupName);
+
+          if (membersError) throw membersError;
+
+          if (members && members.length > 0) {
+            // Update group_delta for all members
+            const { error: updateError } = await supabase
+              .from('contacts_raw')
+              .update({ group_delta: edits.max_lag_days })
+              .in('id', members.map(m => m.id));
+
+            if (updateError) throw updateError;
+          }
+        }
+      }
+
+      toast({
+        title: "Changes Saved",
+        description: `Updated ${Object.keys(editedRows).length} group(s)`,
+      });
+
+      setEditedRows({});
+      setEditMode(false);
+      queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+      refetch();
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save changes. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setEditedRows({});
+    setEditingCell(null);
+    setEditMode(false);
   };
 
   const handleSendEmail = async (group: GroupContactView) => {
@@ -96,6 +157,60 @@ export function GroupContactsTable() {
       key: "max_lag_days",
       label: "Max Lag Days",
       render: (value: any, row: GroupContactView) => {
+        const isEditing = editingCell?.groupName === row.group_name && editingCell?.field === 'max_lag_days';
+        const currentValue = editedRows[row.group_name]?.max_lag_days ?? row.max_lag_days;
+
+        if (editMode && !isEditing) {
+          return (
+            <div 
+              onClick={() => setEditingCell({ groupName: row.group_name, field: 'max_lag_days' })}
+              className="cursor-pointer hover:bg-accent p-1 rounded"
+            >
+              {currentValue ? (
+                <Badge variant={currentValue > 90 ? "destructive" : "secondary"}>
+                  {currentValue} days
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">-</span>
+              )}
+            </div>
+          );
+        }
+
+        if (isEditing) {
+          return (
+            <Input
+              type="number"
+              value={currentValue || ''}
+              onChange={(e) => {
+                const newValue = parseInt(e.target.value);
+                if (!isNaN(newValue)) {
+                  setEditedRows(prev => ({
+                    ...prev,
+                    [row.group_name]: { ...prev[row.group_name], max_lag_days: newValue }
+                  }));
+                }
+              }}
+              onBlur={() => setEditingCell(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') setEditingCell(null);
+                if (e.key === 'Escape') {
+                  setEditedRows(prev => {
+                    const newRows = { ...prev };
+                    delete newRows[row.group_name];
+                    return newRows;
+                  });
+                  setEditingCell(null);
+                }
+              }}
+              autoFocus
+              className="w-24"
+              min="0"
+              max="365"
+            />
+          );
+        }
+
         const days = row.max_lag_days;
         return days ? (
           <Badge variant={days > 90 ? "destructive" : "secondary"}>
@@ -235,12 +350,21 @@ export function GroupContactsTable() {
   });
 
   return (
-    <>
+    <div className="space-y-4">
+      <EditToolbar
+        editMode={editMode}
+        onToggleEditMode={() => setEditMode(!editMode)}
+        editedRowsCount={Object.keys(editedRows).length}
+        onSave={handleSaveChanges}
+        onDiscard={handleDiscardChanges}
+        isSaving={isSaving}
+      />
+      
       <ResponsiveAdvancedTable
         data={filteredGroups}
         columns={columns}
         loading={isLoading}
-        onRowClick={handleRowClick}
+        onRowClick={editMode ? undefined : handleRowClick}
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
         tableId="group_contacts_view"
@@ -260,6 +384,6 @@ export function GroupContactsTable() {
         }}
         onUpdate={refetch}
       />
-    </>
+    </div>
   );
 }
