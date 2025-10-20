@@ -3028,8 +3028,15 @@ export type Database = {
           bcc_members: string | null
           cc_members: string | null
           created_by: string | null
+          days_over_under_max_lag: number | null
+          days_since_last_contact: number | null
           group_created_at: string | null
+          group_focus_area: string | null
           group_name: string | null
+          group_notes: string | null
+          group_sector: string | null
+          is_over_max_lag: boolean | null
+          is_overdue: boolean | null
           last_updated: string | null
           max_lag_days: number | null
           member_count: number | null
