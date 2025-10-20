@@ -11,56 +11,64 @@ interface GroupNote {
 }
 
 interface GroupCurrentNotes {
-  group_notes: string | null;
+  notes: string | null;
   updated_at: string | null;
 }
 
-export const useGroupNotes = (groupName: string | undefined) => {
+export const useGroupNotes = (groupId: string | undefined) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch current group notes (from any member of the group)
+  // Fetch current group notes from groups table
   const currentNotesQuery = useQuery({
-    queryKey: ['group-notes', groupName],
+    queryKey: ['group-notes', groupId],
     queryFn: async () => {
-      if (!groupName) return null;
+      if (!groupId) return null;
       
       const { data, error } = await supabase
-        .from('contacts_raw')
-        .select('group_notes, updated_at')
-        .eq('group_contact', groupName)
-        .limit(1)
+        .from('groups')
+        .select('notes, updated_at')
+        .eq('id', groupId)
         .single();
       
       if (error) throw error;
       return data as GroupCurrentNotes;
     },
-    enabled: !!groupName,
+    enabled: !!groupId,
   });
 
-  // Fetch group notes timeline
+  // Fetch group notes timeline (still uses group_name in the view for now)
   const timelineQuery = useQuery({
-    queryKey: ['group-notes-timeline', groupName],
+    queryKey: ['group-notes-timeline', groupId],
     queryFn: async () => {
-      if (!groupName) return [];
+      if (!groupId) return [];
+      
+      // First get the group name
+      const { data: groupData, error: groupError } = await supabase
+        .from('groups')
+        .select('name')
+        .eq('id', groupId)
+        .single();
+      
+      if (groupError) throw groupError;
       
       const { data, error } = await supabase
         .from('group_notes_timeline')
         .select('*')
-        .eq('group_name', groupName)
+        .eq('group_name', groupData.name)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as GroupNote[];
     },
-    enabled: !!groupName,
+    enabled: !!groupId,
   });
 
   // Save notes mutation
   const saveNotesMutation = useMutation({
-    mutationFn: async ({ groupName, content }: { groupName: string; content: string }) => {
+    mutationFn: async ({ groupId, content }: { groupId: string; content: string }) => {
       const { error } = await supabase.rpc('add_group_note', {
-        p_group_name: groupName,
+        p_group_id: groupId,
         p_field: 'group_notes',
         p_content: content,
       });
@@ -74,8 +82,8 @@ export const useGroupNotes = (groupName: string | undefined) => {
       });
       
       // Invalidate all relevant queries
-      queryClient.invalidateQueries({ queryKey: ['group-notes', groupName] });
-      queryClient.invalidateQueries({ queryKey: ['group-notes-timeline', groupName] });
+      queryClient.invalidateQueries({ queryKey: ['group-notes', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group-notes-timeline', groupId] });
       queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
     },
@@ -95,8 +103,8 @@ export const useGroupNotes = (groupName: string | undefined) => {
     isLoadingCurrent: currentNotesQuery.isLoading,
     isLoadingTimeline: timelineQuery.isLoading,
     saveNotes: (content: string) => {
-      if (!groupName) return;
-      saveNotesMutation.mutate({ groupName, content });
+      if (!groupId) return;
+      saveNotesMutation.mutate({ groupId, content });
     },
     isSavingNotes: saveNotesMutation.isPending,
   };

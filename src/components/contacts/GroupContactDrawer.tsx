@@ -39,7 +39,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const [editedRoles, setEditedRoles] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  // Group notes hook
+  // Group notes hook - use group_id from the new schema
   const {
     currentNotes,
     timeline,
@@ -47,7 +47,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
     isLoadingTimeline,
     saveNotes,
     isSavingNotes,
-  } = useGroupNotes(group?.group_name);
+  } = useGroupNotes(group?.group_id);
 
   if (!group) return null;
 
@@ -437,10 +437,10 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
           <Separator />
 
           {/* Group Notes Section */}
-          <GroupNotesSection
-            title="Group Notes"
-            field="group_notes"
-            currentValue={currentNotes?.group_notes || null}
+        <GroupNotesSection
+          title="Group Notes"
+          field="group_notes"
+          currentValue={currentNotes?.notes || null}
             timeline={timeline}
             onSave={saveNotes}
             isLoadingCurrent={isLoadingCurrent}

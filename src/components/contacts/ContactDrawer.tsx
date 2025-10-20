@@ -805,7 +805,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 <GroupNotesSection
                   title="Group Notes"
                   field="group_notes"
-                  currentValue={groupCurrentNotes?.group_notes || null}
+                  currentValue={groupCurrentNotes?.notes || null}
                   timeline={groupTimeline}
                   onSave={saveGroupNotes}
                   isLoadingCurrent={isLoadingGroupCurrent}

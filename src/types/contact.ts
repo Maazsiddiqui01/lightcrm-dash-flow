@@ -162,6 +162,7 @@ export interface GroupContactMember {
  * Group contacts aggregated view
  */
 export interface GroupContactView {
+  group_id: string; // New field for many-to-many groups
   group_name: string;
   max_lag_days: number | null;
   most_recent_contact: string | null;

@@ -25,7 +25,7 @@ export function GroupContactsTable() {
     group_focus_area?: string;
     group_sector?: string;
   }>>({});
-  const [editingCell, setEditingCell] = useState<{ groupName: string; field: string } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ groupId: string; field: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -40,37 +40,27 @@ export function GroupContactsTable() {
   const handleSaveChanges = async () => {
     setIsSaving(true);
     try {
-      for (const [groupName, edits] of Object.entries(editedRows)) {
-        // Get all member IDs for this group
-        const { data: members, error: membersError } = await supabase
-          .from('contacts_raw')
-          .select('id')
-          .eq('group_contact', groupName);
-
-        if (membersError) throw membersError;
-
-        if (members && members.length > 0) {
-          // Prepare the update object
-          const updateData: any = { updated_at: new Date().toISOString() };
-          
-          if ('max_lag_days' in edits) {
-            updateData.group_delta = edits.max_lag_days;
-          }
-          if ('group_focus_area' in edits) {
-            updateData.group_focus_area = edits.group_focus_area;
-          }
-          if ('group_sector' in edits) {
-            updateData.group_sector = edits.group_sector;
-          }
-
-          // Update all members with the new values
-          const { error: updateError } = await supabase
-            .from('contacts_raw')
-            .update(updateData)
-            .in('id', members.map(m => m.id));
-
-          if (updateError) throw updateError;
+      for (const [groupId, edits] of Object.entries(editedRows)) {
+        // Prepare the update object for the groups table
+        const updateData: any = { updated_at: new Date().toISOString() };
+        
+        if ('max_lag_days' in edits) {
+          updateData.max_lag_days = edits.max_lag_days;
         }
+        if ('group_focus_area' in edits) {
+          updateData.focus_area = edits.group_focus_area;
+        }
+        if ('group_sector' in edits) {
+          updateData.sector = edits.group_sector;
+        }
+
+        // Update the group table directly
+        const { error: updateError } = await supabase
+          .from('groups')
+          .update(updateData)
+          .eq('id', groupId);
+
+        if (updateError) throw updateError;
       }
 
       toast({
@@ -175,13 +165,13 @@ export function GroupContactsTable() {
       key: "max_lag_days",
       label: "Max Lag Days",
       render: (value: any, row: GroupContactView) => {
-        const isEditing = editingCell?.groupName === row.group_name && editingCell?.field === 'max_lag_days';
-        const currentValue = editedRows[row.group_name]?.max_lag_days ?? row.max_lag_days;
+        const isEditing = editingCell?.groupId === row.group_id && editingCell?.field === 'max_lag_days';
+        const currentValue = editedRows[row.group_id]?.max_lag_days ?? row.max_lag_days;
 
         if (editMode && !isEditing) {
           return (
             <div 
-              onClick={() => setEditingCell({ groupName: row.group_name, field: 'max_lag_days' })}
+              onClick={() => setEditingCell({ groupId: row.group_id, field: 'max_lag_days' })}
               className="cursor-pointer hover:bg-accent p-1 rounded"
             >
               {currentValue ? (
@@ -242,13 +232,13 @@ export function GroupContactsTable() {
       key: "group_focus_area",
       label: "Group Focus Area",
       render: (value: any, row: GroupContactView) => {
-        const isEditing = editingCell?.groupName === row.group_name && editingCell?.field === 'group_focus_area';
-        const currentValue = editedRows[row.group_name]?.group_focus_area ?? row.group_focus_area;
+        const isEditing = editingCell?.groupId === row.group_id && editingCell?.field === 'group_focus_area';
+        const currentValue = editedRows[row.group_id]?.group_focus_area ?? row.group_focus_area;
 
         if (editMode && !isEditing) {
           return (
             <div 
-              onClick={() => setEditingCell({ groupName: row.group_name, field: 'group_focus_area' })}
+              onClick={() => setEditingCell({ groupId: row.group_id, field: 'group_focus_area' })}
               className="cursor-pointer hover:bg-accent p-1 rounded"
             >
               {currentValue ? (
@@ -304,13 +294,13 @@ export function GroupContactsTable() {
       key: "group_sector",
       label: "Group Sector",
       render: (value: any, row: GroupContactView) => {
-        const isEditing = editingCell?.groupName === row.group_name && editingCell?.field === 'group_sector';
-        const currentValue = editedRows[row.group_name]?.group_sector ?? row.group_sector;
+        const isEditing = editingCell?.groupId === row.group_id && editingCell?.field === 'group_sector';
+        const currentValue = editedRows[row.group_id]?.group_sector ?? row.group_sector;
 
         if (editMode && !isEditing) {
           return (
             <div 
-              onClick={() => setEditingCell({ groupName: row.group_name, field: 'group_sector' })}
+              onClick={() => setEditingCell({ groupId: row.group_id, field: 'group_sector' })}
               className="cursor-pointer hover:bg-accent p-1 rounded"
             >
               {currentValue ? (

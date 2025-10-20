@@ -3970,7 +3970,7 @@ export type Database = {
         Returns: string
       }
       add_group_note: {
-        Args: { p_content: string; p_field: string; p_group_name: string }
+        Args: { p_content: string; p_field: string; p_group_id: string }
         Returns: undefined
       }
       add_opportunity_note: {
@@ -4121,6 +4121,7 @@ export type Database = {
           days_since_last_contact: number
           group_created_at: string
           group_focus_area: string
+          group_id: string
           group_name: string
           group_notes: string
           group_sector: string
@@ -4395,7 +4396,7 @@ export type Database = {
         }[]
       }
       recalculate_group_contact_date: {
-        Args: { p_group_name: string }
+        Args: { p_group_id: string }
         Returns: undefined
       }
       refresh_all_contact_interaction_details: {
