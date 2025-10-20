@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -28,14 +28,31 @@ export function DuplicatesReviewModal({ open, onOpenChange }: DuplicatesReviewMo
   const [selectedPrimary, setSelectedPrimary] = useState<Record<string, string>>({});
   const [processedGroups, setProcessedGroups] = useState<Set<string>>(new Set());
 
+  // Initialize selected primary contacts when duplicates load
+  useEffect(() => {
+    if (duplicates?.groups) {
+      const initialSelections: Record<string, string> = {};
+      duplicates.groups.forEach(group => {
+        if (group.suggestedPrimary && !processedGroups.has(group.id)) {
+          initialSelections[group.id] = group.suggestedPrimary;
+        }
+      });
+      setSelectedPrimary(prev => ({ ...prev, ...initialSelections }));
+    }
+  }, [duplicates?.groups]);
+
   const handleScan = () => {
     scanForDuplicates();
   };
 
   const handleMerge = (groupId: string) => {
     const primaryId = selectedPrimary[groupId];
-    if (!primaryId) return;
+    if (!primaryId) {
+      console.error('No primary contact selected for group:', groupId);
+      return;
+    }
 
+    console.log('Merging group:', groupId, 'with primary:', primaryId);
     mergeDuplicates(
       { groupId, primaryId },
       {
