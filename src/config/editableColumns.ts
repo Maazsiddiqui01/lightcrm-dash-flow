@@ -360,6 +360,7 @@ export const editableColumns: EditableConfig = {
     },
     group_focus_area: { type: 'text' },
     group_sector: { type: 'text' },
+    group_notes: { type: 'textarea' },
     city: { type: 'text' },
     state: { type: 'text' },
     delta: { type: 'number', validation: validateNumber },

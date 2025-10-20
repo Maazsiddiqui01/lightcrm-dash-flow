@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGroupContacts } from "@/hooks/useGroupContacts";
@@ -30,6 +31,7 @@ export function BulkGroupAssignmentModal({
   const [groupDelta, setGroupDelta] = useState<string>("");
   const [groupFocusArea, setGroupFocusArea] = useState<string>("");
   const [groupSector, setGroupSector] = useState<string>("");
+  const [groupNotes, setGroupNotes] = useState<string>("");
   const [emailRoles, setEmailRoles] = useState<Record<string, string>>({});
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -113,6 +115,7 @@ export function BulkGroupAssignmentModal({
             group_delta: finalGroupDelta,
             group_focus_area: groupFocusArea.trim() || null,
             group_sector: groupSector.trim() || null,
+            group_notes: groupNotes.trim() || null,
           })
           .eq("id", contact.id);
 
@@ -128,11 +131,21 @@ export function BulkGroupAssignmentModal({
           group_delta: finalGroupDelta,
           group_focus_area: groupFocusArea.trim() || null,
           group_sector: groupSector.trim() || null,
+          group_notes: groupNotes.trim() || null,
         })
         .eq('group_contact', groupName);
 
       if (groupFieldsError) {
         console.error('Error updating group fields for all members:', groupFieldsError);
+      }
+
+      // Add group note to timeline if provided
+      if (groupNotes.trim()) {
+        await supabase.rpc('add_group_note', {
+          p_group_name: groupName,
+          p_field: 'group_notes',
+          p_content: groupNotes.trim(),
+        });
       }
 
       // After all updates, recalculate group contact date
@@ -313,6 +326,21 @@ export function BulkGroupAssignmentModal({
             />
             <p className="text-xs text-muted-foreground">
               Shared sector for all group members
+            </p>
+          </div>
+
+          {/* Group Notes */}
+          <div className="space-y-2 col-span-2">
+            <Label htmlFor="group-notes">Group Notes</Label>
+            <Textarea
+              id="group-notes"
+              placeholder="Add notes for this group..."
+              value={groupNotes}
+              onChange={(e) => setGroupNotes(e.target.value)}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              Shared notes for all group members
             </p>
           </div>
 

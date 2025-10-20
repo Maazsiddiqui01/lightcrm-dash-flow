@@ -73,6 +73,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
   const [groupDelta, setGroupDelta] = useState("");
   const [groupFocusArea, setGroupFocusArea] = useState("");
   const [groupSector, setGroupSector] = useState("");
+  const [groupNotes, setGroupNotes] = useState("");
   const [contacts, setContacts] = useState<IndividualContactForm[]>([emptyContactForm]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -217,6 +218,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           group_delta: contactType === "group" ? numOrNull(groupDelta) : null,
           group_focus_area: contactType === "group" ? opt(groupFocusArea) : null,
           group_sector: contactType === "group" ? opt(groupSector) : null,
+          group_notes: contactType === "group" ? opt(groupNotes) : null,
         };
       });
 
@@ -243,6 +245,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
       setGroupDelta("");
       setGroupFocusArea("");
       setGroupSector("");
+      setGroupNotes("");
       setContacts([emptyContactForm]);
 
       // Pass the newly created contact data back (first contact for individual, or first group member)
@@ -272,6 +275,9 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     setContactType("individual");
     setGroupName("");
     setGroupDelta("");
+    setGroupFocusArea("");
+    setGroupSector("");
+    setGroupNotes("");
     setContacts([emptyContactForm]);
     onClose();
   };
@@ -374,6 +380,20 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                       Shared sector for all group members
                     </p>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="group_notes">Group Notes</Label>
+                  <Textarea
+                    id="group_notes"
+                    value={groupNotes}
+                    onChange={(e) => setGroupNotes(e.target.value)}
+                    placeholder="Add notes for this group..."
+                    rows={3}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Shared notes for all group members
+                  </p>
                 </div>
               </>
             )}

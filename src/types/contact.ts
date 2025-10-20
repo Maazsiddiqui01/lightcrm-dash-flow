@@ -62,6 +62,7 @@ export interface ContactBase {
   group_delta: number | null;
   group_focus_area: string | null;
   group_sector: string | null;
+  group_notes: string | null;
   linkedin_url: string | null;
   x_twitter_url: string | null;
   intentional_no_outreach: boolean | null;
@@ -179,6 +180,7 @@ export interface GroupContactView {
   all_sectors: string | null;
   group_focus_area: string | null;
   group_sector: string | null;
+  group_notes: string | null;
   last_updated: string;
   group_created_at: string;
   assigned_to: string | null;

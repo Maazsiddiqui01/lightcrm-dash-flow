@@ -927,6 +927,7 @@ export type Database = {
           group_delta: number | null
           group_email_role: string | null
           group_focus_area: string | null
+          group_notes: string | null
           group_sector: string | null
           id: string
           intentional_no_outreach: boolean | null
@@ -998,6 +999,7 @@ export type Database = {
           group_delta?: number | null
           group_email_role?: string | null
           group_focus_area?: string | null
+          group_notes?: string | null
           group_sector?: string | null
           id?: string
           intentional_no_outreach?: boolean | null
@@ -1069,6 +1071,7 @@ export type Database = {
           group_delta?: number | null
           group_email_role?: string | null
           group_focus_area?: string | null
+          group_notes?: string | null
           group_sector?: string | null
           id?: string
           intentional_no_outreach?: boolean | null
@@ -1470,6 +1473,33 @@ export type Database = {
           "LG Focus Area"?: string | null
           "LG Sector"?: string | null
           "Platform / Add-On"?: string | null
+        }
+        Relationships: []
+      }
+      group_note_events: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          field: string
+          group_name: string
+          id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          field?: string
+          group_name: string
+          id?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          field?: string
+          group_name?: string
+          id?: string
         }
         Relationships: []
       }
@@ -3015,6 +3045,30 @@ export type Database = {
         }
         Relationships: []
       }
+      group_notes_timeline: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          field: string | null
+          group_name: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          field?: string | null
+          group_name?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          field?: string | null
+          group_name?: string | null
+        }
+        Relationships: []
+      }
       interactions_ai: {
         Row: {
           email: string | null
@@ -3750,6 +3804,10 @@ export type Database = {
     Functions: {
       add_contact_note: {
         Args: { p_contact_id: string; p_content: string; p_field: string }
+        Returns: undefined
+      }
+      add_group_note: {
+        Args: { p_content: string; p_field: string; p_group_name: string }
         Returns: undefined
       }
       add_opportunity_note: {

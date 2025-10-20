@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useContactNotes } from "@/hooks/useContactNotes";
+import { useGroupNotes } from "@/hooks/useGroupNotes";
 import { ContactNotesSection } from "./ContactNotesSection";
+import { GroupNotesSection } from "./GroupNotesSection";
 import { format } from 'date-fns';
 import { parseFlexibleDate } from '@/utils/dateUtils';
 import {
@@ -59,6 +61,7 @@ interface ContactRaw {
   group_contact: string | null;
   group_email_role: string | null;
   group_delta: number | null;
+  group_notes: string | null;
   linkedin_url: string | null;
   x_twitter_url: string | null;
   intentional_no_outreach: boolean | null;
@@ -129,6 +132,16 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     saveNotes,
     isSavingNotes,
   } = useContactNotes(contact?.id);
+
+  // Group notes hook (only if contact is part of a group)
+  const {
+    currentNotes: groupCurrentNotes,
+    timeline: groupTimeline,
+    isLoadingCurrent: isLoadingGroupCurrent,
+    isLoadingTimeline: isLoadingGroupTimeline,
+    saveNotes: saveGroupNotes,
+    isSavingNotes: isSavingGroupNotes,
+  } = useGroupNotes(contactData?.group_contact || undefined);
 
   // Use canonical lookup options
   const sectorsQuery = useSectors();
@@ -784,6 +797,24 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
               isLoadingTimeline={isLoadingTimeline}
               isSaving={isSavingNotes}
             />
+
+            {/* Group Notes Section - Only show if contact is part of a group */}
+            {contactData.group_contact && (
+              <>
+                <Separator />
+                <GroupNotesSection
+                  title="Group Notes"
+                  field="group_notes"
+                  currentValue={groupCurrentNotes?.group_notes || null}
+                  timeline={groupTimeline}
+                  onSave={saveGroupNotes}
+                  isLoadingCurrent={isLoadingGroupCurrent}
+                  isLoadingTimeline={isLoadingGroupTimeline}
+                  isSaving={isSavingGroupNotes}
+                  showSharedIndicator={true}
+                />
+              </>
+            )}
 
             <Separator />
 

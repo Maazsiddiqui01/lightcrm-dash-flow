@@ -19,6 +19,8 @@ import { buildGroupEmailPayload } from "@/lib/groupEmailPayload";
 import { parseFlexibleDate } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useGroupNotes } from "@/hooks/useGroupNotes";
+import { GroupNotesSection } from "./GroupNotesSection";
 
 interface GroupContactDrawerProps {
   group: GroupContactView | null;
@@ -36,6 +38,16 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const [editedGroupSector, setEditedGroupSector] = useState<string>('');
   const [editedRoles, setEditedRoles] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+
+  // Group notes hook
+  const {
+    currentNotes,
+    timeline,
+    isLoadingCurrent,
+    isLoadingTimeline,
+    saveNotes,
+    isSavingNotes,
+  } = useGroupNotes(group?.group_name);
 
   if (!group) return null;
 
@@ -421,6 +433,21 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
               </div>
             </>
           )}
+
+          <Separator />
+
+          {/* Group Notes Section */}
+          <GroupNotesSection
+            title="Group Notes"
+            field="group_notes"
+            currentValue={currentNotes?.group_notes || null}
+            timeline={timeline}
+            onSave={saveNotes}
+            isLoadingCurrent={isLoadingCurrent}
+            isLoadingTimeline={isLoadingTimeline}
+            isSaving={isSavingNotes}
+            showSharedIndicator={false}
+          />
         </div>
       </SheetContent>
     </Sheet>
