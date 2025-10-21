@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Users, Calendar, Target, ExternalLink, Clock, Edit, Save, X } from "lucide-react";
+import { Mail, Users, Calendar, Target, ExternalLink, Clock, Edit, Save, X, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGroupNotes } from "@/hooks/useGroupNotes";
 import { GroupNotesSection } from "./GroupNotesSection";
+import { useDeleteGroup } from "@/hooks/useDeleteGroup";
+import { Label } from "@/components/ui/label";
 
 interface GroupContactDrawerProps {
   group: GroupContactView | null;
@@ -32,6 +34,7 @@ interface GroupContactDrawerProps {
 export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: GroupContactDrawerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const deleteGroupMutation = useDeleteGroup();
   const [editMode, setEditMode] = useState(false);
   const [editedMaxLag, setEditedMaxLag] = useState<number | null>(null);
   const [editedGroupFocusArea, setEditedGroupFocusArea] = useState<string>('');
@@ -136,6 +139,19 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
     setEditedRoles({});
   };
 
+  const handleDeleteGroup = async () => {
+    if (!confirm(`⚠️ Delete Group "${group.group_name}"?\n\nThis will:\n- Remove all ${group.member_count} members from the group\n- Clear group-related fields for all members\n- Cannot be undone\n\nContinue?`)) {
+      return;
+    }
+
+    try {
+      await deleteGroupMutation.mutateAsync(group.group_id);
+      onOpenChange(false);
+    } catch (error) {
+      // Error already handled by mutation
+    }
+  };
+
   const handleSendEmail = async () => {
     try {
       const payload = buildGroupEmailPayload(group);
@@ -204,6 +220,15 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                   <Button onClick={handleSendEmail} size="sm">
                     <Mail className="h-4 w-4 mr-2" />
                     Send Email
+                  </Button>
+                  <Button 
+                    onClick={handleDeleteGroup} 
+                    variant="destructive" 
+                    size="sm"
+                    disabled={deleteGroupMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
                   </Button>
                 </>
               )}
@@ -495,6 +520,3 @@ function MemberCard({ member, editMode, editedRole, onRoleChange }: {
   );
 }
 
-function Label({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={`text-sm font-medium ${className || ''}`}>{children}</div>;
-}
