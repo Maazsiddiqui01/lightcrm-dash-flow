@@ -100,15 +100,6 @@ export function Contacts() {
             <p className="text-muted-foreground">Manage your professional contacts and relationships</p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              onClick={syncNow}
-              variant="outline"
-              disabled={isSyncing}
-              className="touch-target"
-            >
-              <RefreshCw className={`h-4 w-4 sm:mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Force Sync'}</span>
-            </Button>
             <Button onClick={() => setIsDuplicatesOpen(true)} variant="outline" className="touch-target">
               <Merge className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Detect Duplicates</span>
@@ -150,12 +141,25 @@ export function Contacts() {
         />
 
         {/* Filters */}
-        <ContactFilterBar 
-          filters={filters}
-          onFiltersChange={updateFilters}
-          onClearFilters={clearFilters}
-          showOpportunityFilters={showOpportunityFilters}
-        />
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <ContactFilterBar 
+              filters={filters}
+              onFiltersChange={updateFilters}
+              onClearFilters={clearFilters}
+              showOpportunityFilters={showOpportunityFilters}
+            />
+          </div>
+          <Button 
+            onClick={syncNow}
+            variant="outline"
+            disabled={isSyncing}
+            className="touch-target shrink-0"
+          >
+            <RefreshCw className={`h-4 w-4 sm:mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync Interactions'}</span>
+          </Button>
+        </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
