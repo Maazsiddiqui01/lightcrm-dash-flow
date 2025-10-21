@@ -149,7 +149,6 @@ export interface ContactQueryResult {
  * Group contact member info
  */
 export interface GroupContactMember {
-  id: string;
   contact_id: string;
   full_name: string;
   email_address: string;

@@ -323,11 +323,11 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                 <div className="space-y-2">
                   {toMembers.map((member) => (
                     <MemberCard 
-                      key={member.id} 
+                      key={member.contact_id} 
                       member={member}
                       editMode={editMode}
-                      editedRole={editedRoles[member.id]}
-                      onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.id]: role }))}
+                      editedRole={editedRoles[member.contact_id]}
+                      onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.contact_id]: role }))}
                     />
                   ))}
                 </div>
@@ -341,11 +341,11 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                 <div className="space-y-2">
                   {ccMembers.map((member) => (
                     <MemberCard 
-                      key={member.id} 
+                      key={member.contact_id} 
                       member={member}
                       editMode={editMode}
-                      editedRole={editedRoles[member.id]}
-                      onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.id]: role }))}
+                      editedRole={editedRoles[member.contact_id]}
+                      onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.contact_id]: role }))}
                     />
                   ))}
                 </div>
@@ -359,11 +359,11 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                 <div className="space-y-2">
                   {bccMembers.map((member) => (
                     <MemberCard 
-                      key={member.id} 
+                      key={member.contact_id} 
                       member={member}
                       editMode={editMode}
-                      editedRole={editedRoles[member.id]}
-                      onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.id]: role }))}
+                      editedRole={editedRoles[member.contact_id]}
+                      onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.contact_id]: role }))}
                     />
                   ))}
                 </div>
