@@ -156,11 +156,14 @@ export function InteractionsTable() {
 
   const filteredInteractions = useMemo(() => {
     return interactions.filter((interaction) => {
-      // Search filter
+      // Search filter - search across all email fields
       const searchMatch = searchTerm === "" || 
         interaction.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         interaction.from_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        interaction.from_name?.toLowerCase().includes(searchTerm.toLowerCase());
+        interaction.from_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        interaction.to_emails?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        interaction.cc_emails?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        interaction.all_emails?.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Source filter
       const sourceMatch = sourceFilter === "all" || !sourceFilter || interaction.source === sourceFilter;
