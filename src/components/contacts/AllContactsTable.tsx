@@ -158,10 +158,22 @@ export function AllContactsTable() {
           )}
           <div className="min-w-0">
             <div className="font-medium truncate">{row.name || 'Unknown'}</div>
-            <div className="text-xs text-muted-foreground truncate">
-              {row.contact_type === 'individual' 
-                ? row.organization || 'No organization'
-                : `${row.member_count || 0} members`}
+            <div className="text-xs text-muted-foreground">
+              {row.contact_type === 'individual' ? (
+                <span className="truncate">{row.organization || 'No organization'}</span>
+              ) : (
+                <div className="space-y-0.5">
+                  <div className="truncate">{row.member_count || 0} members</div>
+                  {row.member_names && (
+                    <div 
+                      className="text-[10px] text-muted-foreground/70 truncate"
+                      title={row.member_names}
+                    >
+                      {row.member_names.split(',').map(name => name.trim().split(' ')[0]).join(', ')}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
