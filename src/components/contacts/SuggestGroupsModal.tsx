@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,10 +23,24 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [memberSelections, setMemberSelections] = useState<Record<string, Set<string>>>({});
 
+  // Initialize all members as selected when suggestions arrive
+  useEffect(() => {
+    if (!suggestions) return;
+    
+    setMemberSelections(prev => {
+      const next = { ...prev };
+      for (const suggestion of suggestions) {
+        if (!next[suggestion.id]) {
+          next[suggestion.id] = new Set(suggestion.members.map(m => m.email));
+        }
+      }
+      return next;
+    });
+  }, [suggestions]);
+
   const handleCreateGroup = (suggestion: GroupSuggestion) => {
-    // Get selected members for this suggestion, or all if none selected
     const selectedMembers = memberSelections[suggestion.id];
-    const membersToInclude = selectedMembers && selectedMembers.size > 0
+    const membersToInclude = selectedMembers
       ? suggestion.members.filter(m => selectedMembers.has(m.email))
       : suggestion.members;
     
@@ -41,20 +55,17 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
     setDismissedIds(prev => new Set([...prev, suggestionId]));
   };
 
-  const handleMemberToggle = (suggestionId: string, memberEmail: string) => {
+  const handleMemberToggle = (suggestionId: string, memberEmail: string, checked: boolean) => {
     setMemberSelections(prev => {
-      const current = prev[suggestionId] || new Set<string>();
-      const newSet = new Set(current);
-      
-      if (newSet.has(memberEmail)) {
-        newSet.delete(memberEmail);
+      const current = new Set(prev[suggestionId] || []);
+      if (checked) {
+        current.add(memberEmail);
       } else {
-        newSet.add(memberEmail);
+        current.delete(memberEmail);
       }
-      
       return {
         ...prev,
-        [suggestionId]: newSet
+        [suggestionId]: current
       };
     });
   };
@@ -177,8 +188,9 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
                     </Button>
                   )}
                   <Button onClick={() => {
-                    analyzeSuggestions();
+                    setMemberSelections({});
                     setDismissedIds(new Set());
+                    analyzeSuggestions();
                   }} disabled={isPending} size="sm" variant="outline">
                     {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Re-analyze
@@ -195,7 +207,7 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
                     selectedMembers={memberSelections[suggestion.id] || new Set()}
                     onCreateGroup={() => handleCreateGroup(suggestion)}
                     onDismiss={() => handleDismiss(suggestion.id)}
-                    onMemberToggle={(email) => handleMemberToggle(suggestion.id, email)}
+                    onMemberToggle={(email, checked) => handleMemberToggle(suggestion.id, email, checked)}
                     onSelectAll={() => handleSelectAll(suggestion.id, suggestion.members.map(m => m.email))}
                     onDeselectAll={() => handleDeselectAll(suggestion.id)}
                   />
@@ -232,18 +244,13 @@ interface SuggestionCardProps {
   selectedMembers: Set<string>;
   onCreateGroup: () => void;
   onDismiss: () => void;
-  onMemberToggle: (email: string) => void;
+  onMemberToggle: (email: string, checked: boolean) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
 }
 
 function SuggestionCard({ suggestion, mode, selectedMembers, onCreateGroup, onDismiss, onMemberToggle, onSelectAll, onDeselectAll }: SuggestionCardProps) {
-  // Initialize with all members selected if no selection exists
-  const effectiveSelection = selectedMembers.size === 0 
-    ? new Set(suggestion.members.map(m => m.email))
-    : selectedMembers;
-  
-  const selectedCount = effectiveSelection.size;
+  const selectedCount = selectedMembers.size;
   const totalCount = suggestion.members.length;
   const confidenceColor = {
     high: 'bg-green-500/10 text-green-700 dark:text-green-400',
@@ -345,11 +352,11 @@ function SuggestionCard({ suggestion, mode, selectedMembers, onCreateGroup, onDi
           </div>
           
           {mode === 'org_sector' ? (
-            suggestion.members.map((member, idx) => (
-              <div key={idx} className="flex items-start gap-2 text-xs border-l-2 border-primary/20 pl-3 py-1">
+            suggestion.members.map((member) => (
+              <div key={member.email} className="flex items-start gap-2 text-xs border-l-2 border-primary/20 pl-3 py-1">
                 <Checkbox
-                  checked={effectiveSelection.has(member.email)}
-                  onCheckedChange={() => onMemberToggle(member.email)}
+                  checked={selectedMembers.has(member.email)}
+                  onCheckedChange={(v) => onMemberToggle(member.email, Boolean(v))}
                   className="mt-0.5"
                 />
                 <div className="flex-1">
@@ -370,11 +377,11 @@ function SuggestionCard({ suggestion, mode, selectedMembers, onCreateGroup, onDi
           ) : (
             <>
               <div className="space-y-1">
-                {suggestion.members.map((member, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs py-1">
+                {suggestion.members.map((member) => (
+                  <div key={member.email} className="flex items-center gap-2 text-xs py-1">
                     <Checkbox
-                      checked={effectiveSelection.has(member.email)}
-                      onCheckedChange={() => onMemberToggle(member.email)}
+                      checked={selectedMembers.has(member.email)}
+                      onCheckedChange={(v) => onMemberToggle(member.email, Boolean(v))}
                     />
                     <span className="font-medium">{member.name || member.email}</span>
                     <span className="text-muted-foreground">({member.email})</span>
