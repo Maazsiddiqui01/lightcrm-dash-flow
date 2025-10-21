@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useSuggestGroups, type GroupSuggestion, type SuggestionMode } from '@/hooks/useSuggestGroups';
 import { GroupConfigModal } from './GroupConfigModal';
-import { Loader2, Users, Mail, Calendar, Sparkles, Building, Activity } from 'lucide-react';
+import { Loader2, Users, Mail, Calendar, Sparkles, Building, Activity, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface SuggestGroupsModalProps {
@@ -19,11 +19,19 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
   
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<GroupSuggestion | null>(null);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
   const handleCreateGroup = (suggestion: GroupSuggestion) => {
     setSelectedSuggestion(suggestion);
     setConfigModalOpen(true);
   };
+
+  const handleDismiss = (suggestionId: string) => {
+    setDismissedIds(prev => new Set([...prev, suggestionId]));
+  };
+
+  // Filter out dismissed suggestions
+  const visibleSuggestions = suggestions?.filter(s => !dismissedIds.has(s.id)) || [];
 
   return (
     <>
@@ -79,36 +87,70 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
                 Start Analysis
               </Button>
             </div>
-          ) : suggestions.length === 0 ? (
+          ) : visibleSuggestions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
               <Users className="h-16 w-16 text-muted-foreground" />
-              <p className="text-lg font-medium">No Suggestions Found</p>
+              <p className="text-lg font-medium">
+                {suggestions && suggestions.length > 0 ? 'All Suggestions Dismissed' : 'No Suggestions Found'}
+              </p>
               <p className="text-sm text-muted-foreground">
-                {mode === 'org_sector' 
-                  ? 'No groups with 2+ members from the same organization and sector were found'
-                  : 'No interaction patterns detected for grouping'
+                {suggestions && suggestions.length > 0 
+                  ? 'You have dismissed all suggested groups. Click Re-analyze to start fresh.'
+                  : mode === 'org_sector' 
+                    ? 'No groups with 2+ members from the same organization and sector were found'
+                    : 'No interaction patterns detected for grouping'
                 }
               </p>
+              {suggestions && suggestions.length > 0 && (
+                <Button 
+                  onClick={() => {
+                    setDismissedIds(new Set());
+                  }} 
+                  variant="outline"
+                >
+                  Show Dismissed ({dismissedIds.size})
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Found {suggestions.length} suggested group{suggestions.length !== 1 ? 's' : ''}
+                  Showing {visibleSuggestions.length} of {suggestions.length} suggested group{suggestions.length !== 1 ? 's' : ''}
+                  {dismissedIds.size > 0 && (
+                    <span className="ml-2 text-xs">
+                      ({dismissedIds.size} dismissed)
+                    </span>
+                  )}
                 </p>
-                <Button onClick={() => analyzeSuggestions()} disabled={isPending} size="sm" variant="outline">
-                  {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Re-analyze
-                </Button>
+                <div className="flex gap-2">
+                  {dismissedIds.size > 0 && (
+                    <Button 
+                      onClick={() => setDismissedIds(new Set())} 
+                      size="sm" 
+                      variant="ghost"
+                    >
+                      Show All
+                    </Button>
+                  )}
+                  <Button onClick={() => {
+                    analyzeSuggestions();
+                    setDismissedIds(new Set());
+                  }} disabled={isPending} size="sm" variant="outline">
+                    {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Re-analyze
+                  </Button>
+                </div>
               </div>
               
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {suggestions.map((suggestion) => (
+                {visibleSuggestions.map((suggestion) => (
                   <SuggestionCard
                     key={suggestion.id}
                     suggestion={suggestion}
                     mode={mode}
                     onCreateGroup={() => handleCreateGroup(suggestion)}
+                    onDismiss={() => handleDismiss(suggestion.id)}
                   />
                 ))}
               </div>
@@ -141,9 +183,10 @@ interface SuggestionCardProps {
   suggestion: GroupSuggestion;
   mode: SuggestionMode;
   onCreateGroup: () => void;
+  onDismiss: () => void;
 }
 
-function SuggestionCard({ suggestion, mode, onCreateGroup }: SuggestionCardProps) {
+function SuggestionCard({ suggestion, mode, onCreateGroup, onDismiss }: SuggestionCardProps) {
   const confidenceColor = {
     high: 'bg-green-500/10 text-green-700 dark:text-green-400',
     medium: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
@@ -154,17 +197,28 @@ function SuggestionCard({ suggestion, mode, onCreateGroup }: SuggestionCardProps
     <Card className="p-4">
       <div className="space-y-3">
         {/* Header with name and actions */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="font-medium truncate">{suggestion.suggestedName}</h3>
           </div>
           
-          <Button 
-            onClick={onCreateGroup}
-            size="sm"
-          >
-            Configure & Create
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button 
+              onClick={onDismiss}
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              title="Dismiss this suggestion"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <Button 
+              onClick={onCreateGroup}
+              size="sm"
+            >
+              Configure & Create
+            </Button>
+          </div>
         </div>
 
         {/* Metrics badges */}
