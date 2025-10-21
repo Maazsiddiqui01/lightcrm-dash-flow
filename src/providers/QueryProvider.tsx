@@ -1,5 +1,7 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useAutoInteractionSync } from '@/hooks/useAutoInteractionSync';
+import { useRealtimeInteractionSync } from '@/hooks/useRealtimeInteractionSync';
 
 interface QueryProviderProps {
   children: React.ReactNode;
@@ -49,7 +51,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
     console.log('Rendering QueryClientProvider with client:', queryClient);
     return (
       <QueryClientProvider client={queryClient}>
-        {children}
+        <SyncWrapper>{children}</SyncWrapper>
       </QueryClientProvider>
     );
   } catch (error) {
@@ -62,4 +64,13 @@ export function QueryProvider({ children }: QueryProviderProps) {
       </div>
     );
   }
+}
+
+/**
+ * Wrapper component to enable sync hooks after QueryClient is available
+ */
+function SyncWrapper({ children }: { children: React.ReactNode }) {
+  useAutoInteractionSync();
+  useRealtimeInteractionSync();
+  return <>{children}</>;
 }

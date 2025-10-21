@@ -27,8 +27,8 @@ export function useInteractionStats(): InteractionStats {
       // Optimized: Single aggregated query instead of 4 separate queries
       const { data, error } = await supabase
         .from("emails_meetings_raw")
-        .select("source, time")
-        .order("time", { ascending: false });
+        .select("source, occurred_at")
+        .order("occurred_at", { ascending: false });
 
       if (error) throw error;
 
@@ -36,8 +36,8 @@ export function useInteractionStats(): InteractionStats {
       const totalInteractions = data?.length || 0;
       const totalEmails = data?.filter(i => i.source?.toLowerCase().includes('email')).length || 0;
       const totalMeetings = data?.filter(i => i.source?.toLowerCase().includes('meeting')).length || 0;
-      const lastInteractionDate = data?.[0]?.time 
-        ? new Date(data[0].time).toLocaleDateString()
+      const lastInteractionDate = data?.[0]?.occurred_at 
+        ? new Date(data[0].occurred_at).toLocaleDateString()
         : "—";
 
       setStats({

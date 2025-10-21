@@ -1,0 +1,60 @@
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
+/**
+ * Hook to set up real-time synchronization for interactions
+ * Listens to changes in emails_meetings_raw and invalidates contact queries
+ */
+export function useRealtimeInteractionSync() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    console.log('[Realtime] Setting up interaction sync...');
+    
+    const channel = supabase
+      .channel('interaction-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'emails_meetings_raw'
+        },
+        (payload) => {
+          console.log('[Realtime] New interaction added, refreshing contacts...', payload);
+          
+          // Invalidate contact-related queries
+          queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
+          queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+          queryClient.invalidateQueries({ queryKey: ['contact-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['interaction-stats'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'emails_meetings_raw'
+        },
+        (payload) => {
+          console.log('[Realtime] Interaction updated, refreshing contacts...', payload);
+          
+          // Invalidate contact-related queries
+          queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
+          queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+          queryClient.invalidateQueries({ queryKey: ['contact-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['interaction-stats'] });
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Realtime] Interaction sync status:', status);
+      });
+
+    return () => {
+      console.log('[Realtime] Cleaning up interaction sync...');
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+}

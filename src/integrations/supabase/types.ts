@@ -4495,6 +4495,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      refresh_all_group_contact_dates: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       refresh_contact_interaction_counts: {
         Args: { p_contact_id: string }
         Returns: undefined
