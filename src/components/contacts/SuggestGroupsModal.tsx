@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useSuggestGroups, type GroupSuggestion, type SuggestionMode } from '@/hooks/useSuggestGroups';
 import { GroupConfigModal } from './GroupConfigModal';
 import { Loader2, Users, Mail, Calendar, Sparkles, Building, Activity, X } from 'lucide-react';
@@ -20,14 +21,56 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<GroupSuggestion | null>(null);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [memberSelections, setMemberSelections] = useState<Record<string, Set<string>>>({});
 
   const handleCreateGroup = (suggestion: GroupSuggestion) => {
-    setSelectedSuggestion(suggestion);
+    // Get selected members for this suggestion, or all if none selected
+    const selectedMembers = memberSelections[suggestion.id];
+    const membersToInclude = selectedMembers && selectedMembers.size > 0
+      ? suggestion.members.filter(m => selectedMembers.has(m.email))
+      : suggestion.members;
+    
+    setSelectedSuggestion({
+      ...suggestion,
+      members: membersToInclude
+    });
     setConfigModalOpen(true);
   };
 
   const handleDismiss = (suggestionId: string) => {
     setDismissedIds(prev => new Set([...prev, suggestionId]));
+  };
+
+  const handleMemberToggle = (suggestionId: string, memberEmail: string) => {
+    setMemberSelections(prev => {
+      const current = prev[suggestionId] || new Set<string>();
+      const newSet = new Set(current);
+      
+      if (newSet.has(memberEmail)) {
+        newSet.delete(memberEmail);
+      } else {
+        newSet.add(memberEmail);
+      }
+      
+      return {
+        ...prev,
+        [suggestionId]: newSet
+      };
+    });
+  };
+
+  const handleSelectAll = (suggestionId: string, allEmails: string[]) => {
+    setMemberSelections(prev => ({
+      ...prev,
+      [suggestionId]: new Set(allEmails)
+    }));
+  };
+
+  const handleDeselectAll = (suggestionId: string) => {
+    setMemberSelections(prev => ({
+      ...prev,
+      [suggestionId]: new Set()
+    }));
   };
 
   // Filter out dismissed suggestions
@@ -149,8 +192,12 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
                     key={suggestion.id}
                     suggestion={suggestion}
                     mode={mode}
+                    selectedMembers={memberSelections[suggestion.id] || new Set()}
                     onCreateGroup={() => handleCreateGroup(suggestion)}
                     onDismiss={() => handleDismiss(suggestion.id)}
+                    onMemberToggle={(email) => handleMemberToggle(suggestion.id, email)}
+                    onSelectAll={() => handleSelectAll(suggestion.id, suggestion.members.map(m => m.email))}
+                    onDeselectAll={() => handleDeselectAll(suggestion.id)}
                   />
                 ))}
               </div>
@@ -182,11 +229,22 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
 interface SuggestionCardProps {
   suggestion: GroupSuggestion;
   mode: SuggestionMode;
+  selectedMembers: Set<string>;
   onCreateGroup: () => void;
   onDismiss: () => void;
+  onMemberToggle: (email: string) => void;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
 }
 
-function SuggestionCard({ suggestion, mode, onCreateGroup, onDismiss }: SuggestionCardProps) {
+function SuggestionCard({ suggestion, mode, selectedMembers, onCreateGroup, onDismiss, onMemberToggle, onSelectAll, onDeselectAll }: SuggestionCardProps) {
+  // Initialize with all members selected if no selection exists
+  const effectiveSelection = selectedMembers.size === 0 
+    ? new Set(suggestion.members.map(m => m.email))
+    : selectedMembers;
+  
+  const selectedCount = effectiveSelection.size;
+  const totalCount = suggestion.members.length;
   const confidenceColor = {
     high: 'bg-green-500/10 text-green-700 dark:text-green-400',
     medium: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
@@ -225,7 +283,7 @@ function SuggestionCard({ suggestion, mode, onCreateGroup, onDismiss }: Suggesti
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary" className="text-xs">
             <Users className="h-3 w-3 mr-1" />
-            {suggestion.members.length} members
+            {selectedCount} of {totalCount} selected
           </Badge>
           
           {mode === 'org_sector' ? (
@@ -264,53 +322,80 @@ function SuggestionCard({ suggestion, mode, onCreateGroup, onDismiss }: Suggesti
           </Badge>
         </div>
 
-        {/* Members with focus areas */}
-        {mode === 'org_sector' ? (
-          <div className="mt-3 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Members & Focus Areas:</p>
-            {suggestion.members.map((member, idx) => (
-              <div key={idx} className="text-xs border-l-2 border-primary/20 pl-3 py-1">
-                <div className="font-medium">{member.name || member.email}</div>
-                <div className="text-muted-foreground">{member.email}</div>
-                {member.focusAreas && member.focusAreas.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {member.focusAreas.map((fa, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {fa}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+        {/* Members with selection */}
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-muted-foreground">
+              {mode === 'org_sector' ? 'Members & Focus Areas:' : 'Members:'}
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (selectedCount === totalCount) {
+                  onDeselectAll();
+                } else {
+                  onSelectAll();
+                }
+              }}
+              className="h-6 text-xs"
+            >
+              {selectedCount === totalCount ? 'Deselect All' : 'Select All'}
+            </Button>
           </div>
-        ) : (
-          <>
-            {/* Member list for interaction mode */}
-            <div className="mt-3">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Members:</p>
-              <div className="flex flex-wrap gap-1">
+          
+          {mode === 'org_sector' ? (
+            suggestion.members.map((member, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-xs border-l-2 border-primary/20 pl-3 py-1">
+                <Checkbox
+                  checked={effectiveSelection.has(member.email)}
+                  onCheckedChange={() => onMemberToggle(member.email)}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-medium">{member.name || member.email}</div>
+                  <div className="text-muted-foreground">{member.email}</div>
+                  {member.focusAreas && member.focusAreas.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {member.focusAreas.map((fa, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {fa}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className="space-y-1">
                 {suggestion.members.map((member, idx) => (
-                  <Badge key={idx} variant="outline" className="text-xs">
-                    {member.name || member.email}
-                  </Badge>
+                  <div key={idx} className="flex items-center gap-2 text-xs py-1">
+                    <Checkbox
+                      checked={effectiveSelection.has(member.email)}
+                      onCheckedChange={() => onMemberToggle(member.email)}
+                    />
+                    <span className="font-medium">{member.name || member.email}</span>
+                    <span className="text-muted-foreground">({member.email})</span>
+                  </div>
                 ))}
               </div>
-            </div>
 
-            {/* Sample email subjects */}
-            {suggestion.sampleSubjects && suggestion.sampleSubjects.length > 0 && (
-              <div className="mt-3 pt-3 border-t">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Sample email subjects:</p>
-                <ul className="text-xs text-muted-foreground space-y-1">
-                  {suggestion.sampleSubjects.slice(0, 3).map((subject, idx) => (
-                    <li key={idx} className="truncate">• {subject}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </>
-        )}
+              {/* Sample email subjects */}
+              {suggestion.sampleSubjects && suggestion.sampleSubjects.length > 0 && (
+                <div className="pt-3 border-t">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Sample email subjects:</p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    {suggestion.sampleSubjects.slice(0, 3).map((subject, idx) => (
+                      <li key={idx} className="truncate">• {subject}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </Card>
   );
