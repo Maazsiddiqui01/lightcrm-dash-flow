@@ -181,11 +181,15 @@ function SuggestionCard({ suggestion, mode, onCreateGroup }: SuggestionCardProps
                   {suggestion.organization}
                 </Badge>
               )}
-              {suggestion.sector && (
+              {suggestion.focusArea ? (
+                <Badge variant="outline" className="text-xs font-medium">
+                  {suggestion.focusArea}
+                </Badge>
+              ) : suggestion.sector ? (
                 <Badge variant="outline" className="text-xs">
                   {suggestion.sector}
                 </Badge>
-              )}
+              ) : null}
             </>
           ) : (
             <>

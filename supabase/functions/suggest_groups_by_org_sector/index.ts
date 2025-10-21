@@ -26,11 +26,107 @@ interface GroupSuggestion {
   id: string;
   suggestedName: string;
   organization: string;
-  sector: string;
+  sector?: string;
+  focusArea?: string;
   domain: string;
   members: GroupMember[];
   memberCount: number;
   confidence: 'high';
+}
+
+// Combined Focus Area Rules - treat these as equivalent
+const COMBINED_FOCUS_AREAS: Record<string, string[]> = {
+  'Healthcare Services': [
+    'HC: Services (Non-Clinical)',
+    'HC: Life Sciences',
+    'Life Sciences'
+  ],
+  'Financial Services': [
+    'Financial Services',
+    'Insurance',
+    'Insurance Services/Wealth Management',
+    'Wealth Management'
+  ],
+  'Food & Agriculture': [
+    'Food & Agriculture',
+    'Food & Beverage Services',
+    'Food Manufacturing'
+  ],
+  'Capital Equipment': [
+    'Capital Goods',
+    'Capital Goods / Equipment',
+    'Equipment',
+    'Manufacturing'
+  ]
+};
+
+// Normalize focus area using combined rules
+function normalizeFocusArea(focusArea: string): string {
+  const trimmed = focusArea.trim();
+  
+  for (const [canonical, variations] of Object.entries(COMBINED_FOCUS_AREAS)) {
+    if (variations.some(v => v.toLowerCase() === trimmed.toLowerCase())) {
+      return canonical;
+    }
+  }
+  
+  return trimmed;
+}
+
+// Extract and normalize focus areas from a contact
+function extractFocusAreas(contact: ContactData): string[] {
+  if (!contact.lg_focus_areas_comprehensive_list) return [];
+  
+  return contact.lg_focus_areas_comprehensive_list
+    .split(',')
+    .map(fa => fa.trim())
+    .filter(fa => fa.length > 0)
+    .map(fa => normalizeFocusArea(fa));
+}
+
+// Check if member has a specific normalized focus area
+function memberHasFocusArea(contact: ContactData, normalizedFocusArea: string): boolean {
+  const memberFocusAreas = extractFocusAreas(contact);
+  return memberFocusAreas.includes(normalizedFocusArea);
+}
+
+// Analyze focus areas within an organization
+function analyzeFocusAreas(members: ContactData[]): { normalized: string, display: string, count: number }[] {
+  const focusAreaCounts = new Map<string, { display: string, count: number }>();
+  
+  for (const member of members) {
+    const focusAreas = extractFocusAreas(member);
+    
+    for (const normalizedFA of focusAreas) {
+      const current = focusAreaCounts.get(normalizedFA) || { display: normalizedFA, count: 0 };
+      current.count += 1;
+      focusAreaCounts.set(normalizedFA, current);
+    }
+  }
+  
+  return Array.from(focusAreaCounts.entries())
+    .map(([normalized, data]) => ({
+      normalized,
+      display: data.display,
+      count: data.count
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// Group members by sector
+function groupBySector(members: ContactData[]): Map<string, ContactData[]> {
+  const sectorMap = new Map<string, ContactData[]>();
+  
+  for (const member of members) {
+    const sector = member.lg_sector?.trim() || 'Unknown';
+    
+    if (!sectorMap.has(sector)) {
+      sectorMap.set(sector, []);
+    }
+    sectorMap.get(sector)!.push(member);
+  }
+  
+  return sectorMap;
 }
 
 Deno.serve(async (req) => {
@@ -43,15 +139,14 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Fetching contacts for organization/sector grouping...');
+    console.log('Fetching contacts for organization/focus area grouping...');
 
     // Fetch all contacts with organization, sector, email, and focus areas
     const { data: contacts, error } = await supabase
       .from('contacts_raw')
       .select('id, email_address, full_name, organization, lg_sector, lg_focus_areas_comprehensive_list')
       .not('email_address', 'is', null)
-      .not('organization', 'is', null)
-      .not('lg_sector', 'is', null); // Exclude contacts with no sector
+      .not('organization', 'is', null);
 
     if (error) {
       console.error('Error fetching contacts:', error);
@@ -60,8 +155,8 @@ Deno.serve(async (req) => {
 
     console.log(`Fetched ${contacts.length} contacts`);
 
-    // Extract domain from email and group by domain + sector
-    const groupMap = new Map<string, ContactData[]>();
+    // Group by domain (email domain)
+    const domainGroups = new Map<string, ContactData[]>();
 
     for (const contact of contacts as ContactData[]) {
       // Skip internal domain
@@ -74,62 +169,104 @@ Deno.serve(async (req) => {
       if (emailParts.length !== 2) continue;
       
       const domain = emailParts[1].toLowerCase().trim();
-      const sector = contact.lg_sector?.trim() || '';
       
-      if (!domain || !sector) continue;
+      if (!domain) continue;
 
-      // Create a key: domain + sector
-      const groupKey = `${domain}|||${sector}`;
-
-      if (!groupMap.has(groupKey)) {
-        groupMap.set(groupKey, []);
+      if (!domainGroups.has(domain)) {
+        domainGroups.set(domain, []);
       }
-      groupMap.get(groupKey)!.push(contact);
+      domainGroups.get(domain)!.push(contact);
     }
 
-    console.log(`Found ${groupMap.size} unique domain+sector combinations`);
+    console.log(`Found ${domainGroups.size} unique domains`);
 
-    // Convert to suggestions, filter groups with 2+ members
+    // Process each domain group
     const suggestions: GroupSuggestion[] = [];
 
-    for (const [groupKey, members] of groupMap.entries()) {
-      if (members.length < 2) continue; // Minimum 2 members
+    for (const [domain, members] of domainGroups.entries()) {
+      // Minimum 2 members per group
+      if (members.length < 2) continue;
 
-      const [domain, sector] = groupKey.split('|||');
-      
-      // Use the organization name from the first contact (they should all be same org)
       const organization = members[0].organization;
-      
-      const groupMembers: GroupMember[] = members.map(contact => ({
-        email: contact.email_address,
-        name: contact.full_name,
-        contactId: contact.id,
-        organization: contact.organization,
-        focusAreas: contact.lg_focus_areas_comprehensive_list
-          ? contact.lg_focus_areas_comprehensive_list.split(',').map(fa => fa.trim()).filter(Boolean)
-          : []
-      }));
 
-      suggestions.push({
-        id: crypto.randomUUID(),
-        suggestedName: `${organization} - ${sector}`,
-        organization,
-        sector,
-        domain,
-        members: groupMembers,
-        memberCount: members.length,
-        confidence: 'high' // Always high for structural data
-      });
+      // Analyze focus areas
+      const focusAreaAnalysis = analyzeFocusAreas(members);
+      
+      // Find strong focus areas (≥3 contacts)
+      const strongFocusAreas = focusAreaAnalysis.filter(fa => fa.count >= 3);
+
+      if (strongFocusAreas.length > 0) {
+        // Create one group per strong focus area
+        for (const focusArea of strongFocusAreas) {
+          const focusAreaMembers = members.filter(m => 
+            memberHasFocusArea(m, focusArea.normalized)
+          );
+
+          const groupMembers: GroupMember[] = focusAreaMembers.map(contact => ({
+            email: contact.email_address,
+            name: contact.full_name,
+            contactId: contact.id,
+            organization: contact.organization,
+            focusAreas: contact.lg_focus_areas_comprehensive_list
+              ? contact.lg_focus_areas_comprehensive_list.split(',').map(fa => fa.trim()).filter(Boolean)
+              : []
+          }));
+
+          suggestions.push({
+            id: crypto.randomUUID(),
+            suggestedName: `${organization} – ${focusArea.display}`,
+            organization,
+            focusArea: focusArea.display,
+            domain,
+            members: groupMembers,
+            memberCount: groupMembers.length,
+            confidence: 'high'
+          });
+        }
+      } else {
+        // Fallback to sector grouping
+        const sectorGroups = groupBySector(members);
+
+        for (const [sector, sectorMembers] of sectorGroups.entries()) {
+          if (sectorMembers.length < 2) continue;
+
+          const groupMembers: GroupMember[] = sectorMembers.map(contact => ({
+            email: contact.email_address,
+            name: contact.full_name,
+            contactId: contact.id,
+            organization: contact.organization,
+            focusAreas: contact.lg_focus_areas_comprehensive_list
+              ? contact.lg_focus_areas_comprehensive_list.split(',').map(fa => fa.trim()).filter(Boolean)
+              : []
+          }));
+
+          suggestions.push({
+            id: crypto.randomUUID(),
+            suggestedName: `${organization} – ${sector}`,
+            organization,
+            sector,
+            domain,
+            members: groupMembers,
+            memberCount: sectorMembers.length,
+            confidence: 'high'
+          });
+        }
+      }
     }
 
-    // Sort alphabetically by organization name, then by sector
+    // Sort alphabetically by organization name, then by focus area/sector
     suggestions.sort((a, b) => {
       const orgCompare = a.organization.localeCompare(b.organization);
       if (orgCompare !== 0) return orgCompare;
-      return a.sector.localeCompare(b.sector);
+      
+      const aName = a.focusArea || a.sector || '';
+      const bName = b.focusArea || b.sector || '';
+      return aName.localeCompare(bName);
     });
 
     console.log(`Returning ${suggestions.length} group suggestions`);
+    console.log(`Focus area groups: ${suggestions.filter(s => s.focusArea).length}`);
+    console.log(`Sector groups: ${suggestions.filter(s => s.sector).length}`);
 
     return new Response(
       JSON.stringify({ suggestions }),

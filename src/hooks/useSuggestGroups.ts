@@ -27,6 +27,7 @@ export interface GroupSuggestion {
   // For org/sector mode
   organization?: string;
   sector?: string;
+  focusArea?: string;
   domain?: string;
   memberCount?: number;
   
