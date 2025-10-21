@@ -673,6 +673,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         hideColumnsButton={true}
         enableResizing={true}
         persistKey="contacts"
+        enableColumnReordering={true}
       />
 
       {/* Drawers and Dialogs */}

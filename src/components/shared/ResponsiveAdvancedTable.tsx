@@ -19,7 +19,8 @@ import {
   Eye,
   EyeOff,
   WrapText,
-  GripVertical
+  GripVertical,
+  RotateCcw
 } from "lucide-react";
 import { ColumnPreferencesIndicator } from "./ColumnPreferencesIndicator";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,11 @@ import { TablePagination } from "./TablePagination";
 import { useSelectedRows } from "@/hooks/useSelectedRows";
 import { useColumnVisibility } from "@/hooks/useColumnVisibility";
 import { useColumnResizing } from "@/hooks/useColumnResizing";
+import { useColumnReordering } from "@/hooks/useColumnReordering";
+import { DraggableTableHead } from "./DraggableTableHead";
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { useToast } from "@/hooks/use-toast";
 
 export interface ColumnDef<T = any> {
   key: string;
@@ -91,9 +97,11 @@ interface ResponsiveAdvancedTableProps<T = any> {
   idKey?: string;
   showTopPagination?: boolean;
   hideColumnsButton?: boolean;
-  editMode?: boolean; // Add edit mode prop
+  editMode?: boolean;
   enableResizing?: boolean;
   persistKey?: string;
+  enableColumnReordering?: boolean;
+  onColumnOrderChange?: (order: string[]) => void;
 }
 
 export function ResponsiveAdvancedTable<T extends Record<string, any>>({
@@ -129,10 +137,13 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   idKey = 'id',
   showTopPagination = true,
   hideColumnsButton = false,
-  editMode = false, // Add edit mode with default value
+  editMode = false,
   enableResizing = false,
   persistKey = 'default',
+  enableColumnReordering = false,
+  onColumnOrderChange,
 }: ResponsiveAdvancedTableProps<T>) {
+  const { toast } = useToast();
   const [columns, setColumns] = useState(initialColumns);
   const [containerWidth, setContainerWidth] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -219,6 +230,62 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
     }, {} as Record<string, number>),
   });
   
+  // Column reordering - identify locked columns
+  const lockedColumns = useMemo(() => {
+    const locked: string[] = [];
+    if (enableRowSelection) locked.push('select');
+    if (stickyFirstColumn) {
+      const firstDataColumn = initialColumns.find(col => !locked.includes(col.key));
+      if (firstDataColumn) locked.push(firstDataColumn.key);
+    }
+    // Add any actions columns or other sticky columns
+    initialColumns.forEach(col => {
+      if (col.sticky && !locked.includes(col.key)) {
+        locked.push(col.key);
+      }
+    });
+    return locked;
+  }, [initialColumns, enableRowSelection, stickyFirstColumn]);
+
+  const columnReordering = useColumnReordering({
+    tableId: `${tableType}-${tableId}`,
+    columns: initialColumns,
+    lockedColumns,
+  });
+  
+  // DnD sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Require 5px movement before drag starts
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 5,
+      },
+    })
+  );
+  
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      columnReordering.reorderColumns(String(active.id), String(over.id));
+      
+      if (onColumnOrderChange) {
+        onColumnOrderChange(columnReordering.columnOrder);
+      }
+      
+      toast({
+        title: "Column reordered",
+        description: "Your column order has been saved.",
+      });
+    }
+  };
+  
   // Notify parent when selection changes (only for internal selection)
   useEffect(() => {
     if (onSelectedRowsChange && enableRowSelection && !externalOnSelectionChange) {
@@ -262,8 +329,11 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   // Update columns based on container width with enhanced responsive logic and user preferences
   useEffect(() => {
     if (containerWidth > 0) {
-      // First apply responsive logic
-      const responsiveColumns = getResponsiveColumns(initialColumns, containerWidth, tableType);
+      // Start with reordered columns if reordering is enabled
+      let workingColumns = enableColumnReordering ? columnReordering.reorderedColumns : initialColumns;
+      
+      // Apply responsive logic
+      const responsiveColumns = getResponsiveColumns(workingColumns, containerWidth, tableType);
       
       // Then apply user visibility preferences
       const columnsWithUserPreferences = hideColumnsButton
@@ -293,7 +363,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       
       setColumns(columnsWithAdaptiveWidths);
     }
-  }, [containerWidth, initialColumns, tableType, responsiveLayout.category, columnVisibilityHook.columnVisibility, hideColumnsButton, enableResizing, resizing.columnWidths]);
+  }, [containerWidth, initialColumns, tableType, responsiveLayout.category, columnVisibilityHook.columnVisibility, hideColumnsButton, enableResizing, resizing.columnWidths, enableColumnReordering, columnReordering.reorderedColumns]);
 
   // Sync horizontal scroll between top clone and table body (bottom native)
   useEffect(() => {
@@ -776,6 +846,23 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                   >
                     Reset to Defaults
                   </DropdownMenuItem>
+                  
+                  {/* Reset Column Order */}
+                  {enableColumnReordering && columnReordering.hasCustomOrder && (
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        columnReordering.resetOrder();
+                        toast({
+                          title: "Column order reset",
+                          description: "Columns have been restored to their default order.",
+                        });
+                      }}
+                      className="text-sm"
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Reset Column Order
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   
                   {/* Individual Columns */}
@@ -881,124 +968,72 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
             responsiveLayout.isUltraWide ? "max-h-[85vh]" : 
             responsiveLayout.isWideScreen ? "max-h-[80vh]" : "max-h-[70vh]"
           )}
-        >
-          <Table 
-            className="w-full" 
-            style={{ 
-              minWidth: responsiveLayout.isWideScreen ? "100%" : "1200px",
-              tableLayout: responsiveLayout.isWideScreen ? "fixed" : "auto"
-            }}
           >
-            <TableHeader className="sticky top-0 z-10 bg-table-header">
-              <TableRow className="border-b bg-muted/20">
-                 {visibleColumns.map((column, index) => (
-                   <TableHead
-                     key={column.key}
-                     className={cn(
-                       "table-cell-compact text-left align-middle font-calibri-light font-normal text-table-header-foreground select-none bg-table-header relative group border-r",
-                       responsiveLayout.config.density === 'compact' && "px-2 py-1",
-                       responsiveLayout.config.density === 'comfortable' && "px-6 py-4",
-                       index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-table-header border-r border-table-header",
-                       column.sortable && "cursor-pointer hover:text-table-header-foreground/80 transition-colors",
-                       column.headerClassName,
-                       resizing.textWrap ? "whitespace-normal" : "whitespace-nowrap"
-                     )}
-                     style={{
-                       width: column.width,
-                       minWidth: column.width,
-                       maxWidth: column.width
-                     }}
-                     onClick={() => column.sortable && handleSort(column.key)}
-                   >
-                    {column.key === 'select' ? (
-                      <div className="flex items-center justify-center">
-                        <Checkbox
-                          checked={rowSelection.isAllPageSelected(displayData)}
-                          onCheckedChange={() => rowSelection.toggleSelectAll(displayData)}
-                          className={rowSelection.isSomePageSelected(displayData) && !rowSelection.isAllPageSelected(displayData) ? "data-[state=checked]:bg-primary/50" : ""}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-wrap break-words leading-tight line-clamp-3">{column.label}</span>
-                        {column.sortable && (
-                          <div className="flex flex-col">
-                            {sortKey === column.key ? (
-                              sortDirection === 'asc' ? (
-                                <ArrowUp className="h-3 w-3" />
-                              ) : sortDirection === 'desc' ? (
-                                <ArrowDown className="h-3 w-3" />
-                              ) : (
-                                <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-                              )
-                            ) : (
-                              <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+            <Table 
+              className="w-full" 
+              style={{ 
+                minWidth: responsiveLayout.isWideScreen ? "100%" : "1200px",
+                tableLayout: responsiveLayout.isWideScreen ? "fixed" : "auto"
+              }}
+            >
+              <TableHeader className="sticky top-0 z-10 bg-table-header">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={visibleColumns.map(col => col.key)}
+                    strategy={horizontalListSortingStrategy}
+                    disabled={!enableColumnReordering}
+                  >
+                    <TableRow className="border-b bg-muted/20">
+                      {visibleColumns.map((column, index) => {
+                        const isLocked = lockedColumns.includes(column.key);
+                        const isCheckbox = column.key === 'select';
+                        
+                        return (
+                          <DraggableTableHead
+                            key={column.key}
+                            columnKey={column.key}
+                            label={column.label}
+                            sortable={column.sortable}
+                            sortKey={sortKey}
+                            sortDirection={sortDirection}
+                            onSort={handleSort}
+                            className={cn(
+                              responsiveLayout.config.density === 'compact' && "px-2 py-1",
+                              responsiveLayout.config.density === 'comfortable' && "px-6 py-4",
+                              index === 0 && stickyFirstColumn && "sticky left-0 z-30 bg-table-header border-r border-table-header",
+                              column.headerClassName
                             )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                     {/* Resize Handle */}
-                     {enableResizing && column.resizable !== false && column.key !== 'select' && (
-                       <div
-                         className={cn(
-                           "absolute right-0 top-0 h-full w-1 cursor-col-resize transition-all duration-200 flex items-center justify-center",
-                           "hover:w-2 hover:bg-primary/30",
-                           "after:absolute after:right-0 after:top-1/2 after:-translate-y-1/2 after:w-0.5 after:h-6 after:bg-border after:rounded-full",
-                           "hover:after:bg-primary",
-                           resizing.isResizing === column.key && "w-2 bg-primary/40"
-                         )}
-                         onMouseDown={(e) => {
-                           e.preventDefault();
-                           e.stopPropagation();
-                           resizing.handleResizeStart(column.key);
-                           const startX = e.pageX;
-                           const startWidth = column.width || 150;
-
-                           // Add visual feedback
-                           document.body.style.cursor = 'col-resize';
-                           document.body.style.userSelect = 'none';
-
-                           const handleMouseMove = (e: MouseEvent) => {
-                             const newWidth = Math.max(80, Math.min(500, startWidth + (e.pageX - startX)));
-                             
-                             // Update column width immediately for real-time feedback
-                             setColumns(prevColumns => 
-                               prevColumns.map(col => 
-                                 col.key === column.key 
-                                   ? { ...col, width: newWidth }
-                                   : col
-                               )
-                             );
-                             
-                             resizing.updateColumnWidth(column.key, newWidth);
-                           };
-
-                           const handleMouseUp = () => {
-                             resizing.handleResizeEnd();
-                             document.body.style.cursor = '';
-                             document.body.style.userSelect = '';
-                             document.removeEventListener('mousemove', handleMouseMove);
-                             document.removeEventListener('mouseup', handleMouseUp);
-                           };
-
-                           document.addEventListener('mousemove', handleMouseMove);
-                           document.addEventListener('mouseup', handleMouseUp);
-                         }}
-                       >
-                         <GripVertical className={cn(
-                           "h-3 w-3 transition-opacity duration-200",
-                           "opacity-0 group-hover:opacity-60",
-                           resizing.isResizing === column.key && "opacity-100"
-                         )} />
-                       </div>
-                     )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+                            style={{
+                              width: column.width,
+                              minWidth: column.width,
+                              maxWidth: column.width
+                            }}
+                            isDraggable={enableColumnReordering && !isLocked}
+                            isCheckbox={isCheckbox}
+                            checkboxProps={isCheckbox ? {
+                              checked: rowSelection.isAllPageSelected(displayData),
+                              onCheckedChange: () => rowSelection.toggleSelectAll(displayData),
+                              indeterminate: rowSelection.isSomePageSelected(displayData) && !rowSelection.isAllPageSelected(displayData)
+                            } : undefined}
+                            textWrap={resizing.textWrap}
+                            enableResizing={enableResizing}
+                            resizable={column.resizable}
+                            onResizeStart={resizing.handleResizeStart}
+                            onResizeMove={resizing.updateColumnWidth}
+                            onResizeEnd={resizing.handleResizeEnd}
+                            columnWidth={column.width}
+                          />
+                        );
+                      })}
+                    </TableRow>
+                  </SortableContext>
+                </DndContext>
+              </TableHeader>
+              <TableBody>
               {displayData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={visibleColumns.length} className="h-32">

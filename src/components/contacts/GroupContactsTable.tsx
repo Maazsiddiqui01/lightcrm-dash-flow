@@ -505,6 +505,8 @@ export function GroupContactsTable() {
           description: "Create groups by assigning contacts to a group in the individual contacts view."
         }}
         exportFilename="group-contacts"
+        enableColumnReordering={true}
+        tableType="contacts"
       />
 
       <GroupContactDrawer
