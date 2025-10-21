@@ -627,6 +627,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         hideColumnsButton={true}
         enableResizing={true}
         persistKey="opportunities"
+        enableColumnReordering={true}
       />
 
       {/* Drawers and Dialogs */}
