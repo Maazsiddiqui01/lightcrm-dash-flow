@@ -150,6 +150,7 @@ export interface ContactQueryResult {
  */
 export interface GroupContactMember {
   id: string;
+  contact_id: string;
   full_name: string;
   email_address: string;
   group_email_role: string;

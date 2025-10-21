@@ -140,7 +140,11 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     isSavingNotes,
   } = useContactNotes(contact?.id);
 
+  // Fetch all groups this contact belongs to (new many-to-many schema)
+  const { data: contactGroupMemberships = [], isLoading: isLoadingGroups } = useContactGroups(contact?.id || null);
+
   // Group notes hook (only if contact is part of a group)
+  const firstGroupId = contactGroupMemberships[0]?.group_id || undefined;
   const {
     currentNotes: groupCurrentNotes,
     timeline: groupTimeline,
@@ -148,10 +152,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     isLoadingTimeline: isLoadingGroupTimeline,
     saveNotes: saveGroupNotes,
     isSavingNotes: isSavingGroupNotes,
-  } = useGroupNotes(contactData?.group_contact || undefined);
-
-  // Fetch all groups this contact belongs to (new many-to-many schema)
-  const { data: contactGroupMemberships = [], isLoading: isLoadingGroups } = useContactGroups(contact?.id || null);
+  } = useGroupNotes(firstGroupId);
   const removeFromGroupMutation = useRemoveContactFromGroup();
   
   // Hook for managing contact email addresses
