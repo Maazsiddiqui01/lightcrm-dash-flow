@@ -4157,6 +4157,30 @@ export type Database = {
         Args: { sql_statement: string }
         Returns: Json
       }
+      get_all_contacts_view: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          assigned_to: string
+          contact_type: string
+          created_by: string
+          days_over_under_max_lag: number
+          days_since_last_contact: number
+          focus_area: string
+          id: string
+          is_overdue: boolean
+          max_lag_days: number
+          member_count: number
+          member_names: string
+          most_recent_contact: string
+          name: string
+          next_outreach_date: string
+          opportunities: string
+          opportunity_count: number
+          organization: string
+          sector: string
+          title: string
+        }[]
+      }
       get_article_age_in_days: {
         Args: { added_date: string }
         Returns: number

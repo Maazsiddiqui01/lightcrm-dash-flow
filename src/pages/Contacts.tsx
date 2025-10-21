@@ -1,5 +1,6 @@
 import { ContactsTableWithErrorBoundary } from "@/components/contacts/ContactsTableWithErrorBoundary";
 import { GroupContactsTable } from "@/components/contacts/GroupContactsTable";
+import { AllContactsTable } from "@/components/contacts/AllContactsTable";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useContactStats } from "@/hooks/useContactStats";
@@ -22,7 +23,7 @@ export function Contacts() {
   const [isSuggestGroupsOpen, setIsSuggestGroupsOpen] = useState(false);
   const [isDuplicatesOpen, setIsDuplicatesOpen] = useState(false);
   const [showOpportunityFilters, setShowOpportunityFilters] = useState(true);
-  const [viewMode, setViewMode] = useState<'individual' | 'group'>('individual');
+  const [viewMode, setViewMode] = useState<'individual' | 'group' | 'all'>('individual');
   const { syncNow, isSyncing } = useManualInteractionSync();
   
   const { filters, updateFilters, clearFilters } = useUrlFilters({
@@ -116,15 +117,19 @@ export function Contacts() {
         </div>
 
         {/* View Mode Toggle */}
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'individual' | 'group')} className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'individual' | 'group' | 'all')} className="w-full">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="individual" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Individual Contacts
+              Individual
             </TabsTrigger>
             <TabsTrigger value="group" className="flex items-center gap-2">
               <ListTree className="h-4 w-4" />
-              Group Contacts
+              Groups
+            </TabsTrigger>
+            <TabsTrigger value="all" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              All Contacts
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -217,8 +222,10 @@ export function Contacts() {
             filters={stableContactFilters}
             onOpportunityColumnVisibilityChange={setShowOpportunityFilters}
           />
-        ) : (
+        ) : viewMode === 'group' ? (
           <GroupContactsTable />
+        ) : (
+          <AllContactsTable />
         )}
 
         <AddContactDialog 

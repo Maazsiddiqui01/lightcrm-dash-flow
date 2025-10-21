@@ -191,3 +191,28 @@ export interface GroupContactView {
   is_overdue: boolean;
   is_over_max_lag: boolean;
 }
+
+/**
+ * All contacts view (combined individual and group)
+ */
+export interface AllContactView {
+  id: string;
+  contact_type: 'individual' | 'group';
+  name: string;
+  max_lag_days: number | null;
+  most_recent_contact: string | null;
+  next_outreach_date: string | null;
+  days_since_last_contact: number | null;
+  days_over_under_max_lag: number | null;
+  is_overdue: boolean;
+  focus_area: string | null;
+  sector: string | null;
+  opportunities: string | null;
+  opportunity_count: number;
+  organization: string | null;  // Only for individuals
+  title: string | null;          // Only for individuals
+  member_count: number | null;   // Only for groups
+  member_names: string | null;   // Only for groups
+  assigned_to: string | null;
+  created_by: string | null;
+}
