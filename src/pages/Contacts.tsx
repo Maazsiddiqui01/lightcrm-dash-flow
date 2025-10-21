@@ -3,7 +3,7 @@ import { GroupContactsTable } from "@/components/contacts/GroupContactsTable";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useContactStats } from "@/hooks/useContactStats";
-import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX, Sparkles, ListTree, Merge } from "lucide-react";
+import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX, Sparkles, ListTree, Merge, RefreshCw } from "lucide-react";
 import { useState, useMemo } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { SuggestGroupsModal } from "@/components/contacts/SuggestGroupsModal";
@@ -14,6 +14,7 @@ import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 import type { ContactFilters } from "@/types/contact";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useManualInteractionSync } from "@/hooks/useManualInteractionSync";
 
 
 export function Contacts() {
@@ -22,6 +23,7 @@ export function Contacts() {
   const [isDuplicatesOpen, setIsDuplicatesOpen] = useState(false);
   const [showOpportunityFilters, setShowOpportunityFilters] = useState(true);
   const [viewMode, setViewMode] = useState<'individual' | 'group'>('individual');
+  const { syncNow, isSyncing } = useManualInteractionSync();
   
   const { filters, updateFilters, clearFilters } = useUrlFilters({
     focusAreas: [],
@@ -98,6 +100,15 @@ export function Contacts() {
             <p className="text-muted-foreground">Manage your professional contacts and relationships</p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              onClick={syncNow}
+              variant="outline"
+              disabled={isSyncing}
+              className="touch-target"
+            >
+              <RefreshCw className={`h-4 w-4 sm:mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Force Sync'}</span>
+            </Button>
             <Button onClick={() => setIsDuplicatesOpen(true)} variant="outline" className="touch-target">
               <Merge className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Detect Duplicates</span>
