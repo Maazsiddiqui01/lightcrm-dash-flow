@@ -4495,6 +4495,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      refresh_all_contact_recency: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       refresh_all_group_contact_dates: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -4506,6 +4510,14 @@ export type Database = {
       refresh_contact_interaction_details: {
         Args: { p_contact_id: string }
         Returns: undefined
+      }
+      refresh_contact_recency: {
+        Args: { p_contact_id: string }
+        Returns: undefined
+      }
+      refresh_contacts_by_emails: {
+        Args: { p_emails: string[] }
+        Returns: number
       }
       refresh_missing_contacts: {
         Args: { p_exclude_domain?: string }

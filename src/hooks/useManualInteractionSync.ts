@@ -12,25 +12,25 @@ export function useManualInteractionSync() {
     setIsSyncing(true);
     
     try {
-      console.log('[Manual-Sync] Starting contact interaction sync...');
+      console.log('[Manual-Sync] Starting full recency sync...');
       
-      // Sync all contact interactions
-      const { error: contactError } = await supabase.rpc('refresh_all_contact_interaction_details');
+      // Recompute latest email/meeting and most_recent_contact for all contacts
+      const { error: recencyError } = await supabase.rpc('refresh_all_contact_recency');
       
-      if (contactError) {
-        console.error('[Manual-Sync] Contact sync failed:', contactError);
+      if (recencyError) {
+        console.error('[Manual-Sync] Recency sync failed:', recencyError);
         toast({
           title: "Sync Failed",
-          description: "Failed to sync contact interactions. Please try again.",
+          description: "Failed to refresh contact recency. Please try again.",
           variant: "destructive",
         });
         setIsSyncing(false);
         return;
       }
       
-      console.log('[Manual-Sync] Contact interactions synced successfully');
+      console.log('[Manual-Sync] Contact recency synced successfully');
       
-      // Sync all group dates
+      // Sync all group dates after recency updates
       const { error: groupError } = await supabase.rpc('refresh_all_group_contact_dates');
       
       if (groupError) {

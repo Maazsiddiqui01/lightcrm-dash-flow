@@ -21,8 +21,14 @@ export function useRealtimeInteractionSync() {
           schema: 'public',
           table: 'emails_meetings_raw'
         },
-        (payload) => {
+        async (payload) => {
           console.log('[Realtime] New interaction added, refreshing contacts...', payload);
+
+          // Ask backend to recompute recency for affected contacts based on emails
+          const emails = (payload.new as any)?.emails_arr as string[] | null;
+          if (emails && emails.length > 0) {
+            await supabase.rpc('refresh_contacts_by_emails', { p_emails: emails });
+          }
           
           // Invalidate contact-related queries
           queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
@@ -38,8 +44,13 @@ export function useRealtimeInteractionSync() {
           schema: 'public',
           table: 'emails_meetings_raw'
         },
-        (payload) => {
+        async (payload) => {
           console.log('[Realtime] Interaction updated, refreshing contacts...', payload);
+
+          const emails = (payload.new as any)?.emails_arr as string[] | null;
+          if (emails && emails.length > 0) {
+            await supabase.rpc('refresh_contacts_by_emails', { p_emails: emails });
+          }
           
           // Invalidate contact-related queries
           queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
