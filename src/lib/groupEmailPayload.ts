@@ -36,6 +36,7 @@ export interface GroupEmailPayload {
 }
 
 export function buildGroupEmailPayload(group: GroupContactView): GroupEmailPayload {
+  // Filter out excluded members from email lists
   const toMembers = group.members.filter(m => m.group_email_role === 'to');
   const ccMembers = group.members.filter(m => m.group_email_role === 'cc');
   const bccMembers = group.members.filter(m => m.group_email_role === 'bcc');

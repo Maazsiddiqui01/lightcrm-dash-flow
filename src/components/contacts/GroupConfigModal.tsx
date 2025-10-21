@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,7 +39,10 @@ export function GroupConfigModal({
   const [maxLagDays, setMaxLagDays] = useState<string>('30');
   const [focusArea, setFocusArea] = useState<string>(suggestedFocusArea || '');
   const [selectedSector, setSelectedSector] = useState<string>(sector || '');
-  const [memberRoles, setMemberRoles] = useState<Record<string, 'to' | 'cc' | 'bcc'>>(
+  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(
+    new Set(members.map(m => m.contactId))
+  );
+  const [memberRoles, setMemberRoles] = useState<Record<string, 'to' | 'cc' | 'bcc' | 'exclude'>>(
     Object.fromEntries(members.map(m => [m.contactId, 'to' as const]))
   );
 
@@ -64,6 +68,15 @@ export function GroupConfigModal({
       return;
     }
 
+    if (selectedMembers.size === 0) {
+      toast({
+        title: "Error",
+        description: "At least one member must be selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCreating(true);
 
     try {
@@ -82,11 +95,11 @@ export function GroupConfigModal({
 
       if (groupError) throw groupError;
 
-      // 2. Add members to the group
-      const memberships = members.map(member => ({
-        contact_id: member.contactId,
+      // 2. Add members to the group (only selected members)
+      const memberships = Array.from(selectedMembers).map(contactId => ({
+        contact_id: contactId,
         group_id: group.id,
-        email_role: memberRoles[member.contactId]
+        email_role: memberRoles[contactId]
       }));
 
       const { error: membershipError } = await supabase
@@ -97,7 +110,7 @@ export function GroupConfigModal({
 
       toast({
         title: "Group Created",
-        description: `Successfully created "${groupName}" with ${members.length} members.`,
+        description: `Successfully created "${groupName}" with ${selectedMembers.size} members.`,
       });
 
       // Invalidate relevant queries
@@ -191,34 +204,66 @@ export function GroupConfigModal({
             </Select>
           </div>
 
-          {/* Member Email Roles */}
+          {/* Member Selection and Email Roles */}
           <div>
-            <Label className="mb-3 block">Member Email Roles *</Label>
+            <div className="flex items-center justify-between mb-3">
+              <Label>Members ({selectedMembers.size} of {members.length} selected)</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (selectedMembers.size === members.length) {
+                    setSelectedMembers(new Set());
+                  } else {
+                    setSelectedMembers(new Set(members.map(m => m.contactId)));
+                  }
+                }}
+              >
+                {selectedMembers.size === members.length ? 'Deselect All' : 'Select All'}
+              </Button>
+            </div>
             <div className="space-y-2 border rounded-lg p-3 max-h-64 overflow-y-auto">
               {members.map((member) => (
-                <div key={member.contactId} className="flex items-center justify-between gap-4 p-2 border-b last:border-b-0">
+                <div key={member.contactId} className="flex items-center gap-3 p-2 border-b last:border-b-0">
+                  <Checkbox
+                    checked={selectedMembers.has(member.contactId)}
+                    onCheckedChange={(checked) => {
+                      const newSet = new Set(selectedMembers);
+                      if (checked) {
+                        newSet.add(member.contactId);
+                      } else {
+                        newSet.delete(member.contactId);
+                      }
+                      setSelectedMembers(newSet);
+                    }}
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{member.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                   </div>
                   <Select
                     value={memberRoles[member.contactId]}
-                    onValueChange={(value: 'to' | 'cc' | 'bcc') =>
+                    onValueChange={(value: 'to' | 'cc' | 'bcc' | 'exclude') =>
                       setMemberRoles({ ...memberRoles, [member.contactId]: value })
                     }
+                    disabled={!selectedMembers.has(member.contactId)}
                   >
-                    <SelectTrigger className="w-24">
+                    <SelectTrigger className="w-28">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="to">To</SelectItem>
                       <SelectItem value="cc">CC</SelectItem>
                       <SelectItem value="bcc">BCC</SelectItem>
+                      <SelectItem value="exclude">Exclude</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Uncheck members to exclude them from the group. "Exclude" role keeps members in the group but removes them from emails.
+            </p>
           </div>
 
           {/* Actions */}

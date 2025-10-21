@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Users, Calendar, Target, ExternalLink, Clock, Edit, Save, X, Trash2 } from "lucide-react";
+import { Mail, Users, Calendar, Target, ExternalLink, Clock, Edit, Save, X, Trash2, UserMinus } from "lucide-react";
 import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useGroupNotes } from "@/hooks/useGroupNotes";
 import { GroupNotesSection } from "./GroupNotesSection";
 import { useDeleteGroup } from "@/hooks/useDeleteGroup";
+import { useRemoveContactFromGroup } from "@/hooks/useRemoveContactFromGroup";
 import { Label } from "@/components/ui/label";
 
 interface GroupContactDrawerProps {
@@ -35,6 +36,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const deleteGroupMutation = useDeleteGroup();
+  const removeContactMutation = useRemoveContactFromGroup();
   const [editMode, setEditMode] = useState(false);
   const [editedMaxLag, setEditedMaxLag] = useState<number | null>(null);
   const [editedGroupFocusArea, setEditedGroupFocusArea] = useState<string>('');
@@ -182,9 +184,30 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
     }
   };
 
+  const handleRemoveMember = async (contactId: string, memberName: string) => {
+    if (!confirm(`Remove ${memberName} from this group?`)) {
+      return;
+    }
+
+    try {
+      await removeContactMutation.mutateAsync({
+        contactId,
+        groupId: group.group_id
+      });
+      
+      toast({
+        title: "Member Removed",
+        description: `${memberName} has been removed from the group.`,
+      });
+    } catch (error) {
+      // Error already handled by mutation
+    }
+  };
+
   const toMembers = group.members.filter(m => m.group_email_role === 'to');
   const ccMembers = group.members.filter(m => m.group_email_role === 'cc');
   const bccMembers = group.members.filter(m => m.group_email_role === 'bcc');
+  const excludedMembers = group.members.filter(m => m.group_email_role === 'exclude');
 
   const isOverdue = group.next_outreach_date && new Date(group.next_outreach_date) < new Date();
 
@@ -353,6 +376,8 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                       editMode={editMode}
                       editedRole={editedRoles[member.contact_id]}
                       onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.contact_id]: role }))}
+                      onRemove={() => handleRemoveMember(member.contact_id, member.full_name)}
+                      groupId={group.group_id}
                     />
                   ))}
                 </div>
@@ -371,6 +396,8 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                       editMode={editMode}
                       editedRole={editedRoles[member.contact_id]}
                       onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.contact_id]: role }))}
+                      onRemove={() => handleRemoveMember(member.contact_id, member.full_name)}
+                      groupId={group.group_id}
                     />
                   ))}
                 </div>
@@ -389,9 +416,37 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                       editMode={editMode}
                       editedRole={editedRoles[member.contact_id]}
                       onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.contact_id]: role }))}
+                      onRemove={() => handleRemoveMember(member.contact_id, member.full_name)}
+                      groupId={group.group_id}
                     />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Excluded Members */}
+            {excludedMembers.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-muted-foreground">
+                  Excluded from Emails: ({excludedMembers.length})
+                </Label>
+                <div className="space-y-2 opacity-60">
+                  {excludedMembers.map((member) => (
+                    <MemberCard 
+                      key={member.contact_id} 
+                      member={member}
+                      editMode={editMode}
+                      editedRole={editedRoles[member.contact_id]}
+                      onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.contact_id]: role }))}
+                      onRemove={() => handleRemoveMember(member.contact_id, member.full_name)}
+                      isExcluded
+                      groupId={group.group_id}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground italic">
+                  These members are in the group but won't receive emails
+                </p>
               </div>
             )}
           </div>
@@ -471,38 +526,55 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   );
 }
 
-function MemberCard({ member, editMode, editedRole, onRoleChange }: { 
+function MemberCard({ member, editMode, editedRole, onRoleChange, onRemove, isExcluded, groupId }: { 
   member: any; 
   editMode?: boolean;
   editedRole?: string;
   onRoleChange?: (role: string) => void;
+  onRemove?: () => void;
+  isExcluded?: boolean;
+  groupId?: string;
 }) {
   return (
-    <div className="border rounded-lg p-3 space-y-1">
+    <div className={`border rounded-lg p-3 space-y-1 ${isExcluded ? 'bg-muted/30' : ''}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="font-medium">{member.full_name}</div>
           <div className="text-sm text-muted-foreground">{member.email_address}</div>
         </div>
-        {editMode && onRoleChange ? (
-          <Select 
-            value={editedRole || member.group_email_role || 'to'} 
-            onValueChange={onRoleChange}
-          >
-            <SelectTrigger className="w-20 h-8 ml-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="to">TO</SelectItem>
-              <SelectItem value="cc">CC</SelectItem>
-              <SelectItem value="bcc">BCC</SelectItem>
-            </SelectContent>
-          </Select>
-        ) : (
-          <Badge variant="outline" className="ml-2">
-            {member.group_email_role?.toUpperCase()}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {editMode && onRoleChange ? (
+            <Select 
+              value={editedRole || member.group_email_role || 'to'} 
+              onValueChange={onRoleChange}
+            >
+              <SelectTrigger className="w-24 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="to">TO</SelectItem>
+                <SelectItem value="cc">CC</SelectItem>
+                <SelectItem value="bcc">BCC</SelectItem>
+                <SelectItem value="exclude">Exclude</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <Badge variant="outline">
+              {member.group_email_role?.toUpperCase() || 'TO'}
+            </Badge>
+          )}
+          {!editMode && onRemove && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+              className="h-8 w-8 p-0"
+              title="Remove from group"
+            >
+              <UserMinus className="h-4 w-4 text-destructive" />
+            </Button>
+          )}
+        </div>
       </div>
       {member.title && (
         <div className="text-sm text-muted-foreground">{member.title}</div>
