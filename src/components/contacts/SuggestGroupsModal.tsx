@@ -55,6 +55,11 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
     setDismissedIds(prev => new Set([...prev, suggestionId]));
   };
 
+  const handleGroupCreated = (suggestionId: string) => {
+    // Auto-dismiss the suggestion after successful creation
+    setDismissedIds(prev => new Set([...prev, suggestionId]));
+  };
+
   const handleMemberToggle = (suggestionId: string, memberEmail: string, checked: boolean) => {
     setMemberSelections(prev => {
       const current = new Set(prev[suggestionId] || []);
@@ -232,6 +237,8 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
           sector={selectedSuggestion.sector}
           focusArea={selectedSuggestion.focusArea}
           organization={selectedSuggestion.organization}
+          suggestionId={selectedSuggestion.id}
+          onGroupCreated={handleGroupCreated}
         />
       )}
     </>

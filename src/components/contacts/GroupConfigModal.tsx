@@ -20,6 +20,8 @@ interface GroupConfigModalProps {
   sector?: string;
   focusArea?: string;
   organization?: string;
+  suggestionId?: string;
+  onGroupCreated?: (suggestionId: string) => void;
 }
 
 export function GroupConfigModal({
@@ -29,7 +31,9 @@ export function GroupConfigModal({
   members,
   sector,
   focusArea: suggestedFocusArea,
-  organization
+  organization,
+  suggestionId,
+  onGroupCreated
 }: GroupConfigModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -118,6 +122,11 @@ export function GroupConfigModal({
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       queryClient.invalidateQueries({ queryKey: ['contact-groups'] });
       queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+
+      // Notify parent that group was created
+      if (onGroupCreated && suggestionId) {
+        onGroupCreated(suggestionId);
+      }
 
       onOpenChange(false);
     } catch (error) {
