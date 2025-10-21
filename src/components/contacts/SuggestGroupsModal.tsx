@@ -129,6 +129,7 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
             name: m.name || m.email
           }))}
           sector={selectedSuggestion.sector}
+          focusArea={selectedSuggestion.focusArea}
           organization={selectedSuggestion.organization}
         />
       )}

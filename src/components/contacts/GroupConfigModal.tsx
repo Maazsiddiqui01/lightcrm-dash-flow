@@ -17,6 +17,7 @@ interface GroupConfigModalProps {
   suggestedName: string;
   members: Array<{ contactId: string; email: string; name: string }>;
   sector?: string;
+  focusArea?: string;
   organization?: string;
 }
 
@@ -26,6 +27,7 @@ export function GroupConfigModal({
   suggestedName,
   members,
   sector,
+  focusArea: suggestedFocusArea,
   organization
 }: GroupConfigModalProps) {
   const { toast } = useToast();
@@ -34,7 +36,7 @@ export function GroupConfigModal({
   
   const [groupName, setGroupName] = useState(suggestedName);
   const [maxLagDays, setMaxLagDays] = useState<string>('30');
-  const [focusArea, setFocusArea] = useState<string>('');
+  const [focusArea, setFocusArea] = useState<string>(suggestedFocusArea || '');
   const [selectedSector, setSelectedSector] = useState<string>(sector || '');
   const [memberRoles, setMemberRoles] = useState<Record<string, 'to' | 'cc' | 'bcc'>>(
     Object.fromEntries(members.map(m => [m.contactId, 'to' as const]))
