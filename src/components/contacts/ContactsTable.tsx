@@ -375,7 +375,13 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
             
             return (
               <div className="flex items-center gap-2">
-                <span className="truncate">{value}</span>
+                <a 
+                  href={`mailto:${value}`}
+                  className="truncate text-primary hover:underline cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {value}
+                </a>
                 {hasMultiple && (
                   <TooltipProvider>
                     <Tooltip>
