@@ -9,6 +9,7 @@ import { ContactDrawer } from "./ContactDrawer";
 import { GroupContactDrawer } from "./GroupContactDrawer";
 import { toast } from "sonner";
 import { sendContactEmail } from "@/features/contacts/sendEmail";
+import { sendGroupEmail } from "@/features/contacts/sendGroupEmail";
 import { supabase } from "@/integrations/supabase/client";
 import type { GroupContactView } from "@/types/contact";
 
@@ -129,17 +130,17 @@ export function AllContactsTable() {
   };
 
   const handleSendEmail = async (row: AllContactView) => {
-    if (row.contact_type === 'group') {
-      toast.info("Email sending for groups is not yet implemented");
-      return;
-    }
-
     try {
-      await sendContactEmail(row.id);
-      toast.success("Email workflow triggered successfully");
+      if (row.contact_type === 'group') {
+        await sendGroupEmail(row.id);
+        toast.success("Group email workflow triggered successfully");
+      } else {
+        await sendContactEmail(row.id);
+        toast.success("Email workflow triggered successfully");
+      }
     } catch (error) {
       console.error('Failed to send email:', error);
-      toast.error("Failed to trigger email workflow");
+      toast.error(`Failed to trigger email workflow: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -325,7 +326,6 @@ export function AllContactsTable() {
               e.stopPropagation();
               handleSendEmail(row);
             }}
-            disabled={row.contact_type === 'group'}
           >
             <Mail className="h-4 w-4" />
           </Button>
