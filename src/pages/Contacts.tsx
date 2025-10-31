@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useContactStats } from "@/hooks/useContactStats";
 import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX, Sparkles, ListTree, Merge, RefreshCw } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { SuggestGroupsModal } from "@/components/contacts/SuggestGroupsModal";
 import { DuplicatesReviewModal } from "@/components/contacts/DuplicatesReviewModal";
@@ -18,6 +18,7 @@ import type { ContactFilters } from "@/types/contact";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useManualInteractionSync } from "@/hooks/useManualInteractionSync";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 
 export function Contacts() {
@@ -27,6 +28,54 @@ export function Contacts() {
   const [showOpportunityFilters, setShowOpportunityFilters] = useState(true);
   const [viewMode, setViewMode] = useState<'individual' | 'group' | 'all'>('individual');
   const { syncNow, isSyncing } = useManualInteractionSync();
+
+  // Sync on page load and when returning to page
+  useEffect(() => {
+    const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+    const VISIBILITY_THRESHOLD = 60 * 60 * 1000; // 1 hour
+    const STORAGE_KEY = 'lastInteractionSync';
+
+    const runPageSync = async () => {
+      try {
+        const lastSync = localStorage.getItem(STORAGE_KEY);
+        const now = Date.now();
+        
+        if (!lastSync || now - parseInt(lastSync) > SYNC_INTERVAL) {
+          console.log('[Contacts-Page-Sync] Running sync...');
+          const { error } = await supabase.rpc('refresh_all_contact_recency');
+          
+          if (!error) {
+            localStorage.setItem(STORAGE_KEY, now.toString());
+            console.log('[Contacts-Page-Sync] Completed');
+          }
+        }
+      } catch (error) {
+        console.error('[Contacts-Page-Sync] Error:', error);
+      }
+    };
+
+    // Run on mount
+    const timeout = setTimeout(runPageSync, 1000);
+    
+    // Run when returning to page after being away
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const lastSync = localStorage.getItem(STORAGE_KEY);
+        const now = Date.now();
+        
+        if (!lastSync || now - parseInt(lastSync) > VISIBILITY_THRESHOLD) {
+          runPageSync();
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearTimeout(timeout);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
   
   const { filters, updateFilters, clearFilters } = useUrlFilters({
     focusAreas: [],
