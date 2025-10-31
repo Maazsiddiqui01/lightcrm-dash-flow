@@ -2,12 +2,12 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-const SYNC_INTERVAL = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+const SYNC_INTERVAL = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 const STORAGE_KEY = 'lastInteractionSync';
 
 /**
  * Hook to automatically sync interactions on app load
- * Throttled to run once every 12 hours
+ * Throttled to run once every 4 hours
  */
 export function useAutoInteractionSync() {
   useEffect(() => {

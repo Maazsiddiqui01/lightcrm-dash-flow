@@ -33,6 +33,7 @@ export function useRealtimeInteractionSync() {
           // Invalidate contact-related queries
           queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
           queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+          queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
           queryClient.invalidateQueries({ queryKey: ['contact-stats'] });
           queryClient.invalidateQueries({ queryKey: ['interaction-stats'] });
         }
@@ -55,6 +56,30 @@ export function useRealtimeInteractionSync() {
           // Invalidate contact-related queries
           queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
           queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+          queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
+          queryClient.invalidateQueries({ queryKey: ['contact-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['interaction-stats'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'emails_meetings_raw'
+        },
+        async (payload) => {
+          console.log('[Realtime] Interaction deleted, refreshing contacts...', payload);
+
+          const emails = (payload.old as any)?.emails_arr as string[] | null;
+          if (emails && emails.length > 0) {
+            await supabase.rpc('refresh_contacts_by_emails', { p_emails: emails });
+          }
+          
+          // Invalidate contact-related queries
+          queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
+          queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+          queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
           queryClient.invalidateQueries({ queryKey: ['contact-stats'] });
           queryClient.invalidateQueries({ queryKey: ['interaction-stats'] });
         }

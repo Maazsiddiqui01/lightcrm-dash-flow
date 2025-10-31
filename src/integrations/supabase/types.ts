@@ -4055,23 +4055,27 @@ export type Database = {
         Args: { p_content: string; p_field: string; p_group_id: string }
         Returns: undefined
       }
-      add_opportunity_note: {
-        Args:
-          | {
+      add_opportunity_note:
+        | {
+            Args: {
+              p_content: string
+              p_field: string
+              p_opportunity_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
               p_content: string
               p_due_date?: string
               p_field: string
               p_opportunity_id: string
             }
-          | { p_content: string; p_field: string; p_opportunity_id: string }
-        Returns: undefined
-      }
-      adjust_weekend: {
-        Args: { ts: string }
-        Returns: string
-      }
+            Returns: undefined
+          }
+      adjust_weekend: { Args: { ts: string }; Returns: string }
       api_tom_new_view: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           areas_of_specialization: string
           deal_name: string
@@ -4093,10 +4097,7 @@ export type Database = {
         Args: { p_email: string; p_full_name?: string; p_organization?: string }
         Returns: string
       }
-      approve_missing_contact: {
-        Args: { p_email: string }
-        Returns: string
-      }
+      approve_missing_contact: { Args: { p_email: string }; Returns: string }
       avg_minutes_per_week_by_lead: {
         Args: { end_date?: string; start_date?: string }
         Returns: {
@@ -4111,10 +4112,7 @@ export type Database = {
           leads: string
         }[]
       }
-      canonical_focus_area: {
-        Args: { input_text: string }
-        Returns: string
-      }
+      canonical_focus_area: { Args: { input_text: string }; Returns: string }
       compute_ebitda_range: {
         Args: { p_amount: number; p_notes: string }
         Returns: string
@@ -4141,24 +4139,15 @@ export type Database = {
           contact_id: string
         }[]
       }
-      detect_contact_duplicates: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      detect_contact_duplicates: { Args: never; Returns: undefined }
       dismiss_contact_candidate: {
         Args: { p_email: string; p_note?: string }
         Returns: undefined
       }
-      dismiss_missing_contact: {
-        Args: { p_email: string }
-        Returns: boolean
-      }
-      execute_admin_sql: {
-        Args: { sql_statement: string }
-        Returns: Json
-      }
+      dismiss_missing_contact: { Args: { p_email: string }; Returns: boolean }
+      execute_admin_sql: { Args: { sql_statement: string }; Returns: Json }
       get_all_contacts_view: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           assigned_to: string
           contact_type: string
@@ -4181,10 +4170,7 @@ export type Database = {
           title: string
         }[]
       }
-      get_article_age_in_days: {
-        Args: { added_date: string }
-        Returns: number
-      }
+      get_article_age_in_days: { Args: { added_date: string }; Returns: number }
       get_contact_enriched: {
         Args: { contact_id: string; opp_limit?: number }
         Returns: Json
@@ -4215,7 +4201,7 @@ export type Database = {
         }[]
       }
       get_group_contacts_view: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           all_focus_areas: string
           all_sectors: string
@@ -4259,14 +4245,8 @@ export type Database = {
           title: string
         }[]
       }
-      get_latest_contact_email: {
-        Args: { p_email: string }
-        Returns: string
-      }
-      get_latest_contact_meeting: {
-        Args: { p_email: string }
-        Returns: string
-      }
+      get_latest_contact_email: { Args: { p_email: string }; Returns: string }
+      get_latest_contact_meeting: { Args: { p_email: string }; Returns: string }
       get_most_recent_contact_dynamic: {
         Args: { p_email: string }
         Returns: string
@@ -4281,34 +4261,8 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      guess_name_from_email: {
-        Args: { p_email: string }
-        Returns: string
-      }
-      guess_org_from_email: {
-        Args: { p_email: string }
-        Returns: string
-      }
+      guess_name_from_email: { Args: { p_email: string }; Returns: string }
+      guess_org_from_email: { Args: { p_email: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -4349,22 +4303,13 @@ export type Database = {
           to_emails: string
         }[]
       }
-      is_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_column_protected: {
         Args: { p_column: string; p_table: string }
         Returns: boolean
       }
-      is_valid_email: {
-        Args: { p: string }
-        Returns: boolean
-      }
-      kpi_default_meeting_min: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      is_valid_email: { Args: { p: string }; Returns: boolean }
+      kpi_default_meeting_min: { Args: never; Returns: number }
       kpi_header: {
         Args: {
           p_end: string
@@ -4462,18 +4407,9 @@ export type Database = {
         }
         Returns: Json
       }
-      map_lg_lead_name: {
-        Args: { input: string }
-        Returns: string
-      }
-      normalize_focus_area: {
-        Args: { input_text: string }
-        Returns: string
-      }
-      normalize_name: {
-        Args: { t: string }
-        Returns: string
-      }
+      map_lg_lead_name: { Args: { input: string }; Returns: string }
+      normalize_focus_area: { Args: { input_text: string }; Returns: string }
+      normalize_name: { Args: { t: string }; Returns: string }
       opportunities_aggregate: {
         Args: { p_end?: string; p_group_by: string; p_start?: string }
         Returns: {
@@ -4505,28 +4441,17 @@ export type Database = {
         Args: { p_group_id: string }
         Returns: undefined
       }
-      refresh_all_contact_interaction_details: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      refresh_all_contact_interaction_details: { Args: never; Returns: number }
       refresh_all_contact_interactions: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           contacts_updated: number
         }[]
       }
-      refresh_all_contact_leads_assistants: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      refresh_all_contact_recency: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      refresh_all_group_contact_dates: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      refresh_all_contact_leads_assistants: { Args: never; Returns: number }
+      refresh_all_contact_recency: { Args: never; Returns: number }
+      refresh_all_contacts_from_interactions: { Args: never; Returns: number }
+      refresh_all_group_contact_dates: { Args: never; Returns: number }
       refresh_contact_interaction_counts: {
         Args: { p_contact_id: string }
         Returns: undefined
@@ -4547,14 +4472,8 @@ export type Database = {
         Args: { p_exclude_domain?: string }
         Returns: number
       }
-      reject_missing_contact: {
-        Args: { p_email: string }
-        Returns: undefined
-      }
-      release_expired_locks: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      reject_missing_contact: { Args: { p_email: string }; Returns: undefined }
+      release_expired_locks: { Args: never; Returns: undefined }
       remove_contact_from_group: {
         Args: { p_contact_id: string; p_group_id: string }
         Returns: boolean
@@ -4572,34 +4491,12 @@ export type Database = {
         Args: { p_action_type?: string; p_contact_id: string; p_note?: string }
         Returns: undefined
       }
-      set_limit: {
-        Args: { "": number }
-        Returns: number
-      }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: { "": string }
-        Returns: string[]
-      }
-      unlock_contact: {
-        Args: { p_contact_id: string }
-        Returns: Json
-      }
-      util_quarter_text: {
-        Args: { t: string }
-        Returns: string
-      }
-      util_safe_timestamptz: {
-        Args: { t: string }
-        Returns: string
-      }
-      util_year_text: {
-        Args: { t: string }
-        Returns: string
-      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      unlock_contact: { Args: { p_contact_id: string }; Returns: Json }
+      util_quarter_text: { Args: { t: string }; Returns: string }
+      util_safe_timestamptz: { Args: { t: string }; Returns: string }
+      util_year_text: { Args: { t: string }; Returns: string }
       validate_column_type_change: {
         Args: { p_column: string; p_new_type: string; p_table: string }
         Returns: Json

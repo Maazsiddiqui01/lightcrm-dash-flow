@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -6,6 +7,7 @@ import { toast } from '@/hooks/use-toast';
  * Hook to manually trigger interaction sync and group date refresh
  */
 export function useManualInteractionSync() {
+  const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
 
   const syncNow = async () => {
@@ -48,6 +50,13 @@ export function useManualInteractionSync() {
       
       // Update localStorage to prevent auto-sync for another 12 hours
       localStorage.setItem('lastInteractionSync', Date.now().toString());
+      
+      // Invalidate all contact-related queries to force refresh
+      queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+      queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
+      queryClient.invalidateQueries({ queryKey: ['contact-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['interaction-stats'] });
       
       toast({
         title: "Sync Complete",
