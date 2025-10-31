@@ -2,6 +2,7 @@ import { ContactsTableWithErrorBoundary } from "@/components/contacts/ContactsTa
 import { GroupContactsTable } from "@/components/contacts/GroupContactsTable";
 import { AllContactsTable } from "@/components/contacts/AllContactsTable";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useContactStats } from "@/hooks/useContactStats";
 import { Plus, Users, Mail, Calendar, TrendingUp, Clock, AlertTriangle, TrendingDown, UserX, Sparkles, ListTree, Merge, RefreshCw } from "lucide-react";
@@ -16,6 +17,7 @@ import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 import type { ContactFilters } from "@/types/contact";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useManualInteractionSync } from "@/hooks/useManualInteractionSync";
+import { formatDistanceToNow } from "date-fns";
 
 
 export function Contacts() {
@@ -155,15 +157,39 @@ export function Contacts() {
               showOpportunityFilters={showOpportunityFilters}
             />
           </div>
-          <Button 
-            onClick={syncNow}
-            variant="outline"
-            disabled={isSyncing}
-            className="touch-target shrink-0"
-          >
-            <RefreshCw className={`h-4 w-4 sm:mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync Interactions'}</span>
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            {(() => {
+              const lastSyncTime = localStorage.getItem('lastInteractionSync');
+              const lastSyncDate = lastSyncTime ? new Date(parseInt(lastSyncTime)) : null;
+              const isStale = lastSyncDate && (Date.now() - lastSyncDate.getTime() > 2 * 60 * 60 * 1000);
+              
+              return (
+                <>
+                  {lastSyncDate && (
+                    <div className="hidden lg:flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                        Synced {formatDistanceToNow(lastSyncDate, { addSuffix: true })}
+                      </span>
+                      {isStale && (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400">
+                          May be outdated
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                  <Button 
+                    onClick={syncNow}
+                    variant="outline"
+                    disabled={isSyncing}
+                    className="touch-target"
+                  >
+                    <RefreshCw className={`h-4 w-4 sm:mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync Interactions'}</span>
+                  </Button>
+                </>
+              );
+            })()}
+          </div>
         </div>
 
         {/* KPI Cards */}

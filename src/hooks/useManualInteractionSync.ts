@@ -63,11 +63,6 @@ export function useManualInteractionSync() {
         description: "All contact interactions and group dates have been updated.",
       });
       
-      // Reload the page to fetch fresh data
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-      
     } catch (error) {
       console.error('[Manual-Sync] Unexpected error:', error);
       toast({
