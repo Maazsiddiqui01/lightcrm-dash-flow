@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { importCSVInteractions } from "@/utils/csvInteractionsImporter";
 import { Loader2, Upload } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ImportInteractions() {
   const [importing, setImporting] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -17,9 +19,16 @@ export default function ImportInteractions() {
       const content = await file.text();
       const result = await importCSVInteractions(content);
       
+      // Invalidate all contact-related queries to refresh with updated most_recent_contact and follow_up_date
+      queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+      queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
+      queryClient.invalidateQueries({ queryKey: ['contact-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['interaction-stats'] });
+      
       toast({
         title: "Success",
-        description: `Imported ${result.inserted} of ${result.total} interactions (${result.failed} failed)`,
+        description: `Imported ${result.inserted} of ${result.total} interactions (${result.failed} failed). Contact data refreshed.`,
       });
     } catch (error: any) {
       console.error('Import error:', error);
