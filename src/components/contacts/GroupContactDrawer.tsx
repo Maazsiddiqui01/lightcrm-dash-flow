@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Users, Calendar, Target, ExternalLink, Clock, Edit, Save, X, Trash2, UserMinus } from "lucide-react";
+import { Mail, Users, Calendar, Target, ExternalLink, Clock, Edit, Save, X, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ import { GroupNotesSection } from "./GroupNotesSection";
 import { useDeleteGroup } from "@/hooks/useDeleteGroup";
 import { useRemoveContactFromGroup } from "@/hooks/useRemoveContactFromGroup";
 import { Label } from "@/components/ui/label";
+import { AddMemberToGroupModal } from "./AddMemberToGroupModal";
 
 interface GroupContactDrawerProps {
   group: GroupContactView | null;
@@ -43,6 +44,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const [editedGroupSector, setEditedGroupSector] = useState<string>('');
   const [editedRoles, setEditedRoles] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
 
   // Group notes hook - use group_id from the new schema
   const {
@@ -116,10 +118,13 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
       setEditedGroupSector('');
       setEditedRoles({});
       
-      // Invalidate both group contacts view and individual contacts queries
-      queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      // Invalidate all relevant queries for synchronization
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['contact-groups'] });
       queryClient.invalidateQueries({ queryKey: ['group-members-new'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+      queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
       onUpdate?.();
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -239,6 +244,10 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                   <Button onClick={() => setEditMode(true)} variant="outline" size="sm">
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
+                  </Button>
+                  <Button onClick={() => setShowAddMemberModal(true)} variant="outline" size="sm">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Member
                   </Button>
                   <Button onClick={handleSendEmail} size="sm">
                     <Mail className="h-4 w-4 mr-2" />
@@ -522,6 +531,21 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
           />
         </div>
       </SheetContent>
+
+      {/* Add Member Modal */}
+      <AddMemberToGroupModal
+        groupId={group.group_id}
+        groupName={group.group_name}
+        open={showAddMemberModal}
+        onOpenChange={setShowAddMemberModal}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+          queryClient.invalidateQueries({ queryKey: ['group-members-new', group.group_id] });
+          queryClient.invalidateQueries({ queryKey: ['contacts'] });
+          queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
+          onUpdate?.();
+        }}
+      />
     </Sheet>
   );
 }

@@ -12,6 +12,7 @@ import { sendContactEmail } from "@/features/contacts/sendEmail";
 import { sendGroupEmail } from "@/features/contacts/sendGroupEmail";
 import { supabase } from "@/integrations/supabase/client";
 import type { GroupContactView } from "@/types/contact";
+import { useQueryClient } from "@tanstack/react-query";
 
 function parseFlexibleDate(dateInput: any): Date | null {
   if (!dateInput) return null;
@@ -24,6 +25,7 @@ function parseFlexibleDate(dateInput: any): Date | null {
 }
 
 export function AllContactsTable() {
+  const queryClient = useQueryClient();
   const { data: contacts, isLoading, error } = useAllContactsView();
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -371,8 +373,10 @@ export function AllContactsTable() {
             setSelectedContact(null);
           }}
           onContactUpdated={() => {
-            // Refetch contacts view
-            window.location.reload();
+            // Invalidate all views for sync
+            queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
+            queryClient.invalidateQueries({ queryKey: ['contacts'] });
+            queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
           }}
         />
       )}
@@ -388,8 +392,10 @@ export function AllContactsTable() {
             }
           }}
           onUpdate={() => {
-            // Refetch contacts view
-            window.location.reload();
+            // Invalidate all views for sync
+            queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
+            queryClient.invalidateQueries({ queryKey: ['contacts'] });
+            queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
           }}
         />
       )}

@@ -22,10 +22,13 @@ export function useRemoveContactFromGroup() {
     },
     onSuccess: (_, variables) => {
       toast.success('Contact removed from group');
+      // Invalidate all relevant queries for full synchronization
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['contact-groups', variables.contactId] });
       queryClient.invalidateQueries({ queryKey: ['group-members-new', variables.groupId] });
-      queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
+      queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
     },
     onError: (error: Error) => {
       toast.error(`Failed to remove contact from group: ${error.message}`);

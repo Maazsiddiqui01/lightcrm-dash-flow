@@ -4487,6 +4487,21 @@ export type Database = {
         }
         Returns: number
       }
+      search_contacts_for_group: {
+        Args: {
+          p_exclude_group_id: string
+          p_limit?: number
+          p_search_term: string
+        }
+        Returns: {
+          email_address: string
+          full_name: string
+          id: string
+          most_recent_contact: string
+          organization: string
+          title: string
+        }[]
+      }
       set_intentional_no_outreach: {
         Args: { p_action_type?: string; p_contact_id: string; p_note?: string }
         Returns: undefined
