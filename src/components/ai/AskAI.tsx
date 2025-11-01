@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import DOMPurify from 'dompurify';
 import { 
   Bot, 
   Send, 
@@ -219,7 +220,15 @@ export function AskAI() {
     // Fallback: if data has format hints, handle them
     if (data?.rendered) {
       return (
-        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.rendered }} />
+        <div 
+          className="prose prose-sm max-w-none" 
+          dangerouslySetInnerHTML={{ 
+            __html: DOMPurify.sanitize(data.rendered, {
+              ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'a', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+              ALLOWED_ATTR: ['class', 'href', 'target', 'rel']
+            })
+          }} 
+        />
       );
     }
 
