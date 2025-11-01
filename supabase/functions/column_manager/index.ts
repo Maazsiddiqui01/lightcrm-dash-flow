@@ -20,6 +20,43 @@ interface ColumnOperation {
   fieldType?: string;
 }
 
+// Allowed SQL types - whitelist for security
+const ALLOWED_SQL_TYPES = [
+  'TEXT', 'INTEGER', 'BIGINT', 'BOOLEAN', 'UUID', 
+  'TIMESTAMP WITH TIME ZONE', 'DATE', 'JSONB', 'NUMERIC'
+];
+
+// Security: Validate identifier (table/column names) to prevent SQL injection
+function validateIdentifier(name: string): boolean {
+  // Only allow alphanumeric and underscores, must start with letter or underscore
+  return /^[a-z_][a-z0-9_]*$/i.test(name);
+}
+
+// Security: Validate that table exists in public schema
+async function validateTableExists(supabaseClient: any, tableName: string): Promise<boolean> {
+  const { data } = await supabaseClient
+    .from('information_schema.tables')
+    .select('table_name')
+    .eq('table_schema', 'public')
+    .eq('table_name', tableName)
+    .single();
+  
+  return !!data;
+}
+
+// Security: Validate column exists in table
+async function validateColumnExists(supabaseClient: any, tableName: string, columnName: string): Promise<boolean> {
+  const { data } = await supabaseClient
+    .from('information_schema.columns')
+    .select('column_name')
+    .eq('table_schema', 'public')
+    .eq('table_name', tableName)
+    .eq('column_name', columnName)
+    .single();
+  
+  return !!data;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -129,8 +166,27 @@ async function createColumn(supabaseClient: any, operation: ColumnOperation) {
     throw new Error('Column name and data type are required');
   }
 
+  // SECURITY: Validate identifiers to prevent SQL injection
+  if (!validateIdentifier(tableName)) {
+    throw new Error('Invalid table name: must contain only letters, numbers, and underscores');
+  }
+  if (!validateIdentifier(columnName)) {
+    throw new Error('Invalid column name: must contain only letters, numbers, and underscores');
+  }
+
+  // SECURITY: Verify table exists
+  if (!(await validateTableExists(supabaseClient, tableName))) {
+    throw new Error(`Table '${tableName}' does not exist`);
+  }
+
   // Map data type to SQL type
   const sqlType = mapDataTypeToSQL(dataType);
+  
+  // SECURITY: Validate SQL type against whitelist
+  if (!ALLOWED_SQL_TYPES.includes(sqlType)) {
+    throw new Error(`Invalid SQL type '${sqlType}'. Allowed types: ${ALLOWED_SQL_TYPES.join(', ')}`);
+  }
+
   const nullable = isNullable ? '' : 'NOT NULL';
   const defaultClause = defaultValue ? `DEFAULT ${defaultValue}` : '';
 
@@ -186,6 +242,22 @@ async function updateColumn(supabaseClient: any, operation: ColumnOperation) {
     throw new Error('Data type is required for update');
   }
 
+  // SECURITY: Validate identifiers to prevent SQL injection
+  if (!validateIdentifier(tableName)) {
+    throw new Error('Invalid table name: must contain only letters, numbers, and underscores');
+  }
+  if (!validateIdentifier(columnName)) {
+    throw new Error('Invalid column name: must contain only letters, numbers, and underscores');
+  }
+
+  // SECURITY: Verify table and column exist
+  if (!(await validateTableExists(supabaseClient, tableName))) {
+    throw new Error(`Table '${tableName}' does not exist`);
+  }
+  if (!(await validateColumnExists(supabaseClient, tableName, columnName))) {
+    throw new Error(`Column '${columnName}' does not exist in table '${tableName}'`);
+  }
+
   // Check if column is protected
   const { data: isProtected } = await supabaseClient
     .from('protected_columns')
@@ -199,6 +271,11 @@ async function updateColumn(supabaseClient: any, operation: ColumnOperation) {
   }
 
   const sqlType = mapDataTypeToSQL(dataType);
+
+  // SECURITY: Validate SQL type against whitelist
+  if (!ALLOWED_SQL_TYPES.includes(sqlType)) {
+    throw new Error(`Invalid SQL type '${sqlType}'. Allowed types: ${ALLOWED_SQL_TYPES.join(', ')}`);
+  }
 
   const alterSQL = `
     ALTER TABLE public.${tableName} 
@@ -246,6 +323,22 @@ async function updateColumn(supabaseClient: any, operation: ColumnOperation) {
 async function deleteColumn(supabaseClient: any, operation: ColumnOperation) {
   const { tableName, columnName } = operation;
 
+  // SECURITY: Validate identifiers to prevent SQL injection
+  if (!validateIdentifier(tableName)) {
+    throw new Error('Invalid table name: must contain only letters, numbers, and underscores');
+  }
+  if (!validateIdentifier(columnName)) {
+    throw new Error('Invalid column name: must contain only letters, numbers, and underscores');
+  }
+
+  // SECURITY: Verify table and column exist
+  if (!(await validateTableExists(supabaseClient, tableName))) {
+    throw new Error(`Table '${tableName}' does not exist`);
+  }
+  if (!(await validateColumnExists(supabaseClient, tableName, columnName))) {
+    throw new Error(`Column '${columnName}' does not exist in table '${tableName}'`);
+  }
+
   // Check if column is protected
   const { data: isProtected } = await supabaseClient
     .from('protected_columns')
@@ -292,6 +385,25 @@ async function renameColumn(supabaseClient: any, operation: ColumnOperation) {
 
   if (!newColumnName) {
     throw new Error('New column name is required');
+  }
+
+  // SECURITY: Validate identifiers to prevent SQL injection
+  if (!validateIdentifier(tableName)) {
+    throw new Error('Invalid table name: must contain only letters, numbers, and underscores');
+  }
+  if (!validateIdentifier(columnName)) {
+    throw new Error('Invalid column name: must contain only letters, numbers, and underscores');
+  }
+  if (!validateIdentifier(newColumnName)) {
+    throw new Error('Invalid new column name: must contain only letters, numbers, and underscores');
+  }
+
+  // SECURITY: Verify table and column exist
+  if (!(await validateTableExists(supabaseClient, tableName))) {
+    throw new Error(`Table '${tableName}' does not exist`);
+  }
+  if (!(await validateColumnExists(supabaseClient, tableName, columnName))) {
+    throw new Error(`Column '${columnName}' does not exist in table '${tableName}'`);
   }
 
   // Check if column is protected
