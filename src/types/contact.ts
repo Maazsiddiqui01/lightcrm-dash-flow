@@ -68,6 +68,9 @@ export interface ContactBase {
   intentional_no_outreach: boolean | null;
   intentional_no_outreach_date: string | null;
   intentional_no_outreach_note: string | null;
+  follow_up_days: number | null;
+  follow_up_recency_threshold: number | null;
+  follow_up_date: string | null;
   assigned_to: string | null;
   created_by: string | null;
   organization_id: string | null;

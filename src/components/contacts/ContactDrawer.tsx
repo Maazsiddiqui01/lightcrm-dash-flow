@@ -74,6 +74,9 @@ interface ContactRaw {
   most_recent_group_contact: string | null;
   of_emails: number | null;
   of_meetings: number | null;
+  follow_up_days: number | null;
+  follow_up_recency_threshold: number | null;
+  follow_up_date: string | null;
 }
 
 interface ContactApp {
@@ -1037,6 +1040,103 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                   </div>
                 </div>
               )}
+            </div>
+
+            <Separator />
+
+            {/* Follow-Up Configuration Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <h3 className="text-lg font-semibold">Follow-Up Settings</h3>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {/* Follow-Up Days */}
+                <div className="space-y-2">
+                  <Label htmlFor="follow_up_days">Follow-Up Days</Label>
+                  <Input
+                    id="follow_up_days"
+                    type="number"
+                    min="0"
+                    value={contactData.follow_up_days ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseInt(e.target.value);
+                      updateField("follow_up_days", value);
+                    }}
+                    placeholder="7"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Days after last contact to schedule follow-up. Set to 0 to disable.
+                  </p>
+                </div>
+                
+                {/* Follow-Up Date (Read-Only) */}
+                <div className="space-y-2">
+                  <Label>Follow-Up Date (Auto-Calculated)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={contactData.follow_up_date ? format(parseFlexibleDate(contactData.follow_up_date)!, 'MMM d, yyyy') : '—'}
+                      readOnly
+                      className="bg-muted cursor-not-allowed"
+                    />
+                    {contactData.follow_up_date && (
+                      <Badge variant={
+                        new Date(contactData.follow_up_date) < new Date() ? 'destructive' : 
+                        new Date(contactData.follow_up_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'default' : 
+                        'secondary'
+                      }>
+                        {new Date(contactData.follow_up_date) < new Date() ? 'Past' :
+                         new Date(contactData.follow_up_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'This Week' :
+                         'Future'}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {!contactData.follow_up_date && contactData.follow_up_days && contactData.follow_up_days > 0 ? (
+                      <span className="text-amber-600">⚠️ No follow-up date: contact may be too old or follow-up date is in the past</span>
+                    ) : (
+                      'Automatically calculated based on follow-up days'
+                    )}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Advanced: Recency Threshold (Collapsible) */}
+              <details className="group">
+                <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                  <ChevronDown className="h-3 w-3 group-open:rotate-180 transition-transform" />
+                  Advanced: Recency Threshold
+                </summary>
+                <div className="mt-3 space-y-2">
+                  <Label htmlFor="follow_up_recency_threshold">Max Contact Age (Days)</Label>
+                  <Input
+                    id="follow_up_recency_threshold"
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={contactData.follow_up_recency_threshold ?? 15}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 15;
+                      updateField("follow_up_recency_threshold", value);
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Only schedule follow-ups if last contact was within this many days. Default: 15.
+                  </p>
+                </div>
+              </details>
+              
+              {/* Explanation Box */}
+              <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-3 rounded border border-blue-200 dark:border-blue-800">
+                <strong>How it works:</strong>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>Follow-up date = Last contact + Follow-up days</li>
+                  <li>Only shows if last contact is within {contactData.follow_up_recency_threshold || 15} days</li>
+                  <li>Blanks out if calculated date is in the past</li>
+                  <li>Set days to 0 to disable follow-ups</li>
+                </ul>
+              </div>
             </div>
 
             <Separator />

@@ -373,6 +373,29 @@ export const editableColumns: EditableConfig = {
     },
     contact_type: { type: 'text' },
     intentional_no_outreach: { type: 'boolean' },
+    // Follow-up configuration
+    follow_up_days: { 
+      type: 'number', 
+      validation: (value: any) => {
+        if (value === '' || value === null || value === undefined) return null;
+        const num = Number(value);
+        if (isNaN(num)) return 'Must be a valid number';
+        if (num < 0) return 'Must be 0 or greater';
+        return null;
+      }
+    },
+    follow_up_recency_threshold: {
+      type: 'number',
+      validation: (value: any) => {
+        if (value === '' || value === null || value === undefined) return null;
+        const num = Number(value);
+        if (isNaN(num)) return 'Must be a valid number';
+        if (num < 1) return 'Must be at least 1 day';
+        if (num > 365) return 'Must be less than 365 days';
+        return null;
+      }
+    },
+    // follow_up_date is READ-ONLY (computed via trigger)
   },
   opportunities_raw: {
     deal_name: { type: 'text', required: true },
@@ -491,5 +514,5 @@ export const getNonEditableColumns = (): string[] => {
 
 // Get columns that should be hidden by default
 export const getHiddenByDefaultColumns = (): string[] => {
-  return ['id', 'created_at', 'updated_at', 'intentional_no_outreach_date', 'intentional_no_outreach_note'];
+  return ['id', 'created_at', 'updated_at', 'intentional_no_outreach_date', 'intentional_no_outreach_note', 'follow_up_recency_threshold'];
 };

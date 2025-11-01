@@ -1145,6 +1145,9 @@ export type Database = {
           email_subject: string | null
           email_to: string | null
           first_name: string | null
+          follow_up_date: string | null
+          follow_up_days: number | null
+          follow_up_recency_threshold: number | null
           full_name: string | null
           group_contact: string | null
           group_delta: number | null
@@ -1217,6 +1220,9 @@ export type Database = {
           email_subject?: string | null
           email_to?: string | null
           first_name?: string | null
+          follow_up_date?: string | null
+          follow_up_days?: number | null
+          follow_up_recency_threshold?: number | null
           full_name?: string | null
           group_contact?: string | null
           group_delta?: number | null
@@ -1289,6 +1295,9 @@ export type Database = {
           email_subject?: string | null
           email_to?: string | null
           first_name?: string | null
+          follow_up_date?: string | null
+          follow_up_days?: number | null
+          follow_up_recency_threshold?: number | null
           full_name?: string | null
           group_contact?: string | null
           group_delta?: number | null
@@ -4111,6 +4120,14 @@ export type Database = {
           assistants: string
           leads: string
         }[]
+      }
+      calculate_follow_up_date: {
+        Args: {
+          p_follow_up_days: number
+          p_follow_up_recency_threshold: number
+          p_most_recent_contact: string
+        }
+        Returns: string
       }
       canonical_focus_area: { Args: { input_text: string }; Returns: string }
       compute_ebitda_range: {
