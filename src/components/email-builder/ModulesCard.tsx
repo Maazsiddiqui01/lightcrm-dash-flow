@@ -88,8 +88,8 @@ export function getModuleDefaultsFromMaster(masterKey: string, masterTemplates: 
     suggested_talking_points: defaults.suggested_talking_points || 'always',
     addons: defaults.addons || 'always',
     general_org_update: defaults.general_org_update || 'always',
-    meeting_request: defaults.meeting_request || 'sometimes',
-    closing_line: defaults.closing_line || 'sometimes',
+    meeting_request: defaults.meeting_request || 'always',
+    closing_line: defaults.closing_line || 'always',
   };
 }
 
@@ -105,8 +105,8 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     suggested_talking_points: 'always',
     addons: 'always',
     general_org_update: 'always',
-    meeting_request: 'sometimes',
-    closing_line: 'sometimes',
+    meeting_request: 'always',
+    closing_line: 'always',
   },
   business_development: {
     subject_line: 'always',
@@ -118,8 +118,8 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     suggested_talking_points: 'always',
     addons: 'always',
     general_org_update: 'always',
-    meeting_request: 'sometimes',
-    closing_line: 'sometimes',
+    meeting_request: 'always',
+    closing_line: 'always',
   },
   hybrid_neutral: {
     subject_line: 'always',
@@ -131,8 +131,8 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     suggested_talking_points: 'always',
     addons: 'always',
     general_org_update: 'always',
-    meeting_request: 'sometimes',
-    closing_line: 'sometimes',
+    meeting_request: 'always',
+    closing_line: 'always',
   },
 };
 
