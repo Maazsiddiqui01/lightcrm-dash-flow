@@ -36,6 +36,6 @@ export const DEFAULT_MODULE_STATES: ModuleStates = {
   suggested_talking_points: 'always',
   addons: 'always',
   general_org_update: 'always',
-  meeting_request: 'sometimes',
-  closing_line: 'sometimes',
+  meeting_request: 'always',
+  closing_line: 'always',
 };

@@ -18,6 +18,7 @@ import { buildModuleConfiguration, buildContentFlow } from './draftGeneration';
 import { supabase } from '@/integrations/supabase/client';
 import { buildModuleSequence } from './modulePositions';
 import { interpolateContent } from './contentInterpolation';
+import { pickRandomPhrase, generateSeed } from './randomization';
 
 export interface EnhancedDraftPayload {
   // Core contact info
@@ -234,15 +235,74 @@ export async function buildEnhancedDraftPayload(
     return createFailedPayload(contact, generation.qualityCheck.reason || 'Quality control failed');
   }
 
-  // Resolve phrases for enabled modules
+  // Generate seed for consistent randomization per draft session
+  const draftSeed = generateSeed(contact.contact_id);
+  
+  // Resolve phrases for enabled modules with auto-randomization
   const resolvedPhrases: Record<string, string> = {};
   const phraseIds: string[] = [];
   
+  // Module to category mapping
+  const MODULE_LIBRARY_MAP: Record<string, string> = {
+    initial_greeting: 'greeting',
+    self_personalization: 'self_personalization',
+    top_opportunities: 'top_opportunities',
+    article_recommendations: 'article_recommendation',
+    platforms: 'platforms',
+    addons: 'addons',
+    suggested_talking_points: 'talking_points',
+    general_org_update: 'general_org_update',
+    meeting_request: 'meeting_request',
+    closing_line: 'closing_line',
+  };
+  
+  let moduleIndex = 0;
   for (const [moduleName, phrase] of Object.entries(generation.phrases)) {
+    // Check if user has manually selected a phrase for this module
+    const selection = moduleSelections?.[moduleName];
+    
+    if (selection?.phraseId) {
+      // User selected a specific phrase - use it exactly
+      const savedPhrase = allPhrases.find(p => p.id === selection.phraseId);
+      if (savedPhrase) {
+        resolvedPhrases[moduleName] = savedPhrase.phrase_text;
+        phraseIds.push(savedPhrase.id);
+        moduleIndex++;
+        continue;
+      }
+    }
+    
+    // No manual selection - apply auto-randomization
     if (phrase) {
+      // Use phrase from buildModuleConfiguration (which already selected one)
       resolvedPhrases[moduleName] = phrase.phrase_text;
       phraseIds.push(phrase.id);
+    } else {
+      // Fallback: pick random phrase from library for this module
+      const category = MODULE_LIBRARY_MAP[moduleName];
+      if (category) {
+        let candidatePhrases = allPhrases.filter(p => 
+          p.category === category &&
+          p.tri_state !== 'never'
+        );
+        
+        // Apply tone filtering for greeting modules
+        if (moduleName === 'initial_greeting' && effectiveTone) {
+          candidatePhrases = candidatePhrases.filter(p => 
+            p.style === effectiveTone || p.style === 'hybrid'
+          );
+        }
+        
+        // Pick random phrase with seeded RNG
+        const randomPhrase = pickRandomPhrase(candidatePhrases, draftSeed + moduleIndex);
+        if (randomPhrase) {
+          resolvedPhrases[moduleName] = randomPhrase.phrase_text;
+          phraseIds.push(randomPhrase.id);
+        }
+      }
     }
+    
+    moduleIndex++;
   }
 
   // Resolve inquiry

@@ -13,6 +13,7 @@ import type { ModuleSelections } from '@/types/moduleSelections';
 import type { TeamMember } from '@/components/email-builder/EditableTeam';
 import { DEFAULT_MODULE_ORDER } from '@/config/moduleDefaults';
 import { MODULE_LIBRARY_MAP, SINGLE_SELECT_MODULES, MULTI_SELECT_MODULES } from '@/config/moduleCategoryMap';
+import { pickRandomPhrase, generateSeed } from '@/lib/randomization';
 
 /**
  * Enhanced hook for generating email drafts from the Contacts table
@@ -188,11 +189,15 @@ export function useContactDraftGenerator() {
       // Step 7.5: Auto-select phrases for modules if no saved selections
       const effectiveModuleSelections: ModuleSelections = { ...contactModuleSelections };
       
-      // Implement auto-selection logic (matches useAutoSelectPhrases hook)
+      // Implement auto-selection logic with randomization
       if (Object.keys(contactModuleSelections).length === 0) {
-        console.log('🎯 Auto-selecting phrases for contact with no saved selections...');
+        console.log('🎯 Auto-selecting random phrases for contact with no saved selections...');
+        
+        // Generate seed for this contact
+        const seed = generateSeed(contactId);
         
         // Auto-select for single-select modules
+        let moduleIndex = 0;
         SINGLE_SELECT_MODULES.forEach((moduleKey) => {
           const category = MODULE_LIBRARY_MAP[moduleKey];
           if (!category) return;
@@ -201,19 +206,22 @@ export function useContactDraftGenerator() {
           if (moduleKey === 'subject_line') {
             const subjectPhrases = allPhrases.filter(p => p.category === 'subject');
             const filteredSubjects = effectiveToneOverride
-              ? subjectPhrases.filter(p => (p as any).style === effectiveToneOverride)
+              ? subjectPhrases.filter(p => (p as any).style === effectiveToneOverride || (p as any).style === 'hybrid')
               : subjectPhrases;
 
             if (filteredSubjects.length > 0) {
-              const firstSubject = filteredSubjects[0];
-              effectiveModuleSelections.subject_line = {
-                type: 'phrase',
-                category: 'subject',
-                phraseId: firstSubject.id,
-                phraseText: firstSubject.phrase_text,
-              };
-              console.log(`✅ Auto-selected subject (tone: ${effectiveToneOverride}):`, firstSubject.phrase_text.substring(0, 50));
+              const randomSubject = pickRandomPhrase(filteredSubjects, seed + moduleIndex);
+              if (randomSubject) {
+                effectiveModuleSelections.subject_line = {
+                  type: 'phrase',
+                  category: 'subject',
+                  phraseId: randomSubject.id,
+                  phraseText: randomSubject.phrase_text,
+                };
+                console.log(`✅ Auto-selected random subject (tone: ${effectiveToneOverride}):`, randomSubject.phrase_text.substring(0, 50));
+              }
             }
+            moduleIndex++;
             return;
           }
 
@@ -222,25 +230,24 @@ export function useContactDraftGenerator() {
           if (categoryPhrases.length === 0) return;
 
           // Filter by tri-state (respecting global tri_state from phrase_library)
-          const availablePhrases = categoryPhrases.filter(phrase => {
-            if (phrase.tri_state === 'never') return false;
-            if (phrase.tri_state === 'always') return true;
-            return Math.random() > 0.5; // 50% chance for "sometimes"
-          });
+          const availablePhrases = categoryPhrases.filter(phrase => phrase.tri_state !== 'never');
 
           const phrasesToUse = availablePhrases.length > 0 ? availablePhrases : categoryPhrases;
-          const firstPhrase = phrasesToUse[0];
+          const randomPhrase = pickRandomPhrase(phrasesToUse, seed + moduleIndex);
           
-          effectiveModuleSelections[moduleKey] = {
-            type: 'phrase',
-            category,
-            phraseId: firstPhrase.id,
-            phraseText: firstPhrase.phrase_text,
-          };
-          console.log(`✅ Auto-selected phrase for ${moduleKey}:`, firstPhrase.phrase_text.substring(0, 50));
+          if (randomPhrase) {
+            effectiveModuleSelections[moduleKey] = {
+              type: 'phrase',
+              category,
+              phraseId: randomPhrase.id,
+              phraseText: randomPhrase.phrase_text,
+            };
+            console.log(`✅ Auto-selected random phrase for ${moduleKey}:`, randomPhrase.phrase_text.substring(0, 50));
+          }
+          moduleIndex++;
         });
 
-        // Auto-select for multi-select modules (select 1 phrase each)
+        // Auto-select for multi-select modules (select random phrases)
         MULTI_SELECT_MODULES.forEach((moduleKey) => {
           const category = MODULE_LIBRARY_MAP[moduleKey];
           if (!category) return;
@@ -248,22 +255,16 @@ export function useContactDraftGenerator() {
           const categoryPhrases = allPhrases.filter(p => p.category === category);
           if (categoryPhrases.length === 0) return;
 
-          const availablePhrases = categoryPhrases.filter(phrase => {
-            if (phrase.tri_state === 'never') return false;
-            if (phrase.tri_state === 'always') return true;
-            return Math.random() > 0.5;
-          });
+          const availablePhrases = categoryPhrases.filter(phrase => phrase.tri_state !== 'never');
 
           const phrasesToUse = availablePhrases.length > 0 ? availablePhrases : categoryPhrases;
-          const firstPhrase = phrasesToUse[0];
           
           effectiveModuleSelections[moduleKey] = {
             type: 'phrase',
             category,
-            phraseId: firstPhrase.id,
-            phraseText: firstPhrase.phrase_text,
+            phraseIds: phrasesToUse.map(p => p.id),
           };
-          console.log(`✅ Auto-selected phrase for ${moduleKey}:`, firstPhrase.phrase_text.substring(0, 50));
+          console.log(`✅ Auto-selected ${phrasesToUse.length} phrases for ${moduleKey}`);
         });
       } else {
         console.log('✅ Using saved module selections from contact settings');
