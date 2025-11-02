@@ -7,14 +7,14 @@ import { IntentionalNoOutreachModal } from "./IntentionalNoOutreachModal";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2 } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useDeleteContact } from "@/hooks/useDeleteContact";
 import { exportCsv } from "@/lib/export/exportService";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { sendContactEmail } from "@/features/contacts/sendEmail";
+import { useContactDraftGenerator } from "@/hooks/useContactDraftGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import type { ContactWithOpportunities, ContactFilters } from "@/types/contact";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -87,6 +87,9 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     isBulk: boolean;
   }>({ open: false, contactIds: [], contactNames: [], isBulk: false });
   const { toast } = useToast();
+  
+  // Use unified draft generator
+  const { generateDraft, isGenerating: isDraftGenerating } = useContactDraftGenerator();
   
   const { deleteContact, deleteBulk, isDeleting } = useDeleteContact({
     onSuccess: () => {
@@ -186,22 +189,9 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     );
   }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility]);
 
-  // Handle send email
+  // Handle draft email generation
   const handleSendContactEmail = async (contactId: string) => {
-    try {
-      await sendContactEmail(contactId);
-      toast({
-        title: "Success",
-        description: "Contact email sent successfully",
-      });
-    } catch (error) {
-      console.error('Error sending contact email:', error);
-      toast({
-        title: "Error",
-        description: "Failed to send contact email",
-        variant: "destructive",
-      });
-    }
+    await generateDraft(contactId);
   };
   
   // Create column options for sort dialog
@@ -292,8 +282,13 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
                   e.stopPropagation();
                   handleSendContactEmail(row.id);
                 }}
+                disabled={isDraftGenerating}
               >
-                <Mail className="mr-2 h-4 w-4" />
+                {isDraftGenerating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Mail className="mr-2 h-4 w-4" />
+                )}
                 Draft Email
               </DropdownMenuItem>
               <DropdownMenuItem 

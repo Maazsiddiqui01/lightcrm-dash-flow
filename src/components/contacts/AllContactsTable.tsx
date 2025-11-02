@@ -3,12 +3,12 @@ import { useAllContactsView, AllContactView } from "@/hooks/useAllContactsView";
 import { ResponsiveAdvancedTable, ColumnDef } from "@/components/shared/ResponsiveAdvancedTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Mail, User, Users, Calendar } from "lucide-react";
+import { Eye, Mail, User, Users, Calendar, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ContactDrawer } from "./ContactDrawer";
 import { GroupContactDrawer } from "./GroupContactDrawer";
 import { toast } from "sonner";
-import { sendContactEmail } from "@/features/contacts/sendEmail";
+import { useContactDraftGenerator } from "@/hooks/useContactDraftGenerator";
 import { sendGroupEmail } from "@/features/contacts/sendGroupEmail";
 import { supabase } from "@/integrations/supabase/client";
 import type { GroupContactView } from "@/types/contact";
@@ -34,6 +34,9 @@ export function AllContactsTable() {
   const [selectedGroup, setSelectedGroup] = useState<GroupContactView | null>(null);
   const [loadingContact, setLoadingContact] = useState(false);
   const [loadingGroup, setLoadingGroup] = useState(false);
+  
+  // Use unified draft generator
+  const { generateDraft, isGenerating: isDraftGenerating } = useContactDraftGenerator();
 
   // Fetch individual contact when selected
   useEffect(() => {
@@ -137,8 +140,8 @@ export function AllContactsTable() {
         await sendGroupEmail(row.id);
         toast.success("Group email workflow triggered successfully");
       } else {
-        await sendContactEmail(row.id);
-        toast.success("Email workflow triggered successfully");
+        await generateDraft(row.id);
+        // Toast is handled by the hook
       }
     } catch (error) {
       console.error('Failed to send email:', error);
@@ -328,8 +331,13 @@ export function AllContactsTable() {
               e.stopPropagation();
               handleSendEmail(row);
             }}
+            disabled={isDraftGenerating && row.contact_type === 'individual'}
           >
-            <Mail className="h-4 w-4" />
+            {isDraftGenerating && row.contact_type === 'individual' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Mail className="h-4 w-4" />
+            )}
           </Button>
         </div>
       ),
