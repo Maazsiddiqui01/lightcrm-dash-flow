@@ -78,18 +78,20 @@ export function getModuleDefaultsFromMaster(masterKey: string, masterTemplates: 
   
   const defaults = template.default_modules;
   
+  // Enforce ALL modules to default to 'always' for new contacts
+  // This override ensures consistent defaults regardless of DB template values
   return {
-    subject_line: defaults.subject_line || 'always',
-    initial_greeting: defaults.initial_greeting || 'always',
-    self_personalization: defaults.self_personalization || 'always',
-    article_recommendations: defaults.article_recommendations || 'sometimes',
-    top_opportunities: defaults.top_opportunities || 'sometimes',
-    platforms: defaults.platforms || 'always',
-    suggested_talking_points: defaults.suggested_talking_points || 'always',
-    addons: defaults.addons || 'always',
-    general_org_update: defaults.general_org_update || 'always',
-    meeting_request: defaults.meeting_request || 'always',
-    closing_line: defaults.closing_line || 'always',
+    subject_line: 'always',
+    initial_greeting: 'always',
+    self_personalization: 'always',
+    article_recommendations: 'always',
+    top_opportunities: 'always',
+    platforms: 'always',
+    suggested_talking_points: 'always',
+    addons: 'always',
+    general_org_update: 'always',
+    meeting_request: 'always',
+    closing_line: 'always',
   };
 }
 
@@ -99,8 +101,8 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
-    article_recommendations: 'sometimes',
-    top_opportunities: 'sometimes',
+    article_recommendations: 'always',
+    top_opportunities: 'always',
     platforms: 'always',
     suggested_talking_points: 'always',
     addons: 'always',
@@ -112,8 +114,8 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
-    article_recommendations: 'sometimes',
-    top_opportunities: 'sometimes',
+    article_recommendations: 'always',
+    top_opportunities: 'always',
     platforms: 'always',
     suggested_talking_points: 'always',
     addons: 'always',
@@ -125,8 +127,8 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
-    article_recommendations: 'sometimes',
-    top_opportunities: 'sometimes',
+    article_recommendations: 'always',
+    top_opportunities: 'always',
     platforms: 'always',
     suggested_talking_points: 'always',
     addons: 'always',

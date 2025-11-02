@@ -133,14 +133,14 @@ function EmailBuilderContent() {
     subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
-    article_recommendations: 'sometimes',
-    top_opportunities: 'sometimes',
+    article_recommendations: 'always',
+    top_opportunities: 'always',
     platforms: 'always',
     suggested_talking_points: 'always',
     addons: 'always',
     general_org_update: 'always',
-    meeting_request: 'sometimes',
-    closing_line: 'sometimes',
+    meeting_request: 'always',
+    closing_line: 'always',
   });
   
   // Module order state
