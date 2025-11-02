@@ -41,6 +41,7 @@ interface PhraseSelectorGenericProps {
   moduleKey?: string;
   subjectStyle?: 'formal' | 'hybrid' | 'casual';
   focusedContactId?: string | null;
+  hidePreview?: boolean;
 }
 
 export function PhraseSelectorGeneric({
@@ -59,6 +60,7 @@ export function PhraseSelectorGeneric({
   moduleKey = '',
   subjectStyle = 'hybrid',
   focusedContactId,
+  hidePreview = false,
 }: PhraseSelectorGenericProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -345,7 +347,7 @@ export function PhraseSelectorGeneric({
   const isDeletingDefault = deletingPhraseId === defaultPhraseId;
 
   return (
-    <div className="grid grid-cols-2 gap-4 h-full">
+    <div className={cn("grid gap-4 h-full", hidePreview ? "grid-cols-1" : "grid-cols-2")}>
       {/* Left: Phrase List */}
       <div className="space-y-4">
         {/* Action Toolbar */}
@@ -537,53 +539,55 @@ export function PhraseSelectorGeneric({
       </div>
 
       {/* Right: Preview */}
-      <div className="space-y-4">
-        <div className="text-sm font-medium">Preview</div>
-        
-        {selectedPhrases.length > 0 ? (
-          <div className="space-y-3">
-            {selectedPhrases.map((phrase, index) => {
-              const variables = extractVariables(phrase.phrase_text);
-              const preview = interpolatePreview(phrase.phrase_text);
-              
-              return (
-                <div key={phrase.id} className="p-3 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
-                  {multiSelect && selectedPhrases.length > 1 && (
-                    <div className="text-xs font-medium text-muted-foreground">
-                      {index + 1}. {categoryLabel}
-                    </div>
-                  )}
-                  
-                  {variables.length > 0 && (
-                    <div className="space-y-1">
-                      <div className="text-xs text-muted-foreground">Template:</div>
-                      <p className="text-sm font-mono">{phrase.phrase_text}</p>
-                      <div className="flex gap-1 flex-wrap">
-                        {variables.map(variable => (
-                          <Badge key={variable} variant="secondary" className="text-xs font-mono">
-                            {`{${variable}}`}
-                          </Badge>
-                        ))}
+      {!hidePreview && (
+        <div className="space-y-4">
+          <div className="text-sm font-medium">Preview</div>
+          
+          {selectedPhrases.length > 0 ? (
+            <div className="space-y-3">
+              {selectedPhrases.map((phrase, index) => {
+                const variables = extractVariables(phrase.phrase_text);
+                const preview = interpolatePreview(phrase.phrase_text);
+                
+                return (
+                  <div key={phrase.id} className="p-3 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
+                    {multiSelect && selectedPhrases.length > 1 && (
+                      <div className="text-xs font-medium text-muted-foreground">
+                        {index + 1}. {categoryLabel}
                       </div>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-1">
-                    {variables.length > 0 && (
-                      <div className="text-xs text-muted-foreground">Example:</div>
                     )}
-                    <p className="text-sm">{preview}</p>
+                    
+                    {variables.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Template:</div>
+                        <p className="text-sm font-mono">{phrase.phrase_text}</p>
+                        <div className="flex gap-1 flex-wrap">
+                          {variables.map(variable => (
+                            <Badge key={variable} variant="secondary" className="text-xs font-mono">
+                              {`{${variable}}`}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="space-y-1">
+                      {variables.length > 0 && (
+                        <div className="text-xs text-muted-foreground">Example:</div>
+                      )}
+                      <p className="text-sm">{preview}</p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="p-4 border border-dashed rounded-lg text-center text-sm text-muted-foreground">
-            {multiSelect ? 'Select phrases to preview' : 'Select a phrase to preview'}
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-4 border border-dashed rounded-lg text-center text-sm text-muted-foreground">
+              {multiSelect ? 'Select phrases to preview' : 'Select a phrase to preview'}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

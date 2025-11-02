@@ -53,6 +53,7 @@ export function ArticleRecommendationSelector({
       onDefaultToggle={onDefaultToggle}
       moduleKey="article_recommendations"
       focusedContactId={focusedContactId}
+      hidePreview={true}
     />
   );
 }
