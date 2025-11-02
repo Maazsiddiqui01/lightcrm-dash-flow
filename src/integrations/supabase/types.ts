@@ -1139,7 +1139,7 @@ export type Database = {
           days_since_last_meeting: number | null
           delta: number | null
           delta_type: string | null
-          email_address: string | null
+          email_address: string
           email_cc: string | null
           email_from: string | null
           email_subject: string | null
@@ -1214,7 +1214,7 @@ export type Database = {
           days_since_last_meeting?: number | null
           delta?: number | null
           delta_type?: string | null
-          email_address?: string | null
+          email_address: string
           email_cc?: string | null
           email_from?: string | null
           email_subject?: string | null
@@ -1289,7 +1289,7 @@ export type Database = {
           days_since_last_meeting?: number | null
           delta?: number | null
           delta_type?: string | null
-          email_address?: string | null
+          email_address?: string
           email_cc?: string | null
           email_from?: string | null
           email_subject?: string | null
@@ -4161,7 +4161,7 @@ export type Database = {
         Args: { p_email: string; p_note?: string }
         Returns: undefined
       }
-      dismiss_missing_contact: { Args: { p_email: string }; Returns: boolean }
+      dismiss_missing_contact: { Args: { p_email: string }; Returns: undefined }
       execute_admin_sql: { Args: { sql_statement: string }; Returns: Json }
       get_all_contacts_view: {
         Args: never
