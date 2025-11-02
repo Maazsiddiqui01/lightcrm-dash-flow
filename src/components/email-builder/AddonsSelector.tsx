@@ -41,6 +41,7 @@ export function AddonsSelector({
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
       allowInlineManagement={true}
+      hidePreview={true}
     />
   );
 }

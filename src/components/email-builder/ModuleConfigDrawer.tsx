@@ -118,6 +118,7 @@ export function ModuleConfigDrawer({
             subjectStyle={toneOverride || 'hybrid'}
             allowInlineManagement={true}
             focusedContactId={focusedContactId}
+            hidePreview={true}
           />
         );
       }
@@ -284,6 +285,7 @@ export function ModuleConfigDrawer({
             onDefaultToggle={handleDefaultToggle}
             allowInlineManagement={true}
             focusedContactId={focusedContactId}
+            hidePreview={true}
           />
         );
       

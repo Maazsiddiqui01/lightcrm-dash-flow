@@ -52,6 +52,7 @@ export function TopOpportunitiesSelector({
       onDefaultToggle={onDefaultToggle}
       moduleKey="top_opportunities"
       focusedContactId={focusedContactId}
+      hidePreview={true}
     />
   );
 }

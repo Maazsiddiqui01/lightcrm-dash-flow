@@ -43,6 +43,7 @@ export function AIBackupSelector({
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
       allowInlineManagement={true}
+      hidePreview={true}
     />
   );
 }

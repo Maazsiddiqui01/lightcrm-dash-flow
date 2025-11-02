@@ -49,6 +49,7 @@ export function SelfPersonalizationSelector({
       onDefaultToggle={onDefaultToggle}
       moduleKey="self_personalization"
       focusedContactId={focusedContactId}
+      hidePreview={true}
     />
   );
 }

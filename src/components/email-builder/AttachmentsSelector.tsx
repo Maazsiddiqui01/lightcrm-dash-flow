@@ -42,6 +42,7 @@ export function AttachmentsSelector({
       defaultPhraseId={defaultPhraseId}
       onDefaultToggle={onDefaultToggle}
       allowInlineManagement={true}
+      hidePreview={true}
     />
   );
 }

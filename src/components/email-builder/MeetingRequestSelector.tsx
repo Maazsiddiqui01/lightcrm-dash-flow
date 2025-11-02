@@ -46,6 +46,7 @@ export function MeetingRequestSelector({
       onDefaultToggle={onDefaultToggle}
       moduleKey="meeting_request"
       focusedContactId={focusedContactId}
+      hidePreview={true}
     />
   );
 }

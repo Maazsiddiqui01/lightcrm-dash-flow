@@ -36,6 +36,7 @@ export function PlatformsSelector({
       contactData={contactData}
       previewVariables={previewVariables}
       moduleKey="platforms"
+      hidePreview={true}
     />
   );
 }

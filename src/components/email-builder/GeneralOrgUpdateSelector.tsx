@@ -47,6 +47,7 @@ export function GeneralOrgUpdateSelector({
       onDefaultToggle={onDefaultToggle}
       moduleKey="general_org_update"
       focusedContactId={focusedContactId}
+      hidePreview={true}
     />
   );
 }

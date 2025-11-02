@@ -71,6 +71,7 @@ export function GreetingSelector({
       allowInlineManagement={true}
       moduleKey="initial_greeting"
       focusedContactId={focusedContactId}
+      hidePreview={true}
     />
   );
 }
