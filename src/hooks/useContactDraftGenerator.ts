@@ -32,17 +32,86 @@ export function useContactDraftGenerator() {
         .eq('contact_id', contactId)
         .maybeSingle();
 
-      // Step 3: Build payload with contact data and optional settings
+      // Step 3: Map v_contact_email_composer data to EnhancedDraftPayload structure
+      // Type guard for arrays from Json
+      const toArray = (val: any): any[] => Array.isArray(val) ? val : [];
+      
+      const faDescriptions = toArray(contact.fa_descriptions);
+      const opps = toArray(contact.opps);
+      const articles = toArray(contact.articles);
+      
       const payload = {
-        contact_id: contactId,
-        ...contact,
-        // Include settings if they exist
-        ...(contactSettings && {
-          module_states: contactSettings.module_states,
-          delta_type: contactSettings.delta_type,
-          module_selections: contactSettings.module_selections,
-          curated_recipients: contactSettings.curated_recipients,
-        }),
+        contact: {
+          id: contact.contact_id as string,
+          fullName: contact.full_name as string,
+          firstName: contact.first_name as string,
+          email: contact.email as string,
+          organization: (contact.organization as string) || '',
+          groupContact: null,
+          groupEmailRole: null,
+          assistantNames: toArray(contact.assistant_names),
+        },
+        groupMembers: null,
+        focusAreas: {
+          list: toArray(contact.focus_areas),
+          count: (contact.fa_count as number) || 0,
+          sectors: toArray(contact.fa_sectors),
+          descriptions: faDescriptions.map((d: any) => ({
+            focusArea: d.focus_area,
+            description: d.description,
+            platformType: d.platform_type,
+            sector: d.sector,
+          })),
+          platforms: [],
+          addons: [],
+        },
+        opportunities: {
+          top: opps.map((o: any) => ({
+            dealName: o.deal_name,
+            ebitda: o.ebitda_in_ms,
+          })),
+          count: opps.length,
+        },
+        articles: {
+          available: articles.map((a: any) => ({
+            focusArea: a.focus_area,
+            link: a.article_link,
+            lastDate: a.last_date_to_use,
+          })),
+          selected: null,
+        },
+        routing: {
+          masterKey: 'hybrid_neutral',
+          tone: 'hybrid',
+          subjectStyle: 'mixed',
+          deltaType: (contactSettings?.delta_type as string) || (contact.delta_type as string) || 'Email',
+          daysSinceContact: contact.most_recent_contact 
+            ? Math.floor((Date.now() - new Date(contact.most_recent_contact as string).getTime()) / 86400000)
+            : 999,
+        },
+        content: {
+          greeting: '',
+          signature: '',
+          assistantClause: '',
+        },
+        cc: {
+          leads: toArray(contact.lead_emails),
+          assistants: toArray(contact.assistant_emails),
+          final: [],
+        },
+        modules: contactSettings?.module_states || {},
+        flow: [],
+        moduleSequence: [],
+        modulesV2: [],
+        qualityCheck: {
+          pass: true,
+          reason: '',
+          checks: {},
+        },
+        tracking: {
+          phraseIds: [],
+          inquiryId: null,
+        },
       };
 
       // Step 4: Post to n8n via edge function
