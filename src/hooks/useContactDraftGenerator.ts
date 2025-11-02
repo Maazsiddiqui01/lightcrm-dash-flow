@@ -1,19 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useGlobalPhrases } from './usePhraseLibrary';
 import { useGlobalInquiries } from './useInquiryLibrary';
 import { useSubjectLibrary } from './useSubjectLibrary';
 import { useMasterTemplates } from './useMasterTemplates';
-import { useContactSettings } from './useContactSettings';
-import { useTemplateSettings } from './useTemplateSettings';
 import { buildEnhancedDraftPayload } from '@/lib/enhancedPayload';
 import { routeMaster } from '@/lib/router';
 import type { ContactEmailComposer } from '@/types/emailComposer';
-import type { MasterTemplateDefaults } from '@/types/phraseLibrary';
+import type { MasterTemplateDefaults, PhraseLibraryItem } from '@/types/phraseLibrary';
 import type { ModuleSelections } from '@/types/moduleSelections';
 import type { TeamMember } from '@/components/email-builder/EditableTeam';
 import { DEFAULT_MODULE_ORDER } from '@/config/moduleDefaults';
+import { MODULE_LIBRARY_MAP, SINGLE_SELECT_MODULES, MULTI_SELECT_MODULES } from '@/config/moduleCategoryMap';
 
 /**
  * Enhanced hook for generating email drafts from the Contacts table
@@ -151,7 +150,7 @@ export function useContactDraftGenerator() {
         }
       }
 
-      // Step 7: Get effective settings (from contact settings or template defaults)
+      // Step 7: Get effective settings
       // Parse Json fields properly
       const contactModuleStates = contactSettings?.module_states ? (typeof contactSettings.module_states === 'object' ? contactSettings.module_states : {}) : null;
       const templateModuleStates = templateDefaults?.module_states ? (typeof templateDefaults.module_states === 'object' ? templateDefaults.module_states : {}) : null;
@@ -160,17 +159,115 @@ export function useContactDraftGenerator() {
       const templateModuleOrder = templateDefaults?.module_order ? (Array.isArray(templateDefaults.module_order) ? templateDefaults.module_order as string[] : null) : null;
       
       const contactCuratedRecipients = contactSettings?.curated_recipients ? (typeof contactSettings.curated_recipients === 'object' ? contactSettings.curated_recipients as any : null) : null;
+      const contactModuleSelections = contactSettings?.module_selections && typeof contactSettings.module_selections === 'object'
+        ? (contactSettings.module_selections as Record<string, any>) as ModuleSelections
+        : {} as ModuleSelections;
       
+      // CRITICAL FIX: Tone, length, and subject pool are ONLY in template settings, NOT contact settings
       const effectiveToneOverride = templateDefaults?.tone_override as 'casual' | 'hybrid' | 'formal' | undefined;
-      const effectiveSubjectPoolOverride: string[] = [];
+      const effectiveLengthOverride = templateDefaults?.length_override as 'brief' | 'standard' | 'detailed' | undefined;
+      
+      // Extract subject pool override from template settings
+      const templateSubjectPool = templateDefaults?.subject_pool_override 
+        ? (Array.isArray(templateDefaults.subject_pool_override) 
+            ? templateDefaults.subject_pool_override as any[] 
+            : []) 
+        : [];
+      const effectiveSubjectPoolOverride = templateSubjectPool.map((item: any) => 
+        typeof item === 'string' ? item : item?.id || ''
+      ).filter(Boolean);
+      
       const effectiveModuleOrder = contactModuleOrder || templateModuleOrder || DEFAULT_MODULE_ORDER;
       const effectiveModuleStates = contactModuleStates || templateModuleStates || {};
-      const effectiveModuleSelections = {} as ModuleSelections; // Module selections not stored in DB, will use auto-selection
       const effectiveDeltaType = contactSettings?.delta_type || contact.delta_type || 'Email';
       
       // Recipients from curated_recipients Json field
       const effectiveCuratedTo = contactCuratedRecipients?.to || contact.email as string;
       const effectiveCuratedCc = contactCuratedRecipients?.cc || ccEmails;
+
+      // Step 7.5: Auto-select phrases for modules if no saved selections
+      const effectiveModuleSelections: ModuleSelections = { ...contactModuleSelections };
+      
+      // Implement auto-selection logic (matches useAutoSelectPhrases hook)
+      if (Object.keys(contactModuleSelections).length === 0) {
+        console.log('🎯 Auto-selecting phrases for contact with no saved selections...');
+        
+        // Auto-select for single-select modules
+        SINGLE_SELECT_MODULES.forEach((moduleKey) => {
+          const category = MODULE_LIBRARY_MAP[moduleKey];
+          if (!category) return;
+
+          // Special handling for subject_line
+          if (moduleKey === 'subject_line') {
+            const subjectPhrases = allPhrases.filter(p => p.category === 'subject');
+            const filteredSubjects = effectiveToneOverride
+              ? subjectPhrases.filter(p => (p as any).style === effectiveToneOverride)
+              : subjectPhrases;
+
+            if (filteredSubjects.length > 0) {
+              const firstSubject = filteredSubjects[0];
+              effectiveModuleSelections.subject_line = {
+                type: 'phrase',
+                category: 'subject',
+                phraseId: firstSubject.id,
+                phraseText: firstSubject.phrase_text,
+              };
+              console.log(`✅ Auto-selected subject (tone: ${effectiveToneOverride}):`, firstSubject.phrase_text.substring(0, 50));
+            }
+            return;
+          }
+
+          // Get phrases for this category
+          const categoryPhrases = allPhrases.filter(p => p.category === category);
+          if (categoryPhrases.length === 0) return;
+
+          // Filter by tri-state (respecting global tri_state from phrase_library)
+          const availablePhrases = categoryPhrases.filter(phrase => {
+            if (phrase.tri_state === 'never') return false;
+            if (phrase.tri_state === 'always') return true;
+            return Math.random() > 0.5; // 50% chance for "sometimes"
+          });
+
+          const phrasesToUse = availablePhrases.length > 0 ? availablePhrases : categoryPhrases;
+          const firstPhrase = phrasesToUse[0];
+          
+          effectiveModuleSelections[moduleKey] = {
+            type: 'phrase',
+            category,
+            phraseId: firstPhrase.id,
+            phraseText: firstPhrase.phrase_text,
+          };
+          console.log(`✅ Auto-selected phrase for ${moduleKey}:`, firstPhrase.phrase_text.substring(0, 50));
+        });
+
+        // Auto-select for multi-select modules (select 1 phrase each)
+        MULTI_SELECT_MODULES.forEach((moduleKey) => {
+          const category = MODULE_LIBRARY_MAP[moduleKey];
+          if (!category) return;
+
+          const categoryPhrases = allPhrases.filter(p => p.category === category);
+          if (categoryPhrases.length === 0) return;
+
+          const availablePhrases = categoryPhrases.filter(phrase => {
+            if (phrase.tri_state === 'never') return false;
+            if (phrase.tri_state === 'always') return true;
+            return Math.random() > 0.5;
+          });
+
+          const phrasesToUse = availablePhrases.length > 0 ? availablePhrases : categoryPhrases;
+          const firstPhrase = phrasesToUse[0];
+          
+          effectiveModuleSelections[moduleKey] = {
+            type: 'phrase',
+            category,
+            phraseId: firstPhrase.id,
+            phraseText: firstPhrase.phrase_text,
+          };
+          console.log(`✅ Auto-selected phrase for ${moduleKey}:`, firstPhrase.phrase_text.substring(0, 50));
+        });
+      } else {
+        console.log('✅ Using saved module selections from contact settings');
+      }
 
       // Step 8: Map contact to ContactEmailComposer type
       // Helper to safely convert Json to string array
@@ -212,7 +309,26 @@ export function useContactDraftGenerator() {
         delta_type: effectiveDeltaType as 'Email' | 'Meeting' | null,
       };
 
-      // Step 9: Build enhanced draft payload using full Email Builder logic
+      // Step 9: Log payload inputs for debugging
+      console.log('🔍 Contact Draft Generator - Payload Inputs:', {
+        contactId: contact.contact_id,
+        contactName: contact.full_name,
+        masterTemplate: masterTemplate.master_key,
+        daysSinceContact,
+        toneOverride: effectiveToneOverride,
+        lengthOverride: effectiveLengthOverride,
+        subjectPoolSize: effectiveSubjectPoolOverride.length,
+        moduleStatesCount: Object.keys(effectiveModuleStates).length,
+        moduleSelectionsCount: Object.keys(effectiveModuleSelections).length,
+        teamSize: teamMembers.length,
+        phrasesCount: allPhrases.length,
+        inquiriesCount: allInquiries.length,
+        subjectsCount: allSubjects.length,
+        hasOpportunities: contact.has_opps,
+        hasArticles: toArray(contact.articles).length > 0,
+      });
+
+      // Step 10: Build enhanced draft payload using full Email Builder logic
       const payload = await buildEnhancedDraftPayload(
         contactForPayload,
         masterTemplate,
@@ -232,13 +348,21 @@ export function useContactDraftGenerator() {
         effectiveModuleStates,
         effectiveModuleSelections
       );
+      
+      console.log('📦 Enhanced Payload Built:', {
+        qualityCheckPass: payload.qualityCheck.pass,
+        modulesIncluded: Object.keys(payload.modulesV2 || {}).length,
+        flowLength: payload.flow?.length || 0,
+        interpolatedModules: payload.contentInterpolated?.modules?.length || 0,
+      });
 
-      // Step 10: Quality check
+      // Step 11: Quality check
       if (!payload.qualityCheck.pass) {
+        console.warn('⚠️ Quality check failed:', payload.qualityCheck.reason);
         throw new Error(payload.qualityCheck.reason || 'Quality control failed');
       }
 
-      // Step 11: Post to n8n via edge function
+      // Step 12: Post to n8n via edge function
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) {
         throw new Error('Authentication required. Please log in again.');
@@ -267,7 +391,9 @@ export function useContactDraftGenerator() {
         throw new Error(errorMessage);
       }
 
-      // Step 12: Success toast
+      console.log('✅ Draft successfully posted to n8n');
+
+      // Step 13: Success toast
       const contactName = contact.full_name || contact.email || 'Contact';
       toast({
         title: 'Draft Generated',
@@ -276,7 +402,7 @@ export function useContactDraftGenerator() {
 
       setIsGenerating(false);
     } catch (error) {
-      console.error('Contact draft generation error:', error);
+      console.error('❌ Contact draft generation error:', error);
       
       toast({
         title: 'Draft Generation Failed',
