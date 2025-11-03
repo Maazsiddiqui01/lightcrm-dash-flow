@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EditableFieldConfig } from '@/config/editableColumns';
 import { cn } from '@/lib/utils';
-import { getTierDatabaseValue, getTierDisplayValue, getGroupEmailRoleDisplayValue } from '@/lib/export/opportunityUtils';
+import { getTierDatabaseValue, getTierDisplayValue, getGroupEmailRoleDisplayValue, getGroupEmailRoleDatabaseValue, getPlatformAddonDisplayValue, getPlatformAddonDatabaseValue } from '@/lib/export/opportunityUtils';
 import { useOpportunityOptions } from '@/hooks/useOpportunityOptions';
 import { useContactSearch } from '@/hooks/useContactSearch';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -96,6 +96,10 @@ export function EditableCell({
     // If this is a group_email_role field, show the display value
     if (columnKey === 'group_email_role' && ['to', 'cc', 'bcc'].includes(stringValue)) {
       return getGroupEmailRoleDisplayValue(stringValue);
+    }
+    // If this is a platform_add_on field, show the display value
+    if (columnKey === 'platform_add_on' && ['Platform', 'Add-On', 'Both'].includes(stringValue)) {
+      return getPlatformAddonDisplayValue(stringValue);
     }
     return stringValue;
   })();
@@ -330,13 +334,26 @@ export function EditableCell({
       );
 
     case 'select':
-      // For tier fields, convert database value to display value for the Select component
+      // Convert database values to display values for special fields
       const selectValue = (() => {
         if (!localValue) return '__none__';
-        // If this is a tier field with database values, convert to display value
-        if (config.options?.includes('1-Active') && ['1', '2', '3', '4', '5'].includes(String(localValue))) {
-          return getTierDisplayValue(String(localValue));
+        const strValue = String(localValue);
+        
+        // Tier field - convert database value to display value
+        if (config.options?.includes('1-Active') && ['1', '2', '3', '4', '5'].includes(strValue)) {
+          return getTierDisplayValue(strValue);
         }
+        
+        // Group Email Role field - convert database value to display value
+        if (columnKey === 'group_email_role' && ['to', 'cc', 'bcc'].includes(strValue)) {
+          return getGroupEmailRoleDisplayValue(strValue);
+        }
+        
+        // Platform/Add-On field - convert database value to display value
+        if (columnKey === 'platform_add_on' && ['Platform', 'Add-On', 'Both'].includes(strValue)) {
+          return getPlatformAddonDisplayValue(strValue);
+        }
+        
         return localValue;
       })();
 
@@ -345,17 +362,38 @@ export function EditableCell({
           value={selectValue} 
           onValueChange={(value) => {
             const finalValue = value === '__none__' ? '' : value;
-            // If this is a tier field and we're receiving a display value, convert it to database value
+            
+            // Tier field - convert display value to database value
             if (config.options?.includes('1-Active') && finalValue && !['1', '2', '3', '4', '5'].includes(finalValue)) {
               const dbValue = getTierDatabaseValue(finalValue);
               setLocalValue(dbValue);
               onChange(dbValue);
               onCommit();
-            } else {
-              setLocalValue(finalValue);
-              onChange(finalValue);
-              onCommit();
+              return;
             }
+            
+            // Group Email Role - convert display value to database value
+            if (columnKey === 'group_email_role' && finalValue && !['to', 'cc', 'bcc'].includes(finalValue)) {
+              const dbValue = getGroupEmailRoleDatabaseValue(finalValue);
+              setLocalValue(dbValue);
+              onChange(dbValue);
+              onCommit();
+              return;
+            }
+            
+            // Platform/Add-On - convert display value to database value
+            if (columnKey === 'platform_add_on' && finalValue && !['Platform', 'Add-On', 'Both'].includes(finalValue)) {
+              const dbValue = getPlatformAddonDatabaseValue(finalValue);
+              setLocalValue(dbValue);
+              onChange(dbValue);
+              onCommit();
+              return;
+            }
+            
+            // Standard select field - no conversion needed
+            setLocalValue(finalValue);
+            onChange(finalValue);
+            onCommit();
           }}
         >
           <SelectTrigger className={cn(error && "border-destructive")}>

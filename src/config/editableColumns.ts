@@ -357,7 +357,7 @@ export const editableColumns: EditableConfig = {
     group_contact: { type: 'text' },
     group_email_role: {
       type: 'select',
-      options: ['to', 'cc', 'bcc']
+      options: ['To (Primary Recipient)', 'CC (Carbon Copy)', 'BCC (Blind Carbon Copy)']
     },
     group_focus_area: { type: 'text' },
     group_sector: { type: 'text' },
@@ -445,7 +445,7 @@ export const editableColumns: EditableConfig = {
     },
     platform_add_on: { 
       type: 'select',
-      options: ['Platform', 'Add-On']
+      options: ['Platform', 'Add-On', 'Platform & Add-On']
     },
     tier: { 
       type: 'select',
