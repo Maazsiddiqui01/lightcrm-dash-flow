@@ -27,6 +27,8 @@ export interface ContactBase {
   contact_type: string | null;
   delta_type: string | null;
   notes: string | null;
+  next_steps: string | null;
+  next_steps_due_date: string | null;
   url_to_online_bio: string | null;
   most_recent_contact: string | null;
   most_recent_group_contact: string | null;

@@ -349,6 +349,8 @@ export const editableColumns: EditableConfig = {
       options: ['Email', 'Meeting']
     },
     notes: { type: 'textarea' },
+    next_steps: { type: 'textarea' },
+    next_steps_due_date: { type: 'date' },
     url_to_online_bio: { type: 'text' },
     linkedin_url: { type: 'text' },
     x_twitter_url: { type: 'text' },

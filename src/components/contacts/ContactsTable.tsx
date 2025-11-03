@@ -3,11 +3,12 @@ import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedT
 import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
 import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
+import { QuickAddContactNextStepModal } from "./QuickAddContactNextStepModal";
 import { IntentionalNoOutreachModal } from "./IntentionalNoOutreachModal";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2 } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -71,6 +72,9 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
   const [noteContactId, setNoteContactId] = useState<string | null>(null);
   const [noteContactName, setNoteContactName] = useState<string>('');
+  const [isAddNextStepModalOpen, setIsAddNextStepModalOpen] = useState(false);
+  const [nextStepContactId, setNextStepContactId] = useState<string | null>(null);
+  const [nextStepContactName, setNextStepContactName] = useState<string>('');
   const [intentionalNoOutreachModal, setIntentionalNoOutreachModal] = useState<{
     open: boolean;
     contactId: string;
@@ -301,6 +305,17 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
               >
                 <FileText className="mr-2 h-4 w-4" />
                 Add Note
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setNextStepContactId(row.id);
+                  setNextStepContactName(row.full_name || row.email_address || 'Unknown');
+                  setIsAddNextStepModalOpen(true);
+                }}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Add Next Step
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {isCurrentlySkipped ? (
@@ -742,6 +757,14 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
           refetch();
           setSelectedRows([]);
         }}
+      />
+
+      {/* Quick Add Next Step Modal */}
+      <QuickAddContactNextStepModal
+        open={isAddNextStepModalOpen}
+        onOpenChange={setIsAddNextStepModalOpen}
+        contactId={nextStepContactId || ''}
+        contactName={nextStepContactName}
       />
 
       {/* Delete Confirmation Dialog */}

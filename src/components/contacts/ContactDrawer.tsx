@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useContactNotes } from "@/hooks/useContactNotes";
+import { useContactNextSteps } from "@/hooks/useContactNextSteps";
 import { useGroupNotes } from "@/hooks/useGroupNotes";
 import { useContactGroups } from "@/hooks/useContactGroups";
 import { useRemoveContactFromGroup } from "@/hooks/useRemoveContactFromGroup";
 import { useContactEmails } from "@/hooks/useContactEmails";
 import { ContactNotesSection } from "./ContactNotesSection";
+import { ContactNextStepsSection } from "./ContactNextStepsSection";
 import { GroupNotesSection } from "./GroupNotesSection";
 import { format } from 'date-fns';
 import { parseFlexibleDate } from '@/utils/dateUtils';
@@ -142,6 +144,16 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     saveNotes,
     isSavingNotes,
   } = useContactNotes(contact?.id);
+
+  // Contact next steps hook
+  const {
+    currentNextSteps,
+    timeline: nextStepsTimeline,
+    isLoadingCurrent: isLoadingNextSteps,
+    isLoadingTimeline: isLoadingNextStepsTimeline,
+    saveNextSteps,
+    isSaving: isSavingNextSteps,
+  } = useContactNextSteps(contact?.id, contact?.full_name || contact?.email_address || undefined);
 
   // Fetch all groups this contact belongs to (new many-to-many schema)
   const { data: contactGroupMemberships = [], isLoading: isLoadingGroups } = useContactGroups(contact?.id || null);
@@ -1151,6 +1163,19 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
               isLoadingCurrent={isLoadingCurrent}
               isLoadingTimeline={isLoadingTimeline}
               isSaving={isSavingNotes}
+            />
+
+            <Separator />
+
+            {/* Next Steps Section */}
+            <ContactNextStepsSection
+              currentValue={currentNextSteps?.next_steps || null}
+              currentDueDate={currentNextSteps?.next_steps_due_date || null}
+              timeline={nextStepsTimeline}
+              onSave={saveNextSteps}
+              isSaving={isSavingNextSteps}
+              isLoadingCurrent={isLoadingNextSteps}
+              isLoadingTimeline={isLoadingNextStepsTimeline}
             />
 
             {/* Group Notes Section - Only show if contact is part of a group */}

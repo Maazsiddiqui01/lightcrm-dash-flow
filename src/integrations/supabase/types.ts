@@ -731,6 +731,7 @@ export type Database = {
           content: string
           created_at: string
           created_by: string | null
+          due_date: string | null
           field: string
           id: string
         }
@@ -739,6 +740,7 @@ export type Database = {
           content: string
           created_at?: string
           created_by?: string | null
+          due_date?: string | null
           field?: string
           id?: string
         }
@@ -747,6 +749,7 @@ export type Database = {
           content?: string
           created_at?: string
           created_by?: string | null
+          due_date?: string | null
           field?: string
           id?: string
         }
@@ -1184,6 +1187,8 @@ export type Database = {
           meeting_to: string | null
           most_recent_contact: string | null
           most_recent_group_contact: string | null
+          next_steps: string | null
+          next_steps_due_date: string | null
           no_of_lg_focus_areas: number | null
           no_of_opps_sourced: number | null
           notes: string | null
@@ -1259,6 +1264,8 @@ export type Database = {
           meeting_to?: string | null
           most_recent_contact?: string | null
           most_recent_group_contact?: string | null
+          next_steps?: string | null
+          next_steps_due_date?: string | null
           no_of_lg_focus_areas?: number | null
           no_of_opps_sourced?: number | null
           notes?: string | null
@@ -1334,6 +1341,8 @@ export type Database = {
           meeting_to?: string | null
           most_recent_contact?: string | null
           most_recent_group_contact?: string | null
+          next_steps?: string | null
+          next_steps_due_date?: string | null
           no_of_lg_focus_areas?: number | null
           no_of_opps_sourced?: number | null
           notes?: string | null
@@ -2961,6 +2970,117 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_next_steps_timeline: {
+        Row: {
+          contact_id: string | null
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          due_date: string | null
+          field: string | null
+          id: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: never
+          due_date?: string | null
+          field?: string | null
+          id?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: never
+          due_date?: string | null
+          field?: string | null
+          id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+        ]
+      }
       contact_notes_timeline: {
         Row: {
           contact_id: string | null
@@ -4048,10 +4168,20 @@ export type Database = {
       }
     }
     Functions: {
-      add_contact_note: {
-        Args: { p_contact_id: string; p_content: string; p_field: string }
-        Returns: undefined
-      }
+      add_contact_note:
+        | {
+            Args: {
+              p_contact_id: string
+              p_content: string
+              p_due_date?: string
+              p_field: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: { p_contact_id: string; p_content: string; p_field: string }
+            Returns: undefined
+          }
       add_contact_to_group: {
         Args: {
           p_contact_id: string
