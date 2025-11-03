@@ -126,7 +126,37 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
 
       if (error) throw error;
       
-      return { content, dueDate, addInToDo };
+      // Fetch enriched contact data for webhook
+      const { data: contactData } = await supabase
+        .from('contacts_raw')
+        .select('email_address, organization, full_name')
+        .eq('id', contactId)
+        .single();
+      
+      // Fetch opportunities for this contact
+      let opportunities: string[] = [];
+      if (contactData?.full_name) {
+        const { data: oppsData } = await supabase
+          .from('opportunities_raw')
+          .select('deal_name')
+          .or(`deal_source_individual_1.ilike.%${contactData.full_name}%,deal_source_individual_2.ilike.%${contactData.full_name}%`)
+          .limit(10);
+        
+        if (oppsData) {
+          opportunities = oppsData
+            .map(o => o.deal_name)
+            .filter((name): name is string => !!name);
+        }
+      }
+      
+      return { 
+        content, 
+        dueDate, 
+        addInToDo, 
+        email: contactData?.email_address,
+        organization: contactData?.organization,
+        opportunities 
+      };
     },
     onSuccess: async (data) => {
       toast({
@@ -145,6 +175,9 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
             body: JSON.stringify({
               contactId: contactId,
               contactName: contactName,
+              email: data.email,
+              organization: data.organization,
+              opportunities: data.opportunities,
               nextSteps: data.content,
               dueDate: data.dueDate || null,
               addInToDo: data.addInToDo !== undefined ? data.addInToDo : true,
