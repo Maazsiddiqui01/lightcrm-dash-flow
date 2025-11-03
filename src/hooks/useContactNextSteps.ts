@@ -137,18 +137,23 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
       // Sync with Microsoft To Do via n8n webhook if addInToDo is true
       if (contactName && data.content && data.addInToDo) {
         try {
-          await fetch('https://inverisllc.app.n8n.cloud/webhook/Get-To-do', {
+          const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Get-To-do-Contacts', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+              contactId: contactId,
               contactName: contactName,
               nextSteps: data.content,
               dueDate: data.dueDate || null,
               addInToDo: data.addInToDo !== undefined ? data.addInToDo : true,
             }),
           });
+          
+          if (!response.ok) {
+            console.error('Failed to sync with Microsoft To Do:', await response.text());
+          }
         } catch (error) {
           console.error('Failed to sync with Microsoft To Do:', error);
         }

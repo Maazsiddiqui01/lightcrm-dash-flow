@@ -4170,16 +4170,16 @@ export type Database = {
     Functions: {
       add_contact_note:
         | {
+            Args: { p_contact_id: string; p_content: string; p_field: string }
+            Returns: undefined
+          }
+        | {
             Args: {
               p_contact_id: string
               p_content: string
               p_due_date?: string
               p_field: string
             }
-            Returns: undefined
-          }
-        | {
-            Args: { p_contact_id: string; p_content: string; p_field: string }
             Returns: undefined
           }
       add_contact_to_group: {
