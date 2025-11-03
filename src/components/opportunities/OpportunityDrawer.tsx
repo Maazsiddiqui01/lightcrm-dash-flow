@@ -262,13 +262,6 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         ),
         updated_at: new Date().toISOString()
       };
-
-      // Handle focus area slots if they exist in the table
-      const focusAreaSlots = ['lg_focus_area_1','lg_focus_area_2','lg_focus_area_3','lg_focus_area_4',
-                             'lg_focus_area_5','lg_focus_area_6','lg_focus_area_7','lg_focus_area_8'];
-      focusAreaSlots.forEach((slot, i) => {
-        updatePayload[slot] = selectedFocusAreas[i] ?? null;
-      });
       
       // Update in opportunities_raw table
       const { error } = await supabase
