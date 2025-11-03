@@ -330,16 +330,31 @@ export function EditableCell({
       );
 
     case 'select':
+      // For tier fields, convert database value to display value for the Select component
+      const selectValue = (() => {
+        if (!localValue) return '__none__';
+        // If this is a tier field with database values, convert to display value
+        if (config.options?.includes('1-Active') && ['1', '2', '3', '4', '5'].includes(String(localValue))) {
+          return getTierDisplayValue(String(localValue));
+        }
+        return localValue;
+      })();
+
       return (
         <Select 
-          value={localValue || '__none__'} 
+          value={selectValue} 
           onValueChange={(value) => {
             const finalValue = value === '__none__' ? '' : value;
             // If this is a tier field and we're receiving a display value, convert it to database value
             if (config.options?.includes('1-Active') && finalValue && !['1', '2', '3', '4', '5'].includes(finalValue)) {
-              setLocalValue(getTierDatabaseValue(finalValue));
+              const dbValue = getTierDatabaseValue(finalValue);
+              setLocalValue(dbValue);
+              onChange(dbValue);
+              onCommit();
             } else {
               setLocalValue(finalValue);
+              onChange(finalValue);
+              onCommit();
             }
           }}
         >
