@@ -12,8 +12,28 @@ export function useVoiceRecording() {
 
   const startRecording = useCallback(async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(mediaStream);
+      // Request high-quality audio
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1, // Mono for voice (smaller file, still great quality)
+          sampleRate: 48000, // High sample rate
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        }
+      });
+
+      // Determine best available codec
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+
+      // Create MediaRecorder with high-quality options
+      const mediaRecorder = new MediaRecorder(mediaStream, {
+        mimeType: mimeType,
+        audioBitsPerSecond: 128000, // 128 kbps for clear voice
+      });
+      
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -23,7 +43,7 @@ export function useVoiceRecording() {
         }
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(100); // Capture data every 100ms for smoother recording
       setStream(mediaStream);
       setIsRecording(true);
     } catch (error) {
@@ -45,7 +65,10 @@ export function useVoiceRecording() {
 
       mediaRecorderRef.current.onstop = async () => {
         setIsRecording(false);
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        // Use the actual mimeType from the recorder for best compatibility
+        const audioBlob = new Blob(audioChunksRef.current, { 
+          type: mediaRecorderRef.current?.mimeType || "audio/webm" 
+        });
 
         // Stop all tracks
         if (stream) {
