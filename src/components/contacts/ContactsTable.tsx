@@ -6,9 +6,10 @@ import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
 import { QuickAddContactNextStepModal } from "./QuickAddContactNextStepModal";
 import { IntentionalNoOutreachModal } from "./IntentionalNoOutreachModal";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
+import { ContactMergeDialog } from "./ContactMergeDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2, CalendarIcon } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2, CalendarIcon, Merge } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -88,6 +89,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const [showBulkGroupModal, setShowBulkGroupModal] = useState(false);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const [isRefreshingInteractions, setIsRefreshingInteractions] = useState(false);
+  const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
     open: boolean;
     contactIds: string[];
@@ -590,6 +592,16 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
               <span className="text-sm font-medium text-foreground">
                 {selectedRows.length} selected
               </span>
+              {selectedRows.length >= 2 && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setIsMergeDialogOpen(true)}
+                >
+                  <Merge className="h-4 w-4 mr-2" />
+                  Merge Selected
+                </Button>
+              )}
               <Button
                 variant="default"
                 size="sm"
@@ -840,12 +852,22 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         title={deleteConfirmDialog.isBulk ? "Delete Contacts?" : "Delete Contact?"}
         description={
           deleteConfirmDialog.isBulk
-            ? `Are you sure you want to delete ${deleteConfirmDialog.contactIds.length} contact${deleteConfirmDialog.contactIds.length !== 1 ? 's' : ''}? This action cannot be undone.`
+            ? `Are you sure you want to delete ${deleteConfirmDialog.contactIds.length} contacts? This action cannot be undone.`
             : `Are you sure you want to delete ${deleteConfirmDialog.contactNames[0]}? This action cannot be undone.`
         }
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={isDeleting ? "Deleting..." : "Delete"}
         variant="destructive"
+      />
+
+      {/* Contact Merge Dialog */}
+      <ContactMergeDialog
+        open={isMergeDialogOpen}
+        onOpenChange={setIsMergeDialogOpen}
+        contacts={selectedRows}
+        onSuccess={() => {
+          refetch();
+          setSelectedRows([]);
+        }}
       />
     </div>
   );
