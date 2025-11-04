@@ -633,7 +633,14 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
                   <>
                     {lastUpload.data && (
                       <span>
-                        Last Data Upload: {format(lastUpload.data, 'MMM d, yyyy \'at\' h:mm a')}
+                        Last Data Upload: {lastUpload.data.toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          timeZoneName: 'short'
+                        })}
                       </span>
                     )}
                     {lastSyncDate && (
