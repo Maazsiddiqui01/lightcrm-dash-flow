@@ -511,13 +511,15 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
   const handleExport = async () => {
     setIsExporting(true);
     
-    // Get only visible columns
+    // Get only visible columns (exclude 'actions' column as it's not in the database)
     const visibleColumns = dynamicColumns
-      .filter(col => columnVisibility.columnVisibility[col.key] !== false)
+      .filter(col => col.key !== 'actions' && columnVisibility.columnVisibility[col.key] !== false)
       .map(col => col.key);
     
     const columnHeaders = Object.fromEntries(
-      dynamicColumns.map(col => [col.key, col.label])
+      dynamicColumns
+        .filter(col => col.key !== 'actions')
+        .map(col => [col.key, col.label])
     );
 
     try {
