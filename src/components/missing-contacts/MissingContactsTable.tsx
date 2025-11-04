@@ -10,6 +10,8 @@ import { useMissingCandidates, useApproveMissing, useDismissMissing } from "@/ho
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, UserX } from "lucide-react";
 import { MissingContact } from "@/types/missingContacts";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { AddContactModal } from "@/components/missing-contacts/AddContactModal";
 
 interface MissingContactsTableProps {
   search: string;
@@ -27,6 +29,9 @@ export function MissingContactsTable({
   pageSize
 }: MissingContactsTableProps) {
   const { toast } = useToast();
+  const [confirmApprove, setConfirmApprove] = useState<string | null>(null);
+  const [confirmDismiss, setConfirmDismiss] = useState<string | null>(null);
+  const [candidateToApprove, setCandidateToApprove] = useState<any>(null);
   
   const { data: rawData, isLoading, error } = useMissingCandidates({
     search: '',
@@ -37,7 +42,7 @@ export function MissingContactsTable({
   const filteredData = useMemo(() => {
     if (!rawData) return [];
     
-    return rawData.filter((candidate: MissingContact) => {
+    let filtered = rawData.filter((candidate: MissingContact) => {
       // Apply search filter
       if (search) {
         const searchLower = search.toLowerCase();
@@ -58,32 +63,53 @@ export function MissingContactsTable({
       
       return true;
     });
+    
+    // Sort: pending first, then approved, then dismissed
+    // Within each status, sort by created_at descending
+    return filtered.sort((a, b) => {
+      const statusOrder = { pending: 0, approved: 1, dismissed: 2 };
+      const statusA = statusOrder[a.status as keyof typeof statusOrder] ?? 0;
+      const statusB = statusOrder[b.status as keyof typeof statusOrder] ?? 0;
+      
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+      
+      // Within same status, sort by created_at descending (newest first)
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return dateB - dateA;
+    });
   }, [rawData, search, statusFilter]);
 
   const approveMutation = useApproveMissing();
   const dismissMutation = useDismissMissing();
 
-  const handleApprove = async (email: string) => {
-    if (!email) return;
-    try {
-      await approveMutation.mutateAsync(email);
-      toast({
-        title: "Success",
-        description: "Contact approved and added to contacts.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to approve contact",
-        variant: "destructive",
-      });
-    }
+  const handleApprove = (candidate: MissingContact) => {
+    if (!candidate?.email) return;
+    // Show confirmation dialog
+    setConfirmApprove(candidate.email);
   };
 
-  const handleDismiss = async (email: string) => {
+  const handleConfirmApprove = () => {
+    // Find the candidate and open the AddContactModal
+    const candidate = filteredData.find(c => c.email === confirmApprove);
+    if (candidate && candidate.id && candidate.email && candidate.status && candidate.created_at) {
+      setCandidateToApprove(candidate as any);
+    }
+    setConfirmApprove(null);
+  };
+
+  const handleDismiss = (email: string) => {
     if (!email) return;
+    // Show confirmation dialog
+    setConfirmDismiss(email);
+  };
+
+  const handleConfirmDismiss = async () => {
+    if (!confirmDismiss) return;
     try {
-      await dismissMutation.mutateAsync(email);
+      await dismissMutation.mutateAsync(confirmDismiss);
       toast({
         title: "Success",
         description: "Contact dismissed.",
@@ -95,6 +121,7 @@ export function MissingContactsTable({
         variant: "destructive",
       });
     }
+    setConfirmDismiss(null);
   };
 
   const handleSelectRow = (candidateId: string, checked: boolean) => {
@@ -205,7 +232,7 @@ export function MissingContactsTable({
             <Button
               size="sm"
               className="bg-green-600 text-white hover:bg-green-700"
-              onClick={() => handleApprove(candidate.email!)}
+              onClick={() => handleApprove(candidate)}
               disabled={isApproveDisabled}
             >
               <UserCheck className="h-3 w-3 mr-1" />
@@ -294,6 +321,37 @@ export function MissingContactsTable({
           tableType="missing-contacts"
         />
       </div>
+      
+      {/* Confirmation Dialogs */}
+      <ConfirmDialog
+        open={!!confirmApprove}
+        onOpenChange={(open) => !open && setConfirmApprove(null)}
+        onConfirm={handleConfirmApprove}
+        title="Approve Contact"
+        description="Are you sure you want to approve this contact? You'll be able to add additional details in the next step."
+        confirmText="Continue"
+        cancelText="Cancel"
+      />
+
+      <ConfirmDialog
+        open={!!confirmDismiss}
+        onOpenChange={(open) => !open && setConfirmDismiss(null)}
+        onConfirm={handleConfirmDismiss}
+        title="Dismiss Contact"
+        description="Are you sure you want to dismiss this contact? It will remain visible in the 'Dismissed' status filter."
+        confirmText="Dismiss"
+        cancelText="Cancel"
+        variant="destructive"
+      />
+
+      {/* Add Contact Modal */}
+      {candidateToApprove && (
+        <AddContactModal
+          candidate={candidateToApprove}
+          open={!!candidateToApprove}
+          onClose={() => setCandidateToApprove(null)}
+        />
+      )}
     </div>
   );
 }

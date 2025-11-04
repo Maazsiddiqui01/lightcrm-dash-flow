@@ -7,6 +7,7 @@ import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { RefreshCw, Download, UserCheck, UserX, RotateCcw } from "lucide-react";
 import { useRefreshMissingContacts, useMissingCandidates, useApproveMissing, useDismissMissing } from "@/hooks/useMissingContacts";
 import { useToast } from "@/hooks/use-toast";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 export default function MissingContacts() {
   return (
@@ -21,6 +22,8 @@ function MissingContactsContent() {
   const [statusFilter, setStatusFilter] = useState("pending");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [pageSize, setPageSize] = useState(50);
+  const [showBulkApproveConfirm, setShowBulkApproveConfirm] = useState(false);
+  const [showBulkDismissConfirm, setShowBulkDismissConfirm] = useState(false);
   
   const { toast } = useToast();
   const refreshMutation = useRefreshMissingContacts();
@@ -114,9 +117,12 @@ function MissingContactsContent() {
     });
   };
 
-  const handleBulkApprove = async () => {
+  const handleBulkApprove = () => {
     if (selectedRows.size === 0) return;
-    
+    setShowBulkApproveConfirm(true);
+  };
+
+  const confirmBulkApprove = async () => {
     const emailsToApprove = allData
       ?.filter((c: any) => selectedRows.has(c.id.toString()))
       .map((c: any) => c.email)
@@ -141,11 +147,15 @@ function MissingContactsContent() {
     });
     
     setSelectedRows(new Set());
+    setShowBulkApproveConfirm(false);
   };
 
-  const handleBulkDismiss = async () => {
+  const handleBulkDismiss = () => {
     if (selectedRows.size === 0) return;
-    
+    setShowBulkDismissConfirm(true);
+  };
+
+  const confirmBulkDismiss = async () => {
     const emailsToDismiss = allData
       ?.filter((c: any) => selectedRows.has(c.id.toString()))
       .map((c: any) => c.email)
@@ -170,6 +180,7 @@ function MissingContactsContent() {
     });
     
     setSelectedRows(new Set());
+    setShowBulkDismissConfirm(false);
   };
 
   const handleClearSearch = () => {
@@ -299,6 +310,28 @@ function MissingContactsContent() {
           />
         </div>
       </div>
+      
+      {/* Bulk Action Confirmation Dialogs */}
+      <ConfirmDialog
+        open={showBulkApproveConfirm}
+        onOpenChange={setShowBulkApproveConfirm}
+        onConfirm={confirmBulkApprove}
+        title={`Approve ${selectedRows.size} Contacts`}
+        description="Are you sure you want to approve the selected contacts? They will be added to your Contacts list with basic information only."
+        confirmText="Approve All"
+        cancelText="Cancel"
+      />
+
+      <ConfirmDialog
+        open={showBulkDismissConfirm}
+        onOpenChange={setShowBulkDismissConfirm}
+        onConfirm={confirmBulkDismiss}
+        title={`Dismiss ${selectedRows.size} Contacts`}
+        description="Are you sure you want to dismiss the selected contacts? They will remain visible in the 'Dismissed' status filter."
+        confirmText="Dismiss All"
+        cancelText="Cancel"
+        variant="destructive"
+      />
     </div>
   );
 }
