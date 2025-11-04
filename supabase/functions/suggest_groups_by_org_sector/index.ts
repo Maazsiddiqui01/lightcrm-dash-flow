@@ -289,7 +289,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify(suggestions), {
+    return new Response(JSON.stringify({ suggestions }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
