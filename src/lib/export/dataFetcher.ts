@@ -106,7 +106,86 @@ export async function collectFilteredIds({
   } else if (page === 'contacts') {
     // Apply contact filters
     if (filters?.searchTerm) {
-      query = query.or(`full_name.ilike.%${filters.searchTerm}%,email_address.ilike.%${filters.searchTerm}%,organization.ilike.%${filters.searchTerm}%`);
+      const search = filters.searchTerm.trim().toLowerCase();
+      query = query.or(
+        `full_name.ilike.%${search}%,` +
+        `email_address.ilike.%${search}%,` +
+        `organization.ilike.%${search}%,` +
+        `title.ilike.%${search}%,` +
+        `notes.ilike.%${search}%,` +
+        `lg_focus_areas_comprehensive_list.ilike.%${search}%`
+      );
+    }
+    
+    // Sectors
+    if (filters?.sectors?.length > 0) {
+      query = query.in('lg_sector', filters.sectors);
+    }
+    
+    // Organizations
+    if (filters?.organizations?.length > 0) {
+      query = query.in('organization', filters.organizations);
+    }
+    
+    // Titles
+    if (filters?.titles?.length > 0) {
+      query = query.in('title', filters.titles);
+    }
+    
+    // Categories
+    if (filters?.categories?.length > 0) {
+      query = query.in('category', filters.categories);
+    }
+    
+    // Delta Type
+    if (filters?.deltaType?.length > 0) {
+      query = query.in('delta_type', filters.deltaType);
+    }
+    
+    // Has Opportunities
+    if (filters?.hasOpportunities?.length > 0) {
+      if (filters.hasOpportunities.includes('Yes') && !filters.hasOpportunities.includes('No')) {
+        query = query.gt('all_opps', 0);
+      } else if (filters.hasOpportunities.includes('No') && !filters.hasOpportunities.includes('Yes')) {
+        query = query.or('all_opps.is.null,all_opps.eq.0');
+      }
+    }
+    
+    // Date range for most recent contact
+    if (filters?.mostRecentContactStart) {
+      query = query.gte('most_recent_contact', filters.mostRecentContactStart);
+    }
+    if (filters?.mostRecentContactEnd) {
+      query = query.lte('most_recent_contact', filters.mostRecentContactEnd);
+    }
+    
+    // Delta range
+    if (filters?.deltaMin !== null && filters?.deltaMin !== undefined) {
+      query = query.gte('delta', filters.deltaMin);
+    }
+    if (filters?.deltaMax !== null && filters?.deltaMax !== undefined) {
+      query = query.lte('delta', filters.deltaMax);
+    }
+    
+    // LG Lead
+    if (filters?.lgLead?.length > 0) {
+      const leadConditions = filters.lgLead.map((lead: string) => 
+        `lg_lead.ilike.%${lead}%`
+      ).join(',');
+      query = query.or(leadConditions);
+    }
+    
+    // Group Contacts
+    if (filters?.groupContacts?.length > 0) {
+      query = query.in('group_contact', filters.groupContacts);
+    }
+    
+    // Areas of specialization
+    if (filters?.areasOfSpecialization?.length > 0) {
+      const areasQuery = filters.areasOfSpecialization.map((area: string) => 
+        `areas_of_specialization.ilike.%${area}%`
+      ).join(',');
+      query = query.or(areasQuery);
     }
   }
 
