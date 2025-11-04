@@ -407,8 +407,8 @@ serve(async (req) => {
         maxFrequency: 1 // Will normalize later
       });
 
-      const memberEmails = members.map(m => m.email);
-      const suggestionId = generateStableSuggestionId(memberEmails);
+      const memberEmailArray = members.map(m => m.email);
+      const suggestionId = generateStableSuggestionId(memberEmailArray);
       
       suggestions.push({
         suggestion_id: suggestionId,
