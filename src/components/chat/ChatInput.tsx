@@ -19,8 +19,27 @@ export function ChatInput({
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState<number>(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { isRecording, isTranscribing, stream, startRecording, stopRecording } = useVoiceRecording();
+
+  // Track cursor position
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
+    setCursorPosition(e.target.selectionStart);
+  };
+
+  const handleTextareaClick = () => {
+    if (textareaRef.current) {
+      setCursorPosition(textareaRef.current.selectionStart);
+    }
+  };
+
+  const handleTextareaKeyUp = () => {
+    if (textareaRef.current) {
+      setCursorPosition(textareaRef.current.selectionStart);
+    }
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -52,8 +71,23 @@ export function ChatInput({
   const handleVoiceStop = async () => {
     const transcription = await stopRecording();
     if (transcription) {
-      setMessage(transcription);
-      // User can now edit and manually click Send
+      // Insert transcription at cursor position
+      const before = message.slice(0, cursorPosition);
+      const after = message.slice(cursorPosition);
+      const newMessage = before + (before && !before.endsWith(' ') ? ' ' : '') + transcription + (after && !after.startsWith(' ') ? ' ' : '') + after;
+      setMessage(newMessage);
+      
+      // Update cursor position to end of inserted text
+      const newCursorPos = before.length + transcription.length + (before && !before.endsWith(' ') ? 1 : 0) + (after && !after.startsWith(' ') ? 1 : 0);
+      setCursorPosition(newCursorPos);
+      
+      // Focus and set cursor position
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }, 0);
     }
   };
 
@@ -64,7 +98,9 @@ export function ChatInput({
           <Textarea
             ref={textareaRef}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleTextareaChange}
+            onClick={handleTextareaClick}
+            onKeyUp={handleTextareaKeyUp}
             onKeyDown={handleKeyDown}
             placeholder={
               isTranscribing
@@ -83,7 +119,7 @@ export function ChatInput({
           stream={stream}
           onStart={startRecording}
           onStop={handleVoiceStop}
-          disabled={disabled || isSending || !!message.trim()}
+          disabled={disabled || isSending}
         />
 
         {!isRecording && (
