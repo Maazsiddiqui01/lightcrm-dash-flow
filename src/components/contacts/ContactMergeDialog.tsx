@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -24,21 +24,18 @@ export function ContactMergeDialog({ open, onOpenChange, contacts, onSuccess }: 
   // Auto-select contact with most recent contact date as primary
   const suggestedPrimaryId = useMemo(() => {
     if (contacts.length === 0) return '';
-    
-    // Find contact with most recent contact date
     const sorted = [...contacts].sort((a, b) => {
       const dateA = a.most_recent_contact ? new Date(a.most_recent_contact).getTime() : 0;
       const dateB = b.most_recent_contact ? new Date(b.most_recent_contact).getTime() : 0;
       return dateB - dateA;
     });
-    
     return sorted[0]?.id || contacts[0].id;
   }, [contacts]);
 
   const [selectedPrimaryId, setSelectedPrimaryId] = useState(suggestedPrimaryId);
 
-  // Update primary selection when contacts change
-  useMemo(() => {
+  // Keep selection in sync if suggestion changes
+  useEffect(() => {
     setSelectedPrimaryId(suggestedPrimaryId);
   }, [suggestedPrimaryId]);
 
@@ -57,10 +54,7 @@ export function ContactMergeDialog({ open, onOpenChange, contacts, onSuccess }: 
     );
   };
 
-  // Get primary contact details
-  const primaryContact = contacts.find(c => c.id === selectedPrimaryId);
-
-  // Calculate merged field preview
+  // Calculate merged field preview (visual only)
   const mergedPreview = useMemo(() => {
     const fields = [
       { key: 'full_name', label: 'Name', icon: User },
@@ -74,28 +68,21 @@ export function ContactMergeDialog({ open, onOpenChange, contacts, onSuccess }: 
       { key: 'city', label: 'City' },
       { key: 'state', label: 'State' },
       { key: 'most_recent_contact', label: 'Most Recent Contact', icon: Calendar },
-    ];
+    ] as const;
 
-    return fields.map(field => {
-      const values = contacts.map(c => ({
+    return fields.map((field) => {
+      const values = contacts.map((c) => ({
         contactId: c.id,
         value: (c as any)[field.key],
         isPrimary: c.id === selectedPrimaryId,
       }));
-
-      // Determine which value will be used (primary's value, or first non-null)
-      const primaryValue = values.find(v => v.isPrimary)?.value;
-      const mergedValue = primaryValue || values.find(v => v.value)?.value || null;
-
-      return {
-        ...field,
-        values,
-        mergedValue,
-      };
+      const primaryValue = values.find((v) => v.isPrimary)?.value;
+      const mergedValue = primaryValue || values.find((v) => v.value)?.value || null;
+      return { ...field, values, mergedValue };
     });
   }, [contacts, selectedPrimaryId]);
 
-  // Count related data
+  // Related data summary (FYI only)
   const totalEmails = contacts.reduce((sum, c) => sum + (c.of_emails || 0), 0);
   const totalMeetings = contacts.reduce((sum, c) => sum + (c.of_meetings || 0), 0);
   const totalOpportunities = contacts.reduce((sum, c) => sum + (c.no_of_opps_sourced || 0), 0);
@@ -112,8 +99,8 @@ export function ContactMergeDialog({ open, onOpenChange, contacts, onSuccess }: 
         </DialogHeader>
 
         <ScrollArea className="max-h-[60vh] pr-4">
-          {/* Primary Contact Selection */}
           <div className="space-y-4">
+            {/* Primary Contact Selection */}
             <div>
               <Label className="text-base font-semibold">Select Primary Contact</Label>
               <p className="text-sm text-muted-foreground mb-3">
@@ -183,18 +170,13 @@ export function ContactMergeDialog({ open, onOpenChange, contacts, onSuccess }: 
                   </TableHeader>
                   <TableBody>
                     {mergedPreview.map((field) => {
-                      const Icon = field.icon;
-                      let displayValue = field.mergedValue;
-                      
-                      // Format dates
+                      const Icon = field.icon as any;
+                      let displayValue = field.mergedValue as any;
                       if (field.key === 'most_recent_contact' && displayValue) {
                         try {
                           displayValue = format(new Date(displayValue), 'MMM d, yyyy');
-                        } catch (e) {
-                          // Keep original if parsing fails
-                        }
+                        } catch {}
                       }
-                      
                       return (
                         <TableRow key={field.key}>
                           <TableCell className="font-medium">
@@ -261,9 +243,7 @@ export function ContactMergeDialog({ open, onOpenChange, contacts, onSuccess }: 
                 Merging...
               </>
             ) : (
-              <>
-                Confirm Merge
-              </>
+              <>Confirm Merge</>
             )}
           </Button>
         </DialogFooter>

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { edgeInvoke } from '@/lib/edgeInvoke';
+import { edgeInvoke, formatEdgeError } from '@/lib/edgeInvoke';
 
 interface MergeContactsParams {
   contactIds: string[];
@@ -13,32 +13,31 @@ export function useManualContactMerge() {
 
   const mutation = useMutation({
     mutationFn: async ({ contactIds, primaryId }: MergeContactsParams) => {
-      // Create a unique group ID for this manual merge
-      const groupId = `manual-merge-${Date.now()}`;
-      
+      // Call edge function without a synthetic groupId; provide explicit IDs
       const result = await edgeInvoke('data_normalization', {
         action: 'merge_contacts',
-        groupId,
         primaryId,
-        contactIds
+        contactIds,
+        manual: true,
       });
 
       return result;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
+      // Invalidate likely caches
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
       queryClient.invalidateQueries({ queryKey: ['contact-email-counts'] });
-      
+
       toast({
         title: 'Contacts merged successfully',
-        description: `${data.mergedCount || 'Multiple'} contacts have been merged into one.`,
+        description: `${data?.mergedCount ?? 'Selected'} contact(s) have been merged into one.`,
       });
     },
     onError: (error: any) => {
       toast({
         title: 'Merge failed',
-        description: error.message || 'Failed to merge contacts. Please try again.',
+        description: formatEdgeError(error, 'data_normalization'),
         variant: 'destructive',
       });
     },
