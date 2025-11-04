@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useDeleteContact } from "@/hooks/useDeleteContact";
+import { getAllRawColumns } from "@/lib/export/dataFetcher";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useContactDraftGenerator } from "@/hooks/useContactDraftGenerator";
 import { supabase } from "@/integrations/supabase/client";
