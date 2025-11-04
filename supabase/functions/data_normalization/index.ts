@@ -132,7 +132,7 @@ serve(async (req) => {
       }
     );
 
-    const { action, entityType, groupId, changes, preview, primaryId } = await req.json();
+    const { action, entityType, groupId, changes, preview, primaryId, contactIds, manual } = await req.json();
 
     if (action === 'scan') {
       return await scanForNormalization(supabaseClient, preview);
@@ -145,7 +145,7 @@ serve(async (req) => {
     } else if (action === 'merge_duplicates') {
       return await mergeDuplicates(supabaseClient, groupId, entityType);
     } else if (action === 'merge_contacts') {
-      return await mergeContacts(authSupabase, groupId, primaryId, user.id);
+      return await mergeContacts(authSupabase, groupId, primaryId, user.id, contactIds);
     } else if (action === 'dismiss_duplicate_group') {
       return await dismissDuplicateGroup(authSupabase, groupId, user.id);
     }
@@ -688,11 +688,27 @@ async function scanForFuzzyDuplicates(supabase: any, userId: string, isAdmin: bo
 }
 
 // Enhanced merge contacts with multi-email support
-async function mergeContacts(supabase: any, groupId: string, primaryId: string, userId: string) {
+async function mergeContacts(supabase: any, groupId: string | undefined, primaryId: string, userId: string, contactIdsParam?: string[]) {
   console.log(`Merging contacts for group ${groupId}, primary: ${primaryId}`);
 
   try {
-    const contactIds = groupId.replace('fuzzy-', '').split(',');
+    // Determine contact IDs from explicit list (manual merge) or from groupId
+    let contactIds: string[] = [];
+    if (Array.isArray(contactIdsParam) && contactIdsParam.length > 0) {
+      contactIds = [...new Set(contactIdsParam.filter(Boolean))];
+    } else if (groupId) {
+      contactIds = groupId.replace('fuzzy-', '').split(',').filter(Boolean);
+    }
+
+    if (!contactIds || contactIds.length === 0) {
+      throw new Error('No contact IDs provided for merge');
+    }
+
+    // Ensure the primary is included
+    if (!contactIds.includes(primaryId)) {
+      contactIds.push(primaryId);
+    }
+
     console.log(`Contact IDs to merge: ${contactIds.join(', ')}`);
 
     // Get all contacts in the group (using authenticated client)
