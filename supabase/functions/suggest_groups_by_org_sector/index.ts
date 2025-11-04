@@ -34,7 +34,7 @@ interface GroupMember {
 
 interface GroupSuggestion {
   suggestion_id: string;
-  name: string;
+  suggestedName: string;
   members: GroupMember[];
   organization: string;
   sector?: string;
@@ -252,7 +252,7 @@ Deno.serve(async (req) => {
           
           suggestions.push({
             suggestion_id: suggestionId,
-            name: groupName,
+            suggestedName: groupName,
             members: groupMembers,
             organization,
             sector,
@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
             
             suggestions.push({
               suggestion_id: suggestionId,
-              name: groupName,
+              suggestedName: groupName,
               members: sectorMembers.map(m => ({
                 contact_id: m.id,
                 email_address: m.email_address,
