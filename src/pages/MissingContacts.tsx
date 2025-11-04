@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { RefreshCw, Download, UserCheck, UserX, RotateCcw } from "lucide-react";
 import { useRefreshMissingContacts, useMissingCandidates, useApproveMissing, useDismissMissing } from "@/hooks/useMissingContacts";
+import { useAutoRefreshMissingContacts } from "@/hooks/useAutoRefreshMissingContacts";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
@@ -18,6 +19,9 @@ export default function MissingContacts() {
 }
 
 function MissingContactsContent() {
+  // Enable automatic periodic scanning
+  useAutoRefreshMissingContacts();
+  
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());

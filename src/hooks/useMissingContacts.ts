@@ -10,8 +10,18 @@ interface ContactData {
   title?: string;
   lg_sector?: string;
   lg_focus_areas_comprehensive_list?: string;
+  lg_focus_areas?: string[];
   areas_of_specialization?: string;
   notes?: string;
+  phone?: string;
+  linkedin_url?: string;
+  x_twitter_url?: string;
+  url_to_online_bio?: string;
+  category?: string;
+  lg_lead?: string;
+  lg_assistant?: string;
+  delta_type?: string;
+  delta?: string;
 }
 
 export function useMissingCandidates(params: {
@@ -68,9 +78,13 @@ export function useApproveMissingContact() {
     mutationFn: async ({
       email,
       contactData,
+      groupId,
+      emailRole,
     }: {
       email: string;
       contactData?: ContactData;
+      groupId?: string | null;
+      emailRole?: 'to' | 'cc' | 'bcc';
     }) => {
       // Step 1: Call the approve RPC which creates the contact and updates status
       const { data: contactId, error: approveError } = await (supabase.rpc as any)(
@@ -90,19 +104,34 @@ export function useApproveMissingContact() {
       if (contactData) {
         const updateFields: any = {};
         
+        // Handle focus areas conversion
+        if (contactData.lg_focus_areas && contactData.lg_focus_areas.length > 0) {
+          updateFields.lg_focus_areas_comprehensive_list = contactData.lg_focus_areas.join(', ');
+          // Individual slots
+          for (let i = 0; i < 8; i++) {
+            updateFields[`lg_focus_area_${i + 1}`] = contactData.lg_focus_areas[i] || null;
+          }
+        }
+        
         if (contactData.full_name && contactData.full_name !== contactData.email_address) {
           updateFields.full_name = contactData.full_name;
         }
         if (contactData.organization) updateFields.organization = contactData.organization;
         if (contactData.title) updateFields.title = contactData.title;
         if (contactData.lg_sector) updateFields.lg_sector = contactData.lg_sector;
-        if (contactData.lg_focus_areas_comprehensive_list) {
-          updateFields.lg_focus_areas_comprehensive_list = contactData.lg_focus_areas_comprehensive_list;
-        }
         if (contactData.areas_of_specialization) {
           updateFields.areas_of_specialization = contactData.areas_of_specialization;
         }
         if (contactData.notes) updateFields.notes = contactData.notes;
+        if (contactData.phone) updateFields.phone = contactData.phone;
+        if (contactData.linkedin_url) updateFields.linkedin_url = contactData.linkedin_url;
+        if (contactData.x_twitter_url) updateFields.x_twitter_url = contactData.x_twitter_url;
+        if (contactData.url_to_online_bio) updateFields.url_to_online_bio = contactData.url_to_online_bio;
+        if (contactData.category) updateFields.category = contactData.category;
+        if (contactData.lg_lead) updateFields.lg_lead = contactData.lg_lead;
+        if (contactData.lg_assistant) updateFields.lg_assistant = contactData.lg_assistant;
+        if (contactData.delta_type) updateFields.delta_type = contactData.delta_type;
+        if (contactData.delta) updateFields.delta = parseInt(contactData.delta);
 
         // Only update if there are additional fields to set
         if (Object.keys(updateFields).length > 0) {
@@ -118,11 +147,32 @@ export function useApproveMissingContact() {
         }
       }
 
+      // Step 3: Add to group if specified
+      if (groupId) {
+        const { error: membershipError } = await supabase
+          .from('contact_group_memberships')
+          .insert({
+            contact_id: contactId,
+            group_id: groupId,
+            email_role: emailRole || 'to',
+          });
+
+        if (membershipError) {
+          console.error('Failed to add to group:', membershipError);
+          // Don't throw - contact was created successfully
+        }
+      }
+
       return contactId;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ["missing-contacts"] });
-      qc.invalidateQueries({ queryKey: ["contacts"] }); // Refresh contacts table
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      if (variables.groupId) {
+        qc.invalidateQueries({ queryKey: ['groups'] });
+        qc.invalidateQueries({ queryKey: ['group-members-new', variables.groupId] });
+        qc.invalidateQueries({ queryKey: ['contact-groups'] });
+      }
       toast({ title: 'Contact approved', description: 'Added to Contacts.' });
     },
     onError: (e: any) => {
