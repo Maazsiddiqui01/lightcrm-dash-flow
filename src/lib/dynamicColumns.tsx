@@ -24,6 +24,11 @@ export interface EditHandlers {
   onCancelEdit: () => void;
 }
 
+export interface DynamicOptions {
+  sectors?: Array<{ value: string; label: string }>;
+  focusAreas?: Array<{ value: string; label: string }>;
+}
+
 // Format cell value for display
 export const formatCellValue = (value: any, column: TableColumn): string => {
   if (value === null || value === undefined) return '';
@@ -80,7 +85,8 @@ export function createDynamicColumns<T extends Record<string, any>>(
   tableName: 'contacts_raw' | 'opportunities_raw',
   editState: EditState,
   editHandlers: EditHandlers,
-  columnVisibility: Record<string, boolean> = {}
+  columnVisibility: Record<string, boolean> = {},
+  dynamicOptions?: DynamicOptions
 ): ColumnDef<T>[] {
   const nonEditableColumns = getNonEditableColumns();
   const hiddenByDefaultColumns = getHiddenByDefaultColumns();
@@ -113,7 +119,16 @@ export function createDynamicColumns<T extends Record<string, any>>(
 
         // If this column is editable and we're in edit mode
         if (isEditable) {
-          const config: EditableFieldConfig = editableConfig[tableColumn.name];
+          let config: EditableFieldConfig = editableConfig[tableColumn.name];
+          
+          // Override options with dynamic data if available (convert to string array)
+          if (dynamicOptions) {
+            if (tableColumn.name === 'lg_sector' && dynamicOptions.sectors) {
+              config = { ...config, options: dynamicOptions.sectors.map(s => s.label) };
+            } else if (tableColumn.name.startsWith('lg_focus_area') && dynamicOptions.focusAreas) {
+              config = { ...config, options: dynamicOptions.focusAreas.map(f => f.label) };
+            }
+          }
           
           return (
             <EditableCell

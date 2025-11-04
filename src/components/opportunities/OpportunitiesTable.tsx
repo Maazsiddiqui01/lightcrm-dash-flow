@@ -27,6 +27,7 @@ import { useEditMode } from "@/hooks/useEditMode";
 import { useColumnVisibility } from "@/hooks/useColumnVisibility";
 import { ColumnsMenu } from "@/components/shared/ColumnsMenu";
 import { EditToolbar } from "@/components/shared/EditToolbar";
+import { useDynamicEditOptions } from "@/hooks/useDynamicEditOptions";
 
 // Multi-sort imports
 import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
@@ -137,6 +138,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
   // Initialize edit mode and column visibility
   const editMode = useEditMode('opportunities_raw', opportunities, setOpportunities);
   const columnVisibility = useColumnVisibility('columns:opportunities_raw');
+  const dynamicEditOptions = useDynamicEditOptions();
   
   // Get table columns metadata - ensure it's always an array
   const tableColumns = useMemo(() => {
@@ -160,7 +162,11 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         onCommitEdit: editMode.commitEdit,
         onCancelEdit: editMode.cancelEdit,
       },
-      columnVisibility.columnVisibility
+      columnVisibility.columnVisibility,
+      {
+        sectors: dynamicEditOptions.sectors,
+        focusAreas: dynamicEditOptions.focusAreas,
+      }
     );
 
     // Add the Actions dropdown column at the end
@@ -227,7 +233,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
     };
 
     return [actionsColumn, ...baseColumns];
-  }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility]);
+  }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility, dynamicEditOptions.sectors, dynamicEditOptions.focusAreas]);
   
   // Create column options for sort dialog
   const columnOptions: ColumnOption[] = useMemo(() => {

@@ -34,6 +34,7 @@ import { useContactsWithOpportunities } from "@/hooks/useContactsWithOpportuniti
 import { BulkGroupAssignmentModal } from "./BulkGroupAssignmentModal";
 import { useFocusAreaSectorMapping } from "@/hooks/useFocusAreaSectorMapping";
 import { mapFocusAreasToSectors, getAllFocusAreas } from "@/utils/sectorMapping";
+import { useDynamicEditOptions } from "@/hooks/useDynamicEditOptions";
 import { 
   calculateDaysOverUnderMaxLag, 
   formatDaysOverUnder, 
@@ -125,6 +126,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   // Initialize edit mode and column visibility
   const editMode = useEditMode('contacts_raw', contacts, setContacts);
   const columnVisibility = useColumnVisibility('columns:contacts_raw');
+  const dynamicEditOptions = useDynamicEditOptions();
 
   // Track opportunities column visibility and notify parent
   useEffect(() => {
@@ -191,9 +193,13 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         onCommitEdit: editMode.commitEdit,
         onCancelEdit: editMode.cancelEdit,
       },
-      columnVisibility.columnVisibility
+      columnVisibility.columnVisibility,
+      {
+        sectors: dynamicEditOptions.sectors,
+        focusAreas: dynamicEditOptions.focusAreas,
+      }
     );
-  }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility]);
+  }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility, dynamicEditOptions.sectors, dynamicEditOptions.focusAreas]);
 
   // Handle draft email generation
   const handleSendContactEmail = async (contactId: string) => {
