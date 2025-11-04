@@ -501,21 +501,29 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const handleExport = async () => {
     setIsExporting(true);
     
-    // Get only visible columns
+    // Get only visible columns (excluding actions)
     const visibleColumns = dynamicColumns
-      .filter(col => columnVisibility.columnVisibility[col.key] !== false)
+      .filter(col => col.key !== 'actions' && columnVisibility.columnVisibility[col.key] !== false)
       .map(col => col.key);
     
     const columnHeaders = Object.fromEntries(
-      dynamicColumns.map(col => [col.key, col.label])
+      dynamicColumns
+        .filter(col => col.key !== 'actions')
+        .map(col => [col.key, col.label])
     );
+    
+    // Get selected row IDs if any
+    const selectedRowIds = selectedRows.map(row => row.id);
 
     try {
       await exportCsv({
         page: 'contacts',
-        mode: 'current', // Always export current view
-        selectedIds: undefined, // No selection support yet
-        filters: { searchTerm },
+        mode: 'current',
+        selectedIds: selectedRowIds.length > 0 ? selectedRowIds : undefined,
+        filters: {
+          ...externalFilters,
+          searchTerm
+        },
         sortLevels,
         visibleColumns,
         columnHeaders

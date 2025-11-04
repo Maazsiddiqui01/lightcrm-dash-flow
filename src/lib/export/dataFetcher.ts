@@ -15,22 +15,104 @@ export async function collectFilteredIds({
 }): Promise<string[]> {
   const table = page === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
   
-  let query = supabase
+  // Type as any to avoid excessive depth errors with complex query chains
+  let query: any = supabase
     .from(table)
     .select('id');
 
-  // Apply filters (reuse existing filter logic)
-  if (filters?.searchTerm) {
-    if (page === 'contacts') {
+  // Apply filters based on page type
+  if (page === 'opportunities') {
+    // Apply all opportunity filters
+    if (filters?.focusArea?.length > 0) {
+      query = query.in('lg_focus_area', filters.focusArea);
+    }
+    if (filters?.sector?.length > 0) {
+      query = query.in('sector', filters.sector);
+    }
+    if (filters?.tier?.length > 0) {
+      query = query.in('tier', filters.tier);
+    }
+    if (filters?.status?.length > 0) {
+      query = query.in('status', filters.status);
+    }
+    if (filters?.ownershipType?.length > 0) {
+      query = query.in('ownership_type', filters.ownershipType);
+    }
+    if (filters?.platformAddOn?.length > 0) {
+      query = query.in('platform_add_on', filters.platformAddOn);
+    }
+    if (filters?.headquarters?.length > 0) {
+      query = query.in('headquarters', filters.headquarters);
+    }
+    if (filters?.funds?.length > 0) {
+      query = query.in('funds', filters.funds);
+    }
+    if (filters?.leads?.length > 0) {
+      const lgLeadQuery = filters.leads.map((lead: string) => 
+        `investment_professional_point_person_1.ilike.%${lead}%,investment_professional_point_person_2.ilike.%${lead}%`
+      ).join(',');
+      query = query.or(lgLeadQuery);
+    }
+    if (filters?.referralContacts?.length > 0) {
+      const contactQuery = filters.referralContacts.map((contact: string) => 
+        `deal_source_individual_1.ilike.%${contact}%,deal_source_individual_2.ilike.%${contact}%`
+      ).join(',');
+      query = query.or(contactQuery);
+    }
+    if (filters?.referralCompanies?.length > 0) {
+      query = query.in('deal_source_company', filters.referralCompanies);
+    }
+    if (filters?.ebitdaMin !== null && filters?.ebitdaMin !== undefined) {
+      query = query.gte('ebitda_in_ms', filters.ebitdaMin);
+    }
+    if (filters?.ebitdaMax !== null && filters?.ebitdaMax !== undefined) {
+      query = query.lte('ebitda_in_ms', filters.ebitdaMax);
+    }
+    if (filters?.dateOfOrigination?.length > 0) {
+      const dateConditions = filters.dateOfOrigination.map((dateValue: string) => {
+        if (dateValue.includes(' to ')) {
+          const [start, end] = dateValue.split(' to ');
+          return `date_of_origination.gte.${start},date_of_origination.lte.${end}`;
+        }
+        return `date_of_origination.eq.${dateValue}`;
+      });
+      query = query.or(dateConditions.join(','));
+    }
+    if (filters?.processTimeline?.length > 0) {
+      query = query.in('process_timeline', filters.processTimeline);
+    }
+    if (filters?.acquisitionDateStart) {
+      query = query.gte('acquisition_date', filters.acquisitionDateStart.toISOString().split('T')[0]);
+    }
+    if (filters?.acquisitionDateEnd) {
+      query = query.lte('acquisition_date', filters.acquisitionDateEnd.toISOString().split('T')[0]);
+    }
+    
+    // Search term for opportunities
+    if (filters?.searchTerm) {
+      const searchLower = filters.searchTerm.toLowerCase().trim();
+      query = query.or(
+        `deal_name.ilike.%${searchLower}%,` +
+        `summary_of_opportunity.ilike.%${searchLower}%,` +
+        `deal_source_company.ilike.%${searchLower}%,` +
+        `deal_source_individual_1.ilike.%${searchLower}%,` +
+        `deal_source_individual_2.ilike.%${searchLower}%,` +
+        `sector.ilike.%${searchLower}%,` +
+        `most_recent_notes.ilike.%${searchLower}%,` +
+        `next_steps.ilike.%${searchLower}%,` +
+        `lg_focus_area.ilike.%${searchLower}%`
+      );
+    }
+  } else if (page === 'contacts') {
+    // Apply contact filters
+    if (filters?.searchTerm) {
       query = query.or(`full_name.ilike.%${filters.searchTerm}%,email_address.ilike.%${filters.searchTerm}%,organization.ilike.%${filters.searchTerm}%`);
-    } else {
-      query = query.or(`deal_name.ilike.%${filters.searchTerm}%,sector.ilike.%${filters.searchTerm}%`);
     }
   }
 
   // Apply sorting
   if (sortLevels && sortLevels.length > 0) {
-    sortLevels.forEach(level => {
+    sortLevels.forEach((level: any) => {
       if (!level.custom) {
         query = query.order(level.id, { ascending: !level.desc });
       }
@@ -46,7 +128,7 @@ export async function collectFilteredIds({
     throw new Error(`Failed to fetch IDs: ${error.message}`);
   }
   
-  return (data || []).map(row => row.id);
+  return (data || []).map((row: any) => row.id);
 }
 
 /**

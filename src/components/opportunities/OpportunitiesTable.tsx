@@ -523,9 +523,12 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
     try {
       await exportCsv({
         page: 'opportunities',
-        mode: 'current', // Always export current view
-        selectedIds: undefined, // No selection support yet
-        filters: { searchTerm },
+        mode: 'current',
+        selectedIds: selectedRows.length > 0 ? selectedRows : undefined,
+        filters: {
+          ...filters,
+          searchTerm
+        },
         sortLevels,
         visibleColumns,
         columnHeaders
