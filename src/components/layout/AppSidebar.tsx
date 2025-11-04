@@ -28,7 +28,6 @@ const menuItems = [
   { title: "Tom New View", url: "/tom-new-view", icon: Eye, roles: ['admin', 'user'] },
   { title: "Data Maintenance", url: "/data-maintenance", icon: Settings, roles: ['admin'] },
   { title: "Make Your Own View", url: "/make-your-own-view", icon: Table, roles: ['admin'] },
-  { title: "Ask AI", url: "/ask-ai", icon: Bot, roles: ['admin', 'user'] },
 ];
 
 export function AppSidebar() {

@@ -15,7 +15,6 @@ const navItems = [
   { title: "Email Builder", url: "/email-builder", roles: ['admin', 'user', 'viewer'] },
   { title: "Pending Contacts", url: "/missing-contacts", roles: ['admin'] },
   { title: "Interactions", url: "/interactions", roles: ['admin', 'user'] },
-  { title: "AI Agent", url: "/make-your-own-view", roles: ['admin'] },
   { title: "Data Maintenance", url: "/data-maintenance", roles: ['admin'] },
 ];
 
