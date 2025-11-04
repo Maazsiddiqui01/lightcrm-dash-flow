@@ -13,8 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useDeleteContact } from "@/hooks/useDeleteContact";
-import { exportCsv } from "@/lib/export/exportService";
-import { getAllRawColumns } from "@/lib/export/dataFetcher";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useContactDraftGenerator } from "@/hooks/useContactDraftGenerator";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useQuery } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
 import { useLastInteractionUpload } from "@/hooks/useLastInteractionUpload";
+import { buildCsv, downloadCsv, generateExportFilename, safeCell } from "@/lib/export/csvUtils";
 
 // Dynamic column imports
 import { CONTACTS_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -501,35 +500,42 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   // Simplified export function - exports visible columns of filtered rows
   const handleExport = async () => {
     setIsExporting(true);
-    
-    // Allowed DB columns only (exclude UI/computed like 'actions', 'opportunities', 'mapped_sectors', etc.)
-    const allowed = new Set(getAllRawColumns('contacts'));
-    const visibleColumns = dynamicColumns
-      .filter(col => col.key !== 'actions' && allowed.has(col.key) && columnVisibility.columnVisibility[col.key] !== false)
-      .map(col => col.key);
-    
-    const columnHeaders = Object.fromEntries(
-      dynamicColumns
-        .filter(col => col.key !== 'actions' && allowed.has(col.key))
-        .map(col => [col.key, col.label])
-    );
-    
-    // Get selected row IDs if any
-    const selectedRowIds = selectedRows.map(row => row.id);
 
     try {
-      await exportCsv({
-        page: 'contacts',
-        mode: 'current',
-        selectedIds: selectedRowIds.length > 0 ? selectedRowIds : undefined,
-        filters: {
-          ...externalFilters,
-          searchTerm
-        },
-        sortLevels,
-        visibleColumns,
-        columnHeaders
+      // Allowed DB columns only (exclude UI/computed like 'actions', 'opportunities', 'mapped_sectors', etc.)
+      const allowed = new Set(getAllRawColumns('contacts'));
+      const exportableColumns = dynamicColumns
+        .filter(col => col.key !== 'actions' && allowed.has(col.key) && columnVisibility.columnVisibility[col.key] !== false);
+
+      const visibleColumns = exportableColumns.map(col => col.key);
+      const columnHeaders = Object.fromEntries(exportableColumns.map(col => [col.key, col.label]));
+
+      // Determine rows: selected vs all filtered
+      const selectedRowIds = selectedRows.map(row => row.id);
+      const rowsToExport = selectedRowIds.length > 0
+        ? selectedRows
+        : filteredContacts;
+
+      if (!rowsToExport || rowsToExport.length === 0) {
+        toast({ title: 'No rows to export', description: 'Try adjusting your filters.', variant: 'destructive' });
+        return;
+      }
+
+      // Build CSV
+      const headers = visibleColumns.length > 0 ? visibleColumns.map(k => columnHeaders[k] || k) : [];
+      const data = rowsToExport.map(row => {
+        if (visibleColumns.length === 0) return [];
+        return visibleColumns.map(col => safeCell((row as any)[col]));
       });
+
+      const csv = buildCsv(headers, data);
+      const filename = generateExportFilename(`contacts-current`);
+      downloadCsv(filename, csv);
+
+      toast({ title: 'Export complete', description: `Exported ${rowsToExport.length} row(s).` });
+    } catch (err: any) {
+      console.error('Contacts export failed, fallback error:', err);
+      toast({ title: 'Export failed', description: err?.message || 'Unknown error', variant: 'destructive' });
     } finally {
       setIsExporting(false);
     }
