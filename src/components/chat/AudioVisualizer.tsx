@@ -18,6 +18,11 @@ export function AudioVisualizer({ stream, isRecording }: AudioVisualizerProps) {
     const canvasCtx = canvas.getContext("2d");
     if (!canvasCtx) return;
 
+    // Get computed primary color from CSS variables
+    const computedStyle = getComputedStyle(document.documentElement);
+    const primaryHsl = computedStyle.getPropertyValue('--primary').trim();
+    const primaryColor = `hsl(${primaryHsl})`;
+    
     // Create audio context and analyzer
     audioContextRef.current = new AudioContext();
     const source = audioContextRef.current.createMediaStreamSource(stream);
@@ -44,7 +49,7 @@ export function AudioVisualizer({ stream, isRecording }: AudioVisualizerProps) {
 
       // Draw waveform
       canvasCtx.lineWidth = 2;
-      canvasCtx.strokeStyle = "hsl(var(--primary))";
+      canvasCtx.strokeStyle = primaryColor;
       canvasCtx.beginPath();
 
       const sliceWidth = (canvas.width * 1.0) / bufferLength;
@@ -75,8 +80,10 @@ export function AudioVisualizer({ stream, isRecording }: AudioVisualizerProps) {
         const barHeight = (dataArray[i] / 255) * canvas.height * 0.8;
         
         const gradient = canvasCtx.createLinearGradient(0, canvas.height, 0, canvas.height - barHeight);
-        gradient.addColorStop(0, "hsl(var(--primary) / 0.6)");
-        gradient.addColorStop(1, "hsl(var(--primary))");
+        // Parse HSL and create semi-transparent version
+        const [h, s, l] = primaryHsl.split(' ').map(v => parseFloat(v));
+        gradient.addColorStop(0, `hsla(${h}, ${s}%, ${l}%, 0.6)`);
+        gradient.addColorStop(1, primaryColor);
         
         canvasCtx.fillStyle = gradient;
         canvasCtx.fillRect(barX, canvas.height - barHeight, barWidth, barHeight);
