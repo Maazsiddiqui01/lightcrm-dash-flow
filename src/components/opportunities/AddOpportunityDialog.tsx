@@ -75,7 +75,10 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
   
   // Use the canonical lookup hooks
   const { data: sectorOptions = [], isLoading: isLoadingSectors } = useSectors();
-  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useFocusAreasBySector(formData.sector);
+  // Show all focus areas initially, filter by sector once one is selected
+  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useFocusAreasBySector(
+    formData.sector && formData.sector.trim() ? formData.sector : undefined
+  );
   
   const { 
     dealSourceCompanyOptions,
