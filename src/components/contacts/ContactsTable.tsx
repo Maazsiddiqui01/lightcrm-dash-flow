@@ -20,6 +20,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ContactWithOpportunities, ContactFilters } from "@/types/contact";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
+import { format, formatDistanceToNow } from "date-fns";
+import { useLastInteractionUpload } from "@/hooks/useLastInteractionUpload";
 
 // Dynamic column imports
 import { CONTACTS_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -597,26 +599,53 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
               </Button>
             </div>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={loading || isRefreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
-            Refresh View
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefreshInteractions}
-            disabled={isRefreshingInteractions || loading}
-            title="Recalculate all contact interaction dates from the database"
-          >
-            <Database className={`h-4 w-4 mr-2 ${isRefreshingInteractions ? 'animate-spin' : ''}`} />
-            Sync Interactions
-          </Button>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                disabled={loading || isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
+                Refresh View
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshInteractions}
+                disabled={isRefreshingInteractions || loading}
+                title="Recalculate all contact interaction dates from the database"
+              >
+                <Database className={`h-4 w-4 mr-2 ${isRefreshingInteractions ? 'animate-spin' : ''}`} />
+                Sync Interactions
+              </Button>
+            </div>
+            
+            <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+              {(() => {
+                const lastUpload = useLastInteractionUpload();
+                const lastSyncTime = localStorage.getItem('lastInteractionSync');
+                const lastSyncDate = lastSyncTime ? new Date(parseInt(lastSyncTime)) : null;
+                
+                return (
+                  <>
+                    {lastUpload.data && (
+                      <span>
+                        Last Data Upload: {format(lastUpload.data, 'MMM d, yyyy \'at\' h:mm a')}
+                      </span>
+                    )}
+                    {lastSyncDate && (
+                      <span>
+                        Synced {formatDistanceToNow(lastSyncDate, { addSuffix: true })}
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
           
           <ColumnsMenu
             columns={dynamicColumns}

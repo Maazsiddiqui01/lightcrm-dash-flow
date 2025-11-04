@@ -197,49 +197,12 @@ export function Contacts() {
         />
 
         {/* Filters */}
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <ContactFilterBar 
-              filters={filters}
-              onFiltersChange={updateFilters}
-              onClearFilters={clearFilters}
-              showOpportunityFilters={showOpportunityFilters}
-            />
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {(() => {
-              const lastSyncTime = localStorage.getItem('lastInteractionSync');
-              const lastSyncDate = lastSyncTime ? new Date(parseInt(lastSyncTime)) : null;
-              const isStale = lastSyncDate && (Date.now() - lastSyncDate.getTime() > 2 * 60 * 60 * 1000);
-              
-              return (
-                <>
-                  {lastSyncDate && (
-                    <div className="hidden lg:flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground whitespace-nowrap">
-                        Synced {formatDistanceToNow(lastSyncDate, { addSuffix: true })}
-                      </span>
-                      {isStale && (
-                        <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400">
-                          May be outdated
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  <Button 
-                    onClick={syncNow}
-                    variant="outline"
-                    disabled={isSyncing}
-                    className="touch-target"
-                  >
-                    <RefreshCw className={`h-4 w-4 sm:mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-                    <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync Interactions'}</span>
-                  </Button>
-                </>
-              );
-            })()}
-          </div>
-        </div>
+        <ContactFilterBar 
+          filters={filters}
+          onFiltersChange={updateFilters}
+          onClearFilters={clearFilters}
+          showOpportunityFilters={showOpportunityFilters}
+        />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
