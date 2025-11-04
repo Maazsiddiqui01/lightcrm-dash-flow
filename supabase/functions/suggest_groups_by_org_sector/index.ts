@@ -228,7 +228,12 @@ Deno.serve(async (req) => {
       if (members.length < 2) continue;
       
       const focusAreaAnalysis = analyzeFocusAreas(members);
-      const strongFocusAreas = focusAreaAnalysis.filter(fa => fa.count >= 3);
+      // Filter out "General BD" as it's too generic, and require at least 40% member overlap
+      const strongFocusAreas = focusAreaAnalysis.filter(fa => 
+        fa.count >= 3 && 
+        fa.normalized !== 'General BD' &&
+        fa.count / members.length >= 0.4
+      );
       
       if (strongFocusAreas.length > 0) {
         for (const focusArea of strongFocusAreas) {
@@ -245,19 +250,28 @@ Deno.serve(async (req) => {
           
           if (groupMembers.length < 2) continue;
           
-          const sector = members[0]?.lg_sector || '';
-          const groupName = focusArea.display || sector || organization;
+          // Keep actual sector data separate
+          const actualSector = members[0]?.lg_sector || '';
+          // Always include organization in group name for context
+          const groupName = `${organization} - ${focusArea.display}`;
           const memberEmails = groupMembers.map(m => m.email);
-          const suggestionId = generateStableSuggestionId(organization, focusArea.display || sector || '', memberEmails);
+          const suggestionId = generateStableSuggestionId(organization, focusArea.display || '', memberEmails);
+          
+          // Calculate confidence based on member overlap ratio
+          const ratio = focusArea.count / members.length;
+          const confidence = ratio >= 0.8 ? 0.9 :  // 80%+ members share focus = high confidence
+                             ratio >= 0.6 ? 0.75 : // 60%+ = medium-high
+                             ratio >= 0.4 ? 0.6 :  // 40%+ = medium (our threshold)
+                             0.4;                   // Below 40% shouldn't appear due to filter
           
           suggestions.push({
             suggestion_id: suggestionId,
             suggestedName: groupName,
             members: groupMembers,
             organization,
-            sector,
+            sector: actualSector,
             focusArea: focusArea.display,
-            confidence: Math.min(0.95, 0.7 + (focusArea.count / members.length) * 0.25)
+            confidence
           });
         }
       } else {
