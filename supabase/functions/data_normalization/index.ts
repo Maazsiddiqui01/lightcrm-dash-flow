@@ -734,31 +734,19 @@ async function mergeContacts(supabase: any, groupId: string | undefined, primary
     const duplicateIds = groupContacts.filter(c => c.id !== primaryId).map(c => c.id);
     console.log(`Merging ${duplicateIds.length} duplicates into primary ${primaryId}`);
 
-    // Fetch all existing emails from contact_email_addresses
-    const { data: existingEmails } = await supabase
-      .from('contact_email_addresses')
-      .select('contact_id, email_address')
-      .in('contact_id', contactIds);
-
+    // Only collect the primary email_address from each contact being merged
     const allEmails = new Set<string>();
-
-    // Collect from contact_email_addresses table
-    for (const emailRec of existingEmails || []) {
-      allEmails.add(emailRec.email_address.toLowerCase().trim());
-    }
-
-    // Also collect from main email_address and all_emails fields
+    
     for (const contact of groupContacts) {
       if (contact.email_address) {
-        allEmails.add(contact.email_address.toLowerCase().trim());
-      }
-      if (contact.all_emails) {
-        const emails = contact.all_emails.split(';').map((e: string) => e.trim().toLowerCase()).filter((e: string) => e);
-        emails.forEach((e: string) => allEmails.add(e));
+        const email = contact.email_address.toLowerCase().trim();
+        if (email) {
+          allEmails.add(email);
+        }
       }
     }
 
-    console.log(`Collected ${allEmails.size} unique emails`);
+    console.log(`Collected ${allEmails.size} unique emails from ${groupContacts.length} contacts`);
 
     // Insert/update all emails into contact_email_addresses for primary contact
     const primaryEmail = primaryContact.email_address?.toLowerCase().trim();
