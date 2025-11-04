@@ -77,7 +77,9 @@ export function useVoiceRecording() {
           if (!response.ok) throw new Error("Transcription failed");
 
           const data = await response.json();
-          resolve(data.transcription || null);
+          // Parse response format: [{ "text": "transcription" }]
+          const transcription = Array.isArray(data) && data[0]?.text ? data[0].text : null;
+          resolve(transcription);
         } catch (error) {
           console.error("Error processing audio:", error);
           toast({
