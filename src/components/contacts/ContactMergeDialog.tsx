@@ -61,14 +61,14 @@ export function ContactMergeDialog({ open, onOpenChange, contacts, onSuccess }: 
       { key: 'email_address', label: 'Email', icon: Mail },
       { key: 'organization', label: 'Organization', icon: Building },
       { key: 'title', label: 'Title', icon: Briefcase },
-      { key: 'lg_sector', label: 'Sector' },
-      { key: 'lg_focus_areas_comprehensive_list', label: 'Focus Areas' },
-      { key: 'areas_of_specialization', label: 'Specialization' },
-      { key: 'phone', label: 'Phone' },
-      { key: 'city', label: 'City' },
-      { key: 'state', label: 'State' },
+      { key: 'lg_sector', label: 'Sector', icon: undefined },
+      { key: 'lg_focus_areas_comprehensive_list', label: 'Focus Areas', icon: undefined },
+      { key: 'areas_of_specialization', label: 'Specialization', icon: undefined },
+      { key: 'phone', label: 'Phone', icon: undefined },
+      { key: 'city', label: 'City', icon: undefined },
+      { key: 'state', label: 'State', icon: undefined },
       { key: 'most_recent_contact', label: 'Most Recent Contact', icon: Calendar },
-    ] as const;
+    ];
 
     return fields.map((field) => {
       const values = contacts.map((c) => ({
@@ -170,7 +170,7 @@ export function ContactMergeDialog({ open, onOpenChange, contacts, onSuccess }: 
                   </TableHeader>
                   <TableBody>
                     {mergedPreview.map((field) => {
-                      const Icon = field.icon as any;
+                      const Icon = field.icon;
                       let displayValue = field.mergedValue as any;
                       if (field.key === 'most_recent_contact' && displayValue) {
                         try {
