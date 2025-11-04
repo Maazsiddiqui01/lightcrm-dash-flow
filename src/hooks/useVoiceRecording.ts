@@ -56,32 +56,21 @@ export function useVoiceRecording() {
         try {
           setIsTranscribing(true);
 
-          // Upload to Supabase Storage
+          // Get authenticated user
           const user = (await supabase.auth.getUser()).data.user;
           if (!user) throw new Error("Not authenticated");
 
-          const fileName = `${user.id}/${Date.now()}.webm`;
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from("chat-audio")
-            .upload(fileName, audioBlob);
+          // Create FormData with audio file
+          const formData = new FormData();
+          formData.append("audio", audioBlob, "recording.webm");
+          formData.append("userId", user.id);
 
-          if (uploadError) throw uploadError;
-
-          // Get public URL
-          const { data: urlData } = supabase.storage
-            .from("chat-audio")
-            .getPublicUrl(fileName);
-
-          // Call transcription webhook
+          // Call transcription webhook with binary audio
           const response = await fetch(
             "https://inverisllc.app.n8n.cloud/webhook/Voice-Transcription",
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                audioUrl: urlData.publicUrl,
-                userId: user.id,
-              }),
+              body: formData,
             }
           );
 
