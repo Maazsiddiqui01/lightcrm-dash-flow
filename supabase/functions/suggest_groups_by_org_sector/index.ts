@@ -24,12 +24,12 @@ interface ContactData {
 }
 
 interface GroupMember {
-  contact_id: string;
-  email_address: string;
-  full_name: string;
+  contactId: string;
+  email: string;
+  name: string;
   organization: string;
   sector?: string;
-  focus_areas: string[];
+  focusAreas: string[];
 }
 
 interface GroupSuggestion {
@@ -235,19 +235,19 @@ Deno.serve(async (req) => {
           const groupMembers = members
             .filter(m => memberHasFocusArea(m, focusArea.normalized))
             .map(m => ({
-              contact_id: m.id,
-              email_address: m.email_address,
-              full_name: m.full_name,
+              contactId: m.id,
+              email: m.email_address,
+              name: m.full_name,
               organization: m.organization,
               sector: m.lg_sector,
-              focus_areas: extractFocusAreas(m)
+              focusAreas: extractFocusAreas(m)
             }));
           
           if (groupMembers.length < 2) continue;
           
           const sector = members[0]?.lg_sector || '';
           const groupName = focusArea.display || sector || organization;
-          const memberEmails = groupMembers.map(m => m.email_address);
+          const memberEmails = groupMembers.map(m => m.email);
           const suggestionId = generateStableSuggestionId(organization, focusArea.display || sector || '', memberEmails);
           
           suggestions.push({
@@ -273,12 +273,12 @@ Deno.serve(async (req) => {
               suggestion_id: suggestionId,
               suggestedName: groupName,
               members: sectorMembers.map(m => ({
-                contact_id: m.id,
-                email_address: m.email_address,
-                full_name: m.full_name,
+                contactId: m.id,
+                email: m.email_address,
+                name: m.full_name,
                 organization: m.organization,
                 sector: m.lg_sector,
-                focus_areas: extractFocusAreas(m)
+                focusAreas: extractFocusAreas(m)
               })),
               organization,
               sector: sectorName,
