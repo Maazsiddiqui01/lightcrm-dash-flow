@@ -53,12 +53,7 @@ export function ChatInput({
     const transcription = await stopRecording();
     if (transcription) {
       setMessage(transcription);
-      // Auto-send after transcription
-      setTimeout(() => {
-        if (transcription.trim()) {
-          onSend(transcription.trim());
-        }
-      }, 100);
+      // User can now edit and manually click Send
     }
   };
 
