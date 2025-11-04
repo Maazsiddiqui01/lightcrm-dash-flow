@@ -249,6 +249,7 @@ export function Opportunities() {
         <OpportunitiesTableWithErrorBoundary 
           filters={filters}
           onSelectionChange={setSelectedRows}
+          selectedRows={selectedRows}
         />
 
         <AddOpportunityDialog 

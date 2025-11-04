@@ -8,6 +8,7 @@ interface Props {
   children?: ReactNode;
   filters: any;
   onSelectionChange?: (selectedIds: string[]) => void;
+  selectedRows?: string[];
 }
 
 interface State {
@@ -64,12 +65,13 @@ class OpportunitiesErrorBoundary extends Component<Props, State> {
   }
 }
 
-export function OpportunitiesTableWithErrorBoundary({ filters, onSelectionChange }: Omit<Props, 'children'>) {
+export function OpportunitiesTableWithErrorBoundary({ filters, onSelectionChange, selectedRows }: Omit<Props, 'children'>) {
   return (
     <OpportunitiesErrorBoundary filters={filters}>
       <OpportunitiesTable 
         filters={filters} 
         onSelectionChange={onSelectionChange}
+        selectedRows={selectedRows}
       />
     </OpportunitiesErrorBoundary>
   );
