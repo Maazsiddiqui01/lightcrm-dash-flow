@@ -75,10 +75,15 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
   
   // Use the canonical lookup hooks
   const { data: sectorOptions = [], isLoading: isLoadingSectors } = useSectors();
-  // Show all focus areas initially, filter by sector once one is selected
-  const { data: focusAreaOptions = [], isLoading: isLoadingFocusAreas } = useFocusAreasBySector(
+  // Fetch focus areas for auto-fill sector logic
+  const { data: focusAreaOptionsForAutoFill = [], isLoading: isLoadingFocusAreas } = useFocusAreasBySector(
     formData.sector && formData.sector.trim() ? formData.sector : undefined
   );
+  
+  // Derive sectorId from the selected sector for filtering FocusAreaSelect
+  const selectedSectorId = formData.sector && formData.sector.trim() 
+    ? sectorOptions.find(s => s.label === formData.sector)?.meta?.id 
+    : undefined;
   
   const { 
     dealSourceCompanyOptions,
@@ -100,7 +105,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     
     // Auto-fill sector if first focus area is selected and sector is currently blank
     if (newFocusAreas.length === 1 && !formData.sector) {
-      const selectedOption = focusAreaOptions.find(opt => opt.label === newFocusAreas[0]);
+      const selectedOption = focusAreaOptionsForAutoFill.find(opt => opt.label === newFocusAreas[0]);
       if (selectedOption?.meta?.sector_id) {
         // Find the sector label from the sector options
         const sectorOption = sectorOptions.find(s => s.meta?.id === selectedOption.meta.sector_id);
@@ -328,6 +333,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               onChange={handleFocusAreaChange}
               disabled={isLoading}
               label="LG Focus Area"
+              sectorId={selectedSectorId}
             />
 
             {/* Consolidated Focus Areas (Read-only) */}
