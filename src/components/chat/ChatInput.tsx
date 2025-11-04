@@ -20,7 +20,7 @@ export function ChatInput({
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { isRecording, isTranscribing, startRecording, stopRecording } = useVoiceRecording();
+  const { isRecording, isTranscribing, stream, startRecording, stopRecording } = useVoiceRecording();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -65,43 +65,46 @@ export function ChatInput({
   return (
     <div className="chat-input border-t bg-background p-4">
       <div className="max-w-3xl mx-auto flex items-end gap-2">
-        <Textarea
-          ref={textareaRef}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={
-            isTranscribing
-              ? "Transcribing..."
-              : isRecording
-              ? "Recording..."
-              : placeholder
-          }
-          disabled={disabled || isSending || isRecording || isTranscribing}
-          className="min-h-[44px] max-h-32 resize-none"
-          rows={1}
-        />
+        {!isRecording && (
+          <Textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={
+              isTranscribing
+                ? "Transcribing..."
+                : placeholder
+            }
+            disabled={disabled || isSending || isRecording || isTranscribing}
+            className="min-h-[44px] max-h-32 resize-none"
+            rows={1}
+          />
+        )}
 
         <VoiceRecorder
           isRecording={isRecording}
           isTranscribing={isTranscribing}
+          stream={stream}
           onStart={startRecording}
           onStop={handleVoiceStop}
           disabled={disabled || isSending || !!message.trim()}
         />
 
-        <Button
-          size="icon"
-          onClick={handleSend}
-          disabled={!message.trim() || isSending || disabled || isRecording}
-          className="touch-target"
-        >
-          {isSending ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <Send className="w-5 h-5" />
-          )}
-        </Button>
+        {!isRecording && (
+          <Button
+            size="icon"
+            onClick={handleSend}
+            disabled={!message.trim() || isSending || disabled || isRecording}
+            className="touch-target flex-shrink-0"
+          >
+            {isSending ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </Button>
+        )}
       </div>
       {isTranscribing && (
         <p className="text-xs text-muted-foreground text-center mt-2">

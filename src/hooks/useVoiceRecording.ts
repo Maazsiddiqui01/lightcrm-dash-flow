@@ -6,13 +6,14 @@ export function useVoiceRecording() {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
   const startRecording = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(mediaStream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -23,6 +24,7 @@ export function useVoiceRecording() {
       };
 
       mediaRecorder.start();
+      setStream(mediaStream);
       setIsRecording(true);
     } catch (error) {
       console.error("Error starting recording:", error);
@@ -46,7 +48,10 @@ export function useVoiceRecording() {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
 
         // Stop all tracks
-        mediaRecorderRef.current?.stream.getTracks().forEach((track) => track.stop());
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+          setStream(null);
+        }
 
         try {
           setIsTranscribing(true);
@@ -99,20 +104,24 @@ export function useVoiceRecording() {
 
       mediaRecorderRef.current.stop();
     });
-  }, [toast]);
+  }, [toast, stream]);
 
   const cancelRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        setStream(null);
+      }
       setIsRecording(false);
       audioChunksRef.current = [];
     }
-  }, [isRecording]);
+  }, [isRecording, stream]);
 
   return {
     isRecording,
     isTranscribing,
+    stream,
     startRecording,
     stopRecording,
     cancelRecording,
