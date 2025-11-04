@@ -180,6 +180,46 @@
   }
 }
 
+/* Mobile viewport optimization */
+@media (max-width: 768px) {
+  /* Horizontal scroll for stats with snap */
+  .mobile-scroll-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 0.75rem;
+    padding: 0 1rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  
+  .mobile-scroll-container > * {
+    scroll-snap-align: start;
+    flex: 0 0 85%;
+    min-width: 0;
+  }
+  
+  /* Bottom action bar for mobile */
+  .mobile-action-bar {
+    position: fixed;
+    bottom: 64px; /* Above mobile nav (h-16 = 64px) */
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    background: hsl(var(--background));
+    border-top: 1px solid hsl(var(--border));
+    z-index: 40;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Improve form inputs on mobile */
+  input:not([type="checkbox"]):not([type="radio"]), 
+  select, 
+  textarea {
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
+}
+
 /* Micro-interactions */
 @layer components {
   .hover-lift {

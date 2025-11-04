@@ -10,6 +10,9 @@ import { PageErrorBoundary } from '@/components/shared/PageErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CollapsibleFilter } from '@/components/shared/CollapsibleFilter';
+import { MobileStatsGrid } from '@/components/shared/MobileStatsGrid';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function KPIs() {
   return (
@@ -21,6 +24,7 @@ export default function KPIs() {
 
 function KPIsContent() {
   const filters = useKpiFilters();
+  const isMobile = useIsMobile();
   
   const { data: headerData, isLoading: headerLoading, refetch: refetchHeader } = useKpiHeader(filters);
   const { data: meetingsData, isLoading: meetingsLoading, refetch: refetchMeetings } = useKpiMeetingsPerMonth(filters);
@@ -64,26 +68,26 @@ function KPIsContent() {
       />
 
       <main className="flex-1 p-6 space-y-6 bg-background overflow-auto">
-        {/* KPI Cards */}
-        <KpiCardsNew
-          summary={headerData}
-          dateRange={dateRange}
-          loading={headerLoading}
-          filters={filters}
-        />
+        {/* Filter Bar - Collapsible on Mobile */}
+        {!isMobile && <KpiFilterBar />}
+        {isMobile && (
+          <CollapsibleFilter>
+            <KpiFilterBar />
+          </CollapsibleFilter>
+        )}
 
-        {/* Meetings Chart */}
-        <MeetingsChart
-          data={meetingsData}
-          loading={meetingsLoading}
-        />
+        {/* KPI Cards - Horizontal Scroll on Mobile */}
+        <MobileStatsGrid>
+          <KpiCardsNew
+            summary={headerData}
+            dateRange={dateRange}
+            loading={headerLoading}
+            filters={filters}
+          />
+        </MobileStatsGrid>
 
-        {/* LG Leads Performance */}
-        <KpiLgLeadsView
-          startDate={new Date(filters.dateStart)}
-          endDate={new Date(filters.dateEnd)}
-          selectedLeads={[]}
-        />
+        <MeetingsChart data={meetingsData} loading={meetingsLoading} />
+        <KpiLgLeadsView startDate={new Date(filters.dateStart)} endDate={new Date(filters.dateEnd)} selectedLeads={[]} />
       </main>
     </div>
   );

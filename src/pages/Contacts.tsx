@@ -19,6 +19,12 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useManualInteractionSync } from "@/hooks/useManualInteractionSync";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { CollapsibleFilter } from "@/components/shared/CollapsibleFilter";
+import { MobileStatsGrid } from "@/components/shared/MobileStatsGrid";
+import { FloatingActionButton } from "@/components/shared/FloatingActionButton";
+import { MobileActionMenu, MobileActionMenuItem } from "@/components/shared/MobileActionMenu";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 
 export function Contacts() {
@@ -28,6 +34,7 @@ export function Contacts() {
   const [showOpportunityFilters, setShowOpportunityFilters] = useState(true);
   const [viewMode, setViewMode] = useState<'individual' | 'group' | 'all'>('individual');
   const { syncNow, isSyncing } = useManualInteractionSync();
+  const isMobile = useIsMobile();
 
   // Sync on page load and when returning to page
   useEffect(() => {
@@ -148,64 +155,98 @@ export function Contacts() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold">Contacts</h1>
-            <p className="text-muted-foreground">Manage your professional contacts and relationships</p>
+            <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>Contacts</h1>
+            {!isMobile && (
+              <p className="text-muted-foreground">Manage your professional contacts and relationships</p>
+            )}
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setIsDuplicatesOpen(true)} variant="outline" className="touch-target">
-              <Merge className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Detect Duplicates</span>
-            </Button>
-            <Button onClick={() => setIsSuggestGroupsOpen(true)} variant="outline" className="touch-target">
-              <Sparkles className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Suggest Groups</span>
-            </Button>
-            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Add Contact</span>
-            </Button>
-          </div>
+          {!isMobile && (
+            <div className="flex gap-2">
+              <Button onClick={() => setIsDuplicatesOpen(true)} variant="outline" className="touch-target">
+                <Merge className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Detect Duplicates</span>
+              </Button>
+              <Button onClick={() => setIsSuggestGroupsOpen(true)} variant="outline" className="touch-target">
+                <Sparkles className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Suggest Groups</span>
+              </Button>
+              <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Add Contact</span>
+              </Button>
+            </div>
+          )}
+          {isMobile && (
+            <MobileActionMenu>
+              <MobileActionMenuItem onClick={() => setIsDuplicatesOpen(true)}>
+                <Merge className="mr-2 h-4 w-4" />
+                Detect Duplicates
+              </MobileActionMenuItem>
+              <MobileActionMenuItem onClick={() => setIsSuggestGroupsOpen(true)}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Suggest Groups
+              </MobileActionMenuItem>
+            </MobileActionMenu>
+          )}
         </div>
 
         {/* View Mode Toggle */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'individual' | 'group' | 'all')} className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger value="individual" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
+          <TabsList className={cn("grid w-full grid-cols-3", isMobile ? "h-10" : "max-w-2xl")}>
+            <TabsTrigger value="individual" className={cn("flex items-center gap-2", isMobile && "text-xs")}>
+              {!isMobile && <Users className="h-4 w-4" />}
               Individual
             </TabsTrigger>
-            <TabsTrigger value="group" className="flex items-center gap-2">
-              <ListTree className="h-4 w-4" />
+            <TabsTrigger value="group" className={cn("flex items-center gap-2", isMobile && "text-xs")}>
+              {!isMobile && <ListTree className="h-4 w-4" />}
               Groups
             </TabsTrigger>
-            <TabsTrigger value="all" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              All Contacts
+            <TabsTrigger value="all" className={cn("flex items-center gap-2", isMobile && "text-xs")}>
+              {!isMobile && <Users className="h-4 w-4" />}
+              All
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        {/* AI Contact Search */}
-        <AIContactSearch 
-          onSearchResults={(query, aiFilters) => {
-            // Update filters based on AI interpretation
-            updateFilters({
-              ...filters,
-              ...aiFilters
-            });
-          }}
-        />
+        {/* AI Contact Search - Collapsible on Mobile */}
+        {isMobile ? (
+          <CollapsibleFilter defaultOpen={false}>
+            <AIContactSearch 
+              onSearchResults={(query, aiFilters) => {
+                updateFilters({
+                  ...filters,
+                  ...aiFilters
+                });
+              }}
+            />
+          </CollapsibleFilter>
+        ) : (
+          <AIContactSearch 
+            onSearchResults={(query, aiFilters) => {
+              updateFilters({
+                ...filters,
+                ...aiFilters
+              });
+            }}
+          />
+        )}
 
-        {/* Filters */}
-        <ContactFilterBar 
-          filters={filters}
-          onFiltersChange={updateFilters}
-          onClearFilters={clearFilters}
-          showOpportunityFilters={showOpportunityFilters}
-        />
+        {/* Filters - Collapsible on Mobile */}
+        <CollapsibleFilter 
+          activeCount={Object.values(filters).filter(v => 
+            Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null && v !== ''
+          ).length}
+        >
+          <ContactFilterBar 
+            filters={filters}
+            onFiltersChange={updateFilters}
+            onClearFilters={clearFilters}
+            showOpportunityFilters={showOpportunityFilters}
+          />
+        </CollapsibleFilter>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+        {/* KPI Cards - Horizontal Scroll on Mobile */}
+        <MobileStatsGrid>
           <StatsCard
             title="Total Contacts"
             value={stats.loading ? "..." : stats.totalContacts}
@@ -227,10 +268,10 @@ export function Contacts() {
             value={stats.loading ? "..." : stats.totalMeetings}
             icon={Calendar}
           />
-        </div>
+        </MobileStatsGrid>
 
-        {/* Cadence KPI Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-6">
+        {/* Cadence KPI Cards - Horizontal Scroll on Mobile */}
+        <MobileStatsGrid>
           <StatsCard
             title="Contacts with Cadence Data"
             value={stats.loading ? "..." : stats.contactsWithCadenceData}
@@ -252,7 +293,7 @@ export function Contacts() {
             subtitle="Excluded from overdue"
             icon={UserX}
           />
-        </div>
+        </MobileStatsGrid>
 
         {/* Conditionally render table based on view mode */}
         {viewMode === 'individual' ? (
@@ -283,6 +324,14 @@ export function Contacts() {
           open={isDuplicatesOpen}
           onOpenChange={setIsDuplicatesOpen}
         />
+
+        {/* Floating Action Button - Mobile Only */}
+        {isMobile && (
+          <FloatingActionButton
+            onClick={() => setIsAddDialogOpen(true)}
+            aria-label="Add new contact"
+          />
+        )}
       </ResponsiveContainer>
     </div>
   );

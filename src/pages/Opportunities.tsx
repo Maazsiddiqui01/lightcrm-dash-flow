@@ -19,6 +19,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { CollapsibleFilter } from "@/components/shared/CollapsibleFilter";
+import { MobileStatsGrid } from "@/components/shared/MobileStatsGrid";
+import { FloatingActionButton } from "@/components/shared/FloatingActionButton";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 
 export function Opportunities() {
@@ -30,6 +35,7 @@ export function Opportunities() {
   const { data: users } = useUsersList();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   const { filters: rawFilters, updateFilters: rawUpdateFilters, clearFilters } = useUrlFilters({
     focusArea: [],
@@ -151,63 +157,73 @@ export function Opportunities() {
         {/* Header */}
         <div className="flex justify-between items-start gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Opportunities</h1>
-            <p className="text-muted-foreground">Track sales opportunities and business development</p>
-          </div>
-          <div className="flex gap-2">
-            {selectedRows.length > 0 && (
-              <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="touch-target" disabled={isAssigning}>
-                      <UserPlus className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">
-                        {isAssigning ? "Assigning..." : `Assign (${selectedRows.length})`}
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {users?.map((user) => (
-                      <DropdownMenuItem
-                        key={user.id}
-                        onClick={() => handleBulkAssignment(user.id)}
-                        disabled={isAssigning}
-                      >
-                        {user.full_name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                
-                <Button 
-                  variant="destructive" 
-                  className="touch-target" 
-                  disabled={isDeleting}
-                  onClick={() => setIsBulkDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">
-                    {isDeleting ? "Deleting..." : `Delete (${selectedRows.length})`}
-                  </span>
-                </Button>
-              </>
+            <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>Opportunities</h1>
+            {!isMobile && (
+              <p className="text-muted-foreground">Track sales opportunities and business development</p>
             )}
-            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Add Opportunity</span>
-            </Button>
           </div>
+          {!isMobile && (
+            <div className="flex gap-2">
+              {selectedRows.length > 0 && (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="touch-target" disabled={isAssigning}>
+                        <UserPlus className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">
+                          {isAssigning ? "Assigning..." : `Assign (${selectedRows.length})`}
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {users?.map((user) => (
+                        <DropdownMenuItem
+                          key={user.id}
+                          onClick={() => handleBulkAssignment(user.id)}
+                          disabled={isAssigning}
+                        >
+                          {user.full_name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button 
+                    variant="destructive" 
+                    className="touch-target" 
+                    disabled={isDeleting}
+                    onClick={() => setIsBulkDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">
+                      {isDeleting ? "Deleting..." : `Delete (${selectedRows.length})`}
+                    </span>
+                  </Button>
+                </>
+              )}
+              <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 touch-target">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Add Opportunity</span>
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* Filter Bar */}
-        <OpportunityFilterBar 
-          filters={filters}
-          onFiltersChange={updateFilters}
-          onClearFilters={clearFilters}
-        />
+        {/* Filter Bar - Collapsible on Mobile */}
+        <CollapsibleFilter 
+          activeCount={Object.values(filters).filter(v => 
+            Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null
+          ).length}
+        >
+          <OpportunityFilterBar 
+            filters={filters}
+            onFiltersChange={updateFilters}
+            onClearFilters={clearFilters}
+          />
+        </CollapsibleFilter>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+        {/* KPI Cards - Horizontal Scroll on Mobile */}
+        <MobileStatsGrid>
           <StatsCard
             title="Total Opportunities"
             value={stats.loading ? "..." : stats.totalOpportunities}
@@ -228,7 +244,7 @@ export function Opportunities() {
             value={stats.loading ? "..." : stats.averageEbitda}
             icon={DollarSign}
           />
-        </div>
+        </MobileStatsGrid>
 
         <OpportunitiesTableWithErrorBoundary 
           filters={filters}
@@ -255,6 +271,61 @@ export function Opportunities() {
           cancelText="Cancel"
           variant="destructive"
         />
+
+        {/* Floating Action Button - Mobile Only */}
+        {isMobile && (
+          <FloatingActionButton
+            onClick={() => setIsAddDialogOpen(true)}
+            aria-label="Add new opportunity"
+          />
+        )}
+
+        {/* Sticky Bottom Action Bar - Mobile Only when rows selected */}
+        {isMobile && selectedRows.length > 0 && (
+          <div className="mobile-action-bar">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">
+                {selectedRows.length} selected
+              </span>
+              <div className="flex gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      disabled={isAssigning}
+                      className="touch-target"
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Assign
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {users?.map((user) => (
+                      <DropdownMenuItem
+                        key={user.id}
+                        onClick={() => handleBulkAssignment(user.id)}
+                        disabled={isAssigning}
+                      >
+                        {user.full_name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => setIsBulkDeleteDialogOpen(true)}
+                  disabled={isDeleting}
+                  className="touch-target"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </ResponsiveContainer>
     </div>
   );
