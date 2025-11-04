@@ -784,6 +784,28 @@ async function mergeContacts(supabase: any, groupId: string | undefined, primary
       }
     }
 
+    // Special handling for date fields - keep the most recent (maximum) date
+    const dateFieldsToMaximize = ['most_recent_contact', 'most_recent_group_contact'];
+    
+    for (const dateField of dateFieldsToMaximize) {
+      let maxDate: string | null = mergedData[dateField];
+      
+      for (const contact of groupContacts) {
+        const contactDate = contact[dateField];
+        if (!contactDate) continue;
+        
+        if (!maxDate || new Date(contactDate) > new Date(maxDate)) {
+          maxDate = contactDate;
+        }
+      }
+      
+      if (maxDate) {
+        mergedData[dateField] = maxDate;
+      }
+    }
+    
+    console.log(`Updated most_recent_contact to: ${mergedData.most_recent_contact}`);
+
     // Update primary contact with merged data
     const { error: updateError } = await supabase
       .from('contacts_raw')
