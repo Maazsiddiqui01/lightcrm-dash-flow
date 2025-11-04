@@ -13,7 +13,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Target, MessageSquare, Table, Bot, LogOut, Eye, BarChart3, FileText, Mail, MailOpen, Library, Shield, Settings } from "lucide-react";
+import { Home, Users, Target, MessageSquare, Table, Bot, LogOut, Eye, BarChart3, FileText, Mail, MailOpen, Library, Shield, Settings, MessagesSquare } from "lucide-react";
 
 const menuItems = [
   { title: "Sourcing Greatness", url: "/sourcing-greatness", icon: BarChart3, roles: ['admin', 'user'] },
@@ -22,6 +22,7 @@ const menuItems = [
   { title: "Opportunities", url: "/opportunities", icon: Target, roles: ['admin', 'user', 'viewer'] },
   { title: "Interactions", url: "/interactions", icon: MessageSquare, roles: ['admin', 'user'] },
   { title: "Email Builder", url: "/email-builder", icon: Mail, roles: ['admin', 'user'] },
+  { title: "Chat", url: "/chat", icon: MessagesSquare, roles: ['admin', 'user', 'viewer'] },
   { title: "Global Libraries", url: "/global-libraries", icon: Library, roles: ['admin', 'user'] },
   { title: "Contacts Email", url: "/contacts-email", icon: MailOpen, roles: ['admin', 'user'] },
   { title: "KPIs", url: "/kpis", icon: BarChart3, roles: ['admin', 'user'] },

@@ -22,6 +22,7 @@ import GlobalLibraries from "@/pages/GlobalLibraries";
 import { Admin } from "@/pages/Admin";
 import { AdminDuplicates } from "@/pages/AdminDuplicates";
 import ImportInteractions from "@/pages/ImportInteractions";
+import Chat from "@/pages/Chat";
 import { Auth } from "@/pages/Auth";
 import { SetPassword } from "@/pages/SetPassword";
 import NotFound from "@/pages/NotFound";
@@ -72,6 +73,7 @@ function App() {
                       <Route path="/kpis" element={<KPIs />} />
                       <Route path="/meetings-with-team" element={<MeetingsWithTeam />} />
                       <Route path="/tom-new-view" element={<TomNewView />} />
+                      <Route path="/chat" element={<Chat />} />
                       
                       {/* Admin-only routes */}
                       <Route path="/make-your-own-view" element={
