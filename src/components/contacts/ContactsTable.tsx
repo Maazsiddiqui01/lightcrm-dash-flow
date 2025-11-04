@@ -14,6 +14,7 @@ import { SplitButton } from "@/components/shared/SplitButton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useDeleteContact } from "@/hooks/useDeleteContact";
 import { exportCsv } from "@/lib/export/exportService";
+import { getAllRawColumns } from "@/lib/export/dataFetcher";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useContactDraftGenerator } from "@/hooks/useContactDraftGenerator";
 import { supabase } from "@/integrations/supabase/client";
@@ -501,14 +502,15 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const handleExport = async () => {
     setIsExporting(true);
     
-    // Get only visible columns (excluding actions)
+    // Allowed DB columns only (exclude UI/computed like 'actions', 'opportunities', 'mapped_sectors', etc.)
+    const allowed = new Set(getAllRawColumns('contacts'));
     const visibleColumns = dynamicColumns
-      .filter(col => col.key !== 'actions' && columnVisibility.columnVisibility[col.key] !== false)
+      .filter(col => col.key !== 'actions' && allowed.has(col.key) && columnVisibility.columnVisibility[col.key] !== false)
       .map(col => col.key);
     
     const columnHeaders = Object.fromEntries(
       dynamicColumns
-        .filter(col => col.key !== 'actions')
+        .filter(col => col.key !== 'actions' && allowed.has(col.key))
         .map(col => [col.key, col.label])
     );
     
