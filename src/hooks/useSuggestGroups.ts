@@ -13,6 +13,7 @@ export interface GroupMember {
 }
 
 export interface GroupSuggestion {
+  suggestion_id: string;
   id: string;
   suggestedName: string;
   members: GroupMember[];

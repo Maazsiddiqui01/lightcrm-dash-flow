@@ -21,7 +21,7 @@ interface GroupConfigModalProps {
   focusArea?: string;
   organization?: string;
   suggestionId?: string;
-  onGroupCreated?: (suggestionId: string) => void;
+  onGroupCreated?: (suggestionId: string, groupId: string) => void;
 }
 
 export function GroupConfigModal({
@@ -125,7 +125,7 @@ export function GroupConfigModal({
 
       // Notify parent that group was created
       if (onGroupCreated && suggestionId) {
-        onGroupCreated(suggestionId);
+        onGroupCreated(suggestionId, group.id);
       }
 
       onOpenChange(false);

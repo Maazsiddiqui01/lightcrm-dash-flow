@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useSuggestGroups, type GroupSuggestion, type SuggestionMode } from '@/hooks/useSuggestGroups';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useSuggestGroups, type GroupSuggestion as EdgeGroupSuggestion, type SuggestionMode } from '@/hooks/useSuggestGroups';
+import { useGroupSuggestions, useBulkSaveGroupSuggestions, useUpdateSuggestionStatus } from '@/hooks/useGroupSuggestions';
+import type { SuggestionStatus, GroupMember } from '@/types/groupSuggestion';
 import { GroupConfigModal } from './GroupConfigModal';
-import { Loader2, Users, Mail, Calendar, Sparkles, Building, Activity, X } from 'lucide-react';
+import { Loader2, Users, Mail, Calendar, Sparkles, Building, Activity, X, Check, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface SuggestGroupsModalProps {
@@ -16,30 +19,68 @@ interface SuggestGroupsModalProps {
 
 export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalProps) {
   const [mode, setMode] = useState<SuggestionMode>('org_sector');
-  const { mutate: analyzeSuggestions, data: suggestions, isPending } = useSuggestGroups(mode);
+  const [statusFilter, setStatusFilter] = useState<SuggestionStatus | 'all'>('pending');
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  
+  const { mutate: analyzeSuggestions, isPending: isAnalyzing } = useSuggestGroups(mode);
+  const { data: persistedSuggestions, isLoading: isLoadingPersisted } = useGroupSuggestions(mode, statusFilter);
+  const { mutateAsync: bulkSaveSuggestions } = useBulkSaveGroupSuggestions();
+  const { mutateAsync: updateStatus } = useUpdateSuggestionStatus();
   
   const [configModalOpen, setConfigModalOpen] = useState(false);
-  const [selectedSuggestion, setSelectedSuggestion] = useState<GroupSuggestion | null>(null);
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [selectedSuggestion, setSelectedSuggestion] = useState<EdgeGroupSuggestion | null>(null);
   const [memberSelections, setMemberSelections] = useState<Record<string, Set<string>>>({});
 
-  // Initialize all members as selected when suggestions arrive
+  // Initialize member selections from persisted suggestions
   useEffect(() => {
-    if (!suggestions) return;
+    if (!persistedSuggestions) return;
     
     setMemberSelections(prev => {
       const next = { ...prev };
-      for (const suggestion of suggestions) {
-        if (!next[suggestion.id]) {
-          next[suggestion.id] = new Set(suggestion.members.map(m => m.email));
+      for (const suggestion of persistedSuggestions) {
+        if (!next[suggestion.suggestion_id]) {
+          next[suggestion.suggestion_id] = new Set(suggestion.members.map(m => m.email_address));
         }
       }
       return next;
     });
-  }, [suggestions]);
+  }, [persistedSuggestions]);
 
-  const handleCreateGroup = (suggestion: GroupSuggestion) => {
-    const selectedMembers = memberSelections[suggestion.id];
+  const handleStartAnalysis = async () => {
+    analyzeSuggestions(undefined, {
+      onSuccess: async (freshSuggestions: EdgeGroupSuggestion[]) => {
+        // Convert edge function suggestions to database format
+        const suggestionsToSave = freshSuggestions.map(s => ({
+          suggestion_id: s.suggestion_id,
+          mode,
+          suggested_name: s.suggestedName,
+          members: s.members.map(m => ({
+            contact_id: m.contactId || '',
+            full_name: m.name || '',
+            email_address: m.email,
+            organization: m.organization || null,
+            sector: null,
+            title: null,
+            focus_areas: m.focusAreas || []
+          })) as GroupMember[],
+          metadata: {
+            organization: s.organization,
+            sector: s.sector,
+            focusArea: s.focusArea,
+            interactionCount: s.interactionCount,
+            confidence: s.confidence === 'high' ? 0.8 : s.confidence === 'medium' ? 0.6 : 0.4,
+          },
+          status: 'pending' as SuggestionStatus,
+        }));
+
+        await bulkSaveSuggestions(suggestionsToSave);
+        setHasAnalyzed(true);
+      },
+    });
+  };
+
+  const handleCreateGroup = (suggestion: EdgeGroupSuggestion) => {
+    const selectedMembers = memberSelections[suggestion.suggestion_id];
     const membersToInclude = selectedMembers
       ? suggestion.members.filter(m => selectedMembers.has(m.email))
       : suggestion.members;
@@ -51,13 +92,26 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
     setConfigModalOpen(true);
   };
 
-  const handleDismiss = (suggestionId: string) => {
-    setDismissedIds(prev => new Set([...prev, suggestionId]));
+  const handleDismiss = async (suggestionId: string) => {
+    await updateStatus({
+      suggestionId,
+      status: 'dismissed',
+    });
   };
 
-  const handleGroupCreated = (suggestionId: string) => {
-    // Auto-dismiss the suggestion after successful creation
-    setDismissedIds(prev => new Set([...prev, suggestionId]));
+  const handleRestore = async (suggestionId: string) => {
+    await updateStatus({
+      suggestionId,
+      status: 'pending',
+    });
+  };
+
+  const handleGroupCreated = async (suggestionId: string, groupId: string) => {
+    await updateStatus({
+      suggestionId,
+      status: 'approved',
+      groupId,
+    });
   };
 
   const handleMemberToggle = (suggestionId: string, memberEmail: string, checked: boolean) => {
@@ -89,8 +143,36 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
     }));
   };
 
-  // Filter out dismissed suggestions
-  const visibleSuggestions = suggestions?.filter(s => !dismissedIds.has(s.id)) || [];
+  // Convert persisted suggestions to edge format for display
+  const displaySuggestions: EdgeGroupSuggestion[] = (persistedSuggestions || []).map(ps => ({
+    suggestion_id: ps.suggestion_id,
+    id: ps.suggestion_id,
+    suggestedName: ps.suggested_name,
+    members: ps.members.map(m => ({
+      email: m.email_address,
+      name: m.full_name,
+      contactId: m.contact_id,
+      organization: m.organization || undefined,
+      focusAreas: m.focus_areas || []
+    })),
+    organization: ps.metadata.organization,
+    sector: ps.metadata.sector,
+    focusArea: ps.metadata.focusArea,
+    interactionCount: ps.metadata.interactionCount,
+    confidence: ps.metadata.confidence && ps.metadata.confidence >= 0.7 ? 'high' : 
+                ps.metadata.confidence && ps.metadata.confidence >= 0.5 ? 'medium' : 'low',
+    status: ps.status,
+  }));
+
+  // Sort: pending first, then dismissed, then approved
+  const sortedSuggestions = [...displaySuggestions].sort((a, b) => {
+    const statusOrder: Record<string, number> = { pending: 0, dismissed: 1, approved: 2 };
+    const aStatus = (a as any).status || 'pending';
+    const bStatus = (b as any).status || 'pending';
+    return statusOrder[aStatus] - statusOrder[bStatus];
+  });
+
+  const showInitialState = !hasAnalyzed && (!persistedSuggestions || persistedSuggestions.length === 0);
 
   return (
     <>
@@ -109,10 +191,10 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
             </DialogDescription>
           </DialogHeader>
 
-          {!suggestions ? (
+          {showInitialState ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
               {/* Mode Toggle */}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-4 w-full max-w-md">
                 <Button
                   variant={mode === 'org_sector' ? 'default' : 'outline'}
                   onClick={() => setMode('org_sector')}
@@ -141,83 +223,67 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
                   }
                 </p>
               </div>
-              <Button onClick={() => analyzeSuggestions()} disabled={isPending} size="lg">
-                {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Button onClick={handleStartAnalysis} disabled={isAnalyzing} size="lg">
+                {isAnalyzing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Start Analysis
               </Button>
             </div>
-          ) : visibleSuggestions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <Users className="h-16 w-16 text-muted-foreground" />
-              <p className="text-lg font-medium">
-                {suggestions && suggestions.length > 0 ? 'All Suggestions Dismissed' : 'No Suggestions Found'}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {suggestions && suggestions.length > 0 
-                  ? 'You have dismissed all suggested groups. Click Re-analyze to start fresh.'
-                  : mode === 'org_sector' 
-                    ? 'No groups with 2+ members from the same organization and sector were found'
-                    : 'No interaction patterns detected for grouping'
-                }
-              </p>
-              {suggestions && suggestions.length > 0 && (
-                <Button 
-                  onClick={() => {
-                    setDismissedIds(new Set());
-                  }} 
-                  variant="outline"
-                >
-                  Show Dismissed ({dismissedIds.size})
-                </Button>
-              )}
-            </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Showing {visibleSuggestions.length} of {suggestions.length} suggested group{suggestions.length !== 1 ? 's' : ''}
-                  {dismissedIds.size > 0 && (
-                    <span className="ml-2 text-xs">
-                      ({dismissedIds.size} dismissed)
-                    </span>
-                  )}
-                </p>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as SuggestionStatus | 'all')}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="dismissed">Dismissed</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 <div className="flex gap-2">
-                  {dismissedIds.size > 0 && (
-                    <Button 
-                      onClick={() => setDismissedIds(new Set())} 
-                      size="sm" 
-                      variant="ghost"
-                    >
-                      Show All
-                    </Button>
-                  )}
-                  <Button onClick={() => {
-                    setMemberSelections({});
-                    setDismissedIds(new Set());
-                    analyzeSuggestions();
-                  }} disabled={isPending} size="sm" variant="outline">
-                    {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  <Button onClick={handleStartAnalysis} disabled={isAnalyzing} size="sm" variant="outline">
+                    {isAnalyzing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Re-analyze
                   </Button>
                 </div>
               </div>
-              
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {visibleSuggestions.map((suggestion) => (
-                  <SuggestionCard
-                    key={suggestion.id}
-                    suggestion={suggestion}
-                    mode={mode}
-                    selectedMembers={memberSelections[suggestion.id] || new Set()}
-                    onCreateGroup={() => handleCreateGroup(suggestion)}
-                    onDismiss={() => handleDismiss(suggestion.id)}
-                    onMemberToggle={(email, checked) => handleMemberToggle(suggestion.id, email, checked)}
-                    onSelectAll={() => handleSelectAll(suggestion.id, suggestion.members.map(m => m.email))}
-                    onDeselectAll={() => handleDeselectAll(suggestion.id)}
-                  />
-                ))}
-              </div>
+
+              {isLoadingPersisted ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : sortedSuggestions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <Users className="h-16 w-16 text-muted-foreground" />
+                  <p className="text-lg font-medium">No Suggestions Found</p>
+                  <p className="text-sm text-muted-foreground">
+                    {statusFilter === 'all' 
+                      ? 'No group suggestions available. Click "Re-analyze" to find new groups.'
+                      : `No ${statusFilter} suggestions found. Try changing the filter.`
+                    }
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {sortedSuggestions.map((suggestion) => (
+                    <SuggestionCard
+                      key={suggestion.suggestion_id}
+                      suggestion={suggestion}
+                      mode={mode}
+                      selectedMembers={memberSelections[suggestion.suggestion_id] || new Set()}
+                      onCreateGroup={() => handleCreateGroup(suggestion)}
+                      onDismiss={() => handleDismiss(suggestion.suggestion_id)}
+                      onRestore={() => handleRestore(suggestion.suggestion_id)}
+                      onMemberToggle={(email, checked) => handleMemberToggle(suggestion.suggestion_id, email, checked)}
+                      onSelectAll={() => handleSelectAll(suggestion.suggestion_id, suggestion.members.map(m => m.email))}
+                      onDeselectAll={() => handleDeselectAll(suggestion.suggestion_id)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
@@ -237,7 +303,7 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
           sector={selectedSuggestion.sector}
           focusArea={selectedSuggestion.focusArea}
           organization={selectedSuggestion.organization}
-          suggestionId={selectedSuggestion.id}
+          suggestionId={selectedSuggestion.suggestion_id}
           onGroupCreated={handleGroupCreated}
         />
       )}
@@ -246,19 +312,32 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
 }
 
 interface SuggestionCardProps {
-  suggestion: GroupSuggestion;
+  suggestion: EdgeGroupSuggestion & { status?: SuggestionStatus };
   mode: SuggestionMode;
   selectedMembers: Set<string>;
   onCreateGroup: () => void;
   onDismiss: () => void;
+  onRestore: () => void;
   onMemberToggle: (email: string, checked: boolean) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
 }
 
-function SuggestionCard({ suggestion, mode, selectedMembers, onCreateGroup, onDismiss, onMemberToggle, onSelectAll, onDeselectAll }: SuggestionCardProps) {
+function SuggestionCard({ 
+  suggestion, 
+  mode, 
+  selectedMembers, 
+  onCreateGroup, 
+  onDismiss,
+  onRestore, 
+  onMemberToggle, 
+  onSelectAll, 
+  onDeselectAll 
+}: SuggestionCardProps) {
   const selectedCount = selectedMembers.size;
   const totalCount = suggestion.members.length;
+  const status = suggestion.status || 'pending';
+  
   const confidenceColor = {
     high: 'bg-green-500/10 text-green-700 dark:text-green-400',
     medium: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
@@ -266,30 +345,62 @@ function SuggestionCard({ suggestion, mode, selectedMembers, onCreateGroup, onDi
   }[suggestion.confidence];
 
   return (
-    <Card className="p-4">
+    <Card className={`p-4 ${status === 'dismissed' ? 'opacity-60' : ''}`}>
       <div className="space-y-3">
-        {/* Header with name and actions */}
+        {/* Header with name, status badge, and actions */}
         <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex items-center gap-2">
             <h3 className="font-medium truncate">{suggestion.suggestedName}</h3>
+            {status === 'approved' && (
+              <Badge variant="default" className="text-xs shrink-0">
+                <Check className="h-3 w-3 mr-1" />
+                Approved
+              </Badge>
+            )}
+            {status === 'dismissed' && (
+              <Badge variant="secondary" className="text-xs shrink-0">
+                <X className="h-3 w-3 mr-1" />
+                Dismissed
+              </Badge>
+            )}
           </div>
           
           <div className="flex items-center gap-2 shrink-0">
-            <Button 
-              onClick={onDismiss}
-              size="sm"
-              variant="ghost"
-              className="h-8 w-8 p-0"
-              title="Dismiss this suggestion"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            <Button 
-              onClick={onCreateGroup}
-              size="sm"
-            >
-              Configure & Create
-            </Button>
+            {status === 'pending' && (
+              <>
+                <Button 
+                  onClick={onDismiss}
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  title="Dismiss this suggestion"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <Button 
+                  onClick={onCreateGroup}
+                  size="sm"
+                  disabled={selectedCount === 0}
+                >
+                  Configure & Create
+                </Button>
+              </>
+            )}
+            {status === 'dismissed' && (
+              <Button 
+                onClick={onRestore}
+                size="sm"
+                variant="outline"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Restore
+              </Button>
+            )}
+            {status === 'approved' && (
+              <Badge variant="outline" className="text-xs">
+                ✓ Group Created
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -320,14 +431,18 @@ function SuggestionCard({ suggestion, mode, selectedMembers, onCreateGroup, onDi
             </>
           ) : (
             <>
-              <Badge variant="secondary" className="text-xs">
-                <Mail className="h-3 w-3 mr-1" />
-                {suggestion.interactionCount} emails
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                <Calendar className="h-3 w-3 mr-1" />
-                Last: {format(new Date(suggestion.lastInteraction!), 'MMM d, yyyy')}
-              </Badge>
+              {suggestion.interactionCount && (
+                <Badge variant="secondary" className="text-xs">
+                  <Mail className="h-3 w-3 mr-1" />
+                  {suggestion.interactionCount} emails
+                </Badge>
+              )}
+              {suggestion.lastInteraction && (
+                <Badge variant="secondary" className="text-xs">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Last: {format(new Date(suggestion.lastInteraction), 'MMM d, yyyy')}
+                </Badge>
+              )}
             </>
           )}
           
@@ -336,53 +451,53 @@ function SuggestionCard({ suggestion, mode, selectedMembers, onCreateGroup, onDi
           </Badge>
         </div>
 
-        {/* Members with selection */}
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-muted-foreground">
-              {mode === 'org_sector' ? 'Members & Focus Areas:' : 'Members:'}
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (selectedCount === totalCount) {
-                  onDeselectAll();
-                } else {
-                  onSelectAll();
-                }
-              }}
-              className="h-6 text-xs"
-            >
-              {selectedCount === totalCount ? 'Deselect All' : 'Select All'}
-            </Button>
-          </div>
-          
-          {mode === 'org_sector' ? (
-            suggestion.members.map((member) => (
-              <div key={member.email} className="flex items-start gap-2 text-xs border-l-2 border-primary/20 pl-3 py-1">
-                <Checkbox
-                  checked={selectedMembers.has(member.email)}
-                  onCheckedChange={(v) => onMemberToggle(member.email, Boolean(v))}
-                  className="mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="font-medium">{member.name || member.email}</div>
-                  <div className="text-muted-foreground">{member.email}</div>
-                  {member.focusAreas && member.focusAreas.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {member.focusAreas.map((fa, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          {fa}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+        {/* Members with selection - only show for pending status */}
+        {status === 'pending' && (
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">
+                {mode === 'org_sector' ? 'Members & Focus Areas:' : 'Members:'}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (selectedCount === totalCount) {
+                    onDeselectAll();
+                  } else {
+                    onSelectAll();
+                  }
+                }}
+                className="h-6 text-xs"
+              >
+                {selectedCount === totalCount ? 'Deselect All' : 'Select All'}
+              </Button>
+            </div>
+            
+            {mode === 'org_sector' ? (
+              suggestion.members.map((member) => (
+                <div key={member.email} className="flex items-start gap-2 text-xs border-l-2 border-primary/20 pl-3 py-1">
+                  <Checkbox
+                    checked={selectedMembers.has(member.email)}
+                    onCheckedChange={(v) => onMemberToggle(member.email, Boolean(v))}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium">{member.name || member.email}</div>
+                    <div className="text-muted-foreground">{member.email}</div>
+                    {member.focusAreas && member.focusAreas.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {member.focusAreas.map((fa, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {fa}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <>
+              ))
+            ) : (
               <div className="space-y-1">
                 {suggestion.members.map((member) => (
                   <div key={member.email} className="flex items-center gap-2 text-xs py-1">
@@ -395,21 +510,9 @@ function SuggestionCard({ suggestion, mode, selectedMembers, onCreateGroup, onDi
                   </div>
                 ))}
               </div>
-
-              {/* Sample email subjects */}
-              {suggestion.sampleSubjects && suggestion.sampleSubjects.length > 0 && (
-                <div className="pt-3 border-t">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Sample email subjects:</p>
-                  <ul className="text-xs text-muted-foreground space-y-1">
-                    {suggestion.sampleSubjects.slice(0, 3).map((subject, idx) => (
-                      <li key={idx} className="truncate">• {subject}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );

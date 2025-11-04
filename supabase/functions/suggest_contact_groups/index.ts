@@ -27,7 +27,22 @@ async function verifyAuth(req: Request) {
   return { user, supabase };
 }
 
+// Helper to generate stable suggestion ID
+function generateStableSuggestionId(memberEmails: string[]): string {
+  const sortedEmails = [...memberEmails].sort().join('_');
+  const baseString = `interaction_${sortedEmails}`;
+  // Simple hash function for stable IDs
+  let hash = 0;
+  for (let i = 0; i < baseString.length; i++) {
+    const char = baseString.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return `interaction_${Math.abs(hash).toString(36)}`;
+}
+
 interface GroupSuggestion {
+  suggestion_id: string;
   id: string;
   suggestedName: string;
   members: Array<{
@@ -392,7 +407,11 @@ serve(async (req) => {
         maxFrequency: 1 // Will normalize later
       });
 
+      const memberEmails = members.map(m => m.email);
+      const suggestionId = generateStableSuggestionId(memberEmails);
+      
       suggestions.push({
+        suggestion_id: suggestionId,
         id: crypto.randomUUID(),
         suggestedName: generateGroupName(members, sampleSubjects, sharedOrganization),
         members: members.map(({ currentGroup, ...m }) => m),

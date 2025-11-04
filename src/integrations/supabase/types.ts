@@ -1812,6 +1812,62 @@ export type Database = {
         }
         Relationships: []
       }
+      group_suggestions: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          dismissed_at: string | null
+          group_id: string | null
+          id: string
+          members: Json
+          metadata: Json | null
+          mode: string
+          status: string
+          suggested_name: string
+          suggestion_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          group_id?: string | null
+          id?: string
+          members: Json
+          metadata?: Json | null
+          mode: string
+          status?: string
+          suggested_name: string
+          suggestion_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          group_id?: string | null
+          id?: string
+          members?: Json
+          metadata?: Json | null
+          mode?: string
+          status?: string
+          suggested_name?: string
+          suggestion_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_suggestions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       groups: {
         Row: {
           assigned_to: string | null
