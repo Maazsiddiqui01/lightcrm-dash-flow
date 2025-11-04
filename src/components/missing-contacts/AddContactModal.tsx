@@ -50,7 +50,7 @@ const addContactSchema = z.object({
   category: z.string().optional(),
   lg_lead: z.string().optional(),
   lg_assistant: z.string().optional(),
-  delta_type: z.enum(["Email", "Meeting", ""]).optional(),
+  delta_type: z.enum(["Email", "Meeting", "none", ""]).optional(),
   delta: z.string().optional(),
 });
 
@@ -159,7 +159,7 @@ export function AddContactModal({ candidate, open, onClose }: AddContactModalPro
           category: data.category,
           lg_lead: data.lg_lead,
           lg_assistant: data.lg_assistant,
-          delta_type: data.delta_type,
+          delta_type: data.delta_type === "none" ? undefined : data.delta_type,
           delta: data.delta,
         },
         groupId: selectedGroupId,
@@ -475,14 +475,14 @@ export function AddContactModal({ candidate, open, onClose }: AddContactModalPro
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Delta Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || "none"}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select type..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             <SelectItem value="Email">Email</SelectItem>
                             <SelectItem value="Meeting">Meeting</SelectItem>
                           </SelectContent>
