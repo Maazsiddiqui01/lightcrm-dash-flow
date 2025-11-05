@@ -5,7 +5,7 @@ import { Upload, X, Table as TableIcon, CheckCircle2, AlertTriangle, XCircle, Fi
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import type { ValidationResults } from "@/hooks/useCsvImport";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { generateRowChanges } from "@/utils/csvDiffEngine";
 import type { RowChanges } from "@/utils/csvDiffEngine";
 import { cn } from "@/lib/utils";
@@ -163,6 +163,16 @@ export function CsvTablePreview({
       width: 150,
     }))
   , [columnMappings]);
+
+  // Debug: show columns and a sample row
+  useEffect(() => {
+    if (filteredData.length > 0) {
+      console.debug('[Preview Columns]', columns.map(c => c.key));
+      console.debug('[Preview Sample Row 0]', filteredData[0]);
+    } else {
+      console.debug('[Preview] No filtered data. Total parsed:', parsedData.length);
+    }
+  }, [columns, filteredData, parsedData.length]);
 
   const handleResetColumns = () => {
     setResetKey(prev => prev + 1);

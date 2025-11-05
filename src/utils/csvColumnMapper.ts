@@ -29,33 +29,84 @@ export async function createColumnMap(
 
   if (error) {
     console.error('Failed to fetch column configurations:', error);
-    throw new Error('Failed to load column mappings');
+    // We do not throw here to allow fallback mappings to work even if this table is empty
   }
   
   const displayToColumn = new Map<string, string>();
   const columnToDisplay = new Map<string, string>();
-  
+
+  // Helper to add a mapping with multiple variations
+  const addMapping = (display: string, column: string) => {
+    const variations = [
+      display,
+      display.toLowerCase().trim(),
+      display.replace(/[_\s-]+/g, ' ').trim(),
+      display.replace(/[_\s-]+/g, ' ').toLowerCase().trim(),
+    ];
+    const columnVariations = [
+      column,
+      column.toLowerCase().trim(),
+      column.replace(/[_\s-]+/g, ' ').toLowerCase().trim(),
+    ];
+
+    // Map display variations to the exact column name
+    variations.forEach(v => displayToColumn.set(v, column));
+    // Also map common column variations back to column
+    columnVariations.forEach(v => displayToColumn.set(v, column));
+
+    // Reverse mapping for display label (keep the first friendly display)
+    if (!columnToDisplay.has(column)) columnToDisplay.set(column, display);
+  };
+
+  // 1) Seed from DB configuration if any
   (columns || []).forEach(col => {
-    const display = col.display_name || col.column_name;
-    const column = col.column_name;
-    
-    // Map display name (case-insensitive)
-    displayToColumn.set(display.toLowerCase().trim(), column);
-    displayToColumn.set(display.trim(), column);
-    
-    // Map column name as fallback
-    displayToColumn.set(column.toLowerCase().trim(), column);
-    displayToColumn.set(column.trim(), column);
-    
-    // Reverse mapping for display
-    columnToDisplay.set(column, display);
+    const display = (col.display_name || col.column_name).trim();
+    const column = col.column_name.trim();
+    addMapping(display, column);
   });
   
-  // Always map 'id' column
-  displayToColumn.set('id', 'id');
-  displayToColumn.set('ID', 'id');
-  columnToDisplay.set('id', 'ID');
+  // 2) Add robust built-in fallbacks for common headers (Excel-friendly)
+  if (entityType === 'opportunities') {
+    const fallback: Record<string, string> = {
+      'Deal Name': 'deal_name',
+      'LG Focus Area': 'lg_focus_area',
+      'LG Sector': 'lg_sector',
+      'Funds': 'funds',
+      'Next Steps': 'next_steps',
+      'Revenue': 'revenue',
+      'EBITDA': 'ebitda',
+      'EBITDA Notes': 'ebitda_notes',
+      'Ownership': 'ownership',
+      'Ownership Type': 'ownership_type',
+      'Status': 'status',
+      'Tier': 'tier',
+      'Deal Source Company': 'deal_source_company',
+      'Deal Source Contacts': 'deal_source_contacts',
+      'LT Team': 'lt_team',
+      'ID': 'id',
+    };
+    Object.entries(fallback).forEach(([disp, col]) => addMapping(disp, col));
+  } else {
+    const fallback: Record<string, string> = {
+      'Full Name': 'full_name',
+      'First Name': 'first_name',
+      'Last Name': 'last_name',
+      'Email': 'email_address',
+      'Phone': 'phone',
+      'Organization': 'organization',
+      'Title': 'title',
+      'Notes': 'notes',
+      'LG Sector': 'lg_sector',
+      'LG Focus Area': 'lg_focus_area_1',
+      'ID': 'id',
+    };
+    Object.entries(fallback).forEach(([disp, col]) => addMapping(disp, col));
+  }
   
+  // Always ensure ID exists
+  addMapping('id', 'id');
+  addMapping('ID', 'id');
+
   return {
     mappings: [],
     unmapped: [],
