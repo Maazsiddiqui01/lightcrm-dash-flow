@@ -322,7 +322,44 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
   };
 
   const executeImport = async () => {
+    // Collect all validation errors first
+    const validationErrors: Array<{ row: number; error: string }> = [];
+    
+    if (validationResults) {
+      // Add invalid row errors
+      validationResults.invalid.forEach(invalid => {
+        validationErrors.push({
+          row: invalid.row,
+          error: `${invalid.field}: ${invalid.message} (value: "${invalid.value || 'empty'}")`
+        });
+      });
+      
+      // Add warnings as errors too (they should still be visible)
+      validationResults.warnings.forEach(warning => {
+        validationErrors.push({
+          row: warning.row,
+          error: `⚠️ ${warning.message}`
+        });
+      });
+    }
+
+    // If no valid rows, set results with validation errors and return
     if (!validationResults || validationResults.valid.length === 0) {
+      const totalRows = parsedData.length;
+      setImportResults({
+        total: totalRows,
+        successful: 0,
+        failed: totalRows,
+        errors: validationErrors.length > 0 ? validationErrors : [
+          { row: 0, error: 'No valid rows found. Please check your CSV file and column mappings.' }
+        ]
+      });
+      
+      toast({
+        title: "Import Failed",
+        description: `All ${totalRows} rows have validation errors. See details below.`,
+        variant: "destructive"
+      });
       return;
     }
 
@@ -334,7 +371,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     let successful = 0;
     let failed = 0;
     let skipped = 0;
-    const errors: Array<{ row: number; error: string }> = [];
+    const errors: Array<{ row: number; error: string }> = [...validationErrors];
 
     try {
       if (importMode === 'update-existing') {
@@ -449,10 +486,15 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         }
       }
 
+      // Calculate total including validation errors
+      const totalAttempted = validRows.length;
+      const totalWithValidation = parsedData.length;
+      const failedValidation = validationErrors.length;
+      
       setImportResults({
-        total: validRows.length,
+        total: totalWithValidation,
         successful,
-        failed,
+        failed: failed + failedValidation,
         errors
       });
 
@@ -460,18 +502,38 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       const messages = [
         `Successfully ${actionText} ${successful} ${entityType}`,
         skipped > 0 ? `Skipped ${skipped} duplicates` : null,
-        failed > 0 ? `Failed ${failed}` : null
+        failed > 0 ? `Failed to process ${failed}` : null,
+        failedValidation > 0 ? `${failedValidation} validation errors` : null
       ].filter(Boolean);
 
       toast({
         title: importMode === 'update-existing' ? "Update Completed" : "Import Completed",
         description: messages.join(', '),
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Import error:', error);
+      
+      // Ensure we always set import results even on catastrophic failure
+      const totalRows = parsedData.length;
+      const errorMessage = error?.message || 'An unexpected error occurred';
+      const errorDetails = error?.details || error?.hint || '';
+      
+      setImportResults({
+        total: totalRows,
+        successful: successful || 0,
+        failed: totalRows - (successful || 0),
+        errors: [
+          ...errors,
+          { 
+            row: 0, 
+            error: `❌ System Error: ${errorMessage}${errorDetails ? ` (${errorDetails})` : ''}`
+          }
+        ]
+      });
+      
       toast({
         title: importMode === 'update-existing' ? "Update Failed" : "Import Failed",
-        description: "An unexpected error occurred",
+        description: errorMessage,
         variant: "destructive"
       });
     }
