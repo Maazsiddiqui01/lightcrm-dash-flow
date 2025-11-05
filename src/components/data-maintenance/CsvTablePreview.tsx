@@ -47,7 +47,11 @@ export function CsvTablePreview({
     }
 
     const dbRecordsObj = Object.fromEntries(dbRecordsCache);
-    const rowChanges = generateRowChanges(parsedData, dbRecordsObj, columnMappings, 'id');
+    // Create a DB->DB mapping since parsedData is already transformed to DB column names
+    const dbToDbMappings = new Map<string, string>(
+      Array.from(columnMappings.values()).map((dbCol) => [dbCol, dbCol])
+    );
+    const rowChanges = generateRowChanges(parsedData, dbRecordsObj, dbToDbMappings, 'id');
     
     return new Map(rowChanges.map(rc => [rc.rowIndex, rc]));
   }, [parsedData, dbRecordsCache, columnMappings, importMode]);
@@ -151,10 +155,11 @@ export function CsvTablePreview({
   }, [rowChangesMap]);
 
   // Prepare columns for the enhanced table
+  // Use DB column names as keys since parsedData is already transformed
   const columns = useMemo(() => 
-    Array.from(columnMappings.entries()).map(([key, label]) => ({
-      key,
-      label,
+    Array.from(columnMappings.entries()).map(([csvHeader, dbColumn]) => ({
+      key: dbColumn,      // Use DB column name to access values on the row
+      label: dbColumn,    // Display DB column name (can enhance with friendly names later)
       width: 150,
     }))
   , [columnMappings]);
