@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { VirtualizedTable } from "@/components/shared/VirtualizedTable";
-import { Upload, X, Table as TableIcon } from "lucide-react";
+import { Upload, X, Table as TableIcon, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Badge } from "@/components/ui/badge";
 import type { ValidationResults } from "@/hooks/useCsvImport";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { generateRowChanges } from "@/utils/csvDiffEngine";
 import type { RowChanges } from "@/utils/csvDiffEngine";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,8 @@ export function CsvTablePreview({
   containerHeight = 600
 }: CsvTablePreviewProps) {
   const { valid, invalid, warnings } = validationResults;
+  const [viewFilter, setViewFilter] = useState<'all' | 'changes' | 'issues'>('all');
+  const [columnFilter, setColumnFilter] = useState<'all' | 'changed'>('all');
 
   // Generate cell-level changes for update mode
   const rowChangesMap = useMemo<Map<number, RowChanges>>(() => {
@@ -46,26 +50,134 @@ export function CsvTablePreview({
     return new Map(rowChanges.map(rc => [rc.rowIndex, rc]));
   }, [parsedData, dbRecordsCache, columnMappings, importMode]);
 
-  // Get all unique columns from parsed data and add row numbers
-  const dataWithRowNumbers = useMemo(() => {
-    return parsedData.map((row, index) => ({
+  // Map row index to validation status
+  const rowStatusMap = useMemo(() => {
+    const statusMap = new Map<number, { status: 'valid' | 'warning' | 'invalid', messages: string[] }>();
+    
+    // Mark invalid rows
+    invalid.forEach(item => {
+      const existingStatus = statusMap.get(item.row - 1) || { status: 'invalid', messages: [] };
+      existingStatus.messages.push(`${item.field}: ${item.message}`);
+      statusMap.set(item.row - 1, existingStatus);
+    });
+    
+    // Mark warning rows
+    warnings.forEach(item => {
+      const existingStatus = statusMap.get(item.row - 1);
+      if (!existingStatus || existingStatus.status !== 'invalid') {
+        const messages = existingStatus?.messages || [];
+        messages.push(item.message);
+        statusMap.set(item.row - 1, { status: 'warning', messages });
+      }
+    });
+    
+    // Mark valid rows
+    parsedData.forEach((_, index) => {
+      if (!statusMap.has(index)) {
+        statusMap.set(index, { status: 'valid', messages: [] });
+      }
+    });
+    
+    return statusMap;
+  }, [parsedData, invalid, warnings]);
+
+  // Filter data based on selected filters
+  const filteredData = useMemo(() => {
+    let filtered = parsedData.map((row, index) => ({
       ...row,
-      __rowNumber: index + 1
+      __rowNumber: index + 1,
+      __originalIndex: index
     }));
-  }, [parsedData]);
+
+    // Apply row filter
+    if (viewFilter === 'changes' && importMode === 'update-existing') {
+      filtered = filtered.filter(row => {
+        const rowChanges = rowChangesMap.get(row.__originalIndex);
+        return rowChanges?.hasChanges;
+      });
+    } else if (viewFilter === 'issues') {
+      filtered = filtered.filter(row => {
+        const status = rowStatusMap.get(row.__originalIndex);
+        return status?.status === 'invalid' || status?.status === 'warning';
+      });
+    }
+
+    return filtered;
+  }, [parsedData, viewFilter, importMode, rowChangesMap, rowStatusMap]);
 
   const columns = useMemo(() => {
     if (parsedData.length === 0) return [];
     
     const allKeys = new Set<string>();
     parsedData.forEach(row => {
-      Object.keys(row).forEach(key => allKeys.add(key));
+      Object.keys(row).forEach(key => {
+        if (key !== '__rowNumber' && key !== '__originalIndex') {
+          allKeys.add(key);
+        }
+      });
     });
 
-    const columnArray = Array.from(allKeys);
+    let columnArray = Array.from(allKeys);
+    
+    // Apply column filter for update mode
+    if (columnFilter === 'changed' && importMode === 'update-existing' && rowChangesMap.size > 0) {
+      const changedColumns = new Set<string>();
+      rowChangesMap.forEach(rowChange => {
+        Object.entries(rowChange.cellChanges).forEach(([col, change]) => {
+          if (change.changeType !== 'unchanged') {
+            changedColumns.add(col);
+          }
+        });
+      });
+      columnArray = columnArray.filter(col => changedColumns.has(col) || col === 'id');
+    }
     
     // Build columns for VirtualizedTable
     return [
+      {
+        key: '__status',
+        label: '',
+        width: 50,
+        sticky: true,
+        headerClassName: 'text-center',
+        render: (_: any, row: any) => {
+          const originalIndex = row.__originalIndex;
+          const status = rowStatusMap.get(originalIndex);
+          
+          if (!status) return null;
+
+          const StatusIcon = status.status === 'valid' ? CheckCircle2 
+            : status.status === 'warning' ? AlertTriangle 
+            : XCircle;
+          
+          const iconColor = status.status === 'valid' ? 'text-green-600' 
+            : status.status === 'warning' ? 'text-yellow-600' 
+            : 'text-destructive';
+
+          if (status.messages.length === 0) {
+            return <StatusIcon className={cn("h-4 w-4", iconColor)} />;
+          }
+
+          return (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="cursor-help">
+                    <StatusIcon className={cn("h-4 w-4", iconColor)} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <div className="space-y-1">
+                    {status.messages.map((msg, i) => (
+                      <div key={i} className="text-xs">{msg}</div>
+                    ))}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
       {
         key: '__rowNumber',
         label: '#',
@@ -80,9 +192,8 @@ export function CsvTablePreview({
         label: columnMappings.get(key) || key,
         width: 150,
         render: (value: any, row: any) => {
-          // Find row index in original data
-          const rowIndex = parsedData.findIndex(r => r === row);
-          const rowChanges = rowChangesMap.get(rowIndex);
+          const originalIndex = row.__originalIndex;
+          const rowChanges = rowChangesMap.get(originalIndex);
           const cellChange = rowChanges?.cellChanges[key];
 
           // Determine cell styling based on change type
@@ -142,14 +253,36 @@ export function CsvTablePreview({
         }
       }))
     ];
-  }, [parsedData, columnMappings, rowChangesMap, importMode]);
+  }, [parsedData, columnMappings, rowChangesMap, importMode, rowStatusMap, columnFilter]);
 
   // Display first 50 rows initially
-  const displayData = useMemo(() => dataWithRowNumbers.slice(0, 50), [dataWithRowNumbers]);
+  const displayData = useMemo(() => filteredData.slice(0, 50), [filteredData]);
 
   const tableName = entityType === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
   const totalRows = parsedData.length;
+  const filteredRows = filteredData.length;
   const displayedRows = displayData.length;
+  
+  // Calculate change statistics for update mode
+  const changeStats = useMemo(() => {
+    if (importMode !== 'update-existing') return null;
+    
+    let totalChanges = 0;
+    let addedCount = 0;
+    let clearedCount = 0;
+    
+    rowChangesMap.forEach(rowChange => {
+      Object.values(rowChange.cellChanges).forEach(change => {
+        if (change.changeType !== 'unchanged') {
+          totalChanges++;
+          if (change.changeType === 'added') addedCount++;
+          if (change.changeType === 'cleared') clearedCount++;
+        }
+      });
+    });
+    
+    return { totalChanges, addedCount, clearedCount };
+  }, [rowChangesMap, importMode]);
 
   return (
     <div className="space-y-4">
@@ -160,18 +293,70 @@ export function CsvTablePreview({
           <div className="flex-1">
             <h3 className="font-semibold text-lg">
               {importMode === 'add-new' 
-                ? `A total of ${valid.length} rows will be added to table '${tableName}'`
-                : `A total of ${valid.length} rows will be updated in table '${tableName}'`
+                ? `Ready to import ${valid.length} ${entityType === 'contacts' ? 'contact' : 'opportunit'}${valid.length !== 1 ? (entityType === 'contacts' ? 's' : 'ies') : 'y'}`
+                : `Ready to update ${valid.length} ${entityType === 'contacts' ? 'contact' : 'opportunit'}${valid.length !== 1 ? (entityType === 'contacts' ? 's' : 'ies') : 'y'}`
               }
             </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Showing {displayedRows} of {totalRows} rows • {columns.length - 1} columns
-              {invalid.length > 0 && ` • ${invalid.length} row${invalid.length !== 1 ? 's' : ''} will be skipped due to errors`}
-              {warnings.length > 0 && ` • ${warnings.length} warning${warnings.length !== 1 ? 's' : ''}`}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <Badge variant="outline" className="text-xs">
+                {totalRows} total rows
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {columns.length - 2} columns
+              </Badge>
+              {changeStats && changeStats.totalChanges > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {changeStats.totalChanges} cell{changeStats.totalChanges !== 1 ? 's' : ''} changed
+                </Badge>
+              )}
+              {invalid.length > 0 && (
+                <Badge variant="destructive" className="text-xs">
+                  {invalid.length} row{invalid.length !== 1 ? 's' : ''} with errors
+                </Badge>
+              )}
+              {warnings.length > 0 && (
+                <Badge variant="outline" className="text-xs border-yellow-500/50 text-yellow-700">
+                  {warnings.length} warning{warnings.length !== 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
       </Card>
+
+      {/* Filter Controls */}
+      <div className="flex flex-wrap gap-4 items-center justify-between">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">View</label>
+          <ToggleGroup type="single" value={viewFilter} onValueChange={(v) => v && setViewFilter(v as any)} size="sm">
+            <ToggleGroupItem value="all" className="text-xs">
+              All Rows ({totalRows})
+            </ToggleGroupItem>
+            {importMode === 'update-existing' && (
+              <ToggleGroupItem value="changes" className="text-xs">
+                Only Changes
+              </ToggleGroupItem>
+            )}
+            <ToggleGroupItem value="issues" className="text-xs">
+              Only Issues ({invalid.length + warnings.length})
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+
+        {importMode === 'update-existing' && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Columns</label>
+            <ToggleGroup type="single" value={columnFilter} onValueChange={(v) => v && setColumnFilter(v as any)} size="sm">
+              <ToggleGroupItem value="all" className="text-xs">
+                All Columns
+              </ToggleGroupItem>
+              <ToggleGroupItem value="changed" className="text-xs">
+                Only Changed
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        )}
+      </div>
 
       {/* Table */}
       <div className="border rounded-lg bg-background">
@@ -185,9 +370,15 @@ export function CsvTablePreview({
         />
       </div>
 
-      {totalRows > displayedRows && (
+      {filteredRows > displayedRows && (
         <p className="text-sm text-muted-foreground text-center">
-          Showing first {displayedRows} rows. All {totalRows} rows will be imported.
+          Showing first {displayedRows} of {filteredRows} filtered rows{viewFilter !== 'all' || columnFilter !== 'all' ? ` (${totalRows} total)` : ''}. All valid rows will be {importMode === 'add-new' ? 'imported' : 'updated'}.
+        </p>
+      )}
+      
+      {filteredRows === 0 && totalRows > 0 && (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          No rows match the current filter. Try selecting "All Rows" to see your data.
         </p>
       )}
 
