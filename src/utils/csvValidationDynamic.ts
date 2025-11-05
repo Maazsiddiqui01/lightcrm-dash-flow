@@ -25,7 +25,8 @@ export interface ValidationResult {
 
 export async function validateCsvDataDynamic(
   data: any[],
-  entityType: 'contacts' | 'opportunities'
+  entityType: 'contacts' | 'opportunities',
+  isUpdateMode: boolean = false
 ): Promise<ValidationResult> {
   const tableName = entityType === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
 
@@ -51,16 +52,39 @@ export async function validateCsvDataDynamic(
   const warnings: Array<{ row: number; message: string }> = [];
 
   data.forEach((row, index) => {
-    const rowNumber = index + 2; // +2 for header row and 1-based indexing
+    const rowNumber = row._rowNumber || (index + 2); // Use stored row number or calculate
     const rowErrors: ValidationError[] = [];
     const rowWarnings: string[] = [];
+
+    // For update mode, validate ID field
+    if (isUpdateMode) {
+      if (!row.id || row.id === '') {
+        rowErrors.push({
+          row: rowNumber,
+          field: 'ID',
+          message: 'ID is required for update mode',
+          value: row.id
+        });
+      } else {
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(String(row.id))) {
+          rowErrors.push({
+            row: rowNumber,
+            field: 'ID',
+            message: 'Invalid ID format (must be UUID)',
+            value: row.id
+          });
+        }
+      }
+    }
 
     // Validate against column configurations
     configMap.forEach((config, columnName) => {
       const value = row[columnName];
 
-      // Check required fields
-      if (config.is_required && (value === null || value === undefined || value === '')) {
+      // Skip required field validation in update mode (only updating provided fields)
+      if (!isUpdateMode && config.is_required && (value === null || value === undefined || value === '')) {
         rowErrors.push({
           row: rowNumber,
           field: config.display_name || columnName,

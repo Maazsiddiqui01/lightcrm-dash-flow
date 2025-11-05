@@ -7,7 +7,12 @@ import { Progress } from "@/components/ui/progress";
 import { useCsvImport } from "@/hooks/useCsvImport";
 import { ImportPreview } from "./ImportPreview";
 import { ImportResults } from "./ImportResults";
+import { UpdatePreview } from "./UpdatePreview";
 import { generateTemplate } from "@/utils/csvValidation";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 interface BulkImportModalProps {
   open: boolean;
@@ -26,6 +31,13 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
     validationResults,
     importResults,
     progress,
+    importMode,
+    setImportMode,
+    firstRowIsHeader,
+    setFirstRowIsHeader,
+    updatePreview,
+    columnMappings,
+    unmappedColumns,
     parseFile,
     executeImport,
     reset
@@ -96,6 +108,39 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
 
         {step === 'upload' && (
           <div className="space-y-4">
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Import Mode</Label>
+                <ToggleGroup 
+                  type="single" 
+                  value={importMode} 
+                  onValueChange={(value) => value && setImportMode(value as any)}
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="add-new" className="flex-1">
+                    Add New {entityType === 'contacts' ? 'Contacts' : 'Opportunities'}
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="update-existing" className="flex-1">
+                    Update Existing
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="first-row-header" 
+                  checked={firstRowIsHeader}
+                  onCheckedChange={(checked) => setFirstRowIsHeader(checked === true)}
+                />
+                <Label 
+                  htmlFor="first-row-header" 
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  First row is header
+                </Label>
+              </div>
+            </div>
+
             <Button
               variant="outline"
               onClick={handleDownloadTemplate}
@@ -137,21 +182,63 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Important:</strong> Your CSV must follow the template format. 
-                Invalid rows will be rejected automatically to maintain data integrity.
+                <strong>Important:</strong>
+                {importMode === 'update-existing' 
+                  ? ' Your CSV must include the ID column to match existing records. Column headers will be automatically mapped to database fields.'
+                  : ' Your CSV must follow the template format. Invalid rows will be rejected automatically to maintain data integrity.'
+                }
               </AlertDescription>
             </Alert>
+
+            {unmappedColumns.length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Unmapped columns:</strong> {unmappedColumns.join(', ')}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {columnMappings.size > 0 && (
+              <div className="text-xs text-muted-foreground p-3 border rounded bg-muted/30">
+                <div className="font-medium mb-2">Column Mappings:</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {Array.from(columnMappings.entries()).slice(0, 6).map(([csv, db]) => (
+                    <div key={csv} className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs">{csv}</Badge>
+                      <span>→</span>
+                      <span className="font-mono">{db}</span>
+                    </div>
+                  ))}
+                  {columnMappings.size > 6 && (
+                    <div className="col-span-2 text-center">
+                      ... and {columnMappings.size - 6} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {step === 'preview' && validationResults && (
-          <ImportPreview
-            data={parsedData}
-            validationResults={validationResults}
-            entityType={entityType}
-            onImport={handleImport}
-            onCancel={() => setStep('upload')}
-          />
+          <>
+            {importMode === 'update-existing' && updatePreview ? (
+              <UpdatePreview
+                changes={updatePreview}
+                onConfirm={handleImport}
+                onCancel={() => setStep('upload')}
+              />
+            ) : (
+              <ImportPreview
+                data={parsedData}
+                validationResults={validationResults}
+                entityType={entityType}
+                onImport={handleImport}
+                onCancel={() => setStep('upload')}
+              />
+            )}
+          </>
         )}
 
         {step === 'importing' && (
