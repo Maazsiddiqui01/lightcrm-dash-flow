@@ -5,9 +5,8 @@ import { Upload, FileText, AlertCircle, CheckCircle2, Download } from "lucide-re
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { useCsvImport } from "@/hooks/useCsvImport";
-import { ImportPreview } from "./ImportPreview";
+import { CsvTablePreview } from "./CsvTablePreview";
 import { ImportResults } from "./ImportResults";
-import { UpdatePreview } from "./UpdatePreview";
 import { generateTemplate } from "@/utils/csvValidation";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -222,23 +221,15 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
         )}
 
         {step === 'preview' && validationResults && (
-          <>
-            {importMode === 'update-existing' && updatePreview ? (
-              <UpdatePreview
-                changes={updatePreview}
-                onConfirm={handleImport}
-                onCancel={() => setStep('upload')}
-              />
-            ) : (
-              <ImportPreview
-                data={parsedData}
-                validationResults={validationResults}
-                entityType={entityType}
-                onImport={handleImport}
-                onCancel={() => setStep('upload')}
-              />
-            )}
-          </>
+          <CsvTablePreview
+            parsedData={parsedData}
+            validationResults={validationResults}
+            columnMappings={columnMappings}
+            entityType={entityType}
+            importMode={importMode}
+            onImport={handleImport}
+            onCancel={() => setStep('upload')}
+          />
         )}
 
         {step === 'importing' && (
