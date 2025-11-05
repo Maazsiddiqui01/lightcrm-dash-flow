@@ -53,6 +53,21 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
   const [dbRecordsCache, setDbRecordsCache] = useState<Map<string, any>>(new Map());
   const { toast } = useToast();
 
+  // Resolve actual backend table name with graceful fallback
+  const resolveTableName = async (ent: 'contacts' | 'opportunities'): Promise<string> => {
+    const primary = ent === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
+    const fallback = ent === 'contacts' ? 'contacts' : 'opportunities';
+    try {
+      const { error } = await supabase.from(primary).select('id', { head: true, count: 'exact' }).limit(1);
+      if (!error) return primary;
+    } catch (_) {}
+    try {
+      const { error: fbErr } = await supabase.from(fallback).select('id', { head: true, count: 'exact' }).limit(1);
+      if (!fbErr) return fallback;
+    } catch (_) {}
+    return primary; // default to primary if all checks fail
+  };
+
   const parseFile = async (file: File) => {
     try {
       // Security: Validate file before processing
@@ -133,6 +148,8 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
       // Transform to use database column names
       const transformedData = transformCsvData(dataWithRowNumbers, mapped);
+      console.debug('[CSV Import] First 3 transformed rows:', transformedData.slice(0, 3));
+      console.debug('[CSV Import] Column mappings:', Object.fromEntries(mapped));
       setParsedData(transformedData);
 
       // Show warnings for unmapped columns

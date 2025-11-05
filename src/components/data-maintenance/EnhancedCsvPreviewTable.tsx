@@ -298,6 +298,12 @@ export function EnhancedCsvPreviewTable({
                       content = column.render(value, row, rowIndex);
                     } else {
                       const displayValue = value?.toString() || '';
+                      
+                      // Debug logging for first few rows
+                      if (rowIndex < 3 && column.key !== '__status' && column.key !== '__row') {
+                        console.debug(`[Preview Debug] Row ${rowIndex}, Column ${column.key}: value =`, value, 'row =', row);
+                      }
+                      
                       content = (
                         <TooltipProvider delayDuration={500}>
                           <Tooltip>
@@ -305,7 +311,7 @@ export function EnhancedCsvPreviewTable({
                               <div className={cn(
                                 textWrap ? "whitespace-normal break-words" : "truncate"
                               )}>
-                                {displayValue}
+                                {displayValue || (value === null ? '<null>' : value === undefined ? '<undefined>' : '<empty>')}
                               </div>
                             </TooltipTrigger>
                             {!textWrap && displayValue.length > 50 && (
