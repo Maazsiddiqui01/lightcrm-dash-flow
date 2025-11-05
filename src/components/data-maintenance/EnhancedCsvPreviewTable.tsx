@@ -25,7 +25,6 @@ interface EnhancedCsvPreviewTableProps {
   entityType: 'contacts' | 'opportunities';
   textWrap: boolean;
   onToggleTextWrap: () => void;
-  containerHeight?: number;
   highlightChanges?: boolean;
   changeMap?: Map<number, Set<string>>;
 }
@@ -37,7 +36,6 @@ export function EnhancedCsvPreviewTable({
   entityType,
   textWrap,
   onToggleTextWrap,
-  containerHeight = 600,
   highlightChanges = false,
   changeMap = new Map(),
 }: EnhancedCsvPreviewTableProps) {
@@ -208,6 +206,12 @@ export function EnhancedCsvPreviewTable({
 
   return (
     <div className="border-2 rounded-lg bg-background shadow-lg overflow-hidden">
+      {/* Scroll hint */}
+      <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border-b border-blue-200 dark:border-blue-800 text-sm text-blue-900 dark:text-blue-100 flex items-center justify-center gap-2">
+        <AlertTriangle className="h-4 w-4" />
+        <span>Scroll horizontally to see all columns • Use the scrollbars above and below the table</span>
+      </div>
+
       {/* Top scrollbar */}
       <div 
         ref={topScrollRef}
@@ -221,9 +225,9 @@ export function EnhancedCsvPreviewTable({
       <div 
         ref={scrollRef}
         className="overflow-auto scrollbar-visible"
-        style={{ maxHeight: containerHeight }}
+        style={{ maxHeight: '60vh' }}
       >
-        <Table className="w-full">
+        <Table className="w-full min-w-full">
           <TableHeader className="sticky top-0 z-20 bg-table-header">
             <TableRow className="hover:bg-table-header border-b-2 border-border">
               {enhancedColumns.map((column) => {
@@ -264,6 +268,13 @@ export function EnhancedCsvPreviewTable({
             </TableRow>
           </TableHeader>
           <TableBody>
+            {data.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={enhancedColumns.length} className="text-center py-8 text-muted-foreground">
+                  No data to display
+                </TableCell>
+              </TableRow>
+            )}
             {data.map((row, rowIndex) => {
               const isEven = rowIndex % 2 === 0;
               const status = rowStatusMap.get(rowIndex);
@@ -272,7 +283,7 @@ export function EnhancedCsvPreviewTable({
                 <TableRow
                   key={rowIndex}
                   className={cn(
-                    "border-b border-border/30 transition-colors",
+                    "border-b border-border/30 transition-colors min-h-[44px]",
                     isEven ? "bg-background" : "bg-muted/20",
                     "hover:bg-table-row-hover"
                   )}

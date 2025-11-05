@@ -23,7 +23,6 @@ interface CsvTablePreviewProps {
   dbRecordsCache?: Map<string, any>;
   onImport: () => void;
   onCancel: () => void;
-  containerHeight?: number;
 }
 
 export function CsvTablePreview({
@@ -35,7 +34,6 @@ export function CsvTablePreview({
   dbRecordsCache,
   onImport,
   onCancel,
-  containerHeight = 600
 }: CsvTablePreviewProps) {
   const { valid, invalid, warnings } = validationResults;
   const [viewFilter, setViewFilter] = useState<ViewFilter>('all');
@@ -166,126 +164,137 @@ export function CsvTablePreview({
   };
   
   return (
-    <div className="space-y-4">
-      {/* Validation Summary Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5" />
-            Validation Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <FileSpreadsheet className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-2xl font-bold">{counts.total}</p>
-                <p className="text-sm text-muted-foreground">Total Rows</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
-              <div>
-                <p className="text-2xl font-bold text-green-600">{counts.valid}</p>
-                <p className="text-sm text-muted-foreground">
-                  ✅ Valid - Ready to {importMode === 'add-new' ? 'import' : 'update'}
-                </p>
-              </div>
-            </div>
-            
-            {counts.invalid > 0 && (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
-                <AlertTriangle className="h-8 w-8 text-red-600" />
+    <div className="flex flex-col h-full">
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto space-y-4 px-1">
+        {/* Validation Summary Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5" />
+              Validation Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <FileSpreadsheet className="h-8 w-8 text-primary" />
                 <div>
-                  <p className="text-2xl font-bold text-red-600">{counts.invalid}</p>
+                  <p className="text-2xl font-bold">{counts.total}</p>
+                  <p className="text-sm text-muted-foreground">Total Rows</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+                <div>
+                  <p className="text-2xl font-bold text-green-600">{counts.valid}</p>
                   <p className="text-sm text-muted-foreground">
-                    ❌ Invalid - Blocking errors
+                    ✅ Valid - Ready to {importMode === 'add-new' ? 'import' : 'update'}
                   </p>
                 </div>
               </div>
+              
+              {counts.invalid > 0 && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
+                  <AlertTriangle className="h-8 w-8 text-red-600" />
+                  <div>
+                    <p className="text-2xl font-bold text-red-600">{counts.invalid}</p>
+                    <p className="text-sm text-muted-foreground">
+                      ❌ Invalid - Blocking errors
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {counts.warning > 0 && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription>
+                  🟡 <strong>{counts.warning} rows have warnings</strong> but can still be imported. 
+                  Hover over the warning icon to see details.
+                </AlertDescription>
+              </Alert>
             )}
-          </div>
 
-          {counts.warning > 0 && (
-            <Alert>
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription>
-                🟡 <strong>{counts.warning} rows have warnings</strong> but can still be imported. 
-                Hover over the warning icon to see details.
-              </AlertDescription>
-            </Alert>
-          )}
+            {counts.invalid > 0 && counts.valid > 0 && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Partial Import Mode:</strong> {counts.valid} valid rows will be processed. 
+                  {counts.invalid} invalid rows will be skipped.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
 
-          {counts.invalid > 0 && counts.valid > 0 && (
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Partial Import Mode:</strong> {counts.valid} valid rows will be processed. 
-                {counts.invalid} invalid rows will be skipped.
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Enhanced Table with Toolbar */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Import Preview</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <CsvPreviewToolbar
-            viewFilter={viewFilter}
-            onViewFilterChange={setViewFilter}
-            textWrap={textWrap}
-            onToggleTextWrap={() => setTextWrap(!textWrap)}
-            onResetColumns={handleResetColumns}
-            counts={counts}
-          />
-          
-          <div className="p-4">
-            <EnhancedCsvPreviewTable
-              key={resetKey}
-              data={filteredData}
-              columns={columns}
-              rowStatusMap={rowStatusMap}
-              entityType={entityType}
+        {/* Enhanced Table with Toolbar */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Import Preview</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <CsvPreviewToolbar
+              viewFilter={viewFilter}
+              onViewFilterChange={setViewFilter}
               textWrap={textWrap}
               onToggleTextWrap={() => setTextWrap(!textWrap)}
-              containerHeight={containerHeight}
-              highlightChanges={importMode === 'update-existing'}
-              changeMap={changeMap}
+              onResetColumns={handleResetColumns}
+              counts={counts}
             />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Pre-Import Validation Warning */}
-      {counts.valid === 0 && (
-        <Card className="border-destructive bg-destructive/10">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h4 className="font-semibold text-destructive mb-1">
-                  Cannot Import: All Rows Have Errors
-                </h4>
-                <p className="text-sm text-destructive/90 mb-2">
-                  🔴 <strong>{counts.invalid} blocking error{counts.invalid !== 1 ? 's' : ''}</strong> must be fixed before importing.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Fix the errors shown above, then re-upload your CSV file to try again.
-                </p>
-              </div>
+            
+            <div className="p-4">
+              {filteredData.length === 0 ? (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    No rows match the selected filter. Try selecting "All Rows" to see all data.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <EnhancedCsvPreviewTable
+                  key={resetKey}
+                  data={filteredData}
+                  columns={columns}
+                  rowStatusMap={rowStatusMap}
+                  entityType={entityType}
+                  textWrap={textWrap}
+                  onToggleTextWrap={() => setTextWrap(!textWrap)}
+                  highlightChanges={importMode === 'update-existing'}
+                  changeMap={changeMap}
+                />
+              )}
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Actions */}
-      <div className="flex justify-between pt-4 border-t">
+        {/* Pre-Import Validation Warning */}
+        {counts.valid === 0 && (
+          <Card className="border-destructive bg-destructive/10">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-destructive mb-1">
+                    Cannot Import: All Rows Have Errors
+                  </h4>
+                  <p className="text-sm text-destructive/90 mb-2">
+                    🔴 <strong>{counts.invalid} blocking error{counts.invalid !== 1 ? 's' : ''}</strong> must be fixed before importing.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Fix the errors shown above, then re-upload your CSV file to try again.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+      
+      {/* Sticky footer with actions - ALWAYS VISIBLE */}
+      <div className="sticky bottom-0 z-40 bg-background border-t shadow-lg mt-4 p-4 flex justify-between items-center gap-4">
         <Button variant="outline" onClick={onCancel} size="lg">
           <X className="h-4 w-4 mr-2" />
           Cancel
