@@ -231,44 +231,42 @@ export function CsvTablePreview({
         </Card>
 
         {/* Enhanced Table with Toolbar */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Preview</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <CsvPreviewToolbar
-              viewFilter={viewFilter}
-              onViewFilterChange={setViewFilter}
-              textWrap={textWrap}
-              onToggleTextWrap={() => setTextWrap(!textWrap)}
-              onResetColumns={handleResetColumns}
-              counts={counts}
-            />
-            
-            <div className="p-4">
-              {filteredData.length === 0 ? (
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    No rows match the selected filter. Try selecting "All Rows" to see all data.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <EnhancedCsvPreviewTable
-                  key={resetKey}
-                  data={filteredData}
-                  columns={columns}
-                  rowStatusMap={rowStatusMap}
-                  entityType={entityType}
-                  textWrap={textWrap}
-                  onToggleTextWrap={() => setTextWrap(!textWrap)}
-                  highlightChanges={importMode === 'update-existing'}
-                  changeMap={changeMap}
-                />
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="border rounded-lg bg-card flex-1 flex flex-col min-h-[400px]">
+          <div className="border-b px-4 py-3">
+            <h3 className="font-semibold">Import Preview</h3>
+          </div>
+          <CsvPreviewToolbar
+            viewFilter={viewFilter}
+            onViewFilterChange={setViewFilter}
+            textWrap={textWrap}
+            onToggleTextWrap={() => setTextWrap(!textWrap)}
+            onResetColumns={handleResetColumns}
+            counts={counts}
+          />
+          
+          <div className="p-4 flex-1 overflow-hidden">
+            {filteredData.length === 0 ? (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  No rows match the selected filter. Try selecting "All Rows" to see all data.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <EnhancedCsvPreviewTable
+                key={resetKey}
+                data={filteredData}
+                columns={columns}
+                rowStatusMap={rowStatusMap}
+                entityType={entityType}
+                textWrap={textWrap}
+                onToggleTextWrap={() => setTextWrap(!textWrap)}
+                highlightChanges={importMode === 'update-existing'}
+                changeMap={changeMap}
+              />
+            )}
+          </div>
+        </div>
 
         {/* Pre-Import Validation Warning */}
         {counts.valid === 0 && (

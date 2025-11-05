@@ -205,17 +205,17 @@ export function EnhancedCsvPreviewTable({
   };
 
   return (
-    <div className="border-2 rounded-lg bg-background shadow-lg overflow-hidden">
+    <div className="border-2 rounded-lg bg-background shadow-lg overflow-hidden h-full flex flex-col">
       {/* Scroll hint */}
-      <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border-b border-blue-200 dark:border-blue-800 text-sm text-blue-900 dark:text-blue-100 flex items-center justify-center gap-2">
-        <AlertTriangle className="h-4 w-4" />
-        <span>Scroll horizontally to see all columns • Use the scrollbars above and below the table</span>
+      <div className="p-2 bg-blue-50 dark:bg-blue-950/20 border-b border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-100 flex items-center justify-center gap-2 flex-shrink-0">
+        <AlertTriangle className="h-3 w-3" />
+        <span>Scroll horizontally to see all columns</span>
       </div>
 
       {/* Top scrollbar */}
       <div 
         ref={topScrollRef}
-        className="sticky top-0 z-30 overflow-x-auto h-3 scrollbar-visible bg-muted/20"
+        className="sticky top-0 z-30 overflow-x-auto h-3 scrollbar-visible bg-muted/20 flex-shrink-0"
         style={{ overflowY: 'hidden' }}
       >
         <div style={{ width: spacerWidth, height: 1 }} />
@@ -224,8 +224,8 @@ export function EnhancedCsvPreviewTable({
       {/* Main table container */}
       <div 
         ref={scrollRef}
-        className="overflow-auto scrollbar-visible"
-        style={{ maxHeight: '60vh' }}
+        className="overflow-auto scrollbar-visible flex-1"
+        style={{ minHeight: '300px' }}
       >
         <Table className="w-full min-w-full">
           <TableHeader className="sticky top-0 z-20 bg-table-header">
