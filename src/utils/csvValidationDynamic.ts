@@ -56,17 +56,9 @@ export async function validateCsvDataDynamic(
     const rowErrors: ValidationError[] = [];
     const rowWarnings: string[] = [];
 
-    // For update mode, validate ID field
+    // For update mode, validate ID field format only (existence check comes later)
     if (isUpdateMode) {
-      if (!row.id || row.id === '') {
-        // ID is missing - this is now acceptable if Deal Name matching was used
-        rowErrors.push({
-          row: rowNumber,
-          field: 'ID',
-          message: 'ID not found - record may not exist in database',
-          value: row.id
-        });
-      } else {
+      if (row.id && row.id !== '') {
         // Validate UUID format
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(String(row.id))) {
@@ -151,6 +143,46 @@ export async function validateCsvDataDynamic(
       }
     }
   });
+
+  // Additional validation for update mode: check if IDs exist in database
+  if (isUpdateMode && valid.length > 0) {
+    const idsToCheck = valid
+      .map(row => row.id)
+      .filter(id => id !== null && id !== undefined && id !== '');
+    
+    if (idsToCheck.length > 0) {
+      const { data: existingRecords, error } = await supabase
+        .from(tableName)
+        .select('id')
+        .in('id', idsToCheck);
+
+      if (!error && existingRecords) {
+        const existingIdSet = new Set(existingRecords.map(r => r.id));
+        
+        // Re-validate: move rows with non-existent IDs from valid to invalid
+        const validFiltered: any[] = [];
+        valid.forEach(row => {
+          if (row.id && !existingIdSet.has(row.id)) {
+            invalid.push({
+              row: row._rowNumber || 0,
+              field: 'ID',
+              message: 'ID does not exist in database - record not found',
+              value: row.id
+            });
+          } else {
+            validFiltered.push(row);
+          }
+        });
+        
+        return { 
+          valid: validFiltered, 
+          invalid, 
+          warnings, 
+          normalized: [] 
+        };
+      }
+    }
+  }
 
   return { valid, invalid, warnings, normalized: [] };
 }

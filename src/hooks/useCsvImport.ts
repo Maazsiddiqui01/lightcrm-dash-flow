@@ -6,6 +6,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { createColumnMap, mapCsvHeaders, transformCsvData } from "@/utils/csvColumnMapper";
 import type { RecordChange, FieldChange } from "@/components/data-maintenance/UpdatePreview";
 import Papa from 'papaparse';
+import { 
+  validateCsvFile, 
+  validateRowCount, 
+  sanitizeImportBatch, 
+  logImportAttempt 
+} from "@/utils/csvImportSecurity";
 
 export interface ValidationResults {
   valid: any[];
@@ -38,6 +44,17 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
   const parseFile = async (file: File) => {
     try {
+      // Security: Validate file before processing
+      const fileValidation = validateCsvFile(file);
+      if (!fileValidation.valid) {
+        toast({
+          title: "Invalid File",
+          description: fileValidation.error,
+          variant: "destructive"
+        });
+        return;
+      }
+
       setFile(file);
       const text = await file.text();
 
@@ -64,6 +81,17 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
       const data = (parseResult.data as any[]) || [];
       
+      // Security: Validate row count
+      const rowValidation = validateRowCount(data.length);
+      if (!rowValidation.valid) {
+        toast({
+          title: "Invalid Data",
+          description: rowValidation.error,
+          variant: "destructive"
+        });
+        return;
+      }
+      
       if (data.length === 0) {
         toast({
           title: "Invalid File",
@@ -72,6 +100,9 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         });
         return;
       }
+
+      // Security: Log import attempt (without sensitive data)
+      logImportAttempt(entityType, data.length, importMode);
 
       // Get headers from parsed data
       const headers = firstRowIsHeader 
@@ -124,7 +155,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             description: "No ID column found. Matching opportunities by Deal Name...",
           });
           
-          const dealNames = transformedData
+            const dealNames = transformedData
             .map(row => row.deal_name)
             .filter(Boolean);
           
@@ -143,6 +174,15 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             .select('id, deal_name')
             .in('deal_name', dealNames);
 
+          if (!existingRecords || existingRecords.length === 0) {
+            toast({
+              title: "No Matches Found",
+              description: "None of the Deal Names in your CSV match existing opportunities.",
+              variant: "destructive"
+            });
+            return;
+          }
+
           const dealNameToId = new Map(
             (existingRecords || []).map(r => [r.deal_name as string, r.id as string])
           );
@@ -152,6 +192,11 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             if (row.deal_name && !row.id) {
               row.id = dealNameToId.get(row.deal_name) || null;
             }
+          });
+
+          toast({
+            title: "Deal Name Matching Applied",
+            description: `Matched ${existingRecords.length} of ${dealNames.length} opportunities by Deal Name`,
           });
         }
 
@@ -284,8 +329,11 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         for (let i = 0; i < batches; i++) {
           const batch = validRows.slice(i * batchSize, (i + 1) * batchSize);
           
+          // Security: Sanitize batch before sending to database
+          const sanitizedBatch = sanitizeImportBatch(batch);
+          
           // Clean the data - remove internal fields
-          const cleanedBatch = batch.map(row => {
+          const cleanedBatch = sanitizedBatch.map(row => {
             const { _rowNumber, ...cleanRow } = row;
             return cleanRow;
           });
