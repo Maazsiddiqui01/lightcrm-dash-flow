@@ -85,24 +85,32 @@ export function VirtualizedTable<T extends Record<string, any>>({
   return (
     <div 
       ref={parentRef}
-      className={cn("overflow-auto border rounded-lg", className)}
+      className={cn(
+        "overflow-auto border rounded-lg bg-background",
+        "scrollbar-visible [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar]:h-3",
+        "[&::-webkit-scrollbar-track]:bg-muted/50 [&::-webkit-scrollbar-track]:rounded",
+        "[&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded",
+        "[&::-webkit-scrollbar-thumb]:hover:bg-muted-foreground/50",
+        className
+      )}
       style={{ height: containerHeight }}
     >
       <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
         <Table>
-          <TableHeader className="sticky top-0 z-20 bg-table-header border-b">
-            <TableRow>
+          <TableHeader className="sticky top-0 z-20 bg-table-header border-b-2">
+            <TableRow className="hover:bg-table-header">
               {columns.map((column) => (
                   <TableHead 
                     key={column.key}
                     className={cn(
-                      "table-cell-compact bg-table-header min-h-12 max-h-[4.5rem] overflow-hidden align-top",
+                      "table-cell-compact bg-table-header min-h-12 max-h-[4.5rem] overflow-hidden align-middle",
+                      "text-white font-semibold border-r border-border/50 last:border-r-0",
                       column.headerClassName,
-                      column.sticky && stickyFirstColumn && "sticky left-0 z-30 bg-table-header"
+                      column.sticky && stickyFirstColumn && "sticky left-0 z-30 bg-table-header shadow-[2px_0_4px_rgba(0,0,0,0.1)]"
                     )}
                     style={{ width: column.width }}
                   >
-                    <span className="text-wrap break-words leading-tight line-clamp-3">{column.label}</span>
+                    <span className="text-wrap break-words leading-tight line-clamp-3 text-white">{column.label}</span>
                   </TableHead>
               ))}
             </TableRow>
@@ -116,7 +124,7 @@ export function VirtualizedTable<T extends Record<string, any>>({
                 <TableRow
                   key={virtualRow.index}
                   className={cn(
-                    "cursor-pointer hover:bg-table-row-hover transition-colors",
+                    "cursor-pointer hover:bg-table-row-hover transition-colors border-b border-border/30",
                     isEven ? "bg-background" : "bg-table-row-even",
                     onRowClick && "hover:bg-table-row-hover"
                   )}
@@ -138,9 +146,10 @@ export function VirtualizedTable<T extends Record<string, any>>({
                       <TableCell 
                         key={column.key}
                         className={cn(
-                          "table-cell-compact text-fluid-base max-h-[4.5rem] overflow-hidden align-top",
+                          "table-cell-compact text-fluid-base max-h-[4.5rem] overflow-hidden align-middle",
+                          "border-r border-border/30 last:border-r-0",
                           column.className,
-                          column.sticky && stickyFirstColumn && "sticky left-0 z-10 bg-inherit"
+                          column.sticky && stickyFirstColumn && "sticky left-0 z-10 bg-inherit shadow-[2px_0_4px_rgba(0,0,0,0.05)]"
                         )}
                         style={{ width: column.width }}
                       >

@@ -139,7 +139,8 @@ export function CsvTablePreview({
         label: '',
         width: 50,
         sticky: true,
-        headerClassName: 'text-center',
+        headerClassName: 'text-center bg-table-header',
+        className: 'text-center bg-background',
         render: (_: any, row: any) => {
           const originalIndex = row.__originalIndex;
           const status = rowStatusMap.get(originalIndex);
@@ -155,18 +156,22 @@ export function CsvTablePreview({
             : 'text-destructive';
 
           if (status.messages.length === 0) {
-            return <StatusIcon className={cn("h-4 w-4", iconColor)} />;
+            return (
+              <div className="flex items-center justify-center">
+                <StatusIcon className={cn("h-4 w-4", iconColor)} />
+              </div>
+            );
           }
 
           return (
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button className="cursor-help">
+                  <button className="cursor-help flex items-center justify-center w-full">
                     <StatusIcon className={cn("h-4 w-4", iconColor)} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
+                <TooltipContent className="max-w-xs" side="right">
                   <div className="space-y-1">
                     {status.messages.map((msg, i) => (
                       <div key={i} className="text-xs">{msg}</div>
@@ -183,14 +188,15 @@ export function CsvTablePreview({
         label: '#',
         width: 60,
         sticky: true,
-        className: 'font-mono text-muted-foreground text-xs',
-        headerClassName: 'font-mono text-xs',
-        render: (value: any) => value
+        className: 'font-mono text-muted-foreground text-xs text-center bg-background',
+        headerClassName: 'font-mono text-xs text-center bg-table-header',
+        render: (value: any) => <div className="text-center">{value}</div>
       },
       ...columnArray.map(key => ({
         key,
         label: columnMappings.get(key) || key,
-        width: 150,
+        width: Math.max(150, Math.min(300, (columnMappings.get(key) || key).length * 10)),
+        headerClassName: 'bg-table-header',
         render: (value: any, row: any) => {
           const originalIndex = row.__originalIndex;
           const rowChanges = rowChangesMap.get(originalIndex);
@@ -221,7 +227,7 @@ export function CsvTablePreview({
           }
 
           const cellContent = (
-            <div className={cn("text-sm px-2 py-1 -mx-2 -my-1 rounded", cellClassName)}>
+            <div className={cn("text-sm px-1 py-1 -mx-1 -my-1 rounded h-full flex items-center", cellClassName)}>
               {cellChange?.changeType === 'cleared' ? (
                 <span className="line-through text-muted-foreground italic text-xs">
                   {cellChange.displayOld}
@@ -229,7 +235,7 @@ export function CsvTablePreview({
               ) : value === null || value === undefined || value === '' ? (
                 <span className="text-muted-foreground italic text-xs">empty</span>
               ) : (
-                String(value)
+                <span className="break-all">{String(value)}</span>
               )}
             </div>
           );
@@ -239,9 +245,11 @@ export function CsvTablePreview({
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    {cellContent}
+                    <div className="cursor-help w-full">
+                      {cellContent}
+                    </div>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs whitespace-pre-wrap">
+                  <TooltipContent className="max-w-xs whitespace-pre-wrap" side="top">
                     {tooltipContent}
                   </TooltipContent>
                 </Tooltip>
@@ -359,7 +367,7 @@ export function CsvTablePreview({
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg bg-background">
+      <div className="border-2 rounded-lg bg-background shadow-sm">
         <VirtualizedTable
           data={displayData}
           columns={columns}
