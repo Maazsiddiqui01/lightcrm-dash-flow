@@ -316,7 +316,7 @@ export function CsvTablePreview({
             {valid.length === 0 && (
               <TooltipContent side="top" className="max-w-xs">
                 <p className="text-sm">
-                  All {totalRows} rows have validation errors. Fix the errors shown above and re-upload your CSV to continue.
+                  All {counts.total} rows have validation errors. Fix the errors shown above and re-upload your CSV to continue.
                 </p>
               </TooltipContent>
             )}
