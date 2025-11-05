@@ -33,6 +33,8 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
     progress,
     importMode,
     setImportMode,
+    matchingStrategy,
+    setMatchingStrategy,
     firstRowIsHeader,
     setFirstRowIsHeader,
     updatePreview,
@@ -126,6 +128,36 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>
+
+              {importMode === 'update-existing' && entityType === 'opportunities' && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label className="text-sm font-medium">Matching Strategy</Label>
+                  <ToggleGroup 
+                    type="single" 
+                    value={matchingStrategy} 
+                    onValueChange={(value) => value && setMatchingStrategy(value as any)}
+                    className="justify-start flex-col sm:flex-row"
+                  >
+                    <ToggleGroupItem value="auto" className="flex-1 text-xs">
+                      🔄 Auto-detect
+                      <span className="block text-[10px] text-muted-foreground mt-0.5">Let system decide</span>
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="id" className="flex-1 text-xs">
+                      🔑 Match by ID
+                      <span className="block text-[10px] text-muted-foreground mt-0.5">Most reliable</span>
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="deal_name" className="flex-1 text-xs">
+                      📝 Match by Deal Name
+                      <span className="block text-[10px] text-muted-foreground mt-0.5">If ID missing</span>
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                  <p className="text-xs text-muted-foreground">
+                    {matchingStrategy === 'auto' && '✨ Will use ID column if present, otherwise Deal Name'}
+                    {matchingStrategy === 'id' && '🔑 Requires ID column in your CSV'}
+                    {matchingStrategy === 'deal_name' && '📝 Requires Deal Name column in your CSV'}
+                  </p>
+                </div>
+              )}
 
               <div className="flex items-center space-x-2">
                 <Checkbox 

@@ -24,10 +24,19 @@ export interface ImportResults {
   total: number;
   successful: number;
   failed: number;
-  errors: Array<{ row: number; error: string }>;
+  errors: Array<{ row: number; error: string; data?: any }>;
+  skipped?: number;
+  startTime?: number;
+  endTime?: number;
+  batches?: {
+    total: number;
+    successful: number;
+    failed: number;
+  };
 }
 
 export type ImportMode = 'add-new' | 'update-existing';
+export type MatchingStrategy = 'id' | 'deal_name' | 'auto';
 
 export function useCsvImport(entityType: 'contacts' | 'opportunities') {
   const [file, setFile] = useState<File | null>(null);
@@ -36,6 +45,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
   const [importResults, setImportResults] = useState<ImportResults | null>(null);
   const [progress, setProgress] = useState(0);
   const [importMode, setImportMode] = useState<ImportMode>('add-new');
+  const [matchingStrategy, setMatchingStrategy] = useState<MatchingStrategy>('auto');
   const [firstRowIsHeader, setFirstRowIsHeader] = useState(true);
   const [updatePreview, setUpdatePreview] = useState<RecordChange[] | null>(null);
   const [columnMappings, setColumnMappings] = useState<Map<string, string>>(new Map());
@@ -136,27 +146,43 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
       // Validate based on mode
       if (importMode === 'update-existing') {
-        // Check if ID column exists, otherwise use Deal Name fallback
+        // Check matching strategy and validate accordingly
         const hasIdColumn = transformedData.some(row => row.id !== null && row.id !== undefined);
         const hasDealNameColumn = entityType === 'opportunities' && transformedData.some(row => row.deal_name);
         
-        if (!hasIdColumn && !hasDealNameColumn) {
+        // Determine effective strategy
+        let effectiveStrategy = matchingStrategy;
+        if (matchingStrategy === 'auto') {
+          effectiveStrategy = hasIdColumn ? 'id' : (hasDealNameColumn ? 'deal_name' : 'id');
+        }
+        
+        // Validate strategy can be used
+        if (effectiveStrategy === 'id' && !hasIdColumn) {
           toast({
-            title: "Missing Identifier",
-            description: "Update mode requires either ID or Deal Name column to match existing records.",
+            title: "Missing ID Column",
+            description: "You selected 'Match by ID' but no ID column was found in your CSV. Either add an ID column or switch to 'Match by Deal Name'.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        if (effectiveStrategy === 'deal_name' && !hasDealNameColumn) {
+          toast({
+            title: "Missing Deal Name Column",
+            description: "You selected 'Match by Deal Name' but no Deal Name column was found in your CSV. Either add a Deal Name column or switch to 'Match by ID'.",
             variant: "destructive"
           });
           return;
         }
 
-        // If no ID but has Deal Name, fetch IDs from database
-        if (!hasIdColumn && hasDealNameColumn) {
+        // If using deal name matching, fetch IDs from database
+        if (effectiveStrategy === 'deal_name' && hasDealNameColumn) {
           toast({
             title: "Using Deal Name Matching",
-            description: "No ID column found. Matching opportunities by Deal Name...",
+            description: "Matching opportunities by Deal Name...",
           });
           
-            const dealNames = transformedData
+          const dealNames = transformedData
             .map(row => row.deal_name)
             .filter(Boolean);
           
@@ -367,15 +393,18 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     const validRows = validationResults.valid;
     const batchSize = 50;
     const batches = Math.ceil(validRows.length / batchSize);
+    const startTime = Date.now();
 
     let successful = 0;
     let failed = 0;
     let skipped = 0;
-    const errors: Array<{ row: number; error: string }> = [...validationErrors];
+    let batchesSuccessful = 0;
+    let batchesFailed = 0;
+    const errors: Array<{ row: number; error: string; data?: any }> = [...validationErrors];
 
     try {
       if (importMode === 'update-existing') {
-        // Update existing records
+        // Update existing records with row-level retry
         for (let i = 0; i < batches; i++) {
           const batch = validRows.slice(i * batchSize, (i + 1) * batchSize);
           
@@ -393,12 +422,28 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             .upsert(cleanedBatch, { onConflict: 'id' });
 
           if (error) {
-            failed += batch.length;
-            batch.forEach(row => {
-              errors.push({ row: row._rowNumber || 0, error: error.message });
-            });
+            batchesFailed++;
+            // Retry row-by-row to identify specific failures
+            for (const row of batch) {
+              const { _rowNumber, ...cleanRow } = sanitizeImportBatch([row])[0];
+              const { error: rowError } = await supabase
+                .from(tableName)
+                .upsert([cleanRow], { onConflict: 'id' });
+              
+              if (rowError) {
+                failed++;
+                errors.push({ 
+                  row: row._rowNumber || 0, 
+                  error: rowError.message,
+                  data: row
+                });
+              } else {
+                successful++;
+              }
+            }
           } else {
             successful += batch.length;
+            batchesSuccessful++;
           }
 
           setProgress(Math.round(((i + 1) / batches) * 100));
@@ -437,12 +482,28 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
               .insert(nonDuplicates);
 
             if (error) {
-              failed += nonDuplicates.length;
-              nonDuplicates.forEach(row => {
-                errors.push({ row: row._rowNumber || 0, error: error.message });
-              });
+              batchesFailed++;
+              // Retry row-by-row
+              for (const row of nonDuplicates) {
+                const { _rowNumber, ...cleanRow } = row;
+                const { error: rowError } = await supabase
+                  .from(tableName)
+                  .insert([cleanRow]);
+                
+                if (rowError) {
+                  failed++;
+                  errors.push({ 
+                    row: row._rowNumber || 0, 
+                    error: rowError.message,
+                    data: row
+                  });
+                } else {
+                  successful++;
+                }
+              }
             } else {
               successful += nonDuplicates.length;
+              batchesSuccessful++;
             }
           } else {
             // For opportunities, check for duplicates based on deal_name
@@ -473,12 +534,28 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
               .insert(nonDuplicates);
 
             if (error) {
-              failed += nonDuplicates.length;
-              nonDuplicates.forEach(row => {
-                errors.push({ row: row._rowNumber || 0, error: error.message });
-              });
+              batchesFailed++;
+              // Retry row-by-row
+              for (const row of nonDuplicates) {
+                const { _rowNumber, ...cleanRow } = row;
+                const { error: rowError } = await supabase
+                  .from(tableName)
+                  .insert([cleanRow]);
+                
+                if (rowError) {
+                  failed++;
+                  errors.push({ 
+                    row: row._rowNumber || 0, 
+                    error: rowError.message,
+                    data: row
+                  });
+                } else {
+                  successful++;
+                }
+              }
             } else {
               successful += nonDuplicates.length;
+              batchesSuccessful++;
             }
           }
 
@@ -490,12 +567,21 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       const totalAttempted = validRows.length;
       const totalWithValidation = parsedData.length;
       const failedValidation = validationErrors.length;
+      const endTime = Date.now();
       
       setImportResults({
         total: totalWithValidation,
         successful,
         failed: failed + failedValidation,
-        errors
+        skipped,
+        errors,
+        startTime,
+        endTime,
+        batches: {
+          total: batches,
+          successful: batchesSuccessful,
+          failed: batchesFailed
+        }
       });
 
       const actionText = importMode === 'update-existing' ? 'updated' : 'imported';
@@ -517,18 +603,27 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       const totalRows = parsedData.length;
       const errorMessage = error?.message || 'An unexpected error occurred';
       const errorDetails = error?.details || error?.hint || '';
+      const endTime = Date.now();
       
       setImportResults({
         total: totalRows,
         successful: successful || 0,
         failed: totalRows - (successful || 0),
+        skipped,
         errors: [
           ...errors,
           { 
             row: 0, 
             error: `❌ System Error: ${errorMessage}${errorDetails ? ` (${errorDetails})` : ''}`
           }
-        ]
+        ],
+        startTime,
+        endTime,
+        batches: {
+          total: batches,
+          successful: batchesSuccessful,
+          failed: batchesFailed
+        }
       });
       
       toast({
@@ -559,6 +654,8 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     progress,
     importMode,
     setImportMode,
+    matchingStrategy,
+    setMatchingStrategy,
     firstRowIsHeader,
     setFirstRowIsHeader,
     updatePreview,

@@ -9,9 +9,10 @@ interface ImportResultsProps {
   entityType: 'contacts' | 'opportunities';
   onClose: () => void;
   onImportMore: () => void;
+  onRetryFailed?: (failedRows: any[]) => void;
 }
 
-export function ImportResults({ results, entityType, onClose, onImportMore }: ImportResultsProps) {
+export function ImportResults({ results, entityType, onClose, onImportMore, onRetryFailed }: ImportResultsProps) {
   const successRate = results.total > 0 
     ? Math.round((results.successful / results.total) * 100) 
     : 0;
@@ -26,6 +27,12 @@ export function ImportResults({ results, entityType, onClose, onImportMore }: Im
   const importErrors = results.errors.filter(e => 
     !validationErrors.includes(e) && !systemErrors.includes(e)
   );
+  
+  // Calculate diagnostics
+  const duration = results.endTime && results.startTime 
+    ? (results.endTime - results.startTime) / 1000 
+    : 0;
+  const rowsPerSecond = duration > 0 ? Math.round(results.successful / duration) : 0;
 
   const handleExportErrors = () => {
     const csvContent = [
@@ -40,6 +47,16 @@ export function ImportResults({ results, entityType, onClose, onImportMore }: Im
     a.download = `import-errors-${new Date().toISOString()}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+  
+  const handleRetryFailedRows = () => {
+    const failedRowsData = results.errors
+      .filter(e => e.data)
+      .map(e => e.data);
+    
+    if (onRetryFailed && failedRowsData.length > 0) {
+      onRetryFailed(failedRowsData);
+    }
   };
 
   return (
@@ -108,6 +125,40 @@ export function ImportResults({ results, entityType, onClose, onImportMore }: Im
           </CardContent>
         </Card>
       </div>
+
+      {/* Diagnostics */}
+      {duration > 0 && (
+        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              📊 Import Diagnostics
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground text-xs">Duration</p>
+                <p className="font-bold">{duration.toFixed(1)}s</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs">Speed</p>
+                <p className="font-bold">{rowsPerSecond} rows/sec</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs">Batches</p>
+                <p className="font-bold">
+                  {results.batches?.successful || 0}/{results.batches?.total || 0} succeeded
+                </p>
+              </div>
+            </div>
+            {results.skipped && results.skipped > 0 && (
+              <p className="text-xs text-muted-foreground mt-2">
+                ⏭️ Skipped {results.skipped} duplicate{results.skipped !== 1 ? 's' : ''}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Errors List - Categorized */}
       {results.errors.length > 0 && (
@@ -205,11 +256,19 @@ export function ImportResults({ results, entityType, onClose, onImportMore }: Im
       )}
 
       {/* Actions */}
-      <div className="flex justify-between pt-4 border-t">
-        <Button variant="outline" onClick={onImportMore}>
-          <Upload className="h-4 w-4 mr-2" />
-          Import More
-        </Button>
+      <div className="flex justify-between pt-4 border-t gap-2">
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onImportMore}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import More
+          </Button>
+          {importErrors.length > 0 && onRetryFailed && results.errors.some(e => e.data) && (
+            <Button variant="outline" onClick={handleRetryFailedRows} className="border-orange-300">
+              <AlertTriangle className="h-4 w-4 mr-2 text-orange-600" />
+              Retry {importErrors.length} Failed Row{importErrors.length !== 1 ? 's' : ''}
+            </Button>
+          )}
+        </div>
         <Button onClick={onClose}>
           <X className="h-4 w-4 mr-2" />
           Close
