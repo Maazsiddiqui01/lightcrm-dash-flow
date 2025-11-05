@@ -65,7 +65,7 @@ export async function validateCsvDataDynamic(
           rowErrors.push({
             row: rowNumber,
             field: 'ID',
-            message: 'Invalid ID format (must be UUID)',
+            message: `🔴 Invalid ID format. Expected a UUID like "123e4567-e89b-12d3-a456-426614174000" but got "${row.id}". Check your ID column format.`,
             value: row.id
           });
         }
@@ -81,7 +81,7 @@ export async function validateCsvDataDynamic(
         rowErrors.push({
           row: rowNumber,
           field: config.display_name || columnName,
-          message: 'Required field is missing',
+          message: `🔴 ${config.display_name || columnName} is required but is empty. This field must be filled in to import this row.`,
           value: value
         });
         return;
@@ -166,7 +166,7 @@ export async function validateCsvDataDynamic(
             invalid.push({
               row: row._rowNumber || 0,
               field: 'ID',
-              message: 'ID does not exist in database - record not found',
+              message: `🔴 Record not found in database. The ID "${row.id}" does not exist. You can only update existing records. To add new records, use "Add New" mode instead.`,
               value: row.id
             });
           } else {
@@ -188,44 +188,45 @@ export async function validateCsvDataDynamic(
 }
 
 function validateFieldType(value: any, config: ColumnConfig): string | null {
-  const { field_type } = config;
+  const { field_type, display_name, column_name } = config;
+  const fieldName = display_name || column_name;
 
   switch (field_type) {
     case 'email':
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(String(value))) {
-        return 'Invalid email format';
+        return `🔴 Invalid email address. "${value}" is not a valid email format. Example: user@company.com`;
       }
       break;
 
     case 'number':
     case 'integer':
       if (isNaN(Number(value))) {
-        return `Must be a valid ${field_type}`;
+        return `🔴 Must be a number. "${value}" cannot be converted to a ${field_type}. Remove any letters or special characters.`;
       }
       if (field_type === 'integer' && !Number.isInteger(Number(value))) {
-        return 'Must be a whole number';
+        return `🔴 Must be a whole number. "${value}" contains decimals. Round to the nearest whole number.`;
       }
       break;
 
     case 'boolean':
       const boolValues = ['true', 'false', '1', '0', 'yes', 'no', true, false, 1, 0];
       if (!boolValues.includes(String(value).toLowerCase()) && !boolValues.includes(value)) {
-        return 'Must be true/false, yes/no, or 1/0';
+        return `🔴 Invalid boolean value. "${value}" must be one of: true, false, yes, no, 1, or 0.`;
       }
       break;
 
     case 'date':
       const dateValue = new Date(value);
       if (isNaN(dateValue.getTime())) {
-        return 'Invalid date format (use YYYY-MM-DD)';
+        return `🔴 Invalid date. "${value}" is not a valid date. Use format: YYYY-MM-DD (e.g., 2024-12-31)`;
       }
       break;
 
     case 'datetime':
       const datetimeValue = new Date(value);
       if (isNaN(datetimeValue.getTime())) {
-        return 'Invalid datetime format (use ISO 8601)';
+        return `🔴 Invalid datetime. "${value}" is not a valid datetime. Use ISO format (e.g., 2024-12-31T14:30:00Z)`;
       }
       break;
 
@@ -233,21 +234,21 @@ function validateFieldType(value: any, config: ColumnConfig): string | null {
       try {
         new URL(value);
       } catch {
-        return 'Invalid URL format';
+        return `🔴 Invalid URL. "${value}" is not a valid web address. Must start with http:// or https://`;
       }
       break;
 
     case 'phone':
       const phoneRegex = /^[\d\s\-\+\(\)]+$/;
       if (!phoneRegex.test(String(value))) {
-        return 'Invalid phone number format';
+        return `🔴 Invalid phone number. "${value}" contains invalid characters. Only use digits, spaces, +, -, and parentheses.`;
       }
       break;
 
     case 'uuid':
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(String(value))) {
-        return 'Invalid UUID format';
+        return `🔴 Invalid UUID. "${value}" must be a valid UUID format (e.g., 123e4567-e89b-12d3-a456-426614174000)`;
       }
       break;
   }
@@ -257,35 +258,37 @@ function validateFieldType(value: any, config: ColumnConfig): string | null {
 
 function applyValidationRule(value: any, rule: any, config: ColumnConfig): string | null {
   if (!rule || typeof rule !== 'object') return null;
+  
+  const fieldName = config.display_name || config.column_name;
 
   // Min/Max length for strings
   if (rule.minLength && String(value).length < rule.minLength) {
-    return `Must be at least ${rule.minLength} characters`;
+    return `🟡 Too short. "${value}" is only ${String(value).length} characters but needs at least ${rule.minLength} characters.`;
   }
   if (rule.maxLength && String(value).length > rule.maxLength) {
-    return `Must be no more than ${rule.maxLength} characters`;
+    return `🔴 Too long. "${value}" is ${String(value).length} characters but maximum is ${rule.maxLength}. Shorten this value.`;
   }
 
   // Min/Max value for numbers
   if (rule.min !== undefined && Number(value) < rule.min) {
-    return `Must be at least ${rule.min}`;
+    return `🔴 Value too small. ${value} is below the minimum of ${rule.min}.`;
   }
   if (rule.max !== undefined && Number(value) > rule.max) {
-    return `Must be no more than ${rule.max}`;
+    return `🔴 Value too large. ${value} exceeds the maximum of ${rule.max}.`;
   }
 
   // Pattern matching
   if (rule.pattern) {
     const regex = new RegExp(rule.pattern);
     if (!regex.test(String(value))) {
-      return rule.message || 'Does not match required pattern';
+      return rule.message || `🔴 Invalid format. "${value}" does not match the required pattern.`;
     }
   }
 
   // Enum/options validation
   if (rule.enum && Array.isArray(rule.enum)) {
     if (!rule.enum.includes(value)) {
-      return `Must be one of: ${rule.enum.join(', ')}`;
+      return `🔴 Invalid option. "${value}" is not allowed. Must be one of: ${rule.enum.join(', ')}`;
     }
   }
 

@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, AlertCircle, CheckCircle2, Download } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Upload, FileText, AlertCircle, CheckCircle2, Download, Table as TableIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { useCsvImport } from "@/hooks/useCsvImport";
@@ -222,16 +223,60 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
         )}
 
         {step === 'preview' && validationResults && (
-          <CsvTablePreview
-            parsedData={parsedData}
-            validationResults={validationResults}
-            columnMappings={columnMappings}
-            entityType={entityType}
-            importMode={importMode}
-            dbRecordsCache={dbRecordsCache}
-            onImport={handleImport}
-            onCancel={() => setStep('upload')}
-          />
+          <div className="space-y-4">
+            {/* Validation Summary */}
+            <Card>
+              <div className="p-4">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <TableIcon className="h-4 w-4" />
+                  Import Summary
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Total Rows</p>
+                    <p className="text-2xl font-bold">{parsedData.length}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">✅ Valid</p>
+                    <p className="text-2xl font-bold text-green-600">{validationResults.valid.length}</p>
+                    {validationResults.valid.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Will be {importMode === 'add-new' ? 'imported' : 'updated'}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">❌ Invalid</p>
+                    <p className="text-2xl font-bold text-red-600">{validationResults.invalid.length}</p>
+                    {validationResults.invalid.length > 0 && (
+                      <p className="text-xs text-red-600">
+                        🔴 {validationResults.invalid.length} blocking error{validationResults.invalid.length !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {validationResults.warnings.length > 0 && (
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-xs text-orange-600 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      🟡 {validationResults.warnings.length} warning{validationResults.warnings.length !== 1 ? 's' : ''} (can still import)
+                    </p>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            <CsvTablePreview
+              parsedData={parsedData}
+              validationResults={validationResults}
+              columnMappings={columnMappings}
+              entityType={entityType}
+              importMode={importMode}
+              dbRecordsCache={dbRecordsCache}
+              onImport={handleImport}
+              onCancel={() => setStep('upload')}
+            />
+          </div>
         )}
 
         {step === 'importing' && (

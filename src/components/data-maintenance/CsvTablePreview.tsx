@@ -390,22 +390,88 @@ export function CsvTablePreview({
         </p>
       )}
 
+      {/* Pre-Import Validation Warning */}
+      {valid.length === 0 && (
+        <Card className="border-destructive bg-destructive/10">
+          <div className="p-4">
+            <div className="flex items-start gap-3">
+              <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-destructive mb-1">
+                  Cannot Import: All Rows Have Errors
+                </h4>
+                <p className="text-sm text-destructive/90 mb-2">
+                  {invalid.length > 0 && (
+                    <>🔴 <strong>{invalid.length} blocking error{invalid.length !== 1 ? 's' : ''}</strong> must be fixed before importing.</>
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Fix the errors shown in red above, then re-upload your CSV file to try again.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {valid.length > 0 && invalid.length > 0 && (
+        <Card className="border-orange-500/50 bg-orange-50 dark:bg-orange-950/20">
+          <div className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">
+                  Partial Import Ready
+                </h4>
+                <p className="text-sm text-orange-800 dark:text-orange-200">
+                  ✅ <strong>{valid.length} row{valid.length !== 1 ? 's' : ''}</strong> will be {importMode === 'add-new' ? 'imported' : 'updated'}
+                  <br />
+                  ❌ <strong>{invalid.length} row{invalid.length !== 1 ? 's' : ''}</strong> will be skipped due to errors
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Actions */}
       <div className="flex justify-between pt-4 border-t">
         <Button variant="outline" onClick={onCancel} size="lg">
           <X className="h-4 w-4 mr-2" />
           Cancel
         </Button>
-        <Button 
-          onClick={onImport} 
-          disabled={valid.length === 0}
-          size="lg"
-          className="gap-2"
-        >
-          <Upload className="h-4 w-4" />
-          {importMode === 'add-new' ? 'Import' : 'Update'} {valid.length} {entityType === 'contacts' ? 'Contact' : 'Opportunit'}
-          {valid.length !== 1 ? (entityType === 'contacts' ? 's' : 'ies') : 'y'}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Button 
+                  onClick={onImport} 
+                  disabled={valid.length === 0}
+                  size="lg"
+                  className="gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  {valid.length === 0 
+                    ? `Cannot ${importMode === 'add-new' ? 'Import' : 'Update'} - Fix Errors`
+                    : `${importMode === 'add-new' ? 'Import' : 'Update'} ${valid.length} ${entityType === 'contacts' ? 'Contact' : 'Opportunit'}${valid.length !== 1 ? (entityType === 'contacts' ? 's' : 'ies') : 'y'}`
+                  }
+                  {invalid.length > 0 && valid.length > 0 && (
+                    <Badge variant="outline" className="ml-1 bg-orange-100 dark:bg-orange-900 text-orange-900 dark:text-orange-100 border-orange-300">
+                      {invalid.length} skipped
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+            </TooltipTrigger>
+            {valid.length === 0 && (
+              <TooltipContent side="top" className="max-w-xs">
+                <p className="text-sm">
+                  All {totalRows} rows have validation errors. Fix the errors shown above and re-upload your CSV to continue.
+                </p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );
