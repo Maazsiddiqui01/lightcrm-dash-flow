@@ -231,8 +231,8 @@ export function CsvTablePreview({
         </Card>
 
         {/* Enhanced Table with Toolbar */}
-        <div className="border rounded-lg bg-card flex-1 flex flex-col min-h-[400px]">
-          <div className="border-b px-4 py-3">
+        <div className="border rounded-lg bg-card flex-1 flex flex-col min-h-[60vh] h-full">
+          <div className="border-b px-4 py-3 flex-shrink-0">
             <h3 className="font-semibold">Import Preview</h3>
           </div>
           <CsvPreviewToolbar
@@ -244,14 +244,16 @@ export function CsvTablePreview({
             counts={counts}
           />
           
-          <div className="p-4 flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden">
             {filteredData.length === 0 ? (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  No rows match the selected filter. Try selecting "All Rows" to see all data.
-                </AlertDescription>
-              </Alert>
+              <div className="p-4">
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    No rows match the selected filter. Try selecting "All Rows" to see all data.
+                  </AlertDescription>
+                </Alert>
+              </div>
             ) : (
               <EnhancedCsvPreviewTable
                 key={resetKey}

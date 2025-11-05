@@ -270,7 +270,7 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
           )}
 
           {step === 'preview' && validationResults && (
-            <div className="h-full flex flex-col">
+            <div className="h-[70vh] flex flex-col">
               <CsvTablePreview
                 parsedData={parsedData}
                 validationResults={validationResults}

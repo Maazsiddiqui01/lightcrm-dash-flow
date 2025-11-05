@@ -144,117 +144,107 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         });
       }
 
-      // Validate based on mode
-      if (importMode === 'update-existing') {
-        // Check matching strategy and validate accordingly
-        const hasIdColumn = transformedData.some(row => row.id !== null && row.id !== undefined);
-        const hasDealNameColumn = entityType === 'opportunities' && transformedData.some(row => row.deal_name);
+      // HYBRID STRATEGY: Auto-match existing records by deal_name for opportunities
+      console.debug('[CSV Import] Starting hybrid validation strategy');
+      
+      let rowsForUpdate: any[] = [];
+      let rowsForInsert: any[] = [];
+      
+      if (entityType === 'opportunities') {
+        const dealNames = transformedData
+          .map(row => row.deal_name)
+          .filter(Boolean);
         
-        // Determine effective strategy
-        let effectiveStrategy = matchingStrategy;
-        if (matchingStrategy === 'auto') {
-          effectiveStrategy = hasIdColumn ? 'id' : (hasDealNameColumn ? 'deal_name' : 'id');
-        }
-        
-        // Validate strategy can be used
-        if (effectiveStrategy === 'id' && !hasIdColumn) {
-          toast({
-            title: "Missing ID Column",
-            description: "You selected 'Match by ID' but no ID column was found in your CSV. Either add an ID column or switch to 'Match by Deal Name'.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        if (effectiveStrategy === 'deal_name' && !hasDealNameColumn) {
-          toast({
-            title: "Missing Deal Name Column",
-            description: "You selected 'Match by Deal Name' but no Deal Name column was found in your CSV. Either add a Deal Name column or switch to 'Match by ID'.",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        // If using deal name matching, fetch IDs from database
-        if (effectiveStrategy === 'deal_name' && hasDealNameColumn) {
-          toast({
-            title: "Using Deal Name Matching",
-            description: "Matching opportunities by Deal Name...",
-          });
-          
-          const dealNames = transformedData
-            .map(row => row.deal_name)
-            .filter(Boolean);
-          
-          if (dealNames.length === 0) {
-            toast({
-              title: "No Deal Names Found",
-              description: "Cannot match records without IDs or Deal Names.",
-              variant: "destructive"
-            });
-            return;
-          }
-
+        if (dealNames.length > 0) {
           // Fetch existing opportunities by deal name
           const { data: existingRecords } = await supabase
             .from('opportunities_raw')
             .select('id, deal_name')
             .in('deal_name', dealNames);
 
-          if (!existingRecords || existingRecords.length === 0) {
-            toast({
-              title: "No Matches Found",
-              description: "None of the Deal Names in your CSV match existing opportunities.",
-              variant: "destructive"
-            });
-            return;
-          }
-
           const dealNameToId = new Map(
             (existingRecords || []).map(r => [r.deal_name as string, r.id as string])
           );
 
-          // Add IDs to transformed data based on deal name match
+          // Partition rows into updates and inserts based on matching
           transformedData.forEach(row => {
-            if (row.deal_name && !row.id) {
-              row.id = dealNameToId.get(row.deal_name) || null;
+            if (row.id) {
+              // Already has ID - definitely an update
+              row.__intent = 'update';
+              rowsForUpdate.push(row);
+            } else if (row.deal_name && dealNameToId.has(row.deal_name)) {
+              // Matched by deal name - convert to update
+              row.id = dealNameToId.get(row.deal_name);
+              row.__intent = 'update';
+              rowsForUpdate.push(row);
+            } else {
+              // No match - insert as new
+              row.__intent = 'insert';
+              rowsForInsert.push(row);
             }
           });
-
-          toast({
-            title: "Deal Name Matching Applied",
-            description: `Matched ${existingRecords.length} of ${dealNames.length} opportunities by Deal Name`,
-          });
+          
+          console.debug(`[CSV Import] Partitioned: ${rowsForUpdate.length} updates, ${rowsForInsert.length} inserts`);
+        } else {
+          // No deal names, all are inserts
+          rowsForInsert = transformedData.map(row => ({ ...row, __intent: 'insert' }));
         }
-
-        const validation = await validateCsvDataDynamic(transformedData, entityType, true);
-        validation.normalized = [];
-        setValidationResults(validation);
-        
-        // Generate update preview
-        if (validation.valid.length > 0) {
-          const preview = await generateUpdatePreview(validation.valid, columnMapResult.columnToDisplay);
-          setUpdatePreview(preview);
-        }
-        
-        toast({
-          title: "File Parsed",
-          description: `Found ${transformedData.length} rows. ${validation.valid.length} valid for update.`,
-        });
       } else {
-        // Normalize and validate for new records
-        const normalized = normalizeCsvData(transformedData, entityType);
-        const normalizationChanges = trackNormalizationChanges(transformedData, normalized);
-        const validation = await validateCsvDataDynamic(normalized, entityType, false);
-        
-        validation.normalized = normalizationChanges;
-        setValidationResults(validation);
-        
-        toast({
-          title: "File Parsed",
-          description: `Found ${transformedData.length} rows. ${validation.valid.length} valid, ${validation.invalid.length} with errors.`,
+        // Contacts: partition by ID presence
+        transformedData.forEach(row => {
+          if (row.id) {
+            row.__intent = 'update';
+            rowsForUpdate.push(row);
+          } else {
+            row.__intent = 'insert';
+            rowsForInsert.push(row);
+          }
         });
       }
+
+      // Validate updates (isUpdate=true, no normalization)
+      let updateValidation: ValidationResults = { valid: [], invalid: [], warnings: [] };
+      if (rowsForUpdate.length > 0) {
+        updateValidation = await validateCsvDataDynamic(rowsForUpdate, entityType, true);
+        console.debug(`[CSV Import] Updates validated: ${updateValidation.valid.length} valid, ${updateValidation.invalid.length} invalid`);
+      }
+
+      // Validate inserts (isUpdate=false, with normalization)
+      let insertValidation: ValidationResults = { valid: [], invalid: [], warnings: [] };
+      if (rowsForInsert.length > 0) {
+        const normalized = normalizeCsvData(rowsForInsert, entityType);
+        const normalizationChanges = trackNormalizationChanges(rowsForInsert, normalized);
+        insertValidation = await validateCsvDataDynamic(normalized, entityType, false);
+        insertValidation.normalized = normalizationChanges;
+        console.debug(`[CSV Import] Inserts validated: ${insertValidation.valid.length} valid, ${insertValidation.invalid.length} invalid`);
+      }
+
+      // Merge validation results
+      const mergedValidation: ValidationResults = {
+        valid: [...updateValidation.valid, ...insertValidation.valid],
+        invalid: [...updateValidation.invalid, ...insertValidation.invalid],
+        warnings: [...updateValidation.warnings, ...insertValidation.warnings],
+        normalized: insertValidation.normalized || []
+      };
+      
+      setValidationResults(mergedValidation);
+
+      // Generate update preview for rows that will be updated
+      if (updateValidation.valid.length > 0) {
+        const preview = await generateUpdatePreview(updateValidation.valid, columnMapResult.columnToDisplay);
+        setUpdatePreview(preview);
+      }
+
+      // Show summary toast
+      const summary = [
+        rowsForUpdate.length > 0 ? `${rowsForUpdate.length} potential updates` : null,
+        rowsForInsert.length > 0 ? `${rowsForInsert.length} potential inserts` : null
+      ].filter(Boolean).join(', ');
+      
+      toast({
+        title: "File Parsed - Hybrid Import",
+        description: `Found ${transformedData.length} rows: ${summary}. ${mergedValidation.valid.length} valid, ${mergedValidation.invalid.length} with errors.`,
+      });
     } catch (error) {
       console.error('Error parsing CSV:', error);
       toast({
@@ -402,18 +392,24 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     let batchesFailed = 0;
     const errors: Array<{ row: number; error: string; data?: any }> = [...validationErrors];
 
+    // Partition valid rows by intent
+    const rowsToUpdate = validRows.filter(row => row.__intent === 'update');
+    const rowsToInsert = validRows.filter(row => row.__intent === 'insert');
+    
+    let updatedCount = 0;
+    let insertedCount = 0;
+    
+    console.debug(`[CSV Import] Executing: ${rowsToUpdate.length} updates, ${rowsToInsert.length} inserts`);
+
     try {
-      if (importMode === 'update-existing') {
-        // Update existing records with row-level retry
-        for (let i = 0; i < batches; i++) {
-          const batch = validRows.slice(i * batchSize, (i + 1) * batchSize);
-          
-          // Security: Sanitize batch before sending to database
+      // PHASE 1: Execute updates
+      if (rowsToUpdate.length > 0) {
+        const updateBatches = Math.ceil(rowsToUpdate.length / batchSize);
+        for (let i = 0; i < updateBatches; i++) {
+          const batch = rowsToUpdate.slice(i * batchSize, (i + 1) * batchSize);
           const sanitizedBatch = sanitizeImportBatch(batch);
-          
-          // Clean the data - remove internal fields
           const cleanedBatch = sanitizedBatch.map(row => {
-            const { _rowNumber, ...cleanRow } = row;
+            const { _rowNumber, __intent, ...cleanRow } = row;
             return cleanRow;
           });
 
@@ -423,143 +419,89 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
           if (error) {
             batchesFailed++;
-            // Retry row-by-row to identify specific failures
             for (const row of batch) {
-              const { _rowNumber, ...cleanRow } = sanitizeImportBatch([row])[0];
+              const { _rowNumber, __intent, ...cleanRow } = sanitizeImportBatch([row])[0];
               const { error: rowError } = await supabase
                 .from(tableName)
                 .upsert([cleanRow], { onConflict: 'id' });
               
               if (rowError) {
                 failed++;
-                errors.push({ 
-                  row: row._rowNumber || 0, 
-                  error: rowError.message,
-                  data: row
-                });
+                errors.push({ row: row._rowNumber || 0, error: rowError.message, data: row });
               } else {
                 successful++;
+                updatedCount++;
               }
             }
           } else {
             successful += batch.length;
+            updatedCount += batch.length;
             batchesSuccessful++;
           }
 
-          setProgress(Math.round(((i + 1) / batches) * 100));
+          const totalBatches = updateBatches + Math.ceil(rowsToInsert.length / batchSize);
+          setProgress(Math.round(((i + 1) / totalBatches) * 100));
         }
-      } else {
-        // Add new records - existing logic
-        for (let i = 0; i < batches; i++) {
-          const batch = validRows.slice(i * batchSize, (i + 1) * batchSize);
+      }
+
+      // PHASE 2: Execute inserts with deduplication
+      if (rowsToInsert.length > 0) {
+        const insertBatches = Math.ceil(rowsToInsert.length / batchSize);
+        for (let i = 0; i < insertBatches; i++) {
+          const batch = rowsToInsert.slice(i * batchSize, (i + 1) * batchSize);
           
-          // Check for duplicates before inserting
-          if (entityType === 'contacts') {
-            const emails = batch.map(row => row.email_address).filter(Boolean);
-            const { data: existing } = await supabase
-              .from('contacts_raw')
-              .select('email_address')
-              .in('email_address', emails);
-
-            const existingEmails = new Set(existing?.map(r => r.email_address) || []);
-            
-            // Filter out duplicates
-            const nonDuplicates = batch.filter(row => {
-              if (existingEmails.has(row.email_address)) {
-                skipped++;
-                return false;
-              }
-              return true;
-            });
-
-            if (nonDuplicates.length === 0) {
-              setProgress(Math.round(((i + 1) / batches) * 100));
-              continue;
+          // Deduplicate within this CSV by deal_name/email before inserting
+          const seenKeys = new Set<string>();
+          const deduplicatedBatch = batch.filter(row => {
+            const key = entityType === 'opportunities' ? row.deal_name : row.email_address;
+            if (!key || seenKeys.has(key)) {
+              skipped++;
+              return false;
             }
+            seenKeys.add(key);
+            return true;
+          });
 
-            const { error } = await supabase
-              .from(tableName)
-              .insert(nonDuplicates);
-
-            if (error) {
-              batchesFailed++;
-              // Retry row-by-row
-              for (const row of nonDuplicates) {
-                const { _rowNumber, ...cleanRow } = row;
-                const { error: rowError } = await supabase
-                  .from(tableName)
-                  .insert([cleanRow]);
-                
-                if (rowError) {
-                  failed++;
-                  errors.push({ 
-                    row: row._rowNumber || 0, 
-                    error: rowError.message,
-                    data: row
-                  });
-                } else {
-                  successful++;
-                }
-              }
-            } else {
-              successful += nonDuplicates.length;
-              batchesSuccessful++;
-            }
-          } else {
-            // For opportunities, check for duplicates based on deal_name
-            const dealNames = batch.map(row => row.deal_name).filter(Boolean);
-            const { data: existing } = await supabase
-              .from('opportunities_raw')
-              .select('deal_name')
-              .in('deal_name', dealNames);
-
-            const existingDeals = new Set(existing?.map(r => r.deal_name) || []);
-            
-            // Filter out duplicates
-            const nonDuplicates = batch.filter(row => {
-              if (existingDeals.has(row.deal_name)) {
-                skipped++;
-                return false;
-              }
-              return true;
-            });
-
-            if (nonDuplicates.length === 0) {
-              setProgress(Math.round(((i + 1) / batches) * 100));
-              continue;
-            }
-
-            const { error } = await supabase
-              .from(tableName)
-              .insert(nonDuplicates);
-
-            if (error) {
-              batchesFailed++;
-              // Retry row-by-row
-              for (const row of nonDuplicates) {
-                const { _rowNumber, ...cleanRow } = row;
-                const { error: rowError } = await supabase
-                  .from(tableName)
-                  .insert([cleanRow]);
-                
-                if (rowError) {
-                  failed++;
-                  errors.push({ 
-                    row: row._rowNumber || 0, 
-                    error: rowError.message,
-                    data: row
-                  });
-                } else {
-                  successful++;
-                }
-              }
-            } else {
-              successful += nonDuplicates.length;
-              batchesSuccessful++;
-            }
+          if (deduplicatedBatch.length === 0) {
+            const totalBatches = Math.ceil(rowsToUpdate.length / batchSize) + insertBatches;
+            setProgress(Math.round(((Math.ceil(rowsToUpdate.length / batchSize) + i + 1) / totalBatches) * 100));
+            continue;
           }
 
-          setProgress(Math.round(((i + 1) / batches) * 100));
+          const sanitizedBatch = sanitizeImportBatch(deduplicatedBatch);
+          const cleanedBatch = sanitizedBatch.map(row => {
+            const { _rowNumber, __intent, ...cleanRow } = row;
+            return cleanRow;
+          });
+
+          const { error } = await supabase
+            .from(tableName)
+            .insert(cleanedBatch);
+
+          if (error) {
+            batchesFailed++;
+            for (const row of deduplicatedBatch) {
+              const { _rowNumber, __intent, ...cleanRow } = sanitizeImportBatch([row])[0];
+              const { error: rowError } = await supabase
+                .from(tableName)
+                .insert([cleanRow]);
+              
+              if (rowError) {
+                failed++;
+                errors.push({ row: row._rowNumber || 0, error: rowError.message, data: row });
+              } else {
+                successful++;
+                insertedCount++;
+              }
+            }
+          } else {
+            successful += cleanedBatch.length;
+            insertedCount += cleanedBatch.length;
+            batchesSuccessful++;
+          }
+
+          const totalBatches = Math.ceil(rowsToUpdate.length / batchSize) + insertBatches;
+          setProgress(Math.round(((Math.ceil(rowsToUpdate.length / batchSize) + i + 1) / totalBatches) * 100));
         }
       }
 
@@ -584,17 +526,18 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         }
       });
 
-      const actionText = importMode === 'update-existing' ? 'updated' : 'imported';
+      // Build clear summary message
       const messages = [
-        `Successfully ${actionText} ${successful} ${entityType}`,
+        updatedCount > 0 ? `Updated ${updatedCount}` : null,
+        insertedCount > 0 ? `Inserted ${insertedCount}` : null,
         skipped > 0 ? `Skipped ${skipped} duplicates` : null,
-        failed > 0 ? `Failed to process ${failed}` : null,
+        failed > 0 ? `Failed ${failed}` : null,
         failedValidation > 0 ? `${failedValidation} validation errors` : null
       ].filter(Boolean);
 
       toast({
-        title: importMode === 'update-existing' ? "Update Completed" : "Import Completed",
-        description: messages.join(', '),
+        title: "Import Completed",
+        description: messages.join(' • '),
       });
     } catch (error: any) {
       console.error('Import error:', error);

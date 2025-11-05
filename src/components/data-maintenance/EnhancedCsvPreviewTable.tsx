@@ -205,7 +205,7 @@ export function EnhancedCsvPreviewTable({
   };
 
   return (
-    <div className="border-2 rounded-lg bg-background shadow-lg overflow-hidden h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Scroll hint */}
       <div className="p-2 bg-blue-50 dark:bg-blue-950/20 border-b border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-100 flex items-center justify-center gap-2 flex-shrink-0">
         <AlertTriangle className="h-3 w-3" />
@@ -224,8 +224,8 @@ export function EnhancedCsvPreviewTable({
       {/* Main table container */}
       <div 
         ref={scrollRef}
-        className="overflow-auto scrollbar-visible flex-1"
-        style={{ minHeight: '300px' }}
+        className="overflow-auto scrollbar-visible flex-1 border-2 rounded-lg bg-background shadow-lg"
+        style={{ minHeight: '50vh' }}
       >
         <Table className="w-full min-w-full">
           <TableHeader className="sticky top-0 z-20 bg-table-header">
@@ -238,11 +238,11 @@ export function EnhancedCsvPreviewTable({
                   <TableHead
                     key={column.key}
                     className={cn(
-                      "relative px-4 py-3 text-left align-middle font-semibold text-white bg-table-header border-r border-border/50 last:border-r-0",
+                      "relative px-4 py-3 text-left align-middle font-semibold text-white bg-table-header border-r border-border/50 last:border-r-0 max-h-none",
                       column.key === '__status' && "text-center",
                       isResizing && "select-none"
                     )}
-                    style={{ width, minWidth: width }}
+                    style={{ width, minWidth: width, height: 'auto' }}
                   >
                     <div className={cn(
                       "flex items-center gap-2",
@@ -322,11 +322,11 @@ export function EnhancedCsvPreviewTable({
                       <TableCell
                         key={column.key}
                         className={cn(
-                          "px-4 py-3 align-middle border-r border-border/30 last:border-r-0",
+                          "px-4 py-3 align-middle border-r border-border/30 last:border-r-0 max-h-none",
                           column.key === '__status' && "text-center",
                           isChanged && "bg-blue-50 dark:bg-blue-950/20"
                         )}
-                        style={{ width, minWidth: width }}
+                        style={{ width, minWidth: width, height: 'auto' }}
                       >
                         {content}
                       </TableCell>
