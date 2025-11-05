@@ -65,7 +65,8 @@ export async function createColumnMap(
 }
 
 /**
- * Maps CSV headers to database column names
+ * Maps CSV headers to database column names with intelligent matching
+ * Handles common variations in header naming (case, separators, etc.)
  */
 export function mapCsvHeaders(
   csvHeaders: string[],
@@ -74,12 +75,24 @@ export function mapCsvHeaders(
   const mapped = new Map<string, string>();
   const unmapped: string[] = [];
   
+  // Generate common variations to try for each header
+  const generateVariations = (header: string): string[] => [
+    header.trim(),                              // Exact
+    header.toLowerCase().trim(),                // Lowercase
+    header.replace(/[_\s-]+/g, '').toLowerCase(), // Remove separators
+    header.replace(/[_\s-]+/g, '_').toLowerCase(), // Normalize to underscore
+    header.replace(/[_\s-]+/g, ' ').toLowerCase()  // Normalize to space
+  ];
+  
   csvHeaders.forEach(header => {
     const trimmed = header.trim();
-    const normalized = trimmed.toLowerCase();
     
-    // Try exact match first, then case-insensitive
-    const columnName = displayToColumn.get(trimmed) || displayToColumn.get(normalized);
+    // Try all variations until we find a match
+    let columnName: string | undefined;
+    for (const variant of generateVariations(trimmed)) {
+      columnName = displayToColumn.get(variant);
+      if (columnName) break;
+    }
     
     if (columnName) {
       mapped.set(header, columnName);
@@ -93,24 +106,31 @@ export function mapCsvHeaders(
 
 /**
  * Transforms parsed CSV data using column mappings
+ * ONLY includes mapped columns and internal tracking fields
+ * Unmapped columns are silently ignored
  */
 export function transformCsvData(
   parsedData: any[],
   headerMapping: Map<string, string>
 ): any[] {
+  const INTERNAL_FIELDS = ['_rowNumber'];
+  
   return parsedData.map(row => {
     const transformed: any = {};
     
     Object.entries(row).forEach(([csvHeader, value]) => {
-      if (csvHeader === '_rowNumber') {
-        transformed._rowNumber = value;
+      // Always keep internal tracking fields
+      if (INTERNAL_FIELDS.includes(csvHeader)) {
+        transformed[csvHeader] = value;
         return;
       }
       
+      // Only include columns that have mappings
       const columnName = headerMapping.get(csvHeader);
       if (columnName) {
         transformed[columnName] = value;
       }
+      // Silently ignore unmapped columns - don't add them to transformed data
     });
     
     return transformed;

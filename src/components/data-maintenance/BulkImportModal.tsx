@@ -223,33 +223,47 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
               </AlertDescription>
             </Alert>
 
-            {unmappedColumns.length > 0 && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
+            {columnMappings.size > 0 && (
+              <Alert className="bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription>
-                  <strong>Unmapped columns:</strong> {unmappedColumns.join(', ')}
+                  <strong className="text-green-900 dark:text-green-100">
+                    ✅ {columnMappings.size} column{columnMappings.size !== 1 ? 's' : ''} matched successfully
+                  </strong>
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {Array.from(columnMappings.entries()).slice(0, 8).map(([csv, db]) => (
+                      <div key={csv} className="flex items-center gap-2 bg-white/50 dark:bg-black/20 p-1.5 rounded">
+                        <Badge variant="outline" className="text-[10px] bg-blue-50 border-blue-200">{csv}</Badge>
+                        <span className="text-green-600">→</span>
+                        <span className="font-mono text-green-700 dark:text-green-300 text-[10px]">{db}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {columnMappings.size > 8 && (
+                    <p className="text-xs text-green-700 dark:text-green-300 mt-2">
+                      ... and {columnMappings.size - 8} more columns
+                    </p>
+                  )}
                 </AlertDescription>
               </Alert>
             )}
 
-            {columnMappings.size > 0 && (
-              <div className="text-xs text-muted-foreground p-3 border rounded bg-muted/30">
-                <div className="font-medium mb-2">Column Mappings:</div>
-                <div className="grid grid-cols-2 gap-2">
-                  {Array.from(columnMappings.entries()).slice(0, 6).map(([csv, db]) => (
-                    <div key={csv} className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">{csv}</Badge>
-                      <span>→</span>
-                      <span className="font-mono">{db}</span>
-                    </div>
-                  ))}
-                  {columnMappings.size > 6 && (
-                    <div className="col-span-2 text-center">
-                      ... and {columnMappings.size - 6} more
-                    </div>
-                  )}
-                </div>
-              </div>
+            {unmappedColumns.length > 0 && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Extra columns detected ({unmappedColumns.length})</strong>
+                  <p className="mt-1 text-xs">
+                    These columns don't match database fields and will be <strong>automatically ignored</strong>:
+                  </p>
+                  <div className="mt-2 text-xs font-mono bg-muted/50 p-2 rounded border max-h-20 overflow-y-auto">
+                    {unmappedColumns.join(', ')}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    ℹ️ Only matched columns will be imported. This is normal if your CSV contains extra data.
+                  </p>
+                </AlertDescription>
+              </Alert>
             )}
           </div>
         )}

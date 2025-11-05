@@ -35,9 +35,15 @@ export function ImportResults({ results, entityType, onClose, onImportMore, onRe
   const rowsPerSecond = duration > 0 ? Math.round(results.successful / duration) : 0;
 
   const handleExportErrors = () => {
+    // Filter out internal field warnings before export
+    const exportableErrors = results.errors.filter(e => 
+      !e.error.includes('_rowNumber') && 
+      !e.error.includes('Unknown column')
+    );
+    
     const csvContent = [
       ['Row', 'Error'],
-      ...results.errors.map(e => [e.row, e.error])
+      ...exportableErrors.map(e => [e.row, e.error])
     ].map(row => row.join(',')).join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv' });

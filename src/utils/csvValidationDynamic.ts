@@ -123,10 +123,12 @@ export async function validateCsvDataDynamic(
       }
     });
 
-    // Check for unknown columns
+    // Defensive check: all columns should be known at this point (internal fields are filtered earlier)
+    const INTERNAL_FIELDS = ['_rowNumber', 'id'];
     Object.keys(row).forEach(key => {
-      if (!configMap.has(key) && key !== 'id') {
-        rowWarnings.push(`Unknown column "${key}" will be ignored`);
+      if (!configMap.has(key) && !INTERNAL_FIELDS.includes(key)) {
+        // This shouldn't happen as unmapped columns are filtered before validation
+        console.warn(`Unexpected column "${key}" in validation - should have been filtered`);
       }
     });
 
