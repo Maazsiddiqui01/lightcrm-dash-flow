@@ -42,15 +42,31 @@ export function ExportDropdown({
         return;
       }
 
-      // Filter data to visible columns if specified
+      // Filter data to visible columns if specified, ensuring 'id' is always first
       let exportData = data;
       if (visibleColumns && visibleColumns.length > 0) {
         exportData = data.map(row => {
           const filteredRow: any = {};
+          
+          // Always include ID as first column
+          if (row.id) {
+            filteredRow.id = row.id;
+          }
+          
+          // Add other visible columns
           visibleColumns.forEach(col => {
-            filteredRow[col] = row[col];
+            if (col !== 'id') { // Skip id since we already added it
+              filteredRow[col] = row[col];
+            }
           });
+          
           return filteredRow;
+        });
+      } else {
+        // If no visible columns specified, ensure id is first
+        exportData = data.map(row => {
+          const { id, ...rest } = row;
+          return { id, ...rest };
         });
       }
 

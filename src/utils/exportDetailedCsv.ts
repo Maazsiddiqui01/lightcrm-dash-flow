@@ -4,9 +4,19 @@ import { downloadFile } from '@/utils/csvExport';
 export function buildCsvFromObjects(rows: any[], headers?: string[]): string {
   if (!rows.length) return '';
   
-  const cols = headers && headers.length
-    ? headers
-    : Array.from(new Set(rows.flatMap(r => Object.keys(r)))).sort((a, b) => a.localeCompare(b));
+  // Get all columns, ensuring 'id' is first
+  let cols: string[];
+  if (headers && headers.length) {
+    cols = headers;
+  } else {
+    const allKeys = Array.from(new Set(rows.flatMap(r => Object.keys(r))));
+    // Sort: id first, then alphabetically
+    cols = allKeys.sort((a, b) => {
+      if (a === 'id') return -1;
+      if (b === 'id') return 1;
+      return a.localeCompare(b);
+    });
+  }
   
   const esc = (v: any) => {
     const s = v === null || v === undefined ? '' : String(v);

@@ -59,10 +59,11 @@ export async function validateCsvDataDynamic(
     // For update mode, validate ID field
     if (isUpdateMode) {
       if (!row.id || row.id === '') {
+        // ID is missing - this is now acceptable if Deal Name matching was used
         rowErrors.push({
           row: rowNumber,
           field: 'ID',
-          message: 'ID is required for update mode',
+          message: 'ID not found - record may not exist in database',
           value: row.id
         });
       } else {

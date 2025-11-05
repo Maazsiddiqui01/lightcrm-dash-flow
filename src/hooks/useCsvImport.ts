@@ -5,6 +5,7 @@ import { normalizeCsvData, trackNormalizationChanges } from "@/utils/csvNormaliz
 import { supabase } from "@/integrations/supabase/client";
 import { createColumnMap, mapCsvHeaders, transformCsvData } from "@/utils/csvColumnMapper";
 import type { RecordChange, FieldChange } from "@/components/data-maintenance/UpdatePreview";
+import Papa from 'papaparse';
 
 export interface ValidationResults {
   valid: any[];
@@ -39,10 +40,31 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     try {
       setFile(file);
       const text = await file.text();
-      const rows = text.split('\n').filter(row => row.trim());
+
+      // Get column mappings from database
+      const columnMapResult = await createColumnMap(entityType);
       
-      const minRows = firstRowIsHeader ? 2 : 1;
-      if (rows.length < minRows) {
+      // Parse CSV with papaparse (handles all edge cases)
+      const parseResult = Papa.parse(text, {
+        header: firstRowIsHeader,
+        skipEmptyLines: true,
+        transformHeader: (header) => header.trim(),
+        transform: (value) => value?.trim() || null
+      });
+
+      if (parseResult.errors && parseResult.errors.length > 0) {
+        console.error('CSV parsing errors:', parseResult.errors);
+        toast({
+          title: "Parse Error",
+          description: "CSV file has formatting issues. Please check the file.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const data = (parseResult.data as any[]) || [];
+      
+      if (data.length === 0) {
         toast({
           title: "Invalid File",
           description: "CSV file must contain data rows",
@@ -51,34 +73,24 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         return;
       }
 
-      // Get column mappings from database
-      const columnMapResult = await createColumnMap(entityType);
-      
-      // Parse CSV
-      const startRow = firstRowIsHeader ? 0 : -1;
+      // Get headers from parsed data
       const headers = firstRowIsHeader 
-        ? rows[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''))
-        : Object.keys(rows[0].split(',').map((_, i) => `column_${i}`));
-      
-      const dataRows = firstRowIsHeader ? rows.slice(1) : rows;
+        ? Object.keys(data[0] || {})
+        : Object.keys(data[0] || {}).map((_, i) => `column_${i}`);
       
       // Map CSV headers to database columns
       const { mapped, unmapped } = mapCsvHeaders(headers, columnMapResult.displayToColumn);
       setColumnMappings(mapped);
       setUnmappedColumns(unmapped);
       
-      // Parse data with original CSV headers
-      const data = dataRows.map((row, idx) => {
-        const values = row.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-        const obj: any = { _rowNumber: idx + (firstRowIsHeader ? 2 : 1) };
-        headers.forEach((header, i) => {
-          obj[header] = values[i] || null;
-        });
-        return obj;
-      });
+      // Add row numbers for validation tracking
+      const dataWithRowNumbers = data.map((row, idx) => ({
+        ...row,
+        _rowNumber: idx + (firstRowIsHeader ? 2 : 1)
+      }));
 
       // Transform to use database column names
-      const transformedData = transformCsvData(data, mapped);
+      const transformedData = transformCsvData(dataWithRowNumbers, mapped);
       setParsedData(transformedData);
 
       // Show warnings for unmapped columns
@@ -92,6 +104,57 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
       // Validate based on mode
       if (importMode === 'update-existing') {
+        // Check if ID column exists, otherwise use Deal Name fallback
+        const hasIdColumn = transformedData.some(row => row.id !== null && row.id !== undefined);
+        const hasDealNameColumn = entityType === 'opportunities' && transformedData.some(row => row.deal_name);
+        
+        if (!hasIdColumn && !hasDealNameColumn) {
+          toast({
+            title: "Missing Identifier",
+            description: "Update mode requires either ID or Deal Name column to match existing records.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // If no ID but has Deal Name, fetch IDs from database
+        if (!hasIdColumn && hasDealNameColumn) {
+          toast({
+            title: "Using Deal Name Matching",
+            description: "No ID column found. Matching opportunities by Deal Name...",
+          });
+          
+          const dealNames = transformedData
+            .map(row => row.deal_name)
+            .filter(Boolean);
+          
+          if (dealNames.length === 0) {
+            toast({
+              title: "No Deal Names Found",
+              description: "Cannot match records without IDs or Deal Names.",
+              variant: "destructive"
+            });
+            return;
+          }
+
+          // Fetch existing opportunities by deal name
+          const { data: existingRecords } = await supabase
+            .from('opportunities_raw')
+            .select('id, deal_name')
+            .in('deal_name', dealNames);
+
+          const dealNameToId = new Map(
+            (existingRecords || []).map(r => [r.deal_name as string, r.id as string])
+          );
+
+          // Add IDs to transformed data based on deal name match
+          transformedData.forEach(row => {
+            if (row.deal_name && !row.id) {
+              row.id = dealNameToId.get(row.deal_name) || null;
+            }
+          });
+        }
+
         const validation = await validateCsvDataDynamic(transformedData, entityType, true);
         validation.normalized = [];
         setValidationResults(validation);
