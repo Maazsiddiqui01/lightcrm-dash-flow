@@ -2,8 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { VirtualizedTable } from "@/components/shared/VirtualizedTable";
 import { Upload, X, Table as TableIcon } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ValidationResults } from "@/hooks/useCsvImport";
 import { useMemo } from "react";
+import { generateRowChanges } from "@/utils/csvDiffEngine";
+import type { RowChanges } from "@/utils/csvDiffEngine";
+import { cn } from "@/lib/utils";
 
 interface CsvTablePreviewProps {
   parsedData: any[];
@@ -11,6 +15,7 @@ interface CsvTablePreviewProps {
   columnMappings: Map<string, string>;
   entityType: 'contacts' | 'opportunities';
   importMode: 'add-new' | 'update-existing';
+  dbRecordsCache?: Map<string, any>;
   onImport: () => void;
   onCancel: () => void;
   containerHeight?: number;
@@ -22,11 +27,24 @@ export function CsvTablePreview({
   columnMappings,
   entityType,
   importMode,
+  dbRecordsCache,
   onImport,
   onCancel,
   containerHeight = 600
 }: CsvTablePreviewProps) {
   const { valid, invalid, warnings } = validationResults;
+
+  // Generate cell-level changes for update mode
+  const rowChangesMap = useMemo<Map<number, RowChanges>>(() => {
+    if (importMode !== 'update-existing' || !dbRecordsCache || dbRecordsCache.size === 0) {
+      return new Map();
+    }
+
+    const dbRecordsObj = Object.fromEntries(dbRecordsCache);
+    const rowChanges = generateRowChanges(parsedData, dbRecordsObj, columnMappings, 'id');
+    
+    return new Map(rowChanges.map(rc => [rc.rowIndex, rc]));
+  }, [parsedData, dbRecordsCache, columnMappings, importMode]);
 
   // Get all unique columns from parsed data and add row numbers
   const dataWithRowNumbers = useMemo(() => {
@@ -61,15 +79,70 @@ export function CsvTablePreview({
         key,
         label: columnMappings.get(key) || key,
         width: 150,
-        render: (value: any) => {
-          if (value === null || value === undefined || value === '') {
-            return <span className="text-muted-foreground italic text-xs">empty</span>;
+        render: (value: any, row: any) => {
+          // Find row index in original data
+          const rowIndex = parsedData.findIndex(r => r === row);
+          const rowChanges = rowChangesMap.get(rowIndex);
+          const cellChange = rowChanges?.cellChanges[key];
+
+          // Determine cell styling based on change type
+          let cellClassName = '';
+          let showTooltip = false;
+          let tooltipContent = '';
+
+          if (cellChange && importMode === 'update-existing') {
+            showTooltip = cellChange.changeType !== 'unchanged';
+            
+            switch (cellChange.changeType) {
+              case 'added':
+                cellClassName = 'bg-green-50 dark:bg-green-950/30 border-l-2 border-l-green-500';
+                tooltipContent = `Added: ${cellChange.displayNew}`;
+                break;
+              case 'updated':
+                cellClassName = 'bg-yellow-50 dark:bg-yellow-950/30 border-l-2 border-l-yellow-500';
+                tooltipContent = `Changed from: ${cellChange.displayOld}\nTo: ${cellChange.displayNew}`;
+                break;
+              case 'cleared':
+                cellClassName = 'bg-red-50 dark:bg-red-950/30 border-l-2 border-l-red-500';
+                tooltipContent = `Cleared (was: ${cellChange.displayOld})`;
+                break;
+            }
           }
-          return <span className="text-sm">{String(value)}</span>;
+
+          const cellContent = (
+            <div className={cn("text-sm px-2 py-1 -mx-2 -my-1 rounded", cellClassName)}>
+              {cellChange?.changeType === 'cleared' ? (
+                <span className="line-through text-muted-foreground italic text-xs">
+                  {cellChange.displayOld}
+                </span>
+              ) : value === null || value === undefined || value === '' ? (
+                <span className="text-muted-foreground italic text-xs">empty</span>
+              ) : (
+                String(value)
+              )}
+            </div>
+          );
+
+          if (showTooltip && tooltipContent) {
+            return (
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {cellContent}
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs whitespace-pre-wrap">
+                    {tooltipContent}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
+
+          return cellContent;
         }
       }))
     ];
-  }, [parsedData, columnMappings]);
+  }, [parsedData, columnMappings, rowChangesMap, importMode]);
 
   // Display first 50 rows initially
   const displayData = useMemo(() => dataWithRowNumbers.slice(0, 50), [dataWithRowNumbers]);

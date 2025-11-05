@@ -37,6 +37,7 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
     updatePreview,
     columnMappings,
     unmappedColumns,
+    dbRecordsCache,
     parseFile,
     executeImport,
     reset
@@ -227,6 +228,7 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
             columnMappings={columnMappings}
             entityType={entityType}
             importMode={importMode}
+            dbRecordsCache={dbRecordsCache}
             onImport={handleImport}
             onCancel={() => setStep('upload')}
           />

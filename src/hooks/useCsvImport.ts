@@ -40,6 +40,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
   const [updatePreview, setUpdatePreview] = useState<RecordChange[] | null>(null);
   const [columnMappings, setColumnMappings] = useState<Map<string, string>>(new Map());
   const [unmappedColumns, setUnmappedColumns] = useState<string[]>([]);
+  const [dbRecordsCache, setDbRecordsCache] = useState<Map<string, any>>(new Map());
   const { toast } = useToast();
 
   const parseFile = async (file: File) => {
@@ -248,12 +249,24 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     if (ids.length === 0) return [];
 
     // Fetch existing records
-    const { data: existingRecords } = await supabase
+    const { data: existingRecords, error } = await supabase
       .from(tableName)
       .select('*')
       .in('id', ids);
 
+    if (error) {
+      console.error('Error fetching existing records:', error);
+      return [];
+    }
+
     if (!existingRecords) return [];
+
+    // Cache DB records by ID for cell-level comparison
+    const dbCache = new Map<string, any>();
+    existingRecords.forEach(record => {
+      dbCache.set(record.id, record);
+    });
+    setDbRecordsCache(dbCache);
 
     const existingMap = new Map(existingRecords.map(record => [record.id, record]));
     const changes: RecordChange[] = [];
@@ -473,6 +486,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     setUpdatePreview(null);
     setColumnMappings(new Map());
     setUnmappedColumns([]);
+    setDbRecordsCache(new Map());
   };
 
   return {
@@ -488,6 +502,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     updatePreview,
     columnMappings,
     unmappedColumns,
+    dbRecordsCache,
     parseFile,
     executeImport,
     reset
