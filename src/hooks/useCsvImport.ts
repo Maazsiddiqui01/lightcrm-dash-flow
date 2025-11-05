@@ -53,21 +53,6 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
   const [dbRecordsCache, setDbRecordsCache] = useState<Map<string, any>>(new Map());
   const { toast } = useToast();
 
-  // Resolve actual backend table name with graceful fallback
-  const resolveTableName = async (ent: 'contacts' | 'opportunities'): Promise<string> => {
-    const primary = ent === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
-    const fallback = ent === 'contacts' ? 'contacts' : 'opportunities';
-    try {
-      const { error } = await supabase.from(primary).select('id', { head: true, count: 'exact' }).limit(1);
-      if (!error) return primary;
-    } catch (_) {}
-    try {
-      const { error: fbErr } = await supabase.from(fallback).select('id', { head: true, count: 'exact' }).limit(1);
-      if (!fbErr) return fallback;
-    } catch (_) {}
-    return primary; // default to primary if all checks fail
-  };
-
   const parseFile = async (file: File) => {
     try {
       // Security: Validate file before processing
@@ -135,8 +120,14 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         ? Object.keys(data[0] || {})
         : Object.keys(data[0] || {}).map((_, i) => `column_${i}`);
       
+      console.debug('[CSV Import] RAW parsed data first row:', data[0]);
+      console.debug('[CSV Import] Detected headers:', headers);
+      
       // Map CSV headers to database columns
       const { mapped, unmapped } = mapCsvHeaders(headers, columnMapResult.displayToColumn);
+      console.debug('[CSV Import] Mapped columns:', Array.from(mapped.entries()));
+      console.debug('[CSV Import] Unmapped columns:', unmapped);
+      
       setColumnMappings(mapped);
       setUnmappedColumns(unmapped);
       
@@ -148,8 +139,11 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
       // Transform to use database column names
       const transformedData = transformCsvData(dataWithRowNumbers, mapped);
-      console.debug('[CSV Import] First 3 transformed rows:', transformedData.slice(0, 3));
-      console.debug('[CSV Import] Column mappings:', Object.fromEntries(mapped));
+      console.debug('[CSV Import] Sample transformed rows (first 2):');
+      transformedData.slice(0, 2).forEach((row, idx) => {
+        console.debug(`  Row ${idx}:`, row);
+        console.debug(`  Row ${idx} keys:`, Object.keys(row));
+      });
       setParsedData(transformedData);
 
       // Show warnings for unmapped columns
@@ -435,6 +429,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             .upsert(cleanedBatch, { onConflict: 'id' });
 
           if (error) {
+            console.error(`[CSV Import] UPDATE batch ${i+1} failed:`, error.message, error.details, error.hint);
             batchesFailed++;
             for (const row of batch) {
               const { _rowNumber, __intent, ...cleanRow } = sanitizeImportBatch([row])[0];
@@ -496,6 +491,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             .insert(cleanedBatch);
 
           if (error) {
+            console.error(`[CSV Import] INSERT batch ${i+1} failed:`, error.message, error.details, error.hint);
             batchesFailed++;
             for (const row of deduplicatedBatch) {
               const { _rowNumber, __intent, ...cleanRow } = sanitizeImportBatch([row])[0];
