@@ -76,11 +76,12 @@ export const useContactNotes = (contactId: string | undefined) => {
       queryClient.invalidateQueries({ queryKey: ['contact-notes', contactId] });
       queryClient.invalidateQueries({ queryKey: ['contact-notes-timeline', contactId] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error saving notes:', error);
+      const errorMessage = error?.message || error?.error_description || 'Failed to save notes';
       toast({
         title: "Error",
-        description: "Failed to save notes",
+        description: errorMessage,
         variant: "destructive",
       });
     },

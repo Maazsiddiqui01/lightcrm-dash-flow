@@ -771,15 +771,37 @@ async function mergeContacts(supabase: any, groupId: string | undefined, primary
       }
     }
 
-    // Merge data from duplicates into primary (keep non-null values)
-    const mergedData = { ...primaryContact };
+    // Whitelist of mergeable fields (exclude system fields and constrained fields)
+    const mergeableFields = [
+      'full_name', 'first_name', 'last_name', 'organization', 'title', 
+      'phone', 'linkedin', 'notes', 'next_steps', 'next_steps_due_date',
+      'lg_sector', 'lg_focus_area_1', 'lg_focus_area_2', 'lg_focus_area_3',
+      'lg_focus_areas_comprehensive_list', 'areas_of_specialization',
+      'category', 'contact_type', 'delta_type', 'group_delta',
+      'group_email_role', 'group_contact', 'group_focus_area', 'group_sector',
+      'group_notes', 'no_of_emails', 'no_of_meetings', 'total_no_of_contacts',
+      'next_scheduled_outreach_date', 'assigned_to'
+    ];
+
+    // Build merged data from whitelisted fields only
+    const mergedData: any = { id: primaryId };
+    
+    // Start with primary contact's values
+    for (const field of mergeableFields) {
+      if (field in primaryContact) {
+        mergedData[field] = primaryContact[field];
+      }
+    }
+    
+    // Merge non-null values from duplicates
     for (const duplicate of groupContacts) {
       if (duplicate.id === primaryId) continue;
       
-      for (const [key, value] of Object.entries(duplicate)) {
+      for (const field of mergeableFields) {
+        const value = duplicate[field];
         if (value !== null && value !== '' && 
-            (mergedData[key] === null || mergedData[key] === '')) {
-          mergedData[key] = value;
+            (mergedData[field] === null || mergedData[field] === '' || mergedData[field] === undefined)) {
+          mergedData[field] = value;
         }
       }
     }
@@ -804,7 +826,11 @@ async function mergeContacts(supabase: any, groupId: string | undefined, primary
       }
     }
     
+    // Explicitly preserve email_address from primary contact (never set to null)
+    mergedData.email_address = primaryContact.email_address;
+    
     console.log(`Updated most_recent_contact to: ${mergedData.most_recent_contact}`);
+    console.log(`Preserving email_address: ${mergedData.email_address}`);
 
     // Update primary contact with merged data
     const { error: updateError } = await supabase

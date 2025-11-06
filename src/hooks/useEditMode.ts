@@ -153,9 +153,11 @@ export function useEditMode<T extends { id: string }>(
 
       if (error) {
         console.error('Save error:', error);
+        const errorDetails = error.details ? ` Details: ${error.details}` : '';
+        const errorHint = error.hint ? ` (${error.hint})` : '';
         toast({
           title: "Save Failed",
-          description: error.message || "Failed to save changes. Please try again.",
+          description: `${error.message}${errorDetails}${errorHint}`,
           variant: "destructive",
         });
         return;
