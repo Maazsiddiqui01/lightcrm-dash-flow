@@ -5,6 +5,8 @@ import { editableColumns } from '@/config/editableColumns';
 import { EditState } from '@/lib/dynamicColumns';
 import { toast } from '@/hooks/use-toast';
 import { calculateDerivedFields } from '@/utils/opportunityHelpers';
+import { getSafeUpdate, validateUpdate } from '@/utils/databaseUpdateHelpers';
+import { parseSupabaseError, formatErrorForToast } from '@/utils/supabaseErrorParser';
 
 
 export interface UseEditModeReturn {
@@ -139,12 +141,28 @@ export function useEditMode<T extends { id: string }>(
     setIsSaving(true);
     
     try {
-      // Prepare updates
-      const updates = editedRowIds.map(rowId => ({
-        id: rowId,
-        ...editState.editedRows[rowId],
-        updated_at: new Date().toISOString(),
-      }));
+      // CRITICAL: Use field whitelisting to prevent NULL constraint violations
+      const updates = editedRowIds.map(rowId => {
+        const safeUpdate = getSafeUpdate(tableName, editState.editedRows[rowId]);
+        
+        // Validate update doesn't contain forbidden fields
+        const validation = validateUpdate(tableName, safeUpdate);
+        if (!validation.valid) {
+          console.error('[Edit Mode] Attempted to update forbidden fields:', validation.violations);
+        }
+        
+        return {
+          id: rowId,
+          ...safeUpdate,
+          updated_at: new Date().toISOString(),
+        };
+      });
+
+      console.debug('[Edit Mode] Saving updates:', {
+        count: updates.length,
+        tableName,
+        sampleFields: updates[0] ? Object.keys(updates[0]) : []
+      });
 
       // Batch update to Supabase
       const { error } = await supabase
@@ -152,12 +170,23 @@ export function useEditMode<T extends { id: string }>(
         .upsert(updates, { onConflict: 'id' });
 
       if (error) {
-        console.error('Save error:', error);
-        const errorDetails = error.details ? ` Details: ${error.details}` : '';
-        const errorHint = error.hint ? ` (${error.hint})` : '';
+        // Enhanced error logging
+        console.error('[Edit Mode] Save failed:', {
+          tableName,
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          },
+          affectedRows: editedRowIds,
+          timestamp: new Date().toISOString()
+        });
+        
+        const errorInfo = formatErrorForToast(error, 'Save changes');
         toast({
-          title: "Save Failed",
-          description: `${error.message}${errorDetails}${errorHint}`,
+          title: errorInfo.title,
+          description: errorInfo.description,
           variant: "destructive",
         });
         return;
@@ -203,9 +232,10 @@ export function useEditMode<T extends { id: string }>(
 
     } catch (error) {
       console.error('Unexpected save error:', error);
+      const errorInfo = formatErrorForToast(error, 'Save changes');
       toast({
-        title: "Save Failed", 
-        description: "An unexpected error occurred. Please try again.",
+        title: errorInfo.title,
+        description: errorInfo.description,
         variant: "destructive",
       });
     } finally {

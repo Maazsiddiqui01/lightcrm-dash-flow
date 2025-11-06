@@ -12,6 +12,8 @@ import {
   sanitizeImportBatch, 
   logImportAttempt 
 } from "@/utils/csvImportSecurity";
+import { cleanRowForDatabase } from "@/utils/databaseUpdateHelpers";
+import { parseSupabaseError } from "@/utils/supabaseErrorParser";
 
 export interface ValidationResults {
   valid: any[];
@@ -419,27 +421,46 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         for (let i = 0; i < updateBatches; i++) {
           const batch = rowsToUpdate.slice(i * batchSize, (i + 1) * batchSize);
           const sanitizedBatch = sanitizeImportBatch(batch);
+          
+          // CRITICAL: Use field whitelisting to prevent NULL constraint violations
           const cleanedBatch = sanitizedBatch.map(row => {
-            const { _rowNumber, __intent, ...cleanRow } = row;
-            return cleanRow;
+            return cleanRowForDatabase(row, tableName as 'contacts_raw' | 'opportunities_raw');
           });
+
+          console.debug(`[CSV Import] UPDATE batch ${i+1} sample:`, cleanedBatch[0]);
 
           const { error } = await supabase
             .from(tableName)
             .upsert(cleanedBatch, { onConflict: 'id' });
 
           if (error) {
-            console.error(`[CSV Import] UPDATE batch ${i+1} failed:`, error.message, error.details, error.hint);
+            // Enhanced error logging
+            const parsedError = parseSupabaseError(error, {
+              operation: 'CSV update batch',
+              table: tableName
+            });
+            console.error(`[CSV Import] UPDATE batch ${i+1} failed:`, parsedError.technicalDetails);
+            
             batchesFailed++;
+            // Retry row by row
             for (const row of batch) {
-              const { _rowNumber, __intent, ...cleanRow } = sanitizeImportBatch([row])[0];
+              const cleanRow = cleanRowForDatabase(
+                sanitizeImportBatch([row])[0],
+                tableName as 'contacts_raw' | 'opportunities_raw'
+              );
+              
               const { error: rowError } = await supabase
                 .from(tableName)
                 .upsert([cleanRow], { onConflict: 'id' });
               
               if (rowError) {
                 failed++;
-                errors.push({ row: row._rowNumber || 0, error: rowError.message, data: row });
+                const rowParsedError = parseSupabaseError(rowError);
+                errors.push({ 
+                  row: row._rowNumber || 0, 
+                  error: rowParsedError.userMessage, 
+                  data: row 
+                });
               } else {
                 successful++;
                 updatedCount++;
@@ -481,9 +502,10 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
           }
 
           const sanitizedBatch = sanitizeImportBatch(deduplicatedBatch);
+          
+          // CRITICAL: Use field whitelisting for inserts too
           const cleanedBatch = sanitizedBatch.map(row => {
-            const { _rowNumber, __intent, ...cleanRow } = row;
-            return cleanRow;
+            return cleanRowForDatabase(row, tableName as 'contacts_raw' | 'opportunities_raw');
           });
 
           const { error } = await supabase
@@ -491,17 +513,33 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             .insert(cleanedBatch);
 
           if (error) {
-            console.error(`[CSV Import] INSERT batch ${i+1} failed:`, error.message, error.details, error.hint);
+            // Enhanced error logging
+            const parsedError = parseSupabaseError(error, {
+              operation: 'CSV insert batch',
+              table: tableName
+            });
+            console.error(`[CSV Import] INSERT batch ${i+1} failed:`, parsedError.technicalDetails);
+            
             batchesFailed++;
+            // Retry row by row
             for (const row of deduplicatedBatch) {
-              const { _rowNumber, __intent, ...cleanRow } = sanitizeImportBatch([row])[0];
+              const cleanRow = cleanRowForDatabase(
+                sanitizeImportBatch([row])[0],
+                tableName as 'contacts_raw' | 'opportunities_raw'
+              );
+              
               const { error: rowError } = await supabase
                 .from(tableName)
                 .insert([cleanRow]);
               
               if (rowError) {
                 failed++;
-                errors.push({ row: row._rowNumber || 0, error: rowError.message, data: row });
+                const rowParsedError = parseSupabaseError(rowError);
+                errors.push({ 
+                  row: row._rowNumber || 0, 
+                  error: rowParsedError.userMessage, 
+                  data: row 
+                });
               } else {
                 successful++;
                 insertedCount++;
