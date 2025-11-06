@@ -62,6 +62,7 @@ export const useContactNotes = (contactId: string | undefined) => {
         p_contact_id: contactId,
         p_field: 'notes',
         p_content: content,
+        p_due_date: null, // Always pass due_date to avoid function overload ambiguity
       });
       
       if (error) throw error;
