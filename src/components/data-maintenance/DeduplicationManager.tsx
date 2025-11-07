@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GitMerge, AlertCircle, CheckCircle2, Play, Eye, Users, Building } from "lucide-react";
 import { useDeduplication } from "@/hooks/useDeduplication";
 import { useToast } from "@/hooks/use-toast";
+import { AutomaticScanBanner } from "./AutomaticScanBanner";
 
 export function DeduplicationManager() {
   const { toast } = useToast();
@@ -97,6 +98,9 @@ export function DeduplicationManager() {
 
   return (
     <div className="space-y-6">
+      {/* Automatic Scan Banner */}
+      <AutomaticScanBanner />
+
       {/* Tab Selector */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">

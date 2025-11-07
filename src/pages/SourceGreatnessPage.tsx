@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardHero } from '@/components/layout/DashboardHero';
 import { DashboardErrorBoundary } from '@/components/dashboard/DashboardErrorBoundary';
@@ -9,8 +10,10 @@ import { MeetingsChart } from '@/components/sourcing/MeetingsChart';
 import { OppsChart } from '@/components/sourcing/OppsChart';
 import { ExportButtons } from '@/components/sourcing/ExportButtons';
 import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
+import { DuplicateAlertCard } from "@/components/dashboard/DuplicateAlertCard";
 import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { useToast } from '@/hooks/use-toast';
+import { useDuplicateStats } from '@/hooks/useDuplicateStats';
 
 interface SourcingFilters {
   dateRange: string; // 'all' | year (e.g., '2024') | quarter (e.g., '2024 Q4')
@@ -43,7 +46,9 @@ const defaultFilters: SourcingFilters = {
 
 export default function SourceGreatnessPage() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { filters, updateFilters: setFilters } = useUrlFilters(defaultFilters);
+  const { data: duplicateStats } = useDuplicateStats();
 
   // Type-safe filter accessors
   const filterState = filters as SourcingFilters;
@@ -390,6 +395,15 @@ export default function SourceGreatnessPage() {
 
           {/* AI Insights Widget */}
           <AIInsightsWidget />
+
+          {/* Duplicate Alert */}
+          {duplicateStats && duplicateStats.totalCount > 0 && (
+            <DuplicateAlertCard
+              count={duplicateStats.totalCount}
+              highPriorityCount={duplicateStats.highPriorityCount}
+              onViewClick={() => navigate('/admin/data-maintenance?tab=fuzzy-duplicates')}
+            />
+          )}
 
           {/* Primary Charts Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

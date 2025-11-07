@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { scheduledDuplicateScan } from "./scheduled-scan.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -132,7 +133,7 @@ serve(async (req) => {
       }
     );
 
-    const { action, entityType, groupId, changes, preview, primaryId, contactIds, manual } = await req.json();
+    const { action, entityType, groupId, changes, preview, primaryId, contactIds, manual, scan_type } = await req.json();
 
     if (action === 'scan') {
       return await scanForNormalization(supabaseClient, preview);
@@ -142,6 +143,8 @@ serve(async (req) => {
       return await scanForDuplicates(supabaseClient, entityType);
     } else if (action === 'scan_fuzzy_duplicates') {
       return await scanForFuzzyDuplicates(authSupabase, user.id, isAdmin);
+    } else if (action === 'scheduled_duplicate_scan') {
+      return await scheduledDuplicateScan(supabaseClient, scan_type);
     } else if (action === 'merge_duplicates') {
       return await mergeDuplicates(supabaseClient, groupId, entityType);
     } else if (action === 'merge_contacts') {
@@ -572,6 +575,9 @@ async function scanForFuzzyDuplicates(supabase: any, userId: string, isAdmin: bo
       const emails1 = emailsByContact.get(contact1.id) || [contact1.email_address];
       const emails2 = emailsByContact.get(contact2.id) || [contact2.email_address];
       
+      // Check for cross-email matches (shared email addresses)
+      const emailOverlap = emails1.filter(e => emails2.includes(e.toLowerCase()));
+      
       // Calculate max email similarity
       let maxEmailSim = 0;
       for (const e1 of emails1) {
@@ -589,8 +595,13 @@ async function scanForFuzzyDuplicates(supabase: any, userId: string, isAdmin: bo
       let confidence = 0;
       let matchReasons: string[] = [];
 
+      // Perfect match: Shared email address
+      if (emailOverlap.length > 0) {
+        confidence = 100;
+        matchReasons.push(`Shared email: ${emailOverlap[0]}`);
+      }
       // High confidence: 95-100% name match + same email domain
-      if (nameSimilarity >= 95 && emailDomain1 === emailDomain2) {
+      else if (nameSimilarity >= 95 && emailDomain1 === emailDomain2) {
         confidence = Math.round(nameSimilarity);
         matchReasons.push(`${nameSimilarity}% name match, same email domain (@${emailDomain1})`);
       }

@@ -134,5 +134,6 @@ export function useFuzzyDuplicates() {
     scanForDuplicates: scanMutation.mutate,
     mergeDuplicates: mergeMutation.mutate,
     dismissDuplicates: dismissMutation.mutate,
+    refetch: scanMutation.mutate, // Alias for consistency
   };
 }
