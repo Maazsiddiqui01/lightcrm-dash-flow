@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { MissingContactsArraySchema, type MissingContact } from '@/types/missingContacts';
+import { getSafeUpdate, validateUpdate } from '@/utils/databaseUpdateHelpers';
 
 interface ContactData {
   full_name?: string;
@@ -135,12 +136,27 @@ export function useApproveMissingContact() {
 
         // Only update if there are additional fields to set
         if (Object.keys(updateFields).length > 0) {
+          // Validate and filter fields using safe update helpers
+          const safeUpdate = getSafeUpdate('contacts_raw', updateFields);
+          const validation = validateUpdate('contacts_raw', safeUpdate);
+          
+          if (!validation.valid) {
+            console.warn('[Validation] Invalid fields detected:', validation.violations);
+            throw new Error(`Cannot update forbidden fields: ${validation.violations.join(', ')}`);
+          }
+          
           const { error: updateError } = await supabase
             .from("contacts_raw")
-            .update(updateFields)
+            .update(safeUpdate)
             .eq("id", contactId as string);
 
           if (updateError) {
+            console.error('[DB Error]', {
+              operation: 'approve_missing_contact_update',
+              table: 'contacts_raw',
+              error: updateError,
+              contactId,
+            });
             console.warn("Failed to update additional contact fields:", updateError);
             // Don't throw here since the main contact creation succeeded
           }

@@ -132,8 +132,9 @@ export function useCheckGroupConflicts() {
   });
 }
 
-// This hook is deprecated - group creation now goes through the configuration modal
-// which creates entries in the groups table and contact_group_memberships table
+// DEPRECATED: This hook is deprecated - group creation now goes through the configuration modal
+// which creates entries in the groups table and contact_group_memberships table.
+// This function now throws an error to prevent accidental usage.
 export function useCreateGroupFromSuggestion() {
   return useMutation({
     mutationFn: async ({ 
@@ -143,26 +144,15 @@ export function useCreateGroupFromSuggestion() {
       groupName: string; 
       contactIds: string[] 
     }) => {
-      if (contactIds.length === 0) {
-        throw new Error('No contacts selected');
-      }
-
-      // Update only the selected contacts
-      const { error } = await supabase
-        .from('contacts_raw')
-        .update({ group_contact: groupName })
-        .in('id', contactIds);
-
-      if (error) throw error;
-
-      return { updatedCount: contactIds.length };
-    },
-    onSuccess: ({ updatedCount }) => {
-      toast.success(`Group created successfully with ${updatedCount} members!`);
+      throw new Error(
+        'DEPRECATED: useCreateGroupFromSuggestion is no longer supported. ' +
+        'Please use the groups table and contact_group_memberships instead. ' +
+        'Group creation should go through the proper configuration modal.'
+      );
     },
     onError: (error) => {
-      console.error('Error creating group:', error);
-      toast.error('Failed to create group. Please try again.');
+      console.error('Deprecated function called:', error);
+      toast.error('This feature is deprecated. Please use the new group management system.');
     },
   });
 }

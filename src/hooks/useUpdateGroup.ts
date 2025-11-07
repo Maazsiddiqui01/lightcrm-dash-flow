@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getSafeUpdate, validateUpdate } from '@/utils/databaseUpdateHelpers';
 
 interface UpdateGroupParams {
   groupId: string;
@@ -18,17 +19,37 @@ export function useUpdateGroup() {
 
   return useMutation({
     mutationFn: async ({ groupId, updates }: UpdateGroupParams) => {
+      // Add updated_at timestamp
+      const updatesWithTimestamp = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
+      
+      // Apply safe field whitelisting for groups table
+      const safeUpdate = getSafeUpdate('groups', updatesWithTimestamp);
+      const validation = validateUpdate('groups', safeUpdate);
+      
+      if (!validation.valid) {
+        console.warn('[Validation] Invalid fields for groups table:', validation.violations);
+        throw new Error(`Cannot update forbidden fields: ${validation.violations.join(', ')}`);
+      }
+      
       const { data, error } = await supabase
         .from('groups')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
+        .update(safeUpdate)
         .eq('id', groupId)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[DB Error]', {
+          operation: 'update_group',
+          table: 'groups',
+          error,
+          groupId,
+        });
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {

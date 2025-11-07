@@ -143,6 +143,24 @@ export const SAFE_UPDATE_FIELDS = {
     // - id (never update)
     // - created_at (never update)
     // - created_by (never update)
+  ],
+  
+  groups: [
+    // Core fields
+    'name',
+    'max_lag_days',
+    'focus_area',
+    'sector',
+    'notes',
+    
+    // System timestamp
+    'updated_at',
+    
+    // EXPLICITLY EXCLUDED:
+    // - id (never update)
+    // - created_at (never update)
+    // - created_by (never update)
+    // - user_id (set on creation, should not be modified)
   ]
 } as const;
 
@@ -163,7 +181,7 @@ export const SAFE_UPDATE_FIELDS = {
  * }));
  * ```
  */
-export function getSafeUpdate<T extends 'contacts_raw' | 'opportunities_raw'>(
+export function getSafeUpdate<T extends 'contacts_raw' | 'opportunities_raw' | 'groups'>(
   tableName: T,
   data: Record<string, any>,
   preserveFields: string[] = []
@@ -197,7 +215,7 @@ export function getSafeUpdate<T extends 'contacts_raw' | 'opportunities_raw'>(
  * @returns Validation result with any violations
  */
 export function validateUpdate(
-  tableName: 'contacts_raw' | 'opportunities_raw',
+  tableName: 'contacts_raw' | 'opportunities_raw' | 'groups',
   data: Record<string, any>
 ): { valid: boolean; violations: string[] } {
   const forbiddenFields = ['id', 'created_at', 'created_by'];
@@ -205,6 +223,8 @@ export function validateUpdate(
   // Additional forbidden fields by table
   if (tableName === 'contacts_raw') {
     forbiddenFields.push('email_address', 'group_delta', 'follow_up_date');
+  } else if (tableName === 'groups') {
+    forbiddenFields.push('user_id');
   }
   
   const violations = forbiddenFields.filter(field => field in data);
@@ -223,7 +243,7 @@ export function validateUpdate(
  * @param tableName - Table name
  * @returns Cleaned row data
  */
-export function cleanRowForDatabase<T extends 'contacts_raw' | 'opportunities_raw'>(
+export function cleanRowForDatabase<T extends 'contacts_raw' | 'opportunities_raw' | 'groups'>(
   row: Record<string, any>,
   tableName: T
 ): Record<string, any> {

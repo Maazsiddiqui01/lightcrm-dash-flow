@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getSafeUpdate } from '@/utils/databaseUpdateHelpers';
 
 export interface ContactEmail {
   id: string;
@@ -81,21 +82,50 @@ export function useContactEmails(contactId: string | null | undefined) {
       const email = emails.find(e => e.id === emailId);
       if (!email) throw new Error('Email not found');
 
+      // Validate email address is not null/empty
+      if (!email.email_address || email.email_address.trim() === '') {
+        throw new Error('Email address cannot be empty');
+      }
+
       // Update the selected email to be primary
       const { error: updateError } = await supabase
         .from('contact_email_addresses')
-        .update({ is_primary: true })
+        .update({ 
+          is_primary: true,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', emailId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('[DB Error]', {
+          operation: 'set_email_primary',
+          table: 'contact_email_addresses',
+          error: updateError,
+          emailId,
+        });
+        throw updateError;
+      }
 
-      // Update contacts_raw to reflect the new primary email
+      // Update contacts_raw to reflect the new primary email (using safe update)
+      const safeUpdate = getSafeUpdate('contacts_raw', { 
+        email_address: email.email_address.trim().toLowerCase() 
+      });
+
       const { error: contactError } = await supabase
         .from('contacts_raw')
-        .update({ email_address: email.email_address })
+        .update(safeUpdate)
         .eq('id', contactId);
 
-      if (contactError) throw contactError;
+      if (contactError) {
+        console.error('[DB Error]', {
+          operation: 'set_primary_email_on_contact',
+          table: 'contacts_raw',
+          error: contactError,
+          contactId,
+          emailId,
+        });
+        throw contactError;
+      }
 
       return email.email_address;
     },
