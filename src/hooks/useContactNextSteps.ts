@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { addContactNote } from '@/utils/rpcHelpers';
 
 export interface ContactNextStep {
   id: string;
@@ -117,11 +118,11 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
       dueDate?: string; 
       addInToDo?: boolean 
     }) => {
-      const { error } = await supabase.rpc('add_contact_note', {
-        p_contact_id: contactId,
-        p_field: 'next_steps',
-        p_content: content,
-        p_due_date: dueDate || null,
+      const { error } = await addContactNote({
+        contactId,
+        field: 'next_steps',
+        content,
+        dueDate: dueDate || null,
       });
 
       if (error) throw error;

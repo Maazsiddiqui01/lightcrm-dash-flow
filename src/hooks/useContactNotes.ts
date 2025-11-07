@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { addContactNote } from '@/utils/rpcHelpers';
 
 interface ContactNote {
   contact_id: string;
@@ -58,11 +59,11 @@ export const useContactNotes = (contactId: string | undefined) => {
   // Save notes mutation
   const saveNotesMutation = useMutation({
     mutationFn: async ({ contactId, content }: { contactId: string; content: string }) => {
-      const { error } = await supabase.rpc('add_contact_note', {
-        p_contact_id: contactId,
-        p_field: 'notes',
-        p_content: content,
-        p_due_date: null, // Always pass due_date to avoid function overload ambiguity
+      const { error } = await addContactNote({
+        contactId,
+        field: 'notes',
+        content,
+        dueDate: null,
       });
       
       if (error) throw error;

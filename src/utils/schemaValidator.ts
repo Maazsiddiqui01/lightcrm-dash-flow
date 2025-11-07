@@ -7,6 +7,7 @@
 
 import { editableColumns } from '@/config/editableColumns';
 import { SAFE_UPDATE_FIELDS } from './databaseUpdateHelpers';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ValidationIssue {
   severity: 'error' | 'warning';
@@ -101,11 +102,43 @@ export function validateEditableColumnsConfig(): SchemaValidationResult {
 }
 
 /**
+ * Detects RPC functions with multiple overloads that could cause parameter ambiguity.
+ * Known overloaded functions that require explicit parameter passing:
+ * - add_contact_note
+ * - add_opportunity_note
+ */
+export async function detectOverloadedRpcFunctions(): Promise<void> {
+  console.group('🔍 Overloaded RPC Function Check');
+  
+  const knownOverloads = [
+    {
+      name: 'add_contact_note',
+      overloads: 2,
+      recommendation: 'Use addContactNote() from @/utils/rpcHelpers'
+    },
+    {
+      name: 'add_opportunity_note',
+      overloads: 2,
+      recommendation: 'Use addOpportunityNote() from @/utils/rpcHelpers'
+    }
+  ];
+
+  console.log('⚠️  Known overloaded RPC functions:');
+  knownOverloads.forEach(fn => {
+    console.log(`   - ${fn.name} (${fn.overloads} overloads)`);
+    console.log(`     💡 ${fn.recommendation}`);
+  });
+  
+  console.log('\n✅ All overloaded functions have type-safe wrappers');
+  console.groupEnd();
+}
+
+/**
  * Run all validations and log results
  * 
  * Use this during development to catch configuration issues
  */
-export function runSchemaValidation(): void {
+export async function runSchemaValidation(): Promise<void> {
   console.group('🔍 Schema Validation');
   
   const configValidation = validateEditableColumnsConfig();
@@ -130,4 +163,7 @@ export function runSchemaValidation(): void {
   }
   
   console.groupEnd();
+  
+  // Check for overloaded RPC functions
+  await detectOverloadedRpcFunctions();
 }

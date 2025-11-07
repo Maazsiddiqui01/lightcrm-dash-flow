@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { addOpportunityNote } from '@/utils/rpcHelpers';
 
 export interface OpportunityNote {
   id: string;
@@ -64,11 +65,11 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
   const saveNextStepsMutation = useMutation({
     mutationFn: async ({ opportunityId, content, dueDate, addInToDo }: { opportunityId: string; content: string; dueDate?: string; addInToDo?: boolean }) => {
       console.log('[useOpportunityNotes] Attempting to save next steps:', { opportunityId, content, dueDate, addInToDo });
-      const { data, error } = await supabase.rpc('add_opportunity_note', {
-        p_opportunity_id: opportunityId,
-        p_field: 'next_steps',
-        p_content: content,
-        p_due_date: dueDate || null,
+      const { data, error } = await addOpportunityNote({
+        opportunityId,
+        field: 'next_steps',
+        content,
+        dueDate: dueDate || null,
       });
 
       if (error) {
@@ -130,11 +131,11 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
   const saveMostRecentNotesMutation = useMutation({
     mutationFn: async ({ opportunityId, content }: { opportunityId: string; content: string }) => {
       console.log('[useOpportunityNotes] Attempting to save most recent notes:', { opportunityId, content });
-      const { data, error } = await supabase.rpc('add_opportunity_note', {
-        p_opportunity_id: opportunityId,
-        p_field: 'most_recent_notes',
-        p_content: content,
-        p_due_date: null,
+      const { data, error } = await addOpportunityNote({
+        opportunityId,
+        field: 'most_recent_notes',
+        content,
+        dueDate: null,
       });
 
       if (error) {
