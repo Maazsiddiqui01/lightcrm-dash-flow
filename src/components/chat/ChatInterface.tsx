@@ -184,13 +184,13 @@ export function ChatInterface({ messages, onSendMessage, isSending }: ChatInterf
               What can I help with?
             </h3>
             
-            {/* Templates */}
-            <ChatTemplates onSelectTemplate={handleTemplateSelect} />
-            
             {/* Centered input */}
-            <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="w-full mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <ChatInput ref={inputRef} onSend={onSendMessage} disabled={isSending} />
             </div>
+            
+            {/* Templates (collapsible, below input) */}
+            <ChatTemplates onSelectTemplate={handleTemplateSelect} />
           </div>
         </div>
       )}
