@@ -9,8 +9,10 @@ import { useChatFolders } from "@/hooks/useChatFolders";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChatThemeProvider, useChatTheme } from "@/contexts/ChatThemeContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DndContext, DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import { cn } from "@/lib/utils";
 import "@/styles/chat-theme.css";
 import "@/styles/markdown-chat.css";
 
@@ -20,6 +22,7 @@ function ChatContent() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [draggedConvId, setDraggedConvId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { effectiveTheme } = useChatTheme();
 
   const {
@@ -68,16 +71,17 @@ function ChatContent() {
 
   // Auto-select first conversation or create new one
   useEffect(() => {
-    if (!conversationsLoading && !currentConversationId) {
+    if (!conversationsLoading && !currentConversationId && !showArchived) {
       if (conversations.length > 0) {
         setCurrentConversationId(conversations[0].id);
       }
+      // Don't auto-create new conversation - let user start typing
     }
-  }, [conversations, conversationsLoading, currentConversationId]);
+  }, [conversations, conversationsLoading, currentConversationId, showArchived]);
 
   const handleNewConversation = async () => {
-    const newConv = await createConversation(undefined);
-    setCurrentConversationId(newConv.id);
+    // Just clear selection - don't create conversation yet
+    setCurrentConversationId(null);
   };
 
   const handleSelectConversation = (id: string) => {
@@ -131,9 +135,9 @@ function ChatContent() {
       const title = message.slice(0, 50) + (message.length > 50 ? "..." : "");
       const newConv = await createConversation(title);
       setCurrentConversationId(newConv.id);
-      // Wait a bit for the conversation to be set
-      setTimeout(() => {
-        sendMessage({ content: message });
+      // Wait for the conversation to be set and send the message
+      setTimeout(async () => {
+        await sendMessage({ content: message });
       }, 100);
     } else {
       await sendMessage({ content: message });
@@ -154,12 +158,21 @@ function ChatContent() {
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] chat-container" data-chat-theme={effectiveTheme}>
         {/* Desktop Sidebar */}
-        {!isMobile && (
-          <div className="chat-sidebar border-r w-64 flex-shrink-0 flex flex-col">
+        {!isMobile && !sidebarCollapsed && (
+          <div className="chat-sidebar border-r w-64 flex-shrink-0 flex flex-col transition-all">
             <div className="flex items-center justify-between p-4 border-b chat-border gap-3">
               <h2 className="font-semibold chat-text text-lg">Chats</h2>
-              <div className="flex-shrink-0">
+              <div className="flex items-center gap-2">
                 <ChatThemeToggle />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setSidebarCollapsed(true)}
+                  title="Collapse sidebar"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </Button>
               </div>
             </div>
             
@@ -196,6 +209,31 @@ function ChatContent() {
               showFolderIndicator={!selectedFolderId && !showArchived}
               className="flex-1"
             />
+          </div>
+        )}
+
+        {/* Collapsed sidebar button */}
+        {!isMobile && sidebarCollapsed && (
+          <div className="flex flex-col items-center py-4 px-2 border-r chat-border gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setSidebarCollapsed(false)}
+              title="Expand sidebar"
+            >
+              <PanelLeft className="w-4 h-4" />
+            </Button>
+            <div className="h-px w-full bg-border" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleNewConversation}
+              title="New chat"
+            >
+              <span className="text-xl">+</span>
+            </Button>
           </div>
         )}
 
