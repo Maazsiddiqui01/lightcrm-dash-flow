@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Folder, FolderOpen, Plus, MoreHorizontal, Pencil, Trash2, Users, Briefcase } from "lucide-react";
+import { Folder, FolderOpen, Plus, MoreHorizontal, Pencil, Trash2, Users, Briefcase, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -20,6 +20,9 @@ interface FolderListProps {
   onUpdateFolder: (updates: Partial<ChatFolder> & { id: string }) => Promise<void>;
   onDeleteFolder: (id: string) => Promise<void>;
   conversationCounts: Record<string, number>;
+  onShowArchived: () => void;
+  archivedCount: number;
+  showingArchived: boolean;
 }
 
 const iconMap: Record<string, any> = {
@@ -36,6 +39,9 @@ export function FolderList({
   onUpdateFolder,
   onDeleteFolder,
   conversationCounts,
+  onShowArchived,
+  archivedCount,
+  showingArchived,
 }: FolderListProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [editingFolder, setEditingFolder] = useState<ChatFolder | null>(null);
@@ -75,90 +81,109 @@ export function FolderList({
         <ScrollArea className="flex-1">
           <div className="space-y-0.5 px-2 pb-2">
             {/* All Conversations */}
-            <button
-              onClick={() => onSelectFolder(null)}
-              className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors chat-hover",
-                selectedFolderId === null && "chat-surface"
-              )}
-            >
-              <Folder className="w-4 h-4 flex-shrink-0" />
-              <span className="flex-1 text-left truncate chat-text">All Chats</span>
-              <span className="text-xs chat-text-muted">
-                {Object.values(conversationCounts).reduce((a, b) => a + b, 0)}
-              </span>
-            </button>
-
-            {/* Unassigned */}
-            <button
-              onClick={() => onSelectFolder("unassigned")}
-              className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors chat-hover",
-                selectedFolderId === "unassigned" && "chat-surface"
-              )}
-            >
-              <Folder className="w-4 h-4 flex-shrink-0 opacity-50" />
-              <span className="flex-1 text-left truncate chat-text">Unassigned</span>
-              <span className="text-xs chat-text-muted">
-                {conversationCounts["unassigned"] || 0}
-              </span>
-            </button>
-
-            {/* User Folders */}
-            {folders.map((folder) => {
-              const Icon = getIcon(folder.icon, selectedFolderId === folder.id);
-              return (
-                <div
-                  key={folder.id}
+            {!showingArchived && (
+              <>
+                <button
+                  onClick={() => onSelectFolder(null)}
                   className={cn(
-                    "group relative flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors chat-hover",
-                    selectedFolderId === folder.id && "chat-surface"
+                    "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors chat-hover",
+                    selectedFolderId === null && "chat-surface"
                   )}
                 >
-                  <button
-                    onClick={() => onSelectFolder(folder.id)}
-                    className="flex-1 flex items-center gap-2 min-w-0"
-                  >
-                    <Icon
-                      className="w-4 h-4 flex-shrink-0"
-                      style={{ color: folder.color }}
-                    />
-                    <span className="flex-1 text-left truncate chat-text">
-                      {folder.name}
-                    </span>
-                    <span className="text-xs chat-text-muted">
-                      {conversationCounts[folder.id] || 0}
-                    </span>
-                  </button>
+                  <Folder className="w-4 h-4 flex-shrink-0" />
+                  <span className="flex-1 text-left truncate chat-text">All Chats</span>
+                  <span className="text-xs chat-text-muted">
+                    {Object.values(conversationCounts).reduce((a, b) => a + b, 0)}
+                  </span>
+                </button>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                        onClick={(e) => e.stopPropagation()}
+                {/* Unassigned */}
+                <button
+                  onClick={() => onSelectFolder("unassigned")}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors chat-hover",
+                    selectedFolderId === "unassigned" && "chat-surface"
+                  )}
+                >
+                  <Folder className="w-4 h-4 flex-shrink-0 opacity-50" />
+                  <span className="flex-1 text-left truncate chat-text">Unassigned</span>
+                  <span className="text-xs chat-text-muted">
+                    {conversationCounts["unassigned"] || 0}
+                  </span>
+                </button>
+
+                {/* User Folders */}
+                {folders.map((folder) => {
+                  const Icon = getIcon(folder.icon, selectedFolderId === folder.id);
+                  return (
+                    <div
+                      key={folder.id}
+                      className={cn(
+                        "group relative flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors chat-hover",
+                        selectedFolderId === folder.id && "chat-surface"
+                      )}
+                    >
+                      <button
+                        onClick={() => onSelectFolder(folder.id)}
+                        className="flex-1 flex items-center gap-2 min-w-0"
                       >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditingFolder(folder)}>
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onDeleteFolder(folder.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              );
-            })}
+                        <Icon
+                          className="w-4 h-4 flex-shrink-0"
+                          style={{ color: folder.color }}
+                        />
+                        <span className="flex-1 text-left truncate chat-text">
+                          {folder.name}
+                        </span>
+                        <span className="text-xs chat-text-muted">
+                          {conversationCounts[folder.id] || 0}
+                        </span>
+                      </button>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingFolder(folder)}>
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onDeleteFolder(folder.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  );
+                })}
+
+                <div className="h-px bg-border my-2" />
+              </>
+            )}
+
+            {/* Archived Conversations */}
+            <button
+              onClick={onShowArchived}
+              className={cn(
+                "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors chat-hover",
+                showingArchived && "chat-surface"
+              )}
+            >
+              <Archive className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1 text-left truncate chat-text">Archive</span>
+              <span className="text-xs chat-text-muted">{archivedCount}</span>
+            </button>
           </div>
         </ScrollArea>
       </div>

@@ -52,6 +52,9 @@ export type Database = {
       }
       chat_conversations: {
         Row: {
+          archived: boolean
+          archived_at: string | null
+          archived_by: string | null
           created_at: string
           folder_id: string | null
           id: string
@@ -62,6 +65,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived?: boolean
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           folder_id?: string | null
           id?: string
@@ -72,6 +78,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived?: boolean
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           folder_id?: string | null
           id?: string

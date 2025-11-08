@@ -11,18 +11,24 @@ export interface ChatConversation {
   last_message_at: string | null;
   message_count: number;
   folder_id: string | null;
+  archived: boolean;
+  archived_at: string | null;
+  archived_by: string | null;
 }
 
-export function useChatConversations(folderId?: string | null) {
+export function useChatConversations(folderId?: string | null, showArchived: boolean = false) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: conversations = [], isLoading } = useQuery({
-    queryKey: ["chat-conversations", folderId],
+    queryKey: ["chat-conversations", folderId, showArchived],
     queryFn: async () => {
       let query = supabase
         .from("chat_conversations")
         .select("*");
+
+      // Filter by archived status
+      query = query.eq("archived", showArchived);
 
       // Filter by folder if specified
       if (folderId === "unassigned") {
@@ -93,6 +99,69 @@ export function useChatConversations(folderId?: string | null) {
     },
   });
 
+  const archiveConversation = useMutation({
+    mutationFn: async (id: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update({ 
+          archived: true, 
+          archived_at: new Date().toISOString(),
+          archived_by: user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+      toast({
+        title: "Archived",
+        description: "Conversation moved to archive",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to archive conversation",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unarchiveConversation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update({ 
+          archived: false, 
+          archived_at: null,
+          archived_by: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+      toast({
+        title: "Restored",
+        description: "Conversation restored from archive",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to restore conversation",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteConversation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -124,5 +193,7 @@ export function useChatConversations(folderId?: string | null) {
     createConversation: createConversation.mutateAsync,
     updateConversation: updateConversation.mutateAsync,
     deleteConversation: deleteConversation.mutateAsync,
+    archiveConversation: archiveConversation.mutateAsync,
+    unarchiveConversation: unarchiveConversation.mutateAsync,
   };
 }

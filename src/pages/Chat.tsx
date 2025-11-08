@@ -19,6 +19,7 @@ function ChatContent() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [draggedConvId, setDraggedConvId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const { effectiveTheme } = useChatTheme();
 
   const {
@@ -35,16 +36,19 @@ function ChatContent() {
     createConversation,
     deleteConversation,
     updateConversation,
-  } = useChatConversations(selectedFolderId);
+    archiveConversation,
+    unarchiveConversation,
+  } = useChatConversations(showArchived ? undefined : selectedFolderId, showArchived);
 
-  // Get all conversations for counting
-  const { conversations: allConversations } = useChatConversations();
+  // Get all conversations for counting (both archived and active)
+  const { conversations: allActiveConversations } = useChatConversations(undefined, false);
+  const { conversations: allArchivedConversations } = useChatConversations(undefined, true);
 
   // Count conversations per folder
   const conversationCounts = useMemo(() => {
     const counts: Record<string, number> = { unassigned: 0 };
     
-    allConversations.forEach((conv) => {
+    allActiveConversations.forEach((conv) => {
       if (!conv.folder_id) {
         counts.unassigned++;
       } else {
@@ -53,7 +57,7 @@ function ChatContent() {
     });
     
     return counts;
-  }, [allConversations]);
+  }, [allActiveConversations]);
 
   const {
     messages,
@@ -162,11 +166,20 @@ function ChatContent() {
             <FolderList
               folders={folders}
               selectedFolderId={selectedFolderId}
-              onSelectFolder={setSelectedFolderId}
+              onSelectFolder={(id) => {
+                setSelectedFolderId(id);
+                setShowArchived(false);
+              }}
               onCreateFolder={createFolder}
               onUpdateFolder={updateFolder}
               onDeleteFolder={deleteFolder}
               conversationCounts={conversationCounts}
+              onShowArchived={() => {
+                setShowArchived(!showArchived);
+                setSelectedFolderId(null);
+              }}
+              archivedCount={allArchivedConversations.length}
+              showingArchived={showArchived}
             />
 
             <div className="border-t chat-border">
@@ -188,7 +201,10 @@ function ChatContent() {
               onDeleteConversation={handleDeleteConversation}
               onRenameConversation={handleRenameConversation}
               onMoveToFolder={handleMoveToFolder}
-              showFolderIndicator={!selectedFolderId}
+              onArchiveConversation={archiveConversation}
+              onUnarchiveConversation={unarchiveConversation}
+              showArchived={showArchived}
+              showFolderIndicator={!selectedFolderId && !showArchived}
               className="flex-1"
             />
           </div>

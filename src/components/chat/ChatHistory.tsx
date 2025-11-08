@@ -1,4 +1,4 @@
-import { Plus, Trash2, MessageSquare, Pencil, Check, X, GripVertical } from "lucide-react";
+import { Plus, Trash2, MessageSquare, Pencil, Check, X, GripVertical, Archive, ArchiveRestore } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ interface ChatHistoryProps {
     last_message_at: string | null;
     message_count: number;
     folder_id: string | null;
+    archived: boolean;
   }>;
   currentConversationId: string | null;
   onSelectConversation: (id: string) => void;
@@ -32,6 +33,9 @@ interface ChatHistoryProps {
   onDeleteConversation: (id: string) => void;
   onRenameConversation: (id: string, title: string) => void;
   onMoveToFolder?: (conversationId: string, folderId: string | null) => void;
+  onArchiveConversation?: (id: string) => void;
+  onUnarchiveConversation?: (id: string) => void;
+  showArchived?: boolean;
   showFolderIndicator?: boolean;
   className?: string;
 }
@@ -48,6 +52,9 @@ function DraggableConversation({
   onCancelEdit,
   onSetEditTitle,
   onDelete,
+  onArchive,
+  onUnarchive,
+  showArchived,
   isDragging,
 }: any) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -135,6 +142,33 @@ function DraggableConversation({
         
         {!isEditing && (
           <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+            {showArchived ? (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUnarchive();
+                }}
+                title="Restore from archive"
+              >
+                <ArchiveRestore className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onArchive();
+                }}
+                title="Archive"
+              >
+                <Archive className="w-4 h-4" />
+              </Button>
+            )}
             <Button
               size="icon"
               variant="ghost"
@@ -172,6 +206,9 @@ export function ChatHistory({
   onDeleteConversation,
   onRenameConversation,
   onMoveToFolder,
+  onArchiveConversation,
+  onUnarchiveConversation,
+  showArchived = false,
   showFolderIndicator = false,
   className,
 }: ChatHistoryProps) {
@@ -240,6 +277,9 @@ export function ChatHistory({
                   onCancelEdit={cancelEdit}
                   onSetEditTitle={setEditTitle}
                   onDelete={() => setDeleteId(conv.id)}
+                  onArchive={() => onArchiveConversation?.(conv.id)}
+                  onUnarchive={() => onUnarchiveConversation?.(conv.id)}
+                  showArchived={showArchived}
                   isDragging={draggedId === conv.id}
                 />
               ))
