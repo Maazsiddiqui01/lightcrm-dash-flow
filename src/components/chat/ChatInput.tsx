@@ -92,70 +92,56 @@ export function ChatInput({
   };
 
   return (
-    <div className="chat-input border-t border-chat-input-border bg-chat-input px-4 py-5">
-      <div className="max-w-3xl mx-auto">
-        {!isRecording ? (
-          <div className="flex items-end gap-3 bg-chat-input-bg border border-chat-input-field-border rounded-2xl shadow-sm px-4 py-3 focus-within:border-primary/50 focus-within:shadow-md transition-all">
-            <Textarea
-              ref={textareaRef}
-              value={message}
-              onChange={handleTextareaChange}
-              onClick={handleTextareaClick}
-              onKeyUp={handleTextareaKeyUp}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                isTranscribing
-                  ? "Transcribing..."
-                  : placeholder
-              }
-              disabled={disabled || isSending || isRecording || isTranscribing}
-              className="min-h-[24px] max-h-32 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-base placeholder:text-muted-foreground"
-              rows={1}
-            />
-            
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <VoiceRecorder
-                isRecording={isRecording}
-                isTranscribing={isTranscribing}
-                stream={stream}
-                onStart={startRecording}
-                onStop={handleVoiceStop}
-                disabled={disabled || isSending}
-              />
-
-              <Button
-                size="icon"
-                onClick={handleSend}
-                disabled={!message.trim() || isSending || disabled || isRecording}
-                className="h-8 w-8 rounded-lg flex-shrink-0"
-              >
-                {isSending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center gap-3">
-            <VoiceRecorder
-              isRecording={isRecording}
-              isTranscribing={isTranscribing}
-              stream={stream}
-              onStart={startRecording}
-              onStop={handleVoiceStop}
-              disabled={disabled || isSending}
-            />
-          </div>
+    <div className="chat-input border-t bg-background p-4">
+      <div className="max-w-3xl mx-auto flex items-end gap-2">
+        {!isRecording && (
+          <Textarea
+            ref={textareaRef}
+            value={message}
+            onChange={handleTextareaChange}
+            onClick={handleTextareaClick}
+            onKeyUp={handleTextareaKeyUp}
+            onKeyDown={handleKeyDown}
+            placeholder={
+              isTranscribing
+                ? "Transcribing..."
+                : placeholder
+            }
+            disabled={disabled || isSending || isRecording || isTranscribing}
+            className="min-h-[44px] max-h-32 resize-none"
+            rows={1}
+          />
         )}
-        
-        {isTranscribing && (
-          <p className="text-xs text-muted-foreground text-center mt-2">
-            Transcribing your message...
-          </p>
+
+        <VoiceRecorder
+          isRecording={isRecording}
+          isTranscribing={isTranscribing}
+          stream={stream}
+          onStart={startRecording}
+          onStop={handleVoiceStop}
+          disabled={disabled || isSending}
+        />
+
+        {!isRecording && (
+          <Button
+            size="icon"
+            onClick={handleSend}
+            disabled={!message.trim() || isSending || disabled || isRecording}
+            className="touch-target flex-shrink-0"
+          >
+            {isSending ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </Button>
         )}
       </div>
+      {isTranscribing && (
+        <p className="text-xs text-muted-foreground text-center mt-2">
+          Transcribing your message...
+        </p>
+      )}
     </div>
   );
 }

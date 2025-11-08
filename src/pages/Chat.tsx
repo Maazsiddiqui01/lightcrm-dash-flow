@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { ChatHistory } from "@/components/chat/ChatHistory";
 import { ChatHeader } from "@/components/chat/ChatHeader";
-import { ThemeToggle } from "@/components/chat/ThemeToggle";
 import { useChatConversations } from "@/hooks/useChatConversations";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -92,7 +91,7 @@ export default function Chat() {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        {isMobile ? (
+        {isMobile && (
           <ChatHeader
             title={currentConversation?.title || "New Chat"}
             conversations={conversations}
@@ -101,13 +100,6 @@ export default function Chat() {
             onNewConversation={handleNewConversation}
             onDeleteConversation={handleDeleteConversation}
           />
-        ) : (
-          <div className="sticky top-0 z-10 border-b border-chat-header-border bg-chat-header backdrop-blur-sm px-6 h-14 flex items-center justify-between">
-            <h1 className="text-base font-semibold">
-              {currentConversation?.title || "New Chat"}
-            </h1>
-            <ThemeToggle />
-          </div>
         )}
 
         <ChatInterface
