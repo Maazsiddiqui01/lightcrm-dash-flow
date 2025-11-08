@@ -23,6 +23,7 @@ function ChatContent() {
   const [draggedConvId, setDraggedConvId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const { effectiveTheme } = useChatTheme();
 
   const {
@@ -69,15 +70,15 @@ function ChatContent() {
     isSending,
   } = useChatMessages(currentConversationId);
 
-  // Auto-select first conversation or create new one
+  // Auto-select first conversation on initial load only
   useEffect(() => {
-    if (!conversationsLoading && !currentConversationId && !showArchived) {
+    if (!conversationsLoading && !hasInitialized && !showArchived) {
       if (conversations.length > 0) {
         setCurrentConversationId(conversations[0].id);
       }
-      // Don't auto-create new conversation - let user start typing
+      setHasInitialized(true);
     }
-  }, [conversations, conversationsLoading, currentConversationId, showArchived]);
+  }, [conversations, conversationsLoading, hasInitialized, showArchived]);
 
   const handleNewConversation = async () => {
     // Just clear selection - don't create conversation yet
