@@ -12,13 +12,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { cn } from "@/lib/utils";
+
 interface ChatMessageRendererProps {
   message: ChatMessage;
   searchQuery?: string;
+  isCurrentResult?: boolean;
 }
 
 // Helper function to highlight search matches in text
-function highlightText(text: string, query: string) {
+function highlightText(text: string, query: string, isCurrentResult: boolean) {
   if (!query.trim()) return text;
 
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
@@ -28,7 +31,12 @@ function highlightText(text: string, query: string) {
     part.toLowerCase() === query.toLowerCase() ? (
       <mark
         key={index}
-        className="bg-[rgb(var(--chat-accent))]/20 text-[rgb(var(--chat-text))] rounded px-0.5"
+        className={cn(
+          "rounded px-0.5 transition-colors",
+          isCurrentResult
+            ? "bg-[rgb(var(--chat-accent))] text-white"
+            : "bg-[rgb(var(--chat-accent))]/20 text-[rgb(var(--chat-text))]"
+        )}
       >
         {part}
       </mark>
@@ -38,7 +46,7 @@ function highlightText(text: string, query: string) {
   );
 }
 
-export function ChatMessageRenderer({ message, searchQuery = "" }: ChatMessageRendererProps) {
+export function ChatMessageRenderer({ message, searchQuery = "", isCurrentResult = false }: ChatMessageRendererProps) {
   // Check if metadata contains table data
   if (message.metadata?.data && Array.isArray(message.metadata.data)) {
     const tableData = message.metadata.data;
@@ -50,7 +58,7 @@ export function ChatMessageRenderer({ message, searchQuery = "" }: ChatMessageRe
       <div className="space-y-2">
         {searchQuery.trim() ? (
           <div className="text-sm text-foreground whitespace-pre-wrap">
-            {highlightText(message.content, searchQuery)}
+            {highlightText(message.content, searchQuery, isCurrentResult)}
           </div>
         ) : (
           <p className="text-sm text-foreground whitespace-pre-wrap">{message.content}</p>
@@ -87,7 +95,7 @@ export function ChatMessageRenderer({ message, searchQuery = "" }: ChatMessageRe
   if (searchQuery.trim()) {
     return (
       <div className="chat-markdown whitespace-pre-wrap">
-        {highlightText(message.content, searchQuery)}
+        {highlightText(message.content, searchQuery, isCurrentResult)}
       </div>
     );
   }

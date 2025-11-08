@@ -9,10 +9,11 @@ import { ChatMessageRenderer } from "./ChatMessageRenderer";
 interface MessageBubbleProps {
   message: ChatMessage;
   searchQuery?: string;
+  isCurrentResult?: boolean;
 }
 
 // Helper function to highlight search matches
-function highlightText(text: string, query: string) {
+function highlightText(text: string, query: string, isCurrentResult: boolean) {
   if (!query.trim()) return text;
 
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
@@ -22,7 +23,12 @@ function highlightText(text: string, query: string) {
     part.toLowerCase() === query.toLowerCase() ? (
       <mark
         key={index}
-        className="bg-[rgb(var(--chat-accent))]/20 text-[rgb(var(--chat-text))] rounded px-0.5"
+        className={cn(
+          "rounded px-0.5 transition-colors",
+          isCurrentResult
+            ? "bg-[rgb(var(--chat-accent))] text-white"
+            : "bg-[rgb(var(--chat-accent))]/20 text-[rgb(var(--chat-text))]"
+        )}
       >
         {part}
       </mark>
@@ -32,7 +38,7 @@ function highlightText(text: string, query: string) {
   );
 }
 
-export function MessageBubble({ message, searchQuery = "" }: MessageBubbleProps) {
+export function MessageBubble({ message, searchQuery = "", isCurrentResult = false }: MessageBubbleProps) {
   const { role, content, created_at: timestamp } = message;
   const { toast } = useToast();
   const isUser = role === "user";
@@ -71,14 +77,14 @@ export function MessageBubble({ message, searchQuery = "" }: MessageBubbleProps)
           {isUser ? (
             searchQuery.trim() ? (
               <div className="whitespace-pre-wrap text-[15px] md:text-[16px] leading-relaxed">
-                {highlightText(content, searchQuery)}
+                {highlightText(content, searchQuery, isCurrentResult)}
               </div>
             ) : (
               <p className="whitespace-pre-wrap text-[15px] md:text-[16px] leading-relaxed">{content}</p>
             )
           ) : (
             <div className="prose prose-sm md:prose max-w-none">
-              <ChatMessageRenderer message={message} searchQuery={searchQuery} />
+              <ChatMessageRenderer message={message} searchQuery={searchQuery} isCurrentResult={isCurrentResult} />
             </div>
           )}
         </div>
