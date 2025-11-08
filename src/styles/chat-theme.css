@@ -1,35 +1,37 @@
 /* Chat Theme Variables */
 
 [data-chat-theme="light"] {
-  --chat-bg: 255 255 255;
-  --chat-surface: 247 247 248;
-  --chat-sidebar: 249 249 249;
-  --chat-text: 52 53 65;
-  --chat-text-muted: 142 142 160;
-  --chat-border: 236 236 241;
-  --chat-user-bg: 232 121 249;
+  --chat-bg: 248 249 250;
+  --chat-surface: 241 243 245;
+  --chat-sidebar: 255 255 255;
+  --chat-text: 33 37 41;
+  --chat-text-muted: 108 117 125;
+  --chat-border: 222 226 230;
+  --chat-user-bg: 13 110 253;
   --chat-user-text: 255 255 255;
-  --chat-ai-bg: transparent;
-  --chat-ai-text: 52 53 65;
-  --chat-hover: 236 236 241;
+  --chat-ai-bg: 233 236 239;
+  --chat-ai-text: 33 37 41;
+  --chat-hover: 233 236 239;
   --chat-input-bg: 255 255 255;
-  --chat-input-border: 236 236 241;
+  --chat-input-border: 206 212 218;
+  --chat-accent: 13 110 253;
 }
 
 [data-chat-theme="dark"] {
-  --chat-bg: 52 53 65;
-  --chat-surface: 68 70 84;
-  --chat-sidebar: 32 33 35;
-  --chat-text: 236 236 241;
-  --chat-text-muted: 197 197 210;
-  --chat-border: 86 88 105;
-  --chat-user-bg: 232 121 249;
+  --chat-bg: 33 37 41;
+  --chat-surface: 52 58 64;
+  --chat-sidebar: 26 28 32;
+  --chat-text: 248 249 250;
+  --chat-text-muted: 173 181 189;
+  --chat-border: 73 80 87;
+  --chat-user-bg: 111 66 193;
   --chat-user-text: 255 255 255;
-  --chat-ai-bg: transparent;
-  --chat-ai-text: 236 236 241;
-  --chat-hover: 42 43 50;
-  --chat-input-bg: 64 65 79;
-  --chat-input-border: 86 88 105;
+  --chat-ai-bg: 52 58 64;
+  --chat-ai-text: 248 249 250;
+  --chat-hover: 73 80 87;
+  --chat-input-bg: 52 58 64;
+  --chat-input-border: 73 80 87;
+  --chat-accent: 111 66 193;
 }
 
 /* Apply chat theme colors */
@@ -76,4 +78,20 @@
 .chat-input {
   background-color: rgb(var(--chat-input-bg));
   border-color: rgb(var(--chat-input-border));
+}
+
+.chat-ai-background {
+  background-color: rgb(var(--chat-ai-bg));
+  padding: 1rem;
+  border-radius: 0.75rem;
+}
+
+/* Smooth transitions for theme changes */
+.chat-container,
+.chat-surface,
+.chat-sidebar,
+.chat-input,
+.chat-user-bubble,
+.chat-ai-background {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }

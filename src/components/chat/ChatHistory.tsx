@@ -49,8 +49,12 @@ export function ChatHistory({
   return (
     <>
       <div className={cn("flex flex-col h-full", className)}>
-        <div className="p-3">
-          <Button onClick={onNewConversation} className="w-full chat-hover rounded-lg chat-text" variant="outline" size="sm">
+        <div className="p-2 md:p-3">
+          <Button
+            onClick={onNewConversation}
+            className="w-full rounded-lg bg-[rgb(var(--chat-accent))] text-white hover:opacity-90 transition-opacity h-9 md:h-10 text-sm"
+            size="sm"
+          >
             <Plus className="w-4 h-4 mr-2" />
             New Chat
           </Button>
@@ -68,7 +72,7 @@ export function ChatHistory({
                 <div
                   key={conv.id}
                   className={cn(
-                    "group relative rounded-lg p-3 cursor-pointer transition-colors chat-hover",
+                    "group relative rounded-lg p-2.5 md:p-3 cursor-pointer transition-colors chat-hover",
                     currentConversationId === conv.id && "chat-surface"
                   )}
                   onClick={() => onSelectConversation(conv.id)}

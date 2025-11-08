@@ -26,7 +26,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 mb-6 animate-in fade-in slide-in-from-bottom-2",
+        "flex gap-2 md:gap-3 mb-4 md:mb-6 animate-in fade-in slide-in-from-bottom-2",
         isUser ? "flex-row-reverse" : "flex-row"
       )}
     >
@@ -37,19 +37,21 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         </div>
       )}
 
-      <div className={cn("flex flex-col", isUser ? "items-end max-w-[80%] md:max-w-[70%]" : "flex-1")}>
+      <div className={cn("flex flex-col", isUser ? "items-end max-w-[85%] md:max-w-[70%]" : "flex-1")}>
         <div
           className={cn(
             "break-words transition-colors",
             isUser
-              ? "chat-user-bubble rounded-3xl px-5 py-3"
-              : "chat-ai-bubble py-3"
+              ? "chat-user-bubble rounded-3xl px-4 py-2.5 md:px-5 md:py-3"
+              : "chat-ai-background w-full"
           )}
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap text-[15px]">{content}</p>
+            <p className="whitespace-pre-wrap text-[15px] md:text-[16px] leading-relaxed">{content}</p>
           ) : (
-            <ChatMessageRenderer message={message} />
+            <div className="prose prose-sm md:prose max-w-none">
+              <ChatMessageRenderer message={message} />
+            </div>
           )}
         </div>
 

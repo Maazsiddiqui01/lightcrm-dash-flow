@@ -92,11 +92,11 @@ export function ChatInput({
   };
 
   return (
-    <div className="p-4 chat-container">
+    <div className="p-3 md:p-4 chat-container">
       <div className="max-w-[48rem] mx-auto">
         <div className="relative flex items-end gap-2">
           {!isRecording && (
-            <div className="relative flex-1 chat-input border rounded-3xl shadow-sm focus-within:shadow-md transition-shadow">
+            <div className="relative flex-1 chat-input border rounded-2xl md:rounded-3xl shadow-sm focus-within:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-[rgb(var(--chat-accent))] focus-within:ring-offset-2">
               <Textarea
                 ref={textareaRef}
                 value={message}
@@ -110,11 +110,11 @@ export function ChatInput({
                     : placeholder
                 }
                 disabled={disabled || isSending || isRecording || isTranscribing}
-                className="min-h-[52px] max-h-[200px] resize-none border-0 bg-transparent px-5 py-4 pr-24 focus-visible:ring-0 focus-visible:ring-offset-0 chat-text"
+                className="min-h-[48px] md:min-h-[52px] max-h-[180px] md:max-h-[200px] resize-none border-0 bg-transparent px-4 md:px-5 py-3 md:py-4 pr-20 md:pr-24 focus-visible:ring-0 focus-visible:ring-offset-0 chat-text text-[16px]"
                 rows={1}
               />
               
-              <div className="absolute right-2 bottom-2 flex items-center gap-1">
+              <div className="absolute right-1.5 md:right-2 bottom-1.5 md:bottom-2 flex items-center gap-0.5 md:gap-1">
                 <VoiceRecorder
                   isRecording={isRecording}
                   isTranscribing={isTranscribing}
@@ -124,13 +124,13 @@ export function ChatInput({
                   disabled={disabled || isSending}
                 />
                 
-                <Button
-                  onClick={handleSend}
-                  disabled={disabled || !message.trim() || isSending}
-                  size="icon"
-                  className="h-9 w-9 rounded-full"
-                  variant={message.trim() ? "default" : "ghost"}
-                >
+            <Button
+              onClick={handleSend}
+              disabled={disabled || !message.trim() || isSending}
+              size="icon"
+              className="h-8 w-8 md:h-9 md:w-9 rounded-full"
+              variant={message.trim() ? "default" : "ghost"}
+            >
                   {isSending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
