@@ -1,4 +1,4 @@
-import { Plus, Trash2, MessageSquare, Pencil, Check, X, GripVertical, Archive, ArchiveRestore } from "lucide-react";
+import { Plus, Trash2, MessageSquare, Pencil, Check, X, GripVertical, Archive, ArchiveRestore, MoreHorizontal, Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -13,10 +13,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { ChatFolder } from "@/hooks/useChatFolders";
 
 interface ChatHistoryProps {
   conversations: Array<{
@@ -38,6 +49,7 @@ interface ChatHistoryProps {
   showArchived?: boolean;
   showFolderIndicator?: boolean;
   className?: string;
+  folders?: ChatFolder[];
 }
 
 // Draggable conversation item component
@@ -54,8 +66,10 @@ function DraggableConversation({
   onDelete,
   onArchive,
   onUnarchive,
+  onMoveToFolder,
   showArchived,
   isDragging,
+  folders = [],
 }: any) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: conv.id,
@@ -141,57 +155,87 @@ function DraggableConversation({
         </div>
         
         {!isEditing && (
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100">
-            {showArchived ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUnarchive();
-                }}
-                title="Restore from archive"
+                className="h-7 w-7 opacity-0 group-hover:opacity-100"
+                onClick={(e) => e.stopPropagation()}
               >
-                <ArchiveRestore className="w-4 h-4" />
+                <MoreHorizontal className="w-4 h-4" />
               </Button>
-            ) : (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onArchive();
-                }}
-                title="Archive"
-              >
-                <Archive className="w-4 h-4" />
-              </Button>
-            )}
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7"
-              onClick={(e) => {
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={(e) => {
                 e.stopPropagation();
                 onStartEdit();
-              }}
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
+              }}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              
+              {!showArchived && onMoveToFolder && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Folder className="w-4 h-4 mr-2" />
+                    Move to Folder
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveToFolder(null);
+                    }}>
+                      Unassigned
+                    </DropdownMenuItem>
+                    {folders.map((folder: ChatFolder) => (
+                      <DropdownMenuItem 
+                        key={folder.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMoveToFolder(folder.id);
+                        }}
+                      >
+                        <span style={{ color: folder.color }}>●</span>
+                        <span className="ml-2">{folder.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+              
+              <DropdownMenuSeparator />
+              
+              {showArchived ? (
+                <DropdownMenuItem onClick={(e) => {
+                  e.stopPropagation();
+                  onUnarchive();
+                }}>
+                  <ArchiveRestore className="w-4 h-4 mr-2" />
+                  Restore
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={(e) => {
+                  e.stopPropagation();
+                  onArchive();
+                }}>
+                  <Archive className="w-4 h-4 mr-2" />
+                  Archive
+                </DropdownMenuItem>
+              )}
+              
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </div>
@@ -211,6 +255,7 @@ export function ChatHistory({
   showArchived = false,
   showFolderIndicator = false,
   className,
+  folders = [],
 }: ChatHistoryProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -279,8 +324,10 @@ export function ChatHistory({
                   onDelete={() => setDeleteId(conv.id)}
                   onArchive={() => onArchiveConversation?.(conv.id)}
                   onUnarchive={() => onUnarchiveConversation?.(conv.id)}
+                  onMoveToFolder={(folderId: string | null) => onMoveToFolder?.(conv.id, folderId)}
                   showArchived={showArchived}
                   isDragging={draggedId === conv.id}
+                  folders={folders}
                 />
               ))
             )}

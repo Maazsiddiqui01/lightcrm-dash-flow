@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ChatFolder } from "@/hooks/useChatFolders";
 import { FolderDialog } from "./FolderDialog";
+import { useDroppable } from "@dnd-kit/core";
 
 interface FolderListProps {
   folders: ChatFolder[];
@@ -30,6 +31,127 @@ const iconMap: Record<string, any> = {
   users: Users,
   briefcase: Briefcase,
 };
+
+// Droppable folder component for simple folders (All Chats, Unassigned, Archive)
+function DroppableFolder({ 
+  id, 
+  isSelected, 
+  onSelect, 
+  icon: Icon, 
+  label, 
+  count,
+  iconOpacity = 1 
+}: {
+  id: string;
+  isSelected: boolean;
+  onSelect: () => void;
+  icon: any;
+  label: string;
+  count: number;
+  iconOpacity?: number;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+    data: { folderId: id === "unassigned" ? null : id },
+  });
+
+  return (
+    <button
+      ref={setNodeRef}
+      onClick={onSelect}
+      className={cn(
+        "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all chat-hover",
+        isSelected && "chat-surface",
+        isOver && "ring-2 ring-[rgb(var(--chat-accent))] bg-[rgb(var(--chat-accent))]/10"
+      )}
+    >
+      <Icon className="w-4 h-4 flex-shrink-0" style={{ opacity: iconOpacity }} />
+      <span className="flex-1 text-left truncate chat-text">{label}</span>
+      <span className="text-xs chat-text-muted">{count}</span>
+    </button>
+  );
+}
+
+// Droppable folder with edit/delete menu
+function DroppableFolderWithMenu({
+  id,
+  isSelected,
+  onSelect,
+  icon: Icon,
+  label,
+  count,
+  color,
+  onEdit,
+  onDelete,
+}: {
+  id: string;
+  isSelected: boolean;
+  onSelect: () => void;
+  icon: any;
+  label: string;
+  count: number;
+  color: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+    data: { folderId: id },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "group relative flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all chat-hover",
+        isSelected && "chat-surface",
+        isOver && "ring-2 ring-[rgb(var(--chat-accent))] bg-[rgb(var(--chat-accent))]/10"
+      )}
+    >
+      <button
+        onClick={onSelect}
+        className="flex-1 flex items-center gap-2 min-w-0"
+      >
+        <Icon
+          className="w-4 h-4 flex-shrink-0"
+          style={{ color }}
+        />
+        <span className="flex-1 text-left truncate chat-text">
+          {label}
+        </span>
+        <span className="text-xs chat-text-muted">
+          {count}
+        </span>
+      </button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onEdit}>
+            <Pencil className="w-4 h-4 mr-2" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={onDelete}
+            className="text-destructive"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
 
 export function FolderList({
   folders,
@@ -83,88 +205,42 @@ export function FolderList({
             {/* All Conversations */}
             {!showingArchived && (
               <>
-                <button
-                  onClick={() => onSelectFolder(null)}
-                  className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors chat-hover",
-                    selectedFolderId === null && "chat-surface"
-                  )}
-                >
-                  <Folder className="w-4 h-4 flex-shrink-0" />
-                  <span className="flex-1 text-left truncate chat-text">All Chats</span>
-                  <span className="text-xs chat-text-muted">
-                    {Object.values(conversationCounts).reduce((a, b) => a + b, 0)}
-                  </span>
-                </button>
+                <DroppableFolder
+                  id="all-chats"
+                  isSelected={selectedFolderId === null}
+                  onSelect={() => onSelectFolder(null)}
+                  icon={Folder}
+                  label="All Chats"
+                  count={Object.values(conversationCounts).reduce((a, b) => a + b, 0)}
+                />
 
                 {/* Unassigned */}
-                <button
-                  onClick={() => onSelectFolder("unassigned")}
-                  className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors chat-hover",
-                    selectedFolderId === "unassigned" && "chat-surface"
-                  )}
-                >
-                  <Folder className="w-4 h-4 flex-shrink-0 opacity-50" />
-                  <span className="flex-1 text-left truncate chat-text">Unassigned</span>
-                  <span className="text-xs chat-text-muted">
-                    {conversationCounts["unassigned"] || 0}
-                  </span>
-                </button>
+                <DroppableFolder
+                  id="unassigned"
+                  isSelected={selectedFolderId === "unassigned"}
+                  onSelect={() => onSelectFolder("unassigned")}
+                  icon={Folder}
+                  label="Unassigned"
+                  count={conversationCounts["unassigned"] || 0}
+                  iconOpacity={0.5}
+                />
 
                 {/* User Folders */}
                 {folders.map((folder) => {
                   const Icon = getIcon(folder.icon, selectedFolderId === folder.id);
                   return (
-                    <div
+                    <DroppableFolderWithMenu
                       key={folder.id}
-                      className={cn(
-                        "group relative flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors chat-hover",
-                        selectedFolderId === folder.id && "chat-surface"
-                      )}
-                    >
-                      <button
-                        onClick={() => onSelectFolder(folder.id)}
-                        className="flex-1 flex items-center gap-2 min-w-0"
-                      >
-                        <Icon
-                          className="w-4 h-4 flex-shrink-0"
-                          style={{ color: folder.color }}
-                        />
-                        <span className="flex-1 text-left truncate chat-text">
-                          {folder.name}
-                        </span>
-                        <span className="text-xs chat-text-muted">
-                          {conversationCounts[folder.id] || 0}
-                        </span>
-                      </button>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditingFolder(folder)}>
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => onDeleteFolder(folder.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                      id={folder.id}
+                      isSelected={selectedFolderId === folder.id}
+                      onSelect={() => onSelectFolder(folder.id)}
+                      icon={Icon}
+                      label={folder.name}
+                      count={conversationCounts[folder.id] || 0}
+                      color={folder.color}
+                      onEdit={() => setEditingFolder(folder)}
+                      onDelete={() => onDeleteFolder(folder.id)}
+                    />
                   );
                 })}
 

@@ -6,15 +6,34 @@ import { ChatInput, ChatInputHandle } from "./ChatInput";
 import { ChatTemplates } from "./ChatTemplates";
 import { SearchBar } from "./SearchBar";
 import { ChatMessage } from "@/hooks/useChatMessages";
+import { ChatFolder } from "@/hooks/useChatFolders";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface ChatInterfaceProps {
   messages: ChatMessage[];
   onSendMessage: (message: string) => Promise<void>;
   isSending: boolean;
+  folders?: ChatFolder[];
+  newChatFolder?: string | null;
+  onNewChatFolderChange?: (folderId: string | null) => void;
 }
 
-export function ChatInterface({ messages, onSendMessage, isSending }: ChatInterfaceProps) {
+export function ChatInterface({ 
+  messages, 
+  onSendMessage, 
+  isSending, 
+  folders = [],
+  newChatFolder = null,
+  onNewChatFolderChange 
+}: ChatInterfaceProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -183,6 +202,32 @@ export function ChatInterface({ messages, onSendMessage, isSending }: ChatInterf
             <h3 className="text-3xl md:text-4xl font-semibold mb-8 chat-text text-center">
               What can I help with?
             </h3>
+            
+            {/* Folder selection */}
+            {folders.length > 0 && onNewChatFolderChange && (
+              <div className="w-full mb-4 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <Label className="text-sm chat-text whitespace-nowrap">Save to:</Label>
+                <Select 
+                  value={newChatFolder || "unassigned"} 
+                  onValueChange={(value) => onNewChatFolderChange(value === "unassigned" ? null : value)}
+                >
+                  <SelectTrigger className="w-full max-w-xs h-9">
+                    <SelectValue placeholder="Select folder" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {folders.map((folder) => (
+                      <SelectItem key={folder.id} value={folder.id}>
+                        <div className="flex items-center gap-2">
+                          <span style={{ color: folder.color }}>●</span>
+                          {folder.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
             {/* Centered input */}
             <div className="w-full mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">

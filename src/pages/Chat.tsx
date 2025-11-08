@@ -24,6 +24,7 @@ function ChatContent() {
   const [showArchived, setShowArchived] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [newChatFolder, setNewChatFolder] = useState<string | null>(null);
   const { effectiveTheme } = useChatTheme();
 
   const {
@@ -83,6 +84,7 @@ function ChatContent() {
   const handleNewConversation = async () => {
     // Just clear selection - don't create conversation yet
     setCurrentConversationId(null);
+    setNewChatFolder(selectedFolderId);
   };
 
   const handleSelectConversation = (id: string) => {
@@ -134,8 +136,9 @@ function ChatContent() {
     // Create conversation if none exists
     if (!currentConversationId) {
       const title = message.slice(0, 50) + (message.length > 50 ? "..." : "");
-      const newConv = await createConversation(title);
+      const newConv = await createConversation({ title, folderId: newChatFolder });
       setCurrentConversationId(newConv.id);
+      setNewChatFolder(null); // Reset folder selection
       // Wait for the conversation to be set and send the message
       setTimeout(async () => {
         await sendMessage({ content: message });
@@ -160,7 +163,7 @@ function ChatContent() {
       <div className="flex h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] chat-container" data-chat-theme={effectiveTheme}>
         {/* Desktop Sidebar */}
         {!isMobile && !sidebarCollapsed && (
-          <div className="chat-sidebar border-r w-64 flex-shrink-0 flex flex-col transition-all">
+          <div className="chat-sidebar border-r w-72 flex-shrink-0 flex flex-col transition-all">
             <div className="flex items-center justify-between p-4 border-b chat-border gap-3">
               <h2 className="font-semibold chat-text text-lg">Chats</h2>
               <div className="flex items-center gap-2">
@@ -209,6 +212,7 @@ function ChatContent() {
               showArchived={showArchived}
               showFolderIndicator={!selectedFolderId && !showArchived}
               className="flex-1"
+              folders={folders}
             />
           </div>
         )}
@@ -254,6 +258,9 @@ function ChatContent() {
           messages={messages}
           onSendMessage={handleSendMessage}
           isSending={isSending}
+          folders={folders}
+          newChatFolder={newChatFolder}
+          onNewChatFolderChange={setNewChatFolder}
         />
       </div>
     </div>

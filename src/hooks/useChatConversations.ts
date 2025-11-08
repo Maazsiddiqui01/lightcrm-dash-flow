@@ -47,27 +47,28 @@ export function useChatConversations(folderId?: string | null, showArchived: boo
   });
 
   const createConversation = useMutation({
-    mutationFn: async (title?: string) => {
+    mutationFn: async (data: { title?: string; folderId?: string | null }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const defaultTitle = title || `New Chat - ${new Date().toLocaleDateString('en-US', { 
+      const defaultTitle = data.title || `New Chat - ${new Date().toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric', 
         year: 'numeric' 
       })}`;
 
-      const { data, error } = await supabase
+      const { data: result, error } = await supabase
         .from("chat_conversations")
         .insert([{ 
           title: defaultTitle,
-          user_id: user.id
+          user_id: user.id,
+          folder_id: data.folderId || null
         }])
         .select()
         .single();
 
       if (error) throw error;
-      return data as ChatConversation;
+      return result as ChatConversation;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
