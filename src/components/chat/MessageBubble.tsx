@@ -3,14 +3,15 @@ import { Copy, User, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ChatMessage } from "@/hooks/useChatMessages";
+import { ChatMessageRenderer } from "./ChatMessageRenderer";
 
 interface MessageBubbleProps {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: string;
+  message: ChatMessage;
 }
 
-export function MessageBubble({ role, content, timestamp }: MessageBubbleProps) {
+export function MessageBubble({ message }: MessageBubbleProps) {
+  const { role, content, created_at: timestamp } = message;
   const { toast } = useToast();
   const isUser = role === "user";
 
@@ -51,7 +52,11 @@ export function MessageBubble({ role, content, timestamp }: MessageBubbleProps) 
               : "bg-muted text-foreground"
           )}
         >
-          <p className="whitespace-pre-wrap">{content}</p>
+          {isUser ? (
+            <p className="whitespace-pre-wrap">{content}</p>
+          ) : (
+            <ChatMessageRenderer message={message} />
+          )}
         </div>
 
         <div className="flex items-center gap-2 mt-1 px-2">

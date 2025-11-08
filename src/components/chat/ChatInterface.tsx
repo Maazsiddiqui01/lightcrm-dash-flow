@@ -4,14 +4,10 @@ import { MessageBubble } from "./MessageBubble";
 import { TypingIndicator } from "./TypingIndicator";
 import { ChatInput } from "./ChatInput";
 import { MessageSquare } from "lucide-react";
+import { ChatMessage } from "@/hooks/useChatMessages";
 
 interface ChatInterfaceProps {
-  messages: Array<{
-    id: string;
-    role: "user" | "assistant";
-    content: string;
-    created_at: string;
-  }>;
+  messages: ChatMessage[];
   onSendMessage: (message: string) => Promise<void>;
   isSending: boolean;
 }
@@ -43,9 +39,7 @@ export function ChatInterface({ messages, onSendMessage, isSending }: ChatInterf
               {messages.map((message) => (
                 <MessageBubble
                   key={message.id}
-                  role={message.role}
-                  content={message.content}
-                  timestamp={message.created_at}
+                  message={message}
                 />
               ))}
               {isSending && <TypingIndicator />}

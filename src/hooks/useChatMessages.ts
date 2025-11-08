@@ -91,14 +91,30 @@ export function useChatMessages(conversationId: string | null) {
 
       const agentData = await response.json();
 
+      // Parse n8n webhook response format: [{ "output": "message" }]
+      let assistantContent = "Sorry, I couldn't process that.";
+      let assistantMetadata = null;
+
+      if (Array.isArray(agentData) && agentData.length > 0 && agentData[0].output) {
+        assistantContent = agentData[0].output;
+        // Store raw data in metadata for potential table rendering
+        if (agentData[0].data) {
+          assistantMetadata = { data: agentData[0].data };
+        }
+      } else if (agentData.response) {
+        // Fallback to old format
+        assistantContent = agentData.response;
+        assistantMetadata = agentData.metadata || null;
+      }
+
       // Add assistant message
       const { error: assistantError } = await supabase
         .from("chat_messages")
         .insert({
           conversation_id: conversationId,
           role: "assistant",
-          content: agentData.response || "Sorry, I couldn't process that.",
-          metadata: agentData.metadata || null,
+          content: assistantContent,
+          metadata: assistantMetadata,
         });
 
       if (assistantError) throw assistantError;
