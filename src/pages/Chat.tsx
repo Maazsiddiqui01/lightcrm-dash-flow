@@ -21,6 +21,7 @@ function ChatContent() {
     isLoading: conversationsLoading,
     createConversation,
     deleteConversation,
+    updateConversation,
   } = useChatConversations();
 
   const {
@@ -53,6 +54,10 @@ function ChatContent() {
     if (currentConversationId === id) {
       setCurrentConversationId(conversations[0]?.id || null);
     }
+  };
+
+  const handleRenameConversation = async (id: string, title: string) => {
+    await updateConversation({ id, title });
   };
 
   const handleSendMessage = async (message: string) => {
@@ -97,6 +102,7 @@ function ChatContent() {
             onSelectConversation={handleSelectConversation}
             onNewConversation={handleNewConversation}
             onDeleteConversation={handleDeleteConversation}
+            onRenameConversation={handleRenameConversation}
             className="flex-1"
           />
         </div>
@@ -111,6 +117,7 @@ function ChatContent() {
           onSelectConversation={handleSelectConversation}
           onNewConversation={handleNewConversation}
           onDeleteConversation={handleDeleteConversation}
+          onRenameConversation={handleRenameConversation}
         />
 
         <ChatInterface

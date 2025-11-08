@@ -35,10 +35,16 @@ export function useChatConversations() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      const defaultTitle = title || `New Chat - ${new Date().toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      })}`;
+
       const { data, error } = await supabase
         .from("chat_conversations")
         .insert([{ 
-          title: title || "New Chat",
+          title: defaultTitle,
           user_id: user.id
         }])
         .select()

@@ -12,6 +12,7 @@ interface ChatHeaderProps {
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
   onDeleteConversation: (id: string) => void;
+  onRenameConversation: (id: string, title: string) => void;
 }
 
 export function ChatHeader({
@@ -21,6 +22,7 @@ export function ChatHeader({
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
+  onRenameConversation,
 }: ChatHeaderProps) {
   const isMobile = useIsMobile();
 
@@ -46,6 +48,7 @@ export function ChatHeader({
               onSelectConversation={onSelectConversation}
               onNewConversation={onNewConversation}
               onDeleteConversation={onDeleteConversation}
+              onRenameConversation={onRenameConversation}
             />
           </SheetContent>
         </Sheet>
