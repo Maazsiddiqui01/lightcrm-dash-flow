@@ -92,56 +92,75 @@ export function ChatInput({
   };
 
   return (
-    <div className="chat-input border-t bg-background p-4">
-      <div className="max-w-3xl mx-auto flex items-end gap-2">
-        {!isRecording && (
-          <Textarea
-            ref={textareaRef}
-            value={message}
-            onChange={handleTextareaChange}
-            onClick={handleTextareaClick}
-            onKeyUp={handleTextareaKeyUp}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              isTranscribing
-                ? "Transcribing..."
-                : placeholder
-            }
-            disabled={disabled || isSending || isRecording || isTranscribing}
-            className="min-h-[44px] max-h-32 resize-none"
-            rows={1}
-          />
-        )}
-
-        <VoiceRecorder
-          isRecording={isRecording}
-          isTranscribing={isTranscribing}
-          stream={stream}
-          onStart={startRecording}
-          onStop={handleVoiceStop}
-          disabled={disabled || isSending}
-        />
-
-        {!isRecording && (
-          <Button
-            size="icon"
-            onClick={handleSend}
-            disabled={!message.trim() || isSending || disabled || isRecording}
-            className="touch-target flex-shrink-0"
-          >
-            {isSending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </Button>
+    <div className="p-4 chat-container">
+      <div className="max-w-[48rem] mx-auto">
+        <div className="relative flex items-end gap-2">
+          {!isRecording && (
+            <div className="relative flex-1 chat-input border rounded-3xl shadow-sm focus-within:shadow-md transition-shadow">
+              <Textarea
+                ref={textareaRef}
+                value={message}
+                onChange={handleTextareaChange}
+                onClick={handleTextareaClick}
+                onKeyUp={handleTextareaKeyUp}
+                onKeyDown={handleKeyDown}
+                placeholder={
+                  isTranscribing
+                    ? "Transcribing..."
+                    : placeholder
+                }
+                disabled={disabled || isSending || isRecording || isTranscribing}
+                className="min-h-[52px] max-h-[200px] resize-none border-0 bg-transparent px-5 py-4 pr-24 focus-visible:ring-0 focus-visible:ring-offset-0 chat-text"
+                rows={1}
+              />
+              
+              <div className="absolute right-2 bottom-2 flex items-center gap-1">
+                <VoiceRecorder
+                  isRecording={isRecording}
+                  isTranscribing={isTranscribing}
+                  stream={stream}
+                  onStart={startRecording}
+                  onStop={handleVoiceStop}
+                  disabled={disabled || isSending}
+                />
+                
+                <Button
+                  onClick={handleSend}
+                  disabled={disabled || !message.trim() || isSending}
+                  size="icon"
+                  className="h-9 w-9 rounded-full"
+                  variant={message.trim() ? "default" : "ghost"}
+                >
+                  {isSending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {isRecording && (
+            <div className="flex-1 flex justify-center">
+              <VoiceRecorder
+                isRecording={isRecording}
+                isTranscribing={isTranscribing}
+                stream={stream}
+                onStart={startRecording}
+                onStop={handleVoiceStop}
+                disabled={disabled || isSending}
+              />
+            </div>
+          )}
+        </div>
+        
+        {isTranscribing && (
+          <p className="text-sm chat-text-muted mt-2 animate-in fade-in px-2 text-center">
+            Transcribing your message...
+          </p>
         )}
       </div>
-      {isTranscribing && (
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          Transcribing your message...
-        </p>
-      )}
     </div>
   );
 }

@@ -1,4 +1,8 @@
 import { ChatMessage } from "@/hooks/useChatMessages";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import { CodeBlock } from "./CodeBlock";
 import {
   Table,
   TableBody,
@@ -51,10 +55,38 @@ export function ChatMessageRenderer({ message }: ChatMessageRendererProps) {
     );
   }
 
-  // Regular text rendering
+  // Regular text rendering with markdown
   return (
-    <p className="text-sm text-foreground whitespace-pre-wrap">
-      {message.content}
-    </p>
+    <div className="chat-markdown">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeHighlight]}
+        components={{
+          code({ node, inline, className, children, ...props }: any) {
+            const match = /language-(\w+)/.exec(className || '');
+            const content = String(children).replace(/\n$/, '');
+            
+            return !inline && match ? (
+              <CodeBlock className={className}>
+                {content}
+              </CodeBlock>
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+          a({ node, children, ...props }: any) {
+            return (
+              <a {...props} target="_blank" rel="noopener noreferrer">
+                {children}
+              </a>
+            );
+          },
+        }}
+      >
+        {message.content}
+      </ReactMarkdown>
+    </div>
   );
 }

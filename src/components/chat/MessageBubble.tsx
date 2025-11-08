@@ -26,48 +26,42 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 mb-4 animate-in fade-in slide-in-from-bottom-2",
+        "flex gap-3 mb-6 animate-in fade-in slide-in-from-bottom-2",
         isUser ? "flex-row-reverse" : "flex-row"
       )}
     >
-      <div
-        className={cn(
-          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-          isUser ? "bg-primary" : "bg-muted"
-        )}
-      >
-        {isUser ? (
-          <User className="w-4 h-4 text-primary-foreground" />
-        ) : (
-          <Bot className="w-4 h-4 text-muted-foreground" />
-        )}
-      </div>
+      {/* Avatar - only show for AI */}
+      {!isUser && (
+        <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-[rgb(var(--chat-surface))]">
+          <Bot className="w-4 h-4 chat-text-muted" />
+        </div>
+      )}
 
-      <div className={cn("flex flex-col max-w-[80%] md:max-w-[70%]", isUser && "items-end")}>
+      <div className={cn("flex flex-col", isUser ? "items-end max-w-[80%] md:max-w-[70%]" : "flex-1")}>
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm break-words",
+            "break-words transition-colors",
             isUser
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-foreground"
+              ? "chat-user-bubble rounded-3xl px-5 py-3"
+              : "chat-ai-bubble py-3"
           )}
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap">{content}</p>
+            <p className="whitespace-pre-wrap text-[15px]">{content}</p>
           ) : (
             <ChatMessageRenderer message={message} />
           )}
         </div>
 
         <div className="flex items-center gap-2 mt-1 px-2">
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs chat-text-muted">
             {format(new Date(timestamp), "h:mm a")}
           </span>
           {!isUser && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0"
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={handleCopy}
             >
               <Copy className="w-3 h-3" />

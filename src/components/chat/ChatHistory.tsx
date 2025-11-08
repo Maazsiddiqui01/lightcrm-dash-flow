@@ -48,9 +48,9 @@ export function ChatHistory({
 
   return (
     <>
-      <div className={cn("flex flex-col h-full border-r bg-muted/10", className)}>
-        <div className="p-4 border-b">
-          <Button onClick={onNewConversation} className="w-full" size="sm">
+      <div className={cn("flex flex-col h-full", className)}>
+        <div className="p-3">
+          <Button onClick={onNewConversation} className="w-full chat-hover rounded-lg chat-text" variant="outline" size="sm">
             <Plus className="w-4 h-4 mr-2" />
             New Chat
           </Button>
@@ -59,7 +59,7 @@ export function ChatHistory({
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">
             {conversations.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">
+              <div className="text-center py-8 chat-text-muted text-sm">
                 <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 No conversations yet
               </div>
@@ -68,15 +68,15 @@ export function ChatHistory({
                 <div
                   key={conv.id}
                   className={cn(
-                    "group relative rounded-lg p-3 cursor-pointer transition-colors hover:bg-muted/50",
-                    currentConversationId === conv.id && "bg-muted"
+                    "group relative rounded-lg p-3 cursor-pointer transition-colors chat-hover",
+                    currentConversationId === conv.id && "chat-surface"
                   )}
                   onClick={() => onSelectConversation(conv.id)}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{conv.title}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm font-medium truncate chat-text">{conv.title}</p>
+                      <p className="text-xs chat-text-muted">
                         {conv.message_count} message{conv.message_count !== 1 ? "s" : ""}
                         {conv.last_message_at &&
                           ` • ${formatDistanceToNow(new Date(conv.last_message_at), {

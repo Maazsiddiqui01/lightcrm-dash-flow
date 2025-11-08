@@ -1,0 +1,79 @@
+/* Chat Theme Variables */
+
+[data-chat-theme="light"] {
+  --chat-bg: 255 255 255;
+  --chat-surface: 247 247 248;
+  --chat-sidebar: 249 249 249;
+  --chat-text: 52 53 65;
+  --chat-text-muted: 142 142 160;
+  --chat-border: 236 236 241;
+  --chat-user-bg: 232 121 249;
+  --chat-user-text: 255 255 255;
+  --chat-ai-bg: transparent;
+  --chat-ai-text: 52 53 65;
+  --chat-hover: 236 236 241;
+  --chat-input-bg: 255 255 255;
+  --chat-input-border: 236 236 241;
+}
+
+[data-chat-theme="dark"] {
+  --chat-bg: 52 53 65;
+  --chat-surface: 68 70 84;
+  --chat-sidebar: 32 33 35;
+  --chat-text: 236 236 241;
+  --chat-text-muted: 197 197 210;
+  --chat-border: 86 88 105;
+  --chat-user-bg: 232 121 249;
+  --chat-user-text: 255 255 255;
+  --chat-ai-bg: transparent;
+  --chat-ai-text: 236 236 241;
+  --chat-hover: 42 43 50;
+  --chat-input-bg: 64 65 79;
+  --chat-input-border: 86 88 105;
+}
+
+/* Apply chat theme colors */
+.chat-container {
+  background-color: rgb(var(--chat-bg));
+  color: rgb(var(--chat-text));
+}
+
+.chat-surface {
+  background-color: rgb(var(--chat-surface));
+}
+
+.chat-sidebar {
+  background-color: rgb(var(--chat-sidebar));
+  border-color: rgb(var(--chat-border));
+}
+
+.chat-text {
+  color: rgb(var(--chat-text));
+}
+
+.chat-text-muted {
+  color: rgb(var(--chat-text-muted));
+}
+
+.chat-border {
+  border-color: rgb(var(--chat-border));
+}
+
+.chat-user-bubble {
+  background-color: rgb(var(--chat-user-bg));
+  color: rgb(var(--chat-user-text));
+}
+
+.chat-ai-bubble {
+  background-color: var(--chat-ai-bg);
+  color: rgb(var(--chat-ai-text));
+}
+
+.chat-hover:hover {
+  background-color: rgb(var(--chat-hover));
+}
+
+.chat-input {
+  background-color: rgb(var(--chat-input-bg));
+  border-color: rgb(var(--chat-input-border));
+}

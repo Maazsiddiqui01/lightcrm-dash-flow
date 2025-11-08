@@ -3,7 +3,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageBubble } from "./MessageBubble";
 import { TypingIndicator } from "./TypingIndicator";
 import { ChatInput } from "./ChatInput";
-import { MessageSquare } from "lucide-react";
 import { ChatMessage } from "@/hooks/useChatMessages";
 
 interface ChatInterfaceProps {
@@ -24,26 +23,20 @@ export function ChatInterface({ messages, onSendMessage, isSending }: ChatInterf
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 px-4 md:px-6">
-        <div className="max-w-3xl mx-auto py-6 md:py-8" ref={scrollRef}>
+        <div className="max-w-[48rem] mx-auto py-6 md:py-8" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
-              <MessageSquare className="w-12 h-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Start a conversation</h3>
-              <p className="text-sm text-muted-foreground max-w-md">
-                Type a message or use the microphone to start chatting with the AI
-                assistant.
-              </p>
+              <h3 className="text-3xl font-semibold mb-4 chat-text">What can I help with?</h3>
             </div>
           ) : (
-            <>
+            <div className="space-y-1">
               {messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                />
+                <div key={message.id} className="group">
+                  <MessageBubble message={message} />
+                </div>
               ))}
               {isSending && <TypingIndicator />}
-            </>
+            </div>
           )}
           <div ref={bottomRef} />
         </div>
