@@ -182,17 +182,6 @@ function ChatContent() {
               showingArchived={showArchived}
             />
 
-            <div className="border-t chat-border">
-              <div className="p-2 md:p-3">
-                <button
-                  onClick={handleNewConversation}
-                  className="w-full rounded-lg bg-[rgb(var(--chat-accent))] text-white hover:opacity-90 transition-opacity h-9 md:h-10 text-sm flex items-center justify-center gap-2"
-                >
-                  New Chat
-                </button>
-              </div>
-            </div>
-
             <ChatHistory
               conversations={conversations}
               currentConversationId={currentConversationId}
