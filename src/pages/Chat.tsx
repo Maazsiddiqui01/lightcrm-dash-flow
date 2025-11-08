@@ -81,13 +81,15 @@ function ChatContent() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] md:h-screen chat-container" data-chat-theme={effectiveTheme}>
+    <div className="flex h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] chat-container" data-chat-theme={effectiveTheme}>
       {/* Desktop Sidebar */}
       {!isMobile && (
         <div className="chat-sidebar border-r w-64 flex-shrink-0 flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b chat-border">
-            <h2 className="font-semibold chat-text">Chat History</h2>
-            <ChatThemeToggle />
+          <div className="flex items-center justify-between p-4 border-b chat-border gap-3">
+            <h2 className="font-semibold chat-text text-lg">Chat History</h2>
+            <div className="flex-shrink-0">
+              <ChatThemeToggle />
+            </div>
           </div>
           <ChatHistory
             conversations={conversations}
