@@ -10,18 +10,28 @@ export interface ChatConversation {
   updated_at: string;
   last_message_at: string | null;
   message_count: number;
+  folder_id: string | null;
 }
 
-export function useChatConversations() {
+export function useChatConversations(folderId?: string | null) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: conversations = [], isLoading } = useQuery({
-    queryKey: ["chat-conversations"],
+    queryKey: ["chat-conversations", folderId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("chat_conversations")
-        .select("*")
+        .select("*");
+
+      // Filter by folder if specified
+      if (folderId === "unassigned") {
+        query = query.is("folder_id", null);
+      } else if (folderId) {
+        query = query.eq("folder_id", folderId);
+      }
+
+      const { data, error } = await query
         .order("last_message_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
 
@@ -66,10 +76,14 @@ export function useChatConversations() {
   });
 
   const updateConversation = useMutation({
-    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+    mutationFn: async ({ id, title, folder_id }: { id: string; title?: string; folder_id?: string | null }) => {
+      const updates: any = { updated_at: new Date().toISOString() };
+      if (title !== undefined) updates.title = title;
+      if (folder_id !== undefined) updates.folder_id = folder_id;
+
       const { error } = await supabase
         .from("chat_conversations")
-        .update({ title, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq("id", id);
 
       if (error) throw error;
