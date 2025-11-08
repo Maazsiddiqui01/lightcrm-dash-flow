@@ -28,8 +28,10 @@ import { SetPassword } from "@/pages/SetPassword";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 import { PageTransition } from "@/components/shared/PageTransition";
 import "./App.css";
+import "@/styles/markdown.css";
 import { logger } from "@/lib/logger";
 
 function App() {
@@ -39,9 +41,10 @@ function App() {
   try {
     logger.log('About to render QueryProvider...');
     return (
-      <QueryProvider>
-        <AuthProvider>
-        <Router>
+      <ThemeProvider defaultTheme="system" storageKey="chat-theme">
+        <QueryProvider>
+          <AuthProvider>
+          <Router>
           <Routes>
             {/* Auth routes - public */}
             <Route path="/auth" element={<Auth />} />
@@ -115,6 +118,7 @@ function App() {
         </Router>
       </AuthProvider>
     </QueryProvider>
+      </ThemeProvider>
   );
   } catch (error) {
     logger.error('App render error:', error);

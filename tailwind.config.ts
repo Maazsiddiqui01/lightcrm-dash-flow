@@ -100,6 +100,29 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				chat: {
+					background: 'hsl(var(--chat-background))',
+					user: 'hsl(var(--chat-user))',
+					assistant: 'hsl(var(--chat-assistant))',
+					foreground: 'hsl(var(--chat-foreground))',
+					meta: 'hsl(var(--chat-meta))',
+					avatar: 'hsl(var(--chat-avatar))',
+					'avatar-foreground': 'hsl(var(--chat-avatar-foreground))',
+					sidebar: 'hsl(var(--chat-sidebar))',
+					'sidebar-border': 'hsl(var(--chat-sidebar-border))',
+					'sidebar-hover': 'hsl(var(--chat-sidebar-hover))',
+					'sidebar-active': 'hsl(var(--chat-sidebar-active))',
+					input: 'hsl(var(--chat-input))',
+					'input-bg': 'hsl(var(--chat-input-bg))',
+					'input-border': 'hsl(var(--chat-input-border))',
+					'input-field-border': 'hsl(var(--chat-input-field-border))',
+					header: 'hsl(var(--chat-header))',
+					'header-border': 'hsl(var(--chat-header-border))',
+					code: 'hsl(var(--chat-code))',
+					'code-foreground': 'hsl(var(--chat-code-foreground))',
+					'code-header': 'hsl(var(--chat-code-header))',
+					'code-header-foreground': 'hsl(var(--chat-code-header-foreground))'
 				}
 			},
 			borderRadius: {

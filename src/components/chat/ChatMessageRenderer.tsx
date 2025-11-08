@@ -1,4 +1,7 @@
 import { ChatMessage } from "@/hooks/useChatMessages";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { CodeBlock } from "./CodeBlock";
 import {
   Table,
   TableBody,
@@ -21,14 +24,41 @@ export function ChatMessageRenderer({ message }: ChatMessageRendererProps) {
     const headers = tableData.length > 0 ? Object.keys(tableData[0]) : [];
     
     return (
-      <div className="space-y-2">
-        <p className="text-sm text-foreground whitespace-pre-wrap">{message.content}</p>
-        <div className="rounded-md border border-border overflow-hidden">
+      <div className="space-y-4">
+        <div className="markdown-content text-base">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code({ node, inline, className, children, ...props }: any) {
+                const match = /language-(\w+)/.exec(className || "");
+                return !inline && match ? (
+                  <CodeBlock language={match[1]}>
+                    {String(children).replace(/\n$/, "")}
+                  </CodeBlock>
+                ) : (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              },
+              a({ node, children, ...props }: any) {
+                return (
+                  <a {...props} target="_blank" rel="noopener noreferrer">
+                    {children}
+                  </a>
+                );
+              },
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        </div>
+        <div className="rounded-lg border border-border/50 overflow-hidden bg-muted/30">
           <Table>
             <TableHeader>
               <TableRow>
                 {headers.map((header) => (
-                  <TableHead key={header} className="font-semibold">
+                  <TableHead key={header} className="font-semibold bg-muted/50">
                     {header}
                   </TableHead>
                 ))}
@@ -51,10 +81,35 @@ export function ChatMessageRenderer({ message }: ChatMessageRendererProps) {
     );
   }
 
-  // Regular text rendering
+  // Regular markdown rendering
   return (
-    <p className="text-sm text-foreground whitespace-pre-wrap">
-      {message.content}
-    </p>
+    <div className="markdown-content text-base">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          code({ node, inline, className, children, ...props }: any) {
+            const match = /language-(\w+)/.exec(className || "");
+            return !inline && match ? (
+              <CodeBlock language={match[1]}>
+                {String(children).replace(/\n$/, "")}
+              </CodeBlock>
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+          a({ node, children, ...props }: any) {
+            return (
+              <a {...props} target="_blank" rel="noopener noreferrer">
+                {children}
+              </a>
+            );
+          },
+        }}
+      >
+        {message.content}
+      </ReactMarkdown>
+    </div>
   );
 }

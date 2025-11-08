@@ -365,9 +365,74 @@ All colors MUST be HSL.
 
   }
 
+  /* ChatGPT-style chat colors */
+  :root {
+    /* Chat interface - Light mode */
+    --chat-background: 0 0% 100%;
+    --chat-user: 0 0% 100%;
+    --chat-assistant: 247 24% 97%;
+    --chat-foreground: 0 0% 0%;
+    --chat-meta: 0 0% 60%;
+    --chat-avatar: 217 91% 60%;
+    --chat-avatar-foreground: 0 0% 100%;
+    
+    /* Chat sidebar */
+    --chat-sidebar: 0 0% 100%;
+    --chat-sidebar-border: 0 0% 90%;
+    --chat-sidebar-hover: 0 0% 96%;
+    --chat-sidebar-active: 0 0% 92%;
+    
+    /* Chat input */
+    --chat-input: 0 0% 100%;
+    --chat-input-bg: 0 0% 100%;
+    --chat-input-border: 0 0% 90%;
+    --chat-input-field-border: 0 0% 85%;
+    
+    /* Chat header */
+    --chat-header: 0 0% 100%;
+    --chat-header-border: 0 0% 90%;
+    
+    /* Code blocks */
+    --chat-code: 240 5% 96%;
+    --chat-code-foreground: 0 0% 0%;
+    --chat-code-header: 240 5% 92%;
+    --chat-code-header-foreground: 0 0% 30%;
+  }
+
   .dark {
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
+    
+    /* Chat interface - Dark mode */
+    --chat-background: 217 33% 17%;
+    --chat-user: 217 33% 17%;
+    --chat-assistant: 220 26% 14%;
+    --chat-foreground: 213 31% 91%;
+    --chat-meta: 217 10% 65%;
+    --chat-avatar: 221 83% 53%;
+    --chat-avatar-foreground: 0 0% 100%;
+    
+    /* Chat sidebar */
+    --chat-sidebar: 220 26% 14%;
+    --chat-sidebar-border: 217 20% 23%;
+    --chat-sidebar-hover: 217 25% 18%;
+    --chat-sidebar-active: 217 30% 21%;
+    
+    /* Chat input */
+    --chat-input: 217 33% 17%;
+    --chat-input-bg: 220 26% 14%;
+    --chat-input-border: 217 20% 23%;
+    --chat-input-field-border: 217 25% 25%;
+    
+    /* Chat header */
+    --chat-header: 220 26% 14%;
+    --chat-header-border: 217 20% 23%;
+    
+    /* Code blocks */
+    --chat-code: 220 13% 18%;
+    --chat-code-foreground: 213 31% 91%;
+    --chat-code-header: 220 13% 15%;
+    --chat-code-header-foreground: 217 10% 65%;
 
     --card: 224 71% 4%;
     --card-foreground: 213 31% 91%;
