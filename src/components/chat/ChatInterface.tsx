@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageBubble } from "./MessageBubble";
 import { TypingIndicator } from "./TypingIndicator";
-import { ChatInput } from "./ChatInput";
+import { ChatInput, ChatInputHandle } from "./ChatInput";
+import { ChatTemplates } from "./ChatTemplates";
 import { SearchBar } from "./SearchBar";
 import { ChatMessage } from "@/hooks/useChatMessages";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ export function ChatInterface({ messages, onSendMessage, isSending }: ChatInterf
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<ChatInputHandle>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [searchQuery, setSearchQuery] = useState("");
   const [currentResultIndex, setCurrentResultIndex] = useState(0);
@@ -104,6 +106,22 @@ export function ChatInterface({ messages, onSendMessage, isSending }: ChatInterf
     }
   };
 
+  const handleTemplateSelect = (template: { prompt: string; placeholders: string[] }) => {
+    // Set input value to template prompt
+    inputRef.current?.setValue(template.prompt);
+    // Focus the input
+    inputRef.current?.focus();
+    // Auto-select first placeholder
+    const firstPlaceholderMatch = template.prompt.match(/\[([^\]]+)\]/);
+    if (firstPlaceholderMatch) {
+      const start = template.prompt.indexOf(firstPlaceholderMatch[0]);
+      const end = start + firstPlaceholderMatch[0].length;
+      setTimeout(() => {
+        inputRef.current?.selectText(start, end);
+      }, 0);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full relative bg-[rgb(var(--chat-bg))]">
       {hasMessages ? (
@@ -155,20 +173,23 @@ export function ChatInterface({ messages, onSendMessage, isSending }: ChatInterf
           </ScrollArea>
           
           <div className="relative">
-            <ChatInput onSend={onSendMessage} disabled={isSending} />
+            <ChatInput ref={inputRef} onSend={onSendMessage} disabled={isSending} />
           </div>
         </>
       ) : (
-        // When no messages - centered empty state
-        <div className="flex-1 flex flex-col items-center justify-center px-4">
+        // When no messages - centered empty state with templates
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 overflow-y-auto">
           <div className="w-full max-w-[48rem] mx-auto flex flex-col items-center">
-            <h3 className="text-3xl md:text-4xl font-semibold mb-12 chat-text text-center">
+            <h3 className="text-3xl md:text-4xl font-semibold mb-8 chat-text text-center">
               What can I help with?
             </h3>
             
+            {/* Templates */}
+            <ChatTemplates onSelectTemplate={handleTemplateSelect} />
+            
             {/* Centered input */}
             <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <ChatInput onSend={onSendMessage} disabled={isSending} />
+              <ChatInput ref={inputRef} onSend={onSendMessage} disabled={isSending} />
             </div>
           </div>
         </div>

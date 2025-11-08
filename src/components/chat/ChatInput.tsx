@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { useVoiceRecording } from "@/hooks/useVoiceRecording";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
@@ -12,16 +13,38 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
-export function ChatInput({
+export interface ChatInputHandle {
+  setValue: (value: string) => void;
+  selectText: (start: number, end: number) => void;
+  focus: () => void;
+}
+
+export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(({
   onSend,
   disabled,
-  placeholder = "Type a message or use voice...",
-}: ChatInputProps) {
+  placeholder = "Type your message... (use exact contact names for best results)",
+}, ref) => {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [cursorPosition, setCursorPosition] = useState<number>(0);
+  const [showPlaceholderWarning, setShowPlaceholderWarning] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { isRecording, isTranscribing, stream, startRecording, stopRecording } = useVoiceRecording();
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    setValue: (value: string) => {
+      setMessage(value);
+    },
+    selectText: (start: number, end: number) => {
+      if (textareaRef.current) {
+        textareaRef.current.setSelectionRange(start, end);
+      }
+    },
+    focus: () => {
+      textareaRef.current?.focus();
+    },
+  }));
 
   // Track cursor position
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -52,6 +75,23 @@ export function ChatInput({
   const handleSend = async () => {
     if (!message.trim() || isSending || disabled) return;
 
+    // Check for unreplaced placeholders
+    const hasPlaceholders = /\[[^\]]+\]/.test(message);
+    if (hasPlaceholders) {
+      setShowPlaceholderWarning(true);
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      await onSend(message.trim());
+      setMessage("");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleConfirmSendWithPlaceholders = async () => {
     setIsSending(true);
     try {
       await onSend(message.trim());
@@ -92,8 +132,20 @@ export function ChatInput({
   };
 
   return (
-    <div className="p-3 md:p-4 chat-container">
-      <div className="max-w-[48rem] mx-auto">
+    <>
+      <ConfirmDialog
+        open={showPlaceholderWarning}
+        onOpenChange={setShowPlaceholderWarning}
+        onConfirm={handleConfirmSendWithPlaceholders}
+        title="Placeholders Detected"
+        description="Your message contains unreplaced placeholders like [Contact Name]. Are you sure you want to send without replacing them?"
+        confirmText="Send Anyway"
+        cancelText="Go Back"
+        variant="default"
+      />
+      
+      <div className="p-3 md:p-4 chat-container">
+        <div className="max-w-[48rem] mx-auto">
         <div className="relative flex items-end gap-2">
           {!isRecording && (
             <div className="relative flex-1 chat-input border rounded-2xl md:rounded-3xl shadow-sm focus-within:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-[rgb(var(--chat-accent))] focus-within:ring-offset-2">
@@ -162,5 +214,8 @@ export function ChatInput({
         )}
       </div>
     </div>
+    </>
   );
-}
+});
+
+ChatInput.displayName = "ChatInput";
