@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageBubble } from "./MessageBubble";
 import { TypingIndicator } from "./TypingIndicator";
 import { ChatInput } from "./ChatInput";
+import { SearchBar } from "./SearchBar";
 import { ChatMessage } from "@/hooks/useChatMessages";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +16,20 @@ interface ChatInterfaceProps {
 export function ChatInterface({ messages, onSendMessage, isSending }: ChatInterfaceProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const hasMessages = messages.length > 0;
+
+  // Filter messages based on search query
+  const filteredMessages = useMemo(() => {
+    if (!searchQuery.trim()) return messages;
+    
+    const query = searchQuery.toLowerCase();
+    return messages.filter((message) =>
+      message.content.toLowerCase().includes(query)
+    );
+  }, [messages, searchQuery]);
+
+  const searchResultsCount = searchQuery.trim() ? filteredMessages.length : 0;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -27,14 +41,28 @@ export function ChatInterface({ messages, onSendMessage, isSending }: ChatInterf
       {hasMessages ? (
         // When messages exist - normal layout
         <>
+          {/* Search Bar */}
+          <SearchBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            resultsCount={searchResultsCount}
+            totalCount={messages.length}
+          />
+
           <ScrollArea className="flex-1 px-4 md:px-6">
             <div className="max-w-[48rem] mx-auto py-6 md:py-8" ref={scrollRef}>
               <div className="space-y-6">
-                {messages.map((message) => (
-                  <div key={message.id} className="group">
-                    <MessageBubble message={message} />
+                {filteredMessages.length > 0 ? (
+                  filteredMessages.map((message) => (
+                    <div key={message.id} className="group">
+                      <MessageBubble message={message} searchQuery={searchQuery} />
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 chat-text-muted">
+                    <p>No messages found matching "{searchQuery}"</p>
                   </div>
-                ))}
+                )}
                 {isSending && <TypingIndicator />}
               </div>
               <div ref={bottomRef} />

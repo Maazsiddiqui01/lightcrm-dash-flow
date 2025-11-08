@@ -8,9 +8,31 @@ import { ChatMessageRenderer } from "./ChatMessageRenderer";
 
 interface MessageBubbleProps {
   message: ChatMessage;
+  searchQuery?: string;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+// Helper function to highlight search matches
+function highlightText(text: string, query: string) {
+  if (!query.trim()) return text;
+
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
+  const parts = text.split(regex);
+  
+  return parts.map((part, index) =>
+    part.toLowerCase() === query.toLowerCase() ? (
+      <mark
+        key={index}
+        className="bg-[rgb(var(--chat-accent))]/20 text-[rgb(var(--chat-text))] rounded px-0.5"
+      >
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+}
+
+export function MessageBubble({ message, searchQuery = "" }: MessageBubbleProps) {
   const { role, content, created_at: timestamp } = message;
   const { toast } = useToast();
   const isUser = role === "user";
@@ -47,10 +69,16 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           )}
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap text-[15px] md:text-[16px] leading-relaxed">{content}</p>
+            searchQuery.trim() ? (
+              <div className="whitespace-pre-wrap text-[15px] md:text-[16px] leading-relaxed">
+                {highlightText(content, searchQuery)}
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap text-[15px] md:text-[16px] leading-relaxed">{content}</p>
+            )
           ) : (
             <div className="prose prose-sm md:prose max-w-none">
-              <ChatMessageRenderer message={message} />
+              <ChatMessageRenderer message={message} searchQuery={searchQuery} />
             </div>
           )}
         </div>

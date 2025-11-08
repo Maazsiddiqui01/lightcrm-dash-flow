@@ -14,9 +14,31 @@ import {
 
 interface ChatMessageRendererProps {
   message: ChatMessage;
+  searchQuery?: string;
 }
 
-export function ChatMessageRenderer({ message }: ChatMessageRendererProps) {
+// Helper function to highlight search matches in text
+function highlightText(text: string, query: string) {
+  if (!query.trim()) return text;
+
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
+  const parts = text.split(regex);
+  
+  return parts.map((part, index) =>
+    part.toLowerCase() === query.toLowerCase() ? (
+      <mark
+        key={index}
+        className="bg-[rgb(var(--chat-accent))]/20 text-[rgb(var(--chat-text))] rounded px-0.5"
+      >
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+}
+
+export function ChatMessageRenderer({ message, searchQuery = "" }: ChatMessageRendererProps) {
   // Check if metadata contains table data
   if (message.metadata?.data && Array.isArray(message.metadata.data)) {
     const tableData = message.metadata.data;
@@ -26,7 +48,13 @@ export function ChatMessageRenderer({ message }: ChatMessageRendererProps) {
     
     return (
       <div className="space-y-2">
-        <p className="text-sm text-foreground whitespace-pre-wrap">{message.content}</p>
+        {searchQuery.trim() ? (
+          <div className="text-sm text-foreground whitespace-pre-wrap">
+            {highlightText(message.content, searchQuery)}
+          </div>
+        ) : (
+          <p className="text-sm text-foreground whitespace-pre-wrap">{message.content}</p>
+        )}
         <div className="rounded-md border border-border overflow-hidden">
           <Table>
             <TableHeader>
@@ -51,6 +79,15 @@ export function ChatMessageRenderer({ message }: ChatMessageRendererProps) {
             </TableBody>
           </Table>
         </div>
+      </div>
+    );
+  }
+
+  // When searching, show plain text with highlighting instead of markdown
+  if (searchQuery.trim()) {
+    return (
+      <div className="chat-markdown whitespace-pre-wrap">
+        {highlightText(message.content, searchQuery)}
       </div>
     );
   }
