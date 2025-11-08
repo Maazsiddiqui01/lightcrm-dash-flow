@@ -208,14 +208,14 @@ export function ChatInterface({
               <div className="w-full mb-4 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <Label className="text-sm chat-text whitespace-nowrap">Save to:</Label>
                 <Select 
-                  value={newChatFolder || "unassigned"} 
-                  onValueChange={(value) => onNewChatFolderChange(value === "unassigned" ? null : value)}
+                  value={newChatFolder || "none"} 
+                  onValueChange={(value) => onNewChatFolderChange(value === "none" ? null : value)}
                 >
                   <SelectTrigger className="w-full max-w-xs h-9">
                     <SelectValue placeholder="Select folder" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {folders.map((folder) => (
                       <SelectItem key={folder.id} value={folder.id}>
                         <div className="flex items-center gap-2">

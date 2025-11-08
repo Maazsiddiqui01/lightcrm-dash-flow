@@ -202,30 +202,9 @@ export function FolderList({
 
         <ScrollArea className="flex-1">
           <div className="space-y-0.5 px-2 pb-2">
-            {/* All Conversations */}
+            {/* User Folders */}
             {!showingArchived && (
               <>
-                <DroppableFolder
-                  id="all-chats"
-                  isSelected={selectedFolderId === null}
-                  onSelect={() => onSelectFolder(null)}
-                  icon={Folder}
-                  label="All Chats"
-                  count={Object.values(conversationCounts).reduce((a, b) => a + b, 0)}
-                />
-
-                {/* Unassigned */}
-                <DroppableFolder
-                  id="unassigned"
-                  isSelected={selectedFolderId === "unassigned"}
-                  onSelect={() => onSelectFolder("unassigned")}
-                  icon={Folder}
-                  label="Unassigned"
-                  count={conversationCounts["unassigned"] || 0}
-                  iconOpacity={0.5}
-                />
-
-                {/* User Folders */}
                 {folders.map((folder) => {
                   const Icon = getIcon(folder.icon, selectedFolderId === folder.id);
                   return (

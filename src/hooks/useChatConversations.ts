@@ -31,9 +31,7 @@ export function useChatConversations(folderId?: string | null, showArchived: boo
       query = query.eq("archived", showArchived);
 
       // Filter by folder if specified
-      if (folderId === "unassigned") {
-        query = query.is("folder_id", null);
-      } else if (folderId) {
+      if (folderId) {
         query = query.eq("folder_id", folderId);
       }
 

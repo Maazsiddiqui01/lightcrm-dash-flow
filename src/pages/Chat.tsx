@@ -51,16 +51,14 @@ function ChatContent() {
 
   // Count conversations per folder
   const conversationCounts = useMemo(() => {
-    const counts: Record<string, number> = { unassigned: 0 };
-    
+    const counts: Record<string, number> = {};
+
     allActiveConversations.forEach((conv) => {
-      if (!conv.folder_id) {
-        counts.unassigned++;
-      } else {
+      if (conv.folder_id) {
         counts[conv.folder_id] = (counts[conv.folder_id] || 0) + 1;
       }
     });
-    
+
     return counts;
   }, [allActiveConversations]);
 
@@ -84,7 +82,7 @@ function ChatContent() {
   const handleNewConversation = async () => {
     // Just clear selection - don't create conversation yet
     setCurrentConversationId(null);
-    setNewChatFolder(selectedFolderId);
+    setNewChatFolder(null);
   };
 
   const handleSelectConversation = (id: string) => {
@@ -105,7 +103,7 @@ function ChatContent() {
   const handleMoveToFolder = async (conversationId: string, folderId: string | null) => {
     await updateConversation({ 
       id: conversationId, 
-      folder_id: folderId === "unassigned" ? null : folderId 
+      folder_id: folderId 
     });
   };
 
@@ -115,20 +113,12 @@ function ChatContent() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggedConvId(null);
-    
+
     if (event.over && event.active.id !== event.over.id) {
       const conversationId = event.active.id as string;
       const targetFolderId = event.over.id as string;
-      
-      // Handle dropping on folder items
-      if (targetFolderId === "all-chats") {
-        // Do nothing - already showing all
-        return;
-      } else if (targetFolderId === "unassigned") {
-        handleMoveToFolder(conversationId, null);
-      } else {
-        handleMoveToFolder(conversationId, targetFolderId);
-      }
+
+      handleMoveToFolder(conversationId, targetFolderId);
     }
   };
 
@@ -163,7 +153,7 @@ function ChatContent() {
       <div className="flex h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] chat-container" data-chat-theme={effectiveTheme}>
         {/* Desktop Sidebar */}
         {!isMobile && !sidebarCollapsed && (
-          <div className="chat-sidebar border-r w-72 flex-shrink-0 flex flex-col transition-all">
+          <div className="chat-sidebar border-r w-72 flex-shrink-0 flex flex-col transition-all overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b chat-border gap-3">
               <h2 className="font-semibold chat-text text-lg">Chats</h2>
               <div className="flex items-center gap-2">

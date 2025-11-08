@@ -101,7 +101,7 @@ function DraggableConversation({
           <GripVertical className="w-4 h-4 chat-text-muted" />
         </div>
         
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 max-w-[180px]">
           {isEditing ? (
             <div className="space-y-2">
               <Input
@@ -142,8 +142,10 @@ function DraggableConversation({
             </div>
           ) : (
             <>
-              <p className="text-sm font-medium truncate chat-text">{conv.title}</p>
-              <p className="text-xs chat-text-muted">
+              <p className="text-sm font-medium truncate chat-text" title={conv.title}>
+                {conv.title}
+              </p>
+              <p className="text-xs chat-text-muted truncate">
                 {conv.message_count} message{conv.message_count !== 1 ? "s" : ""}
                 {conv.last_message_at &&
                   ` • ${formatDistanceToNow(new Date(conv.last_message_at), {
@@ -186,7 +188,7 @@ function DraggableConversation({
                       e.stopPropagation();
                       onMoveToFolder(null);
                     }}>
-                      Unassigned
+                      None
                     </DropdownMenuItem>
                     {folders.map((folder: ChatFolder) => (
                       <DropdownMenuItem 
@@ -196,8 +198,8 @@ function DraggableConversation({
                           onMoveToFolder(folder.id);
                         }}
                       >
-                        <span style={{ color: folder.color }}>●</span>
-                        <span className="ml-2">{folder.name}</span>
+                        <span style={{ color: folder.color }} className="mr-2">●</span>
+                        {folder.name}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuSubContent>
