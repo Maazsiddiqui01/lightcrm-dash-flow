@@ -24,6 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
 import { useLastInteractionUpload } from "@/hooks/useLastInteractionUpload";
 import { buildCsv, downloadCsv, generateExportFilename, safeCell } from "@/lib/export/csvUtils";
+import { AttachmentUploadDialog } from "@/components/attachments/AttachmentUploadDialog";
 
 // Dynamic column imports
 import { CONTACTS_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -96,6 +97,8 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     contactNames: string[];
     isBulk: boolean;
   }>({ open: false, contactIds: [], contactNames: [], isBulk: false });
+  const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
+  const [attachmentContact, setAttachmentContact] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
   
   // Use unified draft generator
@@ -309,8 +312,8 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedContact(row);
-                  setIsDrawerOpen(true);
+                  setAttachmentContact({ id: row.id, name: row.full_name || row.email_address || 'Unknown' });
+                  setAttachmentDialogOpen(true);
                 }}
               >
                 <Paperclip className="mr-2 h-4 w-4" />
@@ -879,6 +882,17 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
           setSelectedRows([]);
         }}
       />
+
+      {/* Attachment Upload Dialog */}
+      {attachmentContact && (
+        <AttachmentUploadDialog
+          open={attachmentDialogOpen}
+          onOpenChange={setAttachmentDialogOpen}
+          entityType="contact"
+          entityId={attachmentContact.id}
+          entityName={attachmentContact.name}
+        />
+      )}
     </div>
   );
 }

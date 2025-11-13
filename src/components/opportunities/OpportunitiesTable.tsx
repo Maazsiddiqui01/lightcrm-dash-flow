@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { QuickAddModal } from "./QuickAddModal";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { AttachmentUploadDialog } from "@/components/attachments/AttachmentUploadDialog";
 
 // Dynamic column imports
 import { OPPORTUNITIES_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -117,6 +118,8 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
   const [quickAddType, setQuickAddType] = useState<'next_steps' | 'most_recent_notes'>('next_steps');
+  const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
+  const [attachmentOpportunity, setAttachmentOpportunity] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -197,8 +200,8 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                setSelectedOpportunity(row);
-                setIsDrawerOpen(true);
+                setAttachmentOpportunity({ id: row.id, name: row.deal_name || 'Unknown' });
+                setAttachmentDialogOpen(true);
               }}
             >
               <Paperclip className="h-4 w-4 mr-2" />
@@ -693,6 +696,17 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         entityType="opportunities"
         onImportComplete={() => fetchOpportunities()}
       />
+
+      {/* Attachment Upload Dialog */}
+      {attachmentOpportunity && (
+        <AttachmentUploadDialog
+          open={attachmentDialogOpen}
+          onOpenChange={setAttachmentDialogOpen}
+          entityType="opportunity"
+          entityId={attachmentOpportunity.id}
+          entityName={attachmentOpportunity.name}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

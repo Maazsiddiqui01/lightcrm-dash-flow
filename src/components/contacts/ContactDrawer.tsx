@@ -419,6 +419,11 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
           </div>
         ) : contactData ? (
           <div className="mt-6 space-y-6">
+            {/* Attachments Section - Moved to Top */}
+            <AttachmentsSection contactId={contactData.id} />
+
+            <Separator />
+
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -1309,11 +1314,6 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
             </div>
 
             <Separator />
-
-            {/* Attachments Section */}
-            {contactData && (
-              <AttachmentsSection contactId={contactData.id} />
-            )}
 
             {/* Action Buttons */}
             <div className="flex justify-between pt-4">
