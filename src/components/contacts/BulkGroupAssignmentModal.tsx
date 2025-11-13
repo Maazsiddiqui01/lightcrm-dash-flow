@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Users, Plus, AlertTriangle } from "lucide-react";
+import { useSectors, useFocusAreas } from "@/hooks/useLookups";
 
 interface BulkGroupAssignmentModalProps {
   open: boolean;
@@ -42,6 +43,10 @@ export function BulkGroupAssignmentModal({
   const { data: groups, isLoading: loadingGroups } = useGroups();
   const addToGroup = useAddContactToGroup();
   const validateMembership = useValidateGroupMembership();
+  
+  // Fetch canonical lookup options
+  const { data: sectorOptions = [] } = useSectors();
+  const { data: focusAreaOptions = [] } = useFocusAreas();
 
   const handleAssign = async () => {
     // Validation
@@ -318,22 +323,36 @@ export function BulkGroupAssignmentModal({
 
               <div className="space-y-2">
                 <Label htmlFor="group-focus-area">Group Focus Area</Label>
-                <Input
-                  id="group-focus-area"
-                  placeholder="e.g., Healthcare IT"
-                  value={groupFocusArea}
-                  onChange={(e) => setGroupFocusArea(e.target.value)}
-                />
+                <Select value={groupFocusArea} onValueChange={setGroupFocusArea}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select focus area..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {focusAreaOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="group-sector">Group Sector</Label>
-                <Input
-                  id="group-sector"
-                  placeholder="e.g., Technology"
-                  value={groupSector}
-                  onChange={(e) => setGroupSector(e.target.value)}
-                />
+                <Select value={groupSector} onValueChange={setGroupSector}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sector..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {sectorOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
