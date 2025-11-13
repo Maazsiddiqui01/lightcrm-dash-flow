@@ -6,7 +6,7 @@ import { OpportunityDrawer } from "./OpportunityDrawer";
 import { AddOpportunityDialog } from "./AddOpportunityDialog";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle, Upload, Trash2 } from "lucide-react";
+import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle, Upload, Trash2, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
@@ -193,6 +193,16 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
             >
               <Mail className="h-4 w-4 mr-2" />
                Draft Email
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedOpportunity(row);
+                setIsDrawerOpen(true);
+              }}
+            >
+              <Paperclip className="h-4 w-4 mr-2" />
+              Upload Document
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {

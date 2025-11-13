@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX, Trash2, Users, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX, Trash2, Users, Plus, ChevronDown, ChevronUp, Paperclip } from "lucide-react";
 import { useContactOpps } from "@/hooks/useContactOpps";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
@@ -35,6 +35,10 @@ import { DuplicateWarningBanner } from "./DuplicateWarningBanner";
 import { ContactLockBanner } from "./ContactLockBanner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useDeleteContact } from "@/hooks/useDeleteContact";
+import { useEntityAttachments } from "@/hooks/useEntityAttachments";
+import { AttachmentUpload } from "@/components/attachments/AttachmentUpload";
+import { AttachmentList } from "@/components/attachments/AttachmentList";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ContactRaw {
   id: string;
@@ -1304,6 +1308,13 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
               )}
             </div>
 
+            <Separator />
+
+            {/* Attachments Section */}
+            {contactData && (
+              <AttachmentsSection contactId={contactData.id} />
+            )}
+
             {/* Action Buttons */}
             <div className="flex justify-between pt-4">
               <Button 
@@ -1353,5 +1364,51 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
         ) : null}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function AttachmentsSection({ contactId }: { contactId: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { attachments, isLoading, uploadFile, isUploading, deleteFile, isDeleting, downloadFile } = 
+    useEntityAttachments('contact', contactId);
+
+  return (
+    <>
+      <Separator />
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Paperclip className="h-5 w-5 text-muted-foreground" />
+            <h3 className="text-lg font-semibold">Attachments</h3>
+            {attachments.length > 0 && (
+              <Badge variant="secondary">{attachments.length}</Badge>
+            )}
+          </div>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm">
+              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent className="space-y-4 pt-4">
+          <AttachmentUpload
+            onUpload={(file, description) => uploadFile({ file, description })}
+            isUploading={isUploading}
+          />
+          {isLoading ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <AttachmentList
+              attachments={attachments}
+              onDownload={downloadFile}
+              onDelete={deleteFile}
+              isDeleting={isDeleting}
+            />
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+    </>
   );
 }
