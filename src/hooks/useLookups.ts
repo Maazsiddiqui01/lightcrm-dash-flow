@@ -50,14 +50,30 @@ export const useSectors = () => {
   return useQuery({
     queryKey: ['lookup-sectors'],
     queryFn: async (): Promise<LookupOption[]> => {
+      // Try lookup_sectors first (canonical source)
       const { data, error } = await supabase
         .from('lookup_sectors')
         .select('id, label')
         .order('label');
 
-      if (error) {
-        console.warn('Failed to fetch sectors from lookup table, using fallback:', error);
-        // Fallback to constants if database fails
+      if (!error && data && data.length > 0) {
+        return data.map(sector => ({
+          value: sector.label,
+          label: sector.label,
+          meta: { id: sector.id }
+        }));
+      }
+
+      console.warn('lookup_sectors empty or failed, falling back to ui_distinct_lg_sectors');
+      
+      // Fallback to ui_distinct_lg_sectors view
+      const { data: viewData, error: viewError } = await supabase
+        .from('ui_distinct_lg_sectors' as any)
+        .select('lg_sector')
+        .order('lg_sector');
+
+      if (viewError) {
+        console.warn('Failed to fetch from ui_distinct_lg_sectors, using constants:', viewError);
         return SECTORS.map(sector => ({
           value: sector.label,
           label: sector.label,
@@ -65,10 +81,10 @@ export const useSectors = () => {
         }));
       }
 
-      return (data || []).map(sector => ({
-        value: sector.label,
-        label: sector.label,
-        meta: { id: sector.id }
+      return (viewData || []).map((item: any) => ({
+        value: item.lg_sector,
+        label: item.lg_sector,
+        meta: { id: item.lg_sector }
       }));
     },
     staleTime: 1000 * 60 * 60, // 1 hour
