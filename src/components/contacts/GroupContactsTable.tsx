@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGroupContactsView } from "@/hooks/useGroupContactsView";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { buildGroupEmailPayload } from "@/lib/groupEmailPayload";
@@ -14,6 +15,7 @@ import { parseFlexibleDate } from "@/utils/dateUtils";
 import { EditToolbar } from "@/components/shared/EditToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSectors, useFocusAreas } from "@/hooks/useLookups";
 
 export function GroupContactsTable() {
   const [selectedGroup, setSelectedGroup] = useState<GroupContactView | null>(null);
@@ -29,6 +31,10 @@ export function GroupContactsTable() {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch canonical lookup options for inline editing
+  const { data: sectorOptions = [] } = useSectors();
+  const { data: focusAreaOptions = [] } = useFocusAreas();
 
   const { data: groups = [], isLoading, error, refetch } = useGroupContactsView();
 
@@ -252,35 +258,31 @@ export function GroupContactsTable() {
 
         if (isEditing) {
           return (
-            <Input
-              type="text"
+            <Select
               value={currentValue || ''}
-              onChange={(e) => {
+              onValueChange={(value) => {
                 setEditedRows(prev => ({
                   ...prev,
-                  [row.group_id]: { ...prev[row.group_id], group_focus_area: e.target.value }
+                  [row.group_id]: { ...prev[row.group_id], group_focus_area: value }
                 }));
+                setEditingCell(null);
               }}
-              onBlur={() => setEditingCell(null)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') setEditingCell(null);
-                if (e.key === 'Escape') {
-                  setEditedRows(prev => {
-                    const newRows = { ...prev };
-                    if (newRows[row.group_id]) {
-                      delete newRows[row.group_id].group_focus_area;
-                      if (Object.keys(newRows[row.group_id]).length === 0) {
-                        delete newRows[row.group_id];
-                      }
-                    }
-                    return newRows;
-                  });
-                  setEditingCell(null);
-                }
+              onOpenChange={(open) => {
+                if (!open) setEditingCell(null);
               }}
-              autoFocus
-              className="w-full"
-            />
+            >
+              <SelectTrigger className="w-full" autoFocus>
+                <SelectValue placeholder="Select focus area..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {focusAreaOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           );
         }
 
@@ -314,35 +316,31 @@ export function GroupContactsTable() {
 
         if (isEditing) {
           return (
-            <Input
-              type="text"
+            <Select
               value={currentValue || ''}
-              onChange={(e) => {
+              onValueChange={(value) => {
                 setEditedRows(prev => ({
                   ...prev,
-                  [row.group_id]: { ...prev[row.group_id], group_sector: e.target.value }
+                  [row.group_id]: { ...prev[row.group_id], group_sector: value }
                 }));
+                setEditingCell(null);
               }}
-              onBlur={() => setEditingCell(null)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') setEditingCell(null);
-                if (e.key === 'Escape') {
-                  setEditedRows(prev => {
-                    const newRows = { ...prev };
-                    if (newRows[row.group_id]) {
-                      delete newRows[row.group_id].group_sector;
-                      if (Object.keys(newRows[row.group_id]).length === 0) {
-                        delete newRows[row.group_id];
-                      }
-                    }
-                    return newRows;
-                  });
-                  setEditingCell(null);
-                }
+              onOpenChange={(open) => {
+                if (!open) setEditingCell(null);
               }}
-              autoFocus
-              className="w-full"
-            />
+            >
+              <SelectTrigger className="w-full" autoFocus>
+                <SelectValue placeholder="Select sector..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {sectorOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           );
         }
 

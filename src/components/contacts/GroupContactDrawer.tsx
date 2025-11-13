@@ -25,6 +25,7 @@ import { useDeleteGroup } from "@/hooks/useDeleteGroup";
 import { useRemoveContactFromGroup } from "@/hooks/useRemoveContactFromGroup";
 import { Label } from "@/components/ui/label";
 import { AddMemberToGroupModal } from "./AddMemberToGroupModal";
+import { useSectors, useFocusAreas } from "@/hooks/useLookups";
 
 interface GroupContactDrawerProps {
   group: GroupContactView | null;
@@ -45,6 +46,10 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const [editedRoles, setEditedRoles] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+
+  // Fetch canonical lookup options
+  const { data: sectorOptions = [] } = useSectors();
+  const { data: focusAreaOptions = [] } = useFocusAreas();
 
   // Group notes hook - use group_id from the new schema
   const {
@@ -313,13 +318,22 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
               <Label className="text-muted-foreground">Group Focus Area</Label>
               <div>
                 {editMode ? (
-                  <Input
-                    type="text"
-                    value={editedGroupFocusArea || group.group_focus_area || ''}
-                    onChange={(e) => setEditedGroupFocusArea(e.target.value)}
-                    placeholder="Enter focus area"
-                    className="w-full"
-                  />
+                  <Select 
+                    value={editedGroupFocusArea || group.group_focus_area || ''} 
+                    onValueChange={setEditedGroupFocusArea}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select focus area..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {focusAreaOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 ) : (
                   group.group_focus_area ? (
                     <Badge variant="outline" className="text-base">
@@ -336,13 +350,22 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
               <Label className="text-muted-foreground">Group Sector</Label>
               <div>
                 {editMode ? (
-                  <Input
-                    type="text"
-                    value={editedGroupSector || group.group_sector || ''}
-                    onChange={(e) => setEditedGroupSector(e.target.value)}
-                    placeholder="Enter sector"
-                    className="w-full"
-                  />
+                  <Select 
+                    value={editedGroupSector || group.group_sector || ''} 
+                    onValueChange={setEditedGroupSector}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select sector..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {sectorOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 ) : (
                   group.group_sector ? (
                     <Badge variant="outline" className="text-base">

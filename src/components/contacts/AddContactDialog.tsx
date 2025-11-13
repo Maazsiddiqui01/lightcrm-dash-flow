@@ -410,12 +410,19 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="group_focus_area">Group Focus Area</Label>
-                    <Input
-                      id="group_focus_area"
-                      value={groupFocusArea}
-                      onChange={(e) => setGroupFocusArea(e.target.value)}
-                      placeholder="e.g., Healthcare IT"
-                    />
+                    <Select value={groupFocusArea} onValueChange={setGroupFocusArea}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select focus area..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {focusAreasQuery.data?.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="text-xs text-muted-foreground">
                       Shared focus area for all group members
                     </p>
@@ -423,12 +430,19 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
 
                   <div className="space-y-2">
                     <Label htmlFor="group_sector">Group Sector</Label>
-                    <Input
-                      id="group_sector"
-                      value={groupSector}
-                      onChange={(e) => setGroupSector(e.target.value)}
-                      placeholder="e.g., Technology"
-                    />
+                    <Select value={groupSector} onValueChange={setGroupSector}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select sector..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {sectorsQuery.data?.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="text-xs text-muted-foreground">
                       Shared sector for all group members
                     </p>
