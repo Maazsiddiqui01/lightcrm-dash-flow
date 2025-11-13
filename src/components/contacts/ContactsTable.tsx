@@ -9,7 +9,7 @@ import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { ContactMergeDialog } from "./ContactMergeDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2, CalendarIcon, Merge } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2, CalendarIcon, Merge, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -305,6 +305,16 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
                   <Mail className="mr-2 h-4 w-4" />
                 )}
                 Draft Email
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedContact(row);
+                  setIsDrawerOpen(true);
+                }}
+              >
+                <Paperclip className="mr-2 h-4 w-4" />
+                Upload Document
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={(e) => {

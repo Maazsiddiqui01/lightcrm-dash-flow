@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail, Loader2, Trash2 } from "lucide-react";
+import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail, Loader2, Trash2, Paperclip, ChevronDown, ChevronUp } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
 import { OpportunityNotesSection } from "./OpportunityNotesSection";
@@ -42,6 +42,10 @@ import { ContactPickerWithAddNew } from "./ContactPickerWithAddNew";
 import { ContactSearchResult } from "@/hooks/useContactSearch";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEntityAttachments } from "@/hooks/useEntityAttachments";
+import { AttachmentUpload } from "@/components/attachments/AttachmentUpload";
+import { AttachmentList } from "@/components/attachments/AttachmentList";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface Opportunity {
   id: string;
@@ -823,6 +827,11 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
           onContactAdded={handleContactAdded}
         />
 
+        {/* Attachments Section */}
+        {opportunity && (
+          <OpportunityAttachmentsSection opportunityId={opportunity.id} />
+        )}
+
         <ConfirmDialog
           open={deleteConfirmOpen}
           onOpenChange={setDeleteConfirmOpen}
@@ -835,5 +844,51 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         />
       </SheetContent>
     </Sheet>
+  );
+}
+
+function OpportunityAttachmentsSection({ opportunityId }: { opportunityId: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { attachments, isLoading, uploadFile, isUploading, deleteFile, isDeleting, downloadFile } = 
+    useEntityAttachments('opportunity', opportunityId);
+
+  return (
+    <>
+      <Separator />
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Paperclip className="h-5 w-5 text-muted-foreground" />
+            <h3 className="text-lg font-semibold">Attachments</h3>
+            {attachments.length > 0 && (
+              <Badge variant="secondary">{attachments.length}</Badge>
+            )}
+          </div>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm">
+              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent className="space-y-4 pt-4">
+          <AttachmentUpload
+            onUpload={(file, description) => uploadFile({ file, description })}
+            isUploading={isUploading}
+          />
+          {isLoading ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <AttachmentList
+              attachments={attachments}
+              onDownload={downloadFile}
+              onDelete={deleteFile}
+              isDeleting={isDeleting}
+            />
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+    </>
   );
 }
