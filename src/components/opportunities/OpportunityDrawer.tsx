@@ -400,6 +400,14 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
+          {/* Attachments Section - Moved to Top */}
+          {opportunity && (
+            <>
+              <OpportunityAttachmentsSection opportunityId={opportunity.id} />
+              <Separator />
+            </>
+          )}
+
           {/* Quick Actions */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -826,11 +834,6 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
           }}
           onContactAdded={handleContactAdded}
         />
-
-        {/* Attachments Section */}
-        {opportunity && (
-          <OpportunityAttachmentsSection opportunityId={opportunity.id} />
-        )}
 
         <ConfirmDialog
           open={deleteConfirmOpen}

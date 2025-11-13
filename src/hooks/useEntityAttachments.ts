@@ -10,14 +10,14 @@ export function useEntityAttachments(entityType: 'contact' | 'opportunity', enti
     queryKey: ['entity-attachments', entityType, entityId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('entity_attachments')
+        .from('entity_attachments' as any)
         .select('*')
         .eq('entity_type', entityType)
         .eq('entity_id', entityId)
         .order('uploaded_at', { ascending: false });
 
       if (error) throw error;
-      return data as EntityAttachment[];
+      return (data || []) as unknown as EntityAttachment[];
     },
     enabled: !!entityId,
   });
@@ -37,7 +37,7 @@ export function useEntityAttachments(entityType: 'contact' | 'opportunity', enti
       if (uploadError) throw uploadError;
 
       const { data, error: insertError } = await supabase
-        .from('entity_attachments')
+        .from('entity_attachments' as any)
         .insert({
           entity_type: entityType,
           entity_id: entityId,
@@ -69,7 +69,7 @@ export function useEntityAttachments(entityType: 'contact' | 'opportunity', enti
   const deleteMutation = useMutation({
     mutationFn: async (attachment: EntityAttachment) => {
       const { error: deleteError } = await supabase
-        .from('entity_attachments')
+        .from('entity_attachments' as any)
         .delete()
         .eq('id', attachment.id);
 
