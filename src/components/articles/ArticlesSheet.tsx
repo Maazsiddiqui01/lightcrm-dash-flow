@@ -29,17 +29,30 @@ export function ArticlesSheet() {
     Array.from({ length: 5 }, () => ({ article_link: '', article_date: '', last_date_to_use: '' }))
   );
 
-  // Fetch focus areas
+  // Fetch focus areas from canonical source
   const { data: focusAreas, isLoading: focusAreasLoading } = useQuery({
     queryKey: ['focus_areas_for_articles'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Try lookup_focus_areas first (canonical source)
+      const { data: lookupData, error: lookupError } = await supabase
+        .from('lookup_focus_areas')
+        .select('label')
+        .order('label');
+      
+      if (!lookupError && lookupData && lookupData.length > 0) {
+        return lookupData.map(item => item.label);
+      }
+
+      console.warn('lookup_focus_areas empty, falling back to ui_distinct_focus_areas_v');
+      
+      // Fallback to ui_distinct_focus_areas_v
+      const { data: viewData, error: viewError } = await supabase
         .from('ui_distinct_focus_areas_v')
         .select('focus_area')
         .order('focus_area');
       
-      if (error) throw error;
-      return data.map(item => item.focus_area);
+      if (viewError) throw viewError;
+      return (viewData || []).map(item => item.focus_area);
     },
   });
 

@@ -65,33 +65,48 @@ export function useDistinctOptions(table: string, column: string, options: UseDi
   });
 }
 
-// Opportunities hooks with direct queries
+// Opportunities hooks - use canonical lookup_focus_areas
 export const useOpportunityFocusAreas = (search?: string) => {
   return useQuery({
     queryKey: ['opportunity-focus-areas', search],
     queryFn: async () => {
-      let query = supabase
-        .from('opportunities_raw')
-        .select('lg_focus_area', { head: false })
-        .not('lg_focus_area', 'is', null)
-        .neq('lg_focus_area', '');
+      // Try lookup_focus_areas first (canonical source)
+      const { data: lookupData, error: lookupError } = await supabase
+        .from('lookup_focus_areas')
+        .select('label')
+        .order('label');
       
-      if (search) {
-        query = query.ilike('lg_focus_area', `%${search}%`);
+      let options: Array<{ value: string; label: string }> = [];
+      
+      if (!lookupError && lookupData && lookupData.length > 0) {
+        options = lookupData.map(item => ({
+          value: item.label,
+          label: item.label
+        }));
+      } else {
+        console.warn('lookup_focus_areas empty, falling back to ui_distinct_focus_areas_v');
+        
+        // Fallback to ui_distinct_focus_areas_v
+        const { data: viewData, error: viewError } = await supabase
+          .from('ui_distinct_focus_areas_v')
+          .select('focus_area')
+          .order('focus_area');
+        
+        if (viewError) throw viewError;
+        
+        options = (viewData || []).map(item => ({
+          value: item.focus_area,
+          label: item.focus_area
+        }));
       }
       
-      const { data, error } = await query.order('lg_focus_area').limit(1000);
-      if (error) throw error;
+      // Apply search filter if provided
+      if (search) {
+        const searchLower = search.toLowerCase();
+        options = options.filter(opt => opt.label.toLowerCase().includes(searchLower));
+      }
       
-      const uniqueValues = new Set<string>();
-      (data || []).forEach(row => {
-        const value = row.lg_focus_area?.toString().trim();
-        if (value) uniqueValues.add(value);
-      });
-      
-      return Array.from(uniqueValues)
-        .sort()
-        .map(value => ({ value, label: value }));
+      return options;
     },
     staleTime: 10 * 60 * 1000,
   });

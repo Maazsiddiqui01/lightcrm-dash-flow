@@ -2,47 +2,73 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { defaultOwnershipTypes } from '@/lib/export/opportunityUtils';
 
+/**
+ * Use canonical lookup_focus_areas as primary source for KPI filters.
+ * Fallback to ui_distinct_focus_areas_v if lookup table is empty.
+ */
 export const useDistinctFocusAreas = () => {
   return useQuery({
     queryKey: ['kpi-distinct-focus-areas'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contacts_raw')
-        .select('lg_focus_areas_comprehensive_list');
+      // Try lookup_focus_areas first
+      const { data: lookupData, error: lookupError } = await supabase
+        .from('lookup_focus_areas')
+        .select('label')
+        .order('label');
       
-      if (error) throw error;
+      if (!lookupError && lookupData && lookupData.length > 0) {
+        return lookupData.map(item => item.label);
+      }
+
+      console.warn('lookup_focus_areas empty or failed, falling back to ui_distinct_focus_areas_v');
       
-      const allAreas = new Set<string>();
-      data?.forEach(row => {
-        if (row.lg_focus_areas_comprehensive_list) {
-          const areas = row.lg_focus_areas_comprehensive_list
-            .split(',')
-            .map(area => area.trim())
-            .filter(area => area.length > 0);
-          areas.forEach(area => allAreas.add(area));
-        }
-      });
+      // Fallback to ui_distinct_focus_areas_v
+      const { data: viewData, error: viewError } = await supabase
+        .from('ui_distinct_focus_areas_v')
+        .select('focus_area')
+        .order('focus_area');
       
-      return Array.from(allAreas).sort();
+      if (viewError) throw viewError;
+      
+      return (viewData || [])
+        .map(item => item.focus_area)
+        .filter(Boolean);
     },
     staleTime: 60_000,
   });
 };
 
+/**
+ * Use canonical lookup_sectors as primary source for KPI filters.
+ * Fallback to ui_distinct_lg_sectors if lookup table is empty.
+ */
 export const useDistinctSectors = () => {
   return useQuery({
     queryKey: ['kpi-distinct-sectors'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contacts_raw')
+      // Try lookup_sectors first
+      const { data: lookupData, error: lookupError } = await supabase
+        .from('lookup_sectors')
+        .select('label')
+        .order('label');
+      
+      if (!lookupError && lookupData && lookupData.length > 0) {
+        return lookupData.map(item => item.label);
+      }
+
+      console.warn('lookup_sectors empty or failed, falling back to ui_distinct_lg_sectors');
+      
+      // Fallback to ui_distinct_lg_sectors
+      const { data: viewData, error: viewError } = await supabase
+        .from('ui_distinct_lg_sectors')
         .select('lg_sector')
-        .not('lg_sector', 'is', null)
-        .neq('lg_sector', '');
+        .order('lg_sector');
       
-      if (error) throw error;
+      if (viewError) throw viewError;
       
-      const sectors = [...new Set(data?.map(row => row.lg_sector).filter(Boolean))];
-      return sectors.sort();
+      return (viewData || [])
+        .map(item => item.lg_sector)
+        .filter(Boolean);
     },
     staleTime: 60_000,
   });
