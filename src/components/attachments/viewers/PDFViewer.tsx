@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Configure worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 interface PDFViewerProps {
   url: string;
@@ -81,6 +81,10 @@ export function PDFViewer({ url }: PDFViewerProps) {
         <Document
           file={url}
           onLoadSuccess={onDocumentLoadSuccess}
+          options={{
+            cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+            cMapPacked: true,
+          }}
           loading={
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -88,7 +92,10 @@ export function PDFViewer({ url }: PDFViewerProps) {
           }
           error={
             <div className="text-sm text-destructive text-center p-4">
-              Failed to load PDF. The file might be corrupted or password protected.
+              <p className="font-medium mb-2">Failed to load PDF</p>
+              <p className="text-xs text-muted-foreground">
+                The file might be corrupted, password protected, or there may be a network issue.
+              </p>
             </div>
           }
         >
