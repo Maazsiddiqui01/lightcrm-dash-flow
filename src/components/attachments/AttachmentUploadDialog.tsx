@@ -27,6 +27,7 @@ export function AttachmentUploadDialog({
     deleteFile,
     isDeleting,
     downloadFile,
+    getFileUrl,
   } = useEntityAttachments(entityType, entityId);
 
   return (
@@ -54,6 +55,7 @@ export function AttachmentUploadDialog({
                   attachments={attachments}
                   onDownload={downloadFile}
                   onDelete={deleteFile}
+                  onGetFileUrl={getFileUrl}
                   isDeleting={isDeleting}
                 />
               </div>

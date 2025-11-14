@@ -113,6 +113,15 @@ export function useEntityAttachments(entityType: 'contact' | 'opportunity', enti
     }
   };
 
+  const getFileUrl = async (attachment: EntityAttachment): Promise<string> => {
+    const { data, error } = await supabase.storage
+      .from('entity-attachments')
+      .createSignedUrl(attachment.storage_path, 3600); // 1 hour expiry
+    
+    if (error) throw error;
+    return data.signedUrl;
+  };
+
   return {
     attachments,
     isLoading,
@@ -121,5 +130,6 @@ export function useEntityAttachments(entityType: 'contact' | 'opportunity', enti
     deleteFile: deleteMutation.mutate,
     isDeleting: deleteMutation.isPending,
     downloadFile,
+    getFileUrl,
   };
 }
