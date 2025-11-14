@@ -130,6 +130,8 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     saveMostRecentNotes,
     isSavingNextSteps,
     isSavingNotes,
+    deleteNote,
+    isDeletingNote,
   } = useOpportunityNotes(opportunity?.id, opportunity?.deal_name);
 
   useEffect(() => {
