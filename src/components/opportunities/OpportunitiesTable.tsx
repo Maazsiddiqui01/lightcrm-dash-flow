@@ -6,7 +6,7 @@ import { OpportunityDrawer } from "./OpportunityDrawer";
 import { AddOpportunityDialog } from "./AddOpportunityDialog";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle, Upload, Trash2, Paperclip } from "lucide-react";
+import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle, Upload, Trash2, Paperclip, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
@@ -20,6 +20,8 @@ import {
 import { QuickAddModal } from "./QuickAddModal";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AttachmentUploadDialog } from "@/components/attachments/AttachmentUploadDialog";
+import { FullHistoryDialog, TimelineItem } from "@/components/shared/FullHistoryDialog";
+import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
 
 // Dynamic column imports
 import { OPPORTUNITIES_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -120,6 +122,8 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
   const [quickAddType, setQuickAddType] = useState<'next_steps' | 'most_recent_notes'>('next_steps');
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
   const [attachmentOpportunity, setAttachmentOpportunity] = useState<{ id: string; name: string } | null>(null);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyOpportunity, setHistoryOpportunity] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -206,6 +210,16 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
             >
               <Paperclip className="h-4 w-4 mr-2" />
               Upload Document
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setHistoryOpportunity({ id: row.id, name: row.deal_name || 'Unknown' });
+                setHistoryDialogOpen(true);
+              }}
+            >
+              <History className="h-4 w-4 mr-2" />
+              View Full History
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
@@ -725,6 +739,55 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         cancelText="Cancel"
         variant="destructive"
       />
+
+      {/* Full History Dialog */}
+      {historyOpportunity && (
+        <OpportunityFullHistoryWrapper
+          open={historyDialogOpen}
+          onOpenChange={setHistoryDialogOpen}
+          opportunityId={historyOpportunity.id}
+          opportunityName={historyOpportunity.name}
+        />
+      )}
     </div>
+  );
+}
+
+// Wrapper component to fetch opportunity history data
+function OpportunityFullHistoryWrapper({
+  open,
+  onOpenChange,
+  opportunityId,
+  opportunityName,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  opportunityId: string;
+  opportunityName: string;
+}) {
+  const { timeline } = useOpportunityNotes(opportunityId);
+
+  const formattedTimeline: TimelineItem[] = useMemo(() => {
+    return (timeline || []).map((item) => ({
+      field: item.field,
+      content: item.content,
+      created_at: item.created_at,
+      created_by: item.created_by,
+      due_date: item.due_date,
+    }));
+  }, [timeline]);
+
+  return (
+    <FullHistoryDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`History for ${opportunityName}`}
+      description="View all notes and next steps for this opportunity"
+      timeline={formattedTimeline}
+      fieldLabels={{
+        next_steps: "Next Steps",
+        most_recent_notes: "Most Recent Notes",
+      }}
+    />
   );
 }

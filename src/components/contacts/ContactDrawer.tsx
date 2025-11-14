@@ -405,6 +405,50 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
           </div>
         </SheetHeader>
 
+        {/* Action Buttons - Top */}
+        <div className="flex justify-between pt-4 pb-2">
+          <div className="flex space-x-2">
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => setDeleteConfirmOpen(true)} 
+              disabled={saving || loading || isDeleting}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHistoryDialogOpen(true)}
+              disabled={saving || loading || isDeleting}
+            >
+              <History className="h-4 w-4 mr-2" />
+              View Full History
+            </Button>
+          </div>
+          <div className="flex space-x-2">
+            <Button size="sm" onClick={handleSave} disabled={saving || loading || isDeleting}>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </>
+              )}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onClose} disabled={saving || isDeleting}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+          </div>
+        </div>
+        <Separator />
+
         {loading ? (
           <div className="space-y-4 py-8">
             <div className="flex items-center justify-center">

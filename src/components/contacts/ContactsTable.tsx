@@ -9,7 +9,7 @@ import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { ContactMergeDialog } from "./ContactMergeDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2, CalendarIcon, Merge, Paperclip } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2, CalendarIcon, Merge, Paperclip, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -25,6 +25,9 @@ import { format, formatDistanceToNow } from "date-fns";
 import { useLastInteractionUpload } from "@/hooks/useLastInteractionUpload";
 import { buildCsv, downloadCsv, generateExportFilename, safeCell } from "@/lib/export/csvUtils";
 import { AttachmentUploadDialog } from "@/components/attachments/AttachmentUploadDialog";
+import { FullHistoryDialog, TimelineItem } from "@/components/shared/FullHistoryDialog";
+import { useContactNotes } from "@/hooks/useContactNotes";
+import { useContactNextSteps } from "@/hooks/useContactNextSteps";
 
 // Dynamic column imports
 import { CONTACTS_RAW_COLUMNS, getTableColumns } from "@/lib/supabase/getTableColumns";
@@ -99,6 +102,8 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   }>({ open: false, contactIds: [], contactNames: [], isBulk: false });
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
   const [attachmentContact, setAttachmentContact] = useState<{ id: string; name: string } | null>(null);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyContact, setHistoryContact] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
   
   // Use unified draft generator
@@ -319,7 +324,17 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
                 <Paperclip className="mr-2 h-4 w-4" />
                 Upload Document
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setHistoryContact({ id: row.id, name: row.full_name || row.email_address || 'Unknown' });
+                  setHistoryDialogOpen(true);
+                }}
+              >
+                <History className="mr-2 h-4 w-4" />
+                View Full History
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
                   setNoteContactId(row.id);
@@ -893,6 +908,68 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
           entityName={attachmentContact.name}
         />
       )}
+
+      {/* Full History Dialog */}
+      {historyContact && (
+        <ContactFullHistoryWrapper
+          open={historyDialogOpen}
+          onOpenChange={setHistoryDialogOpen}
+          contactId={historyContact.id}
+          contactName={historyContact.name}
+        />
+      )}
     </div>
+  );
+}
+
+// Wrapper component to fetch contact history data
+function ContactFullHistoryWrapper({
+  open,
+  onOpenChange,
+  contactId,
+  contactName,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  contactId: string;
+  contactName: string;
+}) {
+  const { timeline: notesTimeline } = useContactNotes(contactId);
+  const { timeline: nextStepsTimeline } = useContactNextSteps(contactId);
+
+  const combinedTimeline: TimelineItem[] = useMemo(() => {
+    const notes = (notesTimeline || []).map((item) => ({
+      field: item.field,
+      content: item.content,
+      created_at: item.created_at,
+      created_by: item.created_by,
+    }));
+
+    const nextSteps = (nextStepsTimeline || []).map((item) => ({
+      field: item.field,
+      content: item.content,
+      created_at: item.created_at,
+      created_by: item.created_by,
+      due_date: item.due_date,
+    }));
+
+    return [...notes, ...nextSteps].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [notesTimeline, nextStepsTimeline]);
+
+  return (
+    <FullHistoryDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`History for ${contactName}`}
+      description="View all notes and next steps for this contact"
+      timeline={combinedTimeline}
+      fieldLabels={{
+        notes: "Notes",
+        next_steps: "Next Steps",
+        most_recent_notes: "Most Recent Notes",
+      }}
+    />
   );
 }
