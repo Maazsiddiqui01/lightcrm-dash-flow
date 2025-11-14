@@ -172,6 +172,35 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
     },
   });
 
+  // Delete note mutation
+  const deleteNoteMutation = useMutation({
+    mutationFn: async ({ eventId }: { eventId: string }) => {
+      const { error } = await supabase
+        .from('opportunity_note_events')
+        .delete()
+        .eq('id', eventId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Entry deleted successfully",
+      });
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['opportunity-notes-timeline', opportunityId] });
+    },
+    onError: (error: any) => {
+      console.error('Error deleting note:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete entry",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     currentNotes: currentNotesQuery.data,
     timeline: timelineQuery.data || [],
@@ -187,5 +216,9 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
     },
     isSavingNextSteps: saveNextStepsMutation.isPending,
     isSavingNotes: saveMostRecentNotesMutation.isPending,
+    deleteNote: (eventId: string) => {
+      deleteNoteMutation.mutate({ eventId });
+    },
+    isDeletingNote: deleteNoteMutation.isPending,
   };
 }

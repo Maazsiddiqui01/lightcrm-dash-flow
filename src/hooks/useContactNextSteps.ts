@@ -210,6 +210,37 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
     },
   });
 
+  // Delete next step mutation
+  const deleteNextStepMutation = useMutation({
+    mutationFn: async ({ eventId }: { eventId: string }) => {
+      const { error } = await supabase
+        .from('contact_note_events')
+        .delete()
+        .eq('id', eventId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Next step deleted successfully",
+      });
+      
+      // Invalidate queries to refresh data
+      if (contactId) {
+        queryClient.invalidateQueries({ queryKey: ['contact-next-steps-timeline', contactId] });
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error deleting next step:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete next step",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     currentNextSteps: currentNextStepsQuery.data,
     timeline: timelineQuery.data || [],
@@ -220,5 +251,9 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
       saveNextStepsMutation.mutate({ contactId, content, dueDate, addInToDo });
     },
     isSaving: saveNextStepsMutation.isPending,
+    deleteNextStep: (eventId: string) => {
+      deleteNextStepMutation.mutate({ eventId });
+    },
+    isDeleting: deleteNextStepMutation.isPending,
   };
 }

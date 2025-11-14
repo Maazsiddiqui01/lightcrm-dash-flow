@@ -13,7 +13,8 @@ import {
   ChevronUp, 
   Copy, 
   CalendarIcon, 
-  Clock 
+  Clock,
+  Trash2,
 } from 'lucide-react';
 import { 
   format, 
@@ -23,13 +24,25 @@ import {
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { ContactNextStep } from '@/hooks/useContactNextSteps';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ContactNextStepsSectionProps {
   currentValue: string | null;
   currentDueDate?: string | null;
   timeline: ContactNextStep[];
   onSave: (content: string, dueDate?: string, addInToDo?: boolean) => void;
+  onDelete?: (eventId: string) => void;
   isSaving: boolean;
+  isDeleting?: boolean;
   isLoadingCurrent: boolean;
   isLoadingTimeline: boolean;
 }
@@ -39,7 +52,9 @@ export function ContactNextStepsSection({
   currentDueDate,
   timeline,
   onSave,
+  onDelete,
   isSaving,
+  isDeleting = false,
   isLoadingCurrent,
   isLoadingTimeline,
 }: ContactNextStepsSectionProps) {
@@ -47,6 +62,8 @@ export function ContactNextStepsSection({
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [addInToDo, setAddInToDo] = useState(true);
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Sync draft state with current value
@@ -129,6 +146,19 @@ export function ContactNextStepsSection({
     } catch (err) {
       console.error('Failed to copy:', err);
     }
+  };
+
+  const handleDeleteClick = (eventId: string) => {
+    setEntryToDelete(eventId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (entryToDelete && onDelete) {
+      onDelete(entryToDelete);
+    }
+    setDeleteConfirmOpen(false);
+    setEntryToDelete(null);
   };
 
   const formatContent = (content: string, isExpanded: boolean) => {
@@ -289,6 +319,17 @@ export function ContactNextStepsSection({
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
+                          {onDelete && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(entry.id)}
+                              disabled={isDeleting}
+                              className="h-auto p-1 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                       
@@ -324,6 +365,23 @@ export function ContactNextStepsSection({
           </div>
         </div>
       </CardContent>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Next Step</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this next step? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
