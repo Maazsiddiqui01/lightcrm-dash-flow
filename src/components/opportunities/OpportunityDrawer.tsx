@@ -834,6 +834,66 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             </div>
           </div>
 
+          <Separator />
+
+          {/* Action Buttons - Bottom */}
+          <div className="flex justify-between pt-4">
+            <div className="flex space-x-2">
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={isDeleting || isUpdating}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setHistoryDialogOpen(true)}
+                disabled={isUpdating}
+              >
+                <History className="h-4 w-4 mr-2" />
+                View Full History
+              </Button>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                size="sm"
+                variant="outline"
+                className="bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+                onClick={async () => {
+                  try {
+                    toast({ 
+                      title: 'AI is drafting your email…',
+                      description: 'This may take a moment'
+                    });
+                    await sendOpportunityEmail(opportunity.id);
+                    toast({ 
+                      title: 'Draft requested', 
+                      description: 'Check your inbox shortly.' 
+                    });
+                  } catch (error) {
+                    console.error("Failed to send email:", error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to draft email. Please try again.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Send Email
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={isUpdating}>
+                <Save className="h-4 w-4 mr-2" />
+                {isUpdating ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+
         </div>
 
         <AddContactDialog
