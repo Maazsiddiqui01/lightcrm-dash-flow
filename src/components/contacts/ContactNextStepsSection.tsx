@@ -73,6 +73,7 @@ export function ContactNextStepsSection({
 
   const canSave = draft.trim() !== (currentValue || '').trim() || 
     (dueDate?.toDateString() !== (currentDueDate ? new Date(currentDueDate).toDateString() : undefined));
+  const hasUnsavedChanges = draft.trim() !== (currentValue || '').trim();
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -215,13 +216,23 @@ export function ContactNextStepsSection({
                 </div>
               </div>
               
-              <Button
-                onClick={handleSave} 
-                disabled={!canSave || isSaving}
-                size="sm"
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </Button>
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-sm text-muted-foreground">
+                  {hasUnsavedChanges ? (
+                    <>Press Ctrl+Enter to save • <span className="text-warning">Unsaved changes</span></>
+                  ) : (
+                    'Press Ctrl+Enter to save'
+                  )}
+                </p>
+                <Button
+                  onClick={handleSave} 
+                  disabled={isSaving || !draft.trim()}
+                  size="sm"
+                  variant={hasUnsavedChanges ? "default" : "outline"}
+                >
+                  {isSaving ? 'Saving...' : 'Save to Timeline'}
+                </Button>
+              </div>
             </div>
           )}
 

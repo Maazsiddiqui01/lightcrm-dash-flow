@@ -84,6 +84,7 @@ export function ContactNotesSection({
   };
 
   const canSave = draft.trim() !== (currentValue || '').trim() && draft.trim() !== '';
+  const hasUnsavedChanges = draft.trim() !== (currentValue || '').trim();
 
   // Filter timeline to show only notes for this field
   const filteredTimeline = timeline.filter(entry => entry.field === field);
@@ -105,15 +106,6 @@ export function ContactNotesSection({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h4 className="font-medium">Current {title}</h4>
-            {canSave && (
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                size="sm"
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </Button>
-            )}
           </div>
           
           {isLoadingCurrent ? (
@@ -129,11 +121,23 @@ export function ContactNotesSection({
             />
           )}
           
-          {canSave && (
+          <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Press Ctrl+Enter (Cmd+Enter on Mac) to save
+              {hasUnsavedChanges ? (
+                <>Press Ctrl+Enter to save • <span className="text-warning">Unsaved changes</span></>
+              ) : (
+                'Press Ctrl+Enter to save'
+              )}
             </p>
-          )}
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !draft.trim()}
+              size="sm"
+              variant={hasUnsavedChanges ? "default" : "outline"}
+            >
+              {isSaving ? 'Saving...' : 'Save to Timeline'}
+            </Button>
+          </div>
         </div>
 
         {/* Timeline */}
