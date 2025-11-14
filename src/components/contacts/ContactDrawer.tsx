@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX, Trash2, Users, Plus, ChevronDown, ChevronUp, Paperclip } from "lucide-react";
+import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX, Trash2, Users, Plus, ChevronDown, ChevronUp, Paperclip, History } from "lucide-react";
 import { useContactOpps } from "@/hooks/useContactOpps";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
@@ -39,6 +39,7 @@ import { useEntityAttachments } from "@/hooks/useEntityAttachments";
 import { AttachmentUpload } from "@/components/attachments/AttachmentUpload";
 import { AttachmentList } from "@/components/attachments/AttachmentList";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { FullHistoryDialog, TimelineItem } from "@/components/shared/FullHistoryDialog";
 
 interface ContactRaw {
   id: string;
@@ -125,6 +126,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   const [saving, setSaving] = useState(false);
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [showAllEmails, setShowAllEmails] = useState(false);
   const [isAddingEmail, setIsAddingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
@@ -1317,14 +1319,24 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
 
             {/* Action Buttons */}
             <div className="flex justify-between pt-4">
-              <Button 
-                variant="destructive" 
-                onClick={() => setDeleteConfirmOpen(true)} 
-                disabled={saving || loading || isDeleting}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
+              <div className="flex space-x-2">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setDeleteConfirmOpen(true)} 
+                  disabled={saving || loading || isDeleting}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setHistoryDialogOpen(true)}
+                  disabled={saving || loading || isDeleting}
+                >
+                  <History className="h-4 w-4 mr-2" />
+                  View Full History
+                </Button>
+              </div>
               <div className="flex space-x-2">
                 <Button onClick={handleSave} disabled={saving || loading || isDeleting}>
                   {saving ? (
@@ -1355,6 +1367,27 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
               confirmText="Delete"
               cancelText="Cancel"
               variant="destructive"
+            />
+
+            <FullHistoryDialog
+              open={historyDialogOpen}
+              onOpenChange={setHistoryDialogOpen}
+              title={`Full History: ${contactData?.full_name || "Contact"}`}
+              description="Complete timeline of all notes and next steps"
+              timeline={[
+                ...(timeline || []).map((item) => ({
+                  ...item,
+                  field: item.field,
+                })),
+                ...(nextStepsTimeline || []).map((item) => ({
+                  ...item,
+                  field: item.field,
+                })),
+              ] as TimelineItem[]}
+              fieldLabels={{
+                notes: "Notes",
+                next_steps: "Next Steps",
+              }}
             />
           </div>
         ) : !loading ? (

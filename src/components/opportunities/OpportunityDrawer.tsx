@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail, Loader2, Trash2, Paperclip, ChevronDown, ChevronUp } from "lucide-react";
+import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail, Loader2, Trash2, Paperclip, ChevronDown, ChevronUp, History } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
 import { OpportunityNotesSection } from "./OpportunityNotesSection";
@@ -46,6 +46,7 @@ import { useEntityAttachments } from "@/hooks/useEntityAttachments";
 import { AttachmentUpload } from "@/components/attachments/AttachmentUpload";
 import { AttachmentList } from "@/components/attachments/AttachmentList";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { FullHistoryDialog, TimelineItem } from "@/components/shared/FullHistoryDialog";
 
 interface Opportunity {
   id: string;
@@ -93,6 +94,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
   const [isUpdating, setIsUpdating] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [selectedSourceContact1, setSelectedSourceContact1] = useState<ContactSearchResult | null>(null);
   const [selectedSourceContact2, setSelectedSourceContact2] = useState<ContactSearchResult | null>(null);
   const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
@@ -423,6 +425,14 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               )}
             </div>
             <div className="flex items-center space-x-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setHistoryDialogOpen(true)}
+              >
+                <History className="h-4 w-4 mr-2" />
+                View Full History
+              </Button>
               <Button 
                 size="sm" 
                 variant="outline"
@@ -844,6 +854,18 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
           confirmText="Delete"
           cancelText="Cancel"
           variant="destructive"
+        />
+
+        <FullHistoryDialog
+          open={historyDialogOpen}
+          onOpenChange={setHistoryDialogOpen}
+          title={`Full History: ${opportunity.deal_name || "Opportunity"}`}
+          description="Complete timeline of next steps and most recent notes"
+          timeline={(timeline || []) as TimelineItem[]}
+          fieldLabels={{
+            next_steps: "Next Steps",
+            most_recent_notes: "Most Recent Notes",
+          }}
         />
       </SheetContent>
     </Sheet>
