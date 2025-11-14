@@ -1,0 +1,108 @@
+import { useState } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+// Configure worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
+interface PDFViewerProps {
+  url: string;
+}
+
+export function PDFViewer({ url }: PDFViewerProps) {
+  const [numPages, setNumPages] = useState<number>(0);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [scale, setScale] = useState<number>(1.0);
+
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    setNumPages(numPages);
+    setPageNumber(1);
+  }
+
+  const changePage = (offset: number) => {
+    setPageNumber(prevPageNumber => prevPageNumber + offset);
+  };
+
+  const previousPage = () => changePage(-1);
+  const nextPage = () => changePage(1);
+
+  const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 2.0));
+  const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between gap-2 mb-4 p-2 bg-muted/50 rounded-lg">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={previousPage}
+            disabled={pageNumber <= 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm text-muted-foreground min-w-[80px] text-center">
+            Page {pageNumber} of {numPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={nextPage}
+            disabled={pageNumber >= numPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={zoomOut}
+            disabled={scale <= 0.5}
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="text-sm text-muted-foreground min-w-[60px] text-center">
+            {Math.round(scale * 100)}%
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={zoomIn}
+            disabled={scale >= 2.0}
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-auto flex justify-center bg-muted/20 rounded-lg p-4">
+        <Document
+          file={url}
+          onLoadSuccess={onDocumentLoadSuccess}
+          loading={
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          }
+          error={
+            <div className="text-sm text-destructive text-center p-4">
+              Failed to load PDF. The file might be corrupted or password protected.
+            </div>
+          }
+        >
+          <Page
+            pageNumber={pageNumber}
+            scale={scale}
+            renderTextLayer={true}
+            renderAnnotationLayer={true}
+            className="shadow-lg"
+          />
+        </Document>
+      </div>
+    </div>
+  );
+}

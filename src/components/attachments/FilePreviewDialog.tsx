@@ -1,22 +1,28 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Loader2, AlertCircle } from 'lucide-react';
+import { ExternalLink, Loader2, AlertCircle, Download } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { EntityAttachment } from '@/types/attachment';
 import { formatDistanceToNow } from 'date-fns';
+import { PDFViewer } from './viewers/PDFViewer';
+import { WordViewer } from './viewers/WordViewer';
+import { ExcelViewer } from './viewers/ExcelViewer';
+import { CSVViewer } from './viewers/CSVViewer';
 
 interface FilePreviewDialogProps {
   attachment: EntityAttachment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onGetFileUrl: (attachment: EntityAttachment) => Promise<string>;
+  onDownload: (attachment: EntityAttachment) => void;
 }
 
 export function FilePreviewDialog({ 
   attachment, 
   open, 
   onOpenChange,
-  onGetFileUrl 
+  onGetFileUrl,
+  onDownload
 }: FilePreviewDialogProps) {
   const [fileUrl, setFileUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,9 +48,22 @@ export function FilePreviewDialog({
 
   if (!attachment) return null;
 
-  const isImage = attachment.file_type.startsWith('image/');
-  const isPDF = attachment.file_type === 'application/pdf' || attachment.file_name.toLowerCase().endsWith('.pdf');
-  const canPreview = isImage || isPDF;
+  const fileName = attachment.file_name.toLowerCase();
+  const fileType = attachment.file_type.toLowerCase();
+  
+  const isImage = fileType.startsWith('image/');
+  const isPDF = fileType === 'application/pdf' || fileName.endsWith('.pdf');
+  const isWord = 
+    fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    fileName.endsWith('.docx');
+  const isExcel = 
+    fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    fileType === 'application/vnd.ms-excel' ||
+    fileName.endsWith('.xlsx') ||
+    fileName.endsWith('.xls');
+  const isCSV = fileType === 'text/csv' || fileName.endsWith('.csv');
+
+  const canPreview = isImage || isPDF || isWord || isExcel || isCSV;
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -54,17 +73,43 @@ export function FilePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-lg truncate pr-8">{attachment.file_name}</DialogTitle>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span>{formatFileSize(attachment.file_size)}</span>
-            <span>•</span>
-            <span>{formatDistanceToNow(new Date(attachment.uploaded_at), { addSuffix: true })}</span>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg truncate">{attachment.file_name}</DialogTitle>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                <span>{formatFileSize(attachment.file_size)}</span>
+                <span>•</span>
+                <span>{formatDistanceToNow(new Date(attachment.uploaded_at), { addSuffix: true })}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {canPreview && fileUrl && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(fileUrl, '_blank')}
+                  className="gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Open
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDownload(attachment)}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -81,44 +126,31 @@ export function FilePreviewDialog({
                 Preview not available for this file type
               </p>
               <p className="text-xs text-muted-foreground">
-                Download the file to view it
+                Click Download to view the file
               </p>
             </div>
           ) : isImage ? (
-            <div className="flex items-center justify-center bg-muted/20 rounded-lg p-4 min-h-[400px]">
+            <div className="flex items-center justify-center bg-muted/20 rounded-lg p-4 h-full">
               <img
                 src={fileUrl}
                 alt={attachment.file_name}
-                className="max-w-full max-h-[70vh] object-contain rounded"
+                className="max-w-full max-h-full object-contain rounded"
               />
             </div>
           ) : isPDF ? (
-            <div className="space-y-3">
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(fileUrl, '_blank')}
-                  className="gap-2"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Open in New Tab
-                </Button>
-              </div>
-              <div className="border border-border rounded-lg overflow-hidden" style={{ height: '70vh' }}>
-                <iframe
-                  src={fileUrl}
-                  className="w-full h-full"
-                  title={attachment.file_name}
-                />
-              </div>
-            </div>
+            <PDFViewer url={fileUrl} />
+          ) : isWord ? (
+            <WordViewer url={fileUrl} />
+          ) : isExcel ? (
+            <ExcelViewer url={fileUrl} />
+          ) : isCSV ? (
+            <CSVViewer url={fileUrl} />
           ) : null}
         </div>
 
         {attachment.description && (
-          <div className="pt-3 border-t border-border">
-            <p className="text-xs text-muted-foreground">
+          <div className="pt-3 border-t text-sm">
+            <p className="text-muted-foreground">
               <span className="font-medium">Description:</span> {attachment.description}
             </p>
           </div>
