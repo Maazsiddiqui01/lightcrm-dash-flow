@@ -8,10 +8,20 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { ChevronDown, ChevronUp, Copy, CalendarIcon, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, CalendarIcon, Clock, Trash2 } from 'lucide-react';
 import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface OpportunityNote {
   id: string;
@@ -30,7 +40,9 @@ interface OpportunityNotesSectionProps {
   currentDueDate?: string | null;
   timeline: OpportunityNote[];
   onSave: (content: string, dueDate?: string, addInToDo?: boolean) => void;
+  onDelete?: (eventId: string) => void;
   isSaving: boolean;
+  isDeleting?: boolean;
   isLoadingCurrent: boolean;
   isLoadingTimeline: boolean;
 }
@@ -42,7 +54,9 @@ export function OpportunityNotesSection({
   currentDueDate,
   timeline,
   onSave,
+  onDelete,
   isSaving,
+  isDeleting = false,
   isLoadingCurrent,
   isLoadingTimeline,
 }: OpportunityNotesSectionProps) {
@@ -50,6 +64,8 @@ export function OpportunityNotesSection({
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [addInToDo, setAddInToDo] = useState(true);
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   const isNextSteps = field === 'next_steps';
@@ -126,6 +142,19 @@ export function OpportunityNotesSection({
     } catch (err) {
       console.error('Failed to copy:', err);
     }
+  };
+
+  const handleDeleteClick = (eventId: string) => {
+    setEntryToDelete(eventId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (entryToDelete && onDelete) {
+      onDelete(entryToDelete);
+    }
+    setDeleteConfirmOpen(false);
+    setEntryToDelete(null);
   };
 
   // Filter timeline to only show entries for this field

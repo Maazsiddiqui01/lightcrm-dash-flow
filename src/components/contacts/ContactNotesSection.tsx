@@ -3,10 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Copy, ChevronDown, ChevronUp } from 'lucide-react';
+import { Copy, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 
 interface ContactNote {
+  id?: string;
   contact_id: string;
   field: string;
   content: string;
@@ -25,9 +36,11 @@ interface ContactNotesSectionProps {
   currentValue: string | null;
   timeline: ContactNote[];
   onSave: (content: string) => void;
+  onDelete?: (eventId: string) => void;
   isLoadingCurrent: boolean;
   isLoadingTimeline: boolean;
   isSaving: boolean;
+  isDeleting?: boolean;
 }
 
 export function ContactNotesSection({
@@ -36,12 +49,16 @@ export function ContactNotesSection({
   currentValue,
   timeline,
   onSave,
+  onDelete,
   isLoadingCurrent,
   isLoadingTimeline,
   isSaving,
+  isDeleting = false,
 }: ContactNotesSectionProps) {
   const [draft, setDraft] = useState(currentValue || '');
   const [expandedEntries, setExpandedEntries] = useState<Set<number>>(new Set());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Sync draft with current value when it changes
@@ -81,6 +98,20 @@ export function ContactNotesSection({
     } catch (error) {
       console.error('Failed to copy:', error);
     }
+  };
+
+  const handleDeleteClick = (eventId: string | undefined) => {
+    if (!eventId) return;
+    setEntryToDelete(eventId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (entryToDelete && onDelete) {
+      onDelete(entryToDelete);
+    }
+    setDeleteConfirmOpen(false);
+    setEntryToDelete(null);
   };
 
   const canSave = draft.trim() !== (currentValue || '').trim() && draft.trim() !== '';
@@ -166,14 +197,27 @@ export function ContactNotesSection({
                       <span className="text-sm font-medium">
                         {new Date(entry.created_at).toLocaleString()}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(entry.content)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(entry.content)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        {onDelete && entry.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(entry.id)}
+                            disabled={isDeleting}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
@@ -209,6 +253,23 @@ export function ContactNotesSection({
           )}
         </div>
       </CardContent>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Note</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this note? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

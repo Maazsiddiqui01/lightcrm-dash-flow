@@ -149,6 +149,8 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     isLoadingTimeline,
     saveNotes,
     isSavingNotes,
+    deleteNote,
+    isDeletingNote,
   } = useContactNotes(contact?.id);
 
   // Contact next steps hook
@@ -159,6 +161,8 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     isLoadingTimeline: isLoadingNextStepsTimeline,
     saveNextSteps,
     isSaving: isSavingNextSteps,
+    deleteNextStep,
+    isDeleting: isDeletingNextStep,
   } = useContactNextSteps(contact?.id, contact?.full_name || contact?.email_address || undefined);
 
   // Fetch all groups this contact belongs to (new many-to-many schema)
@@ -1215,9 +1219,11 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
               currentValue={currentNotes?.notes || null}
               timeline={timeline}
               onSave={saveNotes}
+              onDelete={deleteNote}
               isLoadingCurrent={isLoadingCurrent}
               isLoadingTimeline={isLoadingTimeline}
               isSaving={isSavingNotes}
+              isDeleting={isDeletingNote}
             />
 
             <Separator />
@@ -1228,7 +1234,9 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
               currentDueDate={currentNextSteps?.next_steps_due_date || null}
               timeline={nextStepsTimeline}
               onSave={saveNextSteps}
+              onDelete={deleteNextStep}
               isSaving={isSavingNextSteps}
+              isDeleting={isDeletingNextStep}
               isLoadingCurrent={isLoadingNextSteps}
               isLoadingTimeline={isLoadingNextStepsTimeline}
             />

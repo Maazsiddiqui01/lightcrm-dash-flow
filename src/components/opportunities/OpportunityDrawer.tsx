@@ -791,7 +791,9 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             currentDueDate={currentNotes?.next_steps_due_date || null}
             timeline={timeline}
             onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
+            onDelete={deleteNote}
             isSaving={isSavingNextSteps}
+            isDeleting={isDeletingNote}
             isLoadingCurrent={isLoadingCurrent}
             isLoadingTimeline={isLoadingTimeline}
           />
@@ -805,7 +807,9 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             currentValue={currentNotes?.most_recent_notes || null}
             timeline={timeline}
             onSave={(content) => saveMostRecentNotes(content)}
+            onDelete={deleteNote}
             isSaving={isSavingNotes}
+            isDeleting={isDeletingNote}
             isLoadingCurrent={isLoadingCurrent}
             isLoadingTimeline={isLoadingTimeline}
           />

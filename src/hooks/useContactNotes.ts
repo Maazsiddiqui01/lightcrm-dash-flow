@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addContactNote } from '@/utils/rpcHelpers';
 
 interface ContactNote {
+  id?: string;
   contact_id: string;
   field: string;
   content: string;
@@ -89,6 +90,35 @@ export const useContactNotes = (contactId: string | undefined) => {
     },
   });
 
+  // Delete note mutation
+  const deleteNoteMutation = useMutation({
+    mutationFn: async ({ eventId }: { eventId: string }) => {
+      const { error } = await supabase
+        .from('contact_note_events')
+        .delete()
+        .eq('id', eventId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Note deleted successfully",
+      });
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['contact-notes-timeline', contactId] });
+    },
+    onError: (error: any) => {
+      console.error('Error deleting note:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete note",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     currentNotes: currentNotesQuery.data,
     timeline: timelineQuery.data || [],
@@ -99,5 +129,9 @@ export const useContactNotes = (contactId: string | undefined) => {
       saveNotesMutation.mutate({ contactId, content });
     },
     isSavingNotes: saveNotesMutation.isPending,
+    deleteNote: (eventId: string) => {
+      deleteNoteMutation.mutate({ eventId });
+    },
+    isDeletingNote: deleteNoteMutation.isPending,
   };
 };
