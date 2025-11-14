@@ -3307,6 +3307,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           field: string | null
+          id: string | null
         }
         Insert: {
           contact_id?: string | null
@@ -3314,6 +3315,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           field?: string | null
+          id?: string | null
         }
         Update: {
           contact_id?: string | null
@@ -3321,6 +3323,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           field?: string | null
+          id?: string | null
         }
         Relationships: [
           {

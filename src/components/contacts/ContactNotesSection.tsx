@@ -17,7 +17,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 interface ContactNote {
-  id?: string;
+  id: string;
   contact_id: string;
   field: string;
   content: string;
