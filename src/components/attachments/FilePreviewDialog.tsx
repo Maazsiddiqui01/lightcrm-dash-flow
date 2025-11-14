@@ -63,7 +63,7 @@ export function FilePreviewDialog({
     fileName.endsWith('.xls');
   const isCSV = fileType === 'text/csv' || fileName.endsWith('.csv');
 
-  const canPreview = isImage || isPDF || isWord || isExcel || isCSV;
+  const canPreview = isImage || isWord || isExcel || isCSV;
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
