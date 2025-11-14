@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,42 @@ export function PDFViewer({ url }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [isLoadingBlob, setIsLoadingBlob] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+
+    const loadPdfAsBlob = async () => {
+      try {
+        setIsLoadingBlob(true);
+        setLoadError(null);
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch PDF');
+
+        const blob = await response.blob();
+        objectUrl = URL.createObjectURL(blob);
+        setBlobUrl(objectUrl);
+      } catch (err) {
+        console.error('PDF load error:', err);
+        setLoadError('Unable to load PDF preview. Please try downloading instead.');
+      } finally {
+        setIsLoadingBlob(false);
+      }
+    };
+
+    if (url) {
+      loadPdfAsBlob();
+    }
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [url]);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
@@ -29,6 +65,25 @@ export function PDFViewer({ url }: PDFViewerProps) {
 
   const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 2.0));
   const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-sm text-destructive text-center p-4">
+          <p className="font-medium mb-2">Failed to load PDF</p>
+          <p className="text-xs text-muted-foreground">{loadError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoadingBlob || !blobUrl) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -79,7 +134,7 @@ export function PDFViewer({ url }: PDFViewerProps) {
       
       <div className="flex-1 overflow-auto flex justify-center bg-muted/20 rounded-lg p-4">
         <Document
-          file={url}
+          file={blobUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           options={{
             cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
