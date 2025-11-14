@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button';
-import { Download, Trash2, Loader2 } from 'lucide-react';
+import { Download, Trash2, Loader2, Eye } from 'lucide-react';
 import { AttachmentIcon } from './AttachmentIcon';
 import { formatDistanceToNow } from 'date-fns';
 import type { EntityAttachment } from '@/types/attachment';
+import { FilePreviewDialog } from './FilePreviewDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,11 +20,13 @@ interface AttachmentListProps {
   attachments: EntityAttachment[];
   onDownload: (attachment: EntityAttachment) => void;
   onDelete: (attachment: EntityAttachment) => void;
+  onGetFileUrl: (attachment: EntityAttachment) => Promise<string>;
   isDeleting?: boolean;
 }
 
-export function AttachmentList({ attachments, onDownload, onDelete, isDeleting }: AttachmentListProps) {
+export function AttachmentList({ attachments, onDownload, onDelete, onGetFileUrl, isDeleting }: AttachmentListProps) {
   const [deleteTarget, setDeleteTarget] = useState<EntityAttachment | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<EntityAttachment | null>(null);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -65,8 +68,18 @@ export function AttachmentList({ attachments, onDownload, onDelete, isDeleting }
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => setPreviewTarget(attachment)}
+                className="h-8 w-8 p-0"
+                title="Preview"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => onDownload(attachment)}
                 className="h-8 w-8 p-0"
+                title="Download"
               >
                 <Download className="h-4 w-4" />
               </Button>
@@ -76,6 +89,7 @@ export function AttachmentList({ attachments, onDownload, onDelete, isDeleting }
                 onClick={() => setDeleteTarget(attachment)}
                 disabled={isDeleting}
                 className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                title="Delete"
               >
                 {isDeleting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -112,6 +126,13 @@ export function AttachmentList({ attachments, onDownload, onDelete, isDeleting }
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <FilePreviewDialog
+        attachment={previewTarget}
+        open={!!previewTarget}
+        onOpenChange={(open) => !open && setPreviewTarget(null)}
+        onGetFileUrl={onGetFileUrl}
+      />
     </>
   );
 }

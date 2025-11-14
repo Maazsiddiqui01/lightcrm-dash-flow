@@ -852,7 +852,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
 
 function OpportunityAttachmentsSection({ opportunityId }: { opportunityId: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { attachments, isLoading, uploadFile, isUploading, deleteFile, isDeleting, downloadFile } = 
+  const { attachments, isLoading, uploadFile, isUploading, deleteFile, isDeleting, downloadFile, getFileUrl } = 
     useEntityAttachments('opportunity', opportunityId);
 
   return (
@@ -887,6 +887,7 @@ function OpportunityAttachmentsSection({ opportunityId }: { opportunityId: strin
               attachments={attachments}
               onDownload={downloadFile}
               onDelete={deleteFile}
+              onGetFileUrl={getFileUrl}
               isDeleting={isDeleting}
             />
           )}

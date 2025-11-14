@@ -1369,7 +1369,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
 
 function AttachmentsSection({ contactId }: { contactId: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { attachments, isLoading, uploadFile, isUploading, deleteFile, isDeleting, downloadFile } = 
+  const { attachments, isLoading, uploadFile, isUploading, deleteFile, isDeleting, downloadFile, getFileUrl } = 
     useEntityAttachments('contact', contactId);
 
   return (
@@ -1404,6 +1404,7 @@ function AttachmentsSection({ contactId }: { contactId: string }) {
               attachments={attachments}
               onDownload={downloadFile}
               onDelete={deleteFile}
+              onGetFileUrl={getFileUrl}
               isDeleting={isDeleting}
             />
           )}
