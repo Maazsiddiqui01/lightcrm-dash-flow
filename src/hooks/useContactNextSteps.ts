@@ -229,6 +229,8 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
       // Invalidate queries to refresh data
       if (contactId) {
         queryClient.invalidateQueries({ queryKey: ['contact-next-steps-timeline', contactId] });
+        queryClient.invalidateQueries({ queryKey: ['contact-current-next-steps', contactId] });
+        queryClient.invalidateQueries({ queryKey: ['contacts'] });
       }
     },
     onError: (error: any) => {

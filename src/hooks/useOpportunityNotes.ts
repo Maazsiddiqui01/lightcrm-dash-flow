@@ -190,6 +190,8 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['opportunity-notes-timeline', opportunityId] });
+      queryClient.invalidateQueries({ queryKey: ['opportunity-current-notes', opportunityId] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
     },
     onError: (error: any) => {
       console.error('Error deleting note:', error);

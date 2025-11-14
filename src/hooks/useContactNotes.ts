@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addContactNote } from '@/utils/rpcHelpers';
 
 interface ContactNote {
-  id?: string;
+  id: string;
   contact_id: string;
   field: string;
   content: string;
@@ -108,6 +108,8 @@ export const useContactNotes = (contactId: string | undefined) => {
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['contact-notes-timeline', contactId] });
+      queryClient.invalidateQueries({ queryKey: ['contact-notes', contactId] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
     },
     onError: (error: any) => {
       console.error('Error deleting note:', error);
