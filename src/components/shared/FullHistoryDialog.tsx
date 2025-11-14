@@ -9,8 +9,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Calendar, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Calendar, User, Download } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 export interface TimelineItem {
   id?: string;
@@ -40,6 +42,7 @@ export function FullHistoryDialog({
 }: FullHistoryDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const { toast } = useToast();
 
   // Filter timeline based on search and active tab
   const filteredTimeline = useMemo(() => {
@@ -84,12 +87,70 @@ export function FullHistoryDialog({
     }
   };
 
+  const handleExport = () => {
+    try {
+      // Prepare CSV data
+      const headers = ['Type', 'Content', 'Created Date', 'Created By', 'Due Date'];
+      const rows = filteredTimeline.map(item => [
+        getFieldLabel(item.field),
+        `"${(item.content || '').replace(/"/g, '""')}"`, // Escape quotes in content
+        format(new Date(item.created_at), 'yyyy-MM-dd HH:mm:ss'),
+        item.created_by || 'Unknown',
+        item.due_date ? format(new Date(item.due_date), 'yyyy-MM-dd') : ''
+      ]);
+
+      // Create CSV content
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `history_${format(new Date(), 'yyyy-MM-dd_HHmmss')}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Export successful",
+        description: `Exported ${filteredTimeline.length} entries to CSV`,
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export timeline data",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>{title}</DialogTitle>
+              <DialogDescription>{description}</DialogDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={filteredTimeline.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="flex-1 flex flex-col gap-4 overflow-hidden">
