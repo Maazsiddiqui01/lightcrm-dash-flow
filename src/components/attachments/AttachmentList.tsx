@@ -132,6 +132,7 @@ export function AttachmentList({ attachments, onDownload, onDelete, onGetFileUrl
         open={!!previewTarget}
         onOpenChange={(open) => !open && setPreviewTarget(null)}
         onGetFileUrl={onGetFileUrl}
+        onDownload={onDownload}
       />
     </>
   );
