@@ -10,7 +10,6 @@ import {
   useOpportunityPlatformAddOn,
   useOpportunityReferralContacts,
   useOpportunityReferralCompanies,
-  useOpportunityDatesOfOrigination,
   useOpportunityHeadquarters,
   useOpportunityProcessTimelines,
   useOpportunityFunds
@@ -74,7 +73,41 @@ export function OpportunityFilterBar({
   const { data: platformAddOns = [], isLoading: platformLoading } = useOpportunityPlatformAddOn();
   const { data: referralContacts = [], isLoading: referralContactsLoading } = useOpportunityReferralContacts();
   const { data: referralCompanies = [], isLoading: referralCompaniesLoading } = useOpportunityReferralCompanies();
-  const { data: dateOrigins = [], isLoading: dateOriginsLoading } = useOpportunityDatesOfOrigination();
+  
+  // Date of Origination options - static list with quarters
+  const dateOrigins = [
+    // 2024
+    { value: '2024', label: '2024' },
+    { value: 'Q1 2024', label: 'Q1 2024' },
+    { value: 'Q2 2024', label: 'Q2 2024' },
+    { value: 'Q3 2024', label: 'Q3 2024' },
+    { value: 'Q4 2024', label: 'Q4 2024' },
+    // 2025
+    { value: '2025', label: '2025' },
+    { value: 'Q1 2025', label: 'Q1 2025' },
+    { value: 'Q2 2025', label: 'Q2 2025' },
+    { value: 'Q3 2025', label: 'Q3 2025' },
+    { value: 'Q4 2025', label: 'Q4 2025' },
+    // 2026
+    { value: '2026', label: '2026' },
+    { value: 'Q1 2026', label: 'Q1 2026' },
+    { value: 'Q2 2026', label: 'Q2 2026' },
+    { value: 'Q3 2026', label: 'Q3 2026' },
+    { value: 'Q4 2026', label: 'Q4 2026' },
+    // 2027
+    { value: '2027', label: '2027' },
+    { value: 'Q1 2027', label: 'Q1 2027' },
+    { value: 'Q2 2027', label: 'Q2 2027' },
+    { value: 'Q3 2027', label: 'Q3 2027' },
+    { value: 'Q4 2027', label: 'Q4 2027' },
+    // 2028
+    { value: '2028', label: '2028' },
+    { value: 'Q1 2028', label: 'Q1 2028' },
+    { value: 'Q2 2028', label: 'Q2 2028' },
+    { value: 'Q3 2028', label: 'Q3 2028' },
+    { value: 'Q4 2028', label: 'Q4 2028' },
+  ];
+  
   const { data: headquarters = [], isLoading: headquartersLoading } = useOpportunityHeadquarters();
   const { data: processTimelines = [], isLoading: processTimelinesLoading } = useOpportunityProcessTimelines();
   const { data: funds = [], isLoading: fundsLoading } = useOpportunityFunds();
@@ -200,7 +233,6 @@ export function OpportunityFilterBar({
           values={filters.dateOfOrigination}
           onChange={(values) => updateFilter('dateOfOrigination', values)}
           searchPlaceholder="Search Dates"
-          loading={dateOriginsLoading}
         />
 
         <RangeInput
