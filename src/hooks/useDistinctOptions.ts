@@ -240,44 +240,26 @@ export const useOpportunityLeads = (search?: string) => {
   return useQuery({
     queryKey: ['opportunity-leads', search],
     queryFn: async () => {
-      const [data1, data2] = await Promise.all([
-        supabase
-          .from('opportunities_raw')
-          .select('investment_professional_point_person_1', { head: false })
-          .not('investment_professional_point_person_1', 'is', null)
-          .neq('investment_professional_point_person_1', '')
-          .order('investment_professional_point_person_1')
-          .limit(1000)
-          .then(r => r.data || []),
-        supabase
-          .from('opportunities_raw')
-          .select('investment_professional_point_person_2', { head: false })
-          .not('investment_professional_point_person_2', 'is', null)
-          .neq('investment_professional_point_person_2', '')
-          .order('investment_professional_point_person_2')
-          .limit(1000)
-          .then(r => r.data || [])
-      ]);
+      let query = supabase
+        .from('lg_leads_directory')
+        .select('lead_name')
+        .order('lead_name');
       
-      const uniqueValues = new Set<string>();
-      data1.forEach(row => {
-        const value = row.investment_professional_point_person_1?.toString().trim();
-        if (value) uniqueValues.add(value);
-      });
-      data2.forEach(row => {
-        const value = row.investment_professional_point_person_2?.toString().trim();
-        if (value) uniqueValues.add(value);
-      });
-      
-      let values = Array.from(uniqueValues);
       if (search) {
         const searchLower = search.toLowerCase();
-        values = values.filter(v => v.toLowerCase().includes(searchLower));
+        const { data } = await query;
+        return (data || [])
+          .filter(row => row.lead_name.toLowerCase().includes(searchLower))
+          .map(row => ({ value: row.lead_name, label: row.lead_name }));
       }
       
-      return values
-        .sort()
-        .map(value => ({ value, label: value }));
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      return (data || []).map(row => ({ 
+        value: row.lead_name, 
+        label: row.lead_name 
+      }));
     },
     staleTime: 10 * 60 * 1000,
   });

@@ -18,6 +18,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, User, Users, X } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { SingleSelectDropdown } from "@/components/opportunities/SingleSelectDropdown";
+import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 
 interface AddContactDialogProps {
   open: boolean;
@@ -81,6 +83,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
   // Fetch focus area and sector options
   const sectorsQuery = useSectors();
   const focusAreasQuery = useFocusAreasBySector(undefined);
+  const { lgLeadOptions } = useOpportunityOptions();
 
   const addContact = () => {
     setContacts([...contacts, { ...emptyContactForm }]);
@@ -605,12 +608,13 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor={`lg_lead_${index}`}>LG Lead</Label>
-                        <Input
-                          id={`lg_lead_${index}`}
+                        <SingleSelectDropdown
+                          label="LG Lead"
+                          options={lgLeadOptions}
                           value={contact.lg_lead}
-                          onChange={(e) => updateContact(index, "lg_lead", e.target.value)}
-                          placeholder="Enter LG Lead"
+                          onChange={(value) => updateContact(index, "lg_lead", value)}
+                          placeholder="Select LG Lead"
+                          allowCustom={false}
                         />
                       </div>
 

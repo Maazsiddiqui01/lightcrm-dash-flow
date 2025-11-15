@@ -33,6 +33,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useGroups } from "@/hooks/useGroups";
 import { useSectors } from "@/hooks/useLookups";
 import { supabase } from "@/integrations/supabase/client";
+import { SingleSelectDropdown } from "@/components/opportunities/SingleSelectDropdown";
+import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 
 const addContactSchema = z.object({
   full_name: z.string().min(1, "Full name is required"),
@@ -98,6 +100,7 @@ export function AddContactModal({ candidate, open, onClose }: AddContactModalPro
   const groupsQuery = useGroups();
   const sectorsQuery = useSectors();
   const memberCountsQuery = useGroupMemberCounts();
+  const { lgLeadOptions } = useOpportunityOptions();
   
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [emailRole, setEmailRole] = useState<'to' | 'cc' | 'bcc'>('to');
@@ -448,7 +451,14 @@ export function AddContactModal({ candidate, open, onClose }: AddContactModalPro
                       <FormItem>
                         <FormLabel>LG Lead</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <SingleSelectDropdown
+                            label=""
+                            options={lgLeadOptions}
+                            value={field.value || ""}
+                            onChange={field.onChange}
+                            placeholder="Select LG Lead"
+                            allowCustom={false}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
