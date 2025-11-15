@@ -18,6 +18,7 @@ interface VirtualizedTableProps<T> {
   containerHeight: number;
   rowHeight?: number;
   onRowClick?: (row: T) => void;
+  onRowDoubleClick?: (row: T) => void;
   loading?: boolean;
   stickyFirstColumn?: boolean;
   className?: string;
@@ -29,6 +30,7 @@ export function VirtualizedTable<T extends Record<string, any>>({
   containerHeight,
   rowHeight = 52,
   onRowClick,
+  onRowDoubleClick,
   loading = false,
   stickyFirstColumn = true,
   className
@@ -137,6 +139,7 @@ export function VirtualizedTable<T extends Record<string, any>>({
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                   onClick={() => onRowClick?.(row)}
+                  onDoubleClick={() => onRowDoubleClick?.(row)}
                 >
                   {columns.map((column) => {
                     const value = row[column.key];

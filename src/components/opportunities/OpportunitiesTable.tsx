@@ -482,6 +482,13 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
     setIsDrawerOpen(true);
   };
 
+  const handleRowDoubleClick = (opportunity: OpportunityRaw) => {
+    // If not already in edit mode, enter edit mode
+    if (!editMode.editState.editMode) {
+      editMode.toggleEditMode();
+    }
+  };
+
   // Handle multi-sort changes
   const handleSortChange = (newSortLevels: SortLevel[]) => {
     setSortLevels(newSortLevels);
@@ -663,6 +670,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         sortDirection={sortDirection}
         onSort={handleSort}
         onRowClick={handleRowClick}
+        onRowDoubleClick={handleRowDoubleClick}
         editMode={editMode.editState.editMode} // Pass edit mode state
         emptyState={{
           title: "No opportunities found",

@@ -482,6 +482,13 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     setIsDrawerOpen(true);
   };
 
+  const handleRowDoubleClick = (contact: ContactRaw) => {
+    // If not already in edit mode, enter edit mode
+    if (!editMode.editState.editMode) {
+      editMode.toggleEditMode();
+    }
+  };
+
   // Handle multi-sort changes
   const handleSortChange = (newSortLevels: SortLevel[]) => {
     setSortLevels(newSortLevels);
@@ -773,6 +780,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         sortDirection={sortDirection}
         onSort={handleSort}
         onRowClick={handleRowClick}
+        onRowDoubleClick={handleRowDoubleClick}
         editMode={editMode.editState.editMode} // Pass edit mode state
         emptyState={{
           title: isRefreshing ? "Updating contacts..." : "No contacts found",

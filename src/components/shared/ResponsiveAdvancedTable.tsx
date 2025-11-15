@@ -67,6 +67,7 @@ interface ResponsiveAdvancedTableProps<T = any> {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
   onRowClick?: (row: T) => void;
+  onRowDoubleClick?: (row: T) => void;
   onSort?: (key: string, direction: 'asc' | 'desc' | null) => void;
   sortKey?: string;
   sortDirection?: 'asc' | 'desc' | null;
@@ -111,6 +112,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
   searchValue = "",
   onSearchChange,
   onRowClick,
+  onRowDoubleClick,
   onSort,
   sortKey,
   sortDirection,
@@ -749,6 +751,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
             containerHeight={Math.min(600, maxTableHeight)}
             rowHeight={rowHeight}
             onRowClick={onRowClick}
+            onRowDoubleClick={onRowDoubleClick}
             loading={loading}
             stickyFirstColumn={stickyFirstColumn}
             className="flex-1"
@@ -1061,19 +1064,32 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
                          isEven ? "bg-background" : "bg-table-row-even",
                          onRowClick && !editMode && "cursor-pointer hover:bg-table-row-hover"
                        )}
-                       onClick={(e) => {
-                         // Don't trigger row click if clicking on checkbox
-                         if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
-                           e.stopPropagation();
-                           return;
-                         }
-                         // Don't trigger row click if in edit mode
-                         if (editMode) {
-                           e.stopPropagation();
-                           return;
-                         }
-                         onRowClick?.(row);
-                       }}
+                        onClick={(e) => {
+                          // Don't trigger row click if clicking on checkbox
+                          if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
+                            e.stopPropagation();
+                            return;
+                          }
+                          // Don't trigger row click if in edit mode
+                          if (editMode) {
+                            e.stopPropagation();
+                            return;
+                          }
+                          onRowClick?.(row);
+                        }}
+                        onDoubleClick={(e) => {
+                          // Don't trigger if clicking on checkbox
+                          if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
+                            e.stopPropagation();
+                            return;
+                          }
+                          // Don't trigger if already in edit mode
+                          if (editMode) {
+                            e.stopPropagation();
+                            return;
+                          }
+                          onRowDoubleClick?.(row);
+                        }}
                      >
                         {visibleColumns.map((column, cellIndex) => (
                           <TableCell
