@@ -11,6 +11,7 @@ import { OppsChart } from '@/components/sourcing/OppsChart';
 import { ExportButtons } from '@/components/sourcing/ExportButtons';
 import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
 import { DuplicateAlertCard } from "@/components/dashboard/DuplicateAlertCard";
+import { UpcomingNextStepsWidget } from "@/components/dashboard/UpcomingNextStepsWidget";
 import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { useToast } from '@/hooks/use-toast';
 import { useDuplicateStats } from '@/hooks/useDuplicateStats';
@@ -392,6 +393,9 @@ export default function SourceGreatnessPage() {
               loading={loading}
             />
           </div>
+
+          {/* Upcoming Next Steps Widget */}
+          <UpcomingNextStepsWidget />
 
           {/* AI Insights Widget */}
           <AIInsightsWidget />
