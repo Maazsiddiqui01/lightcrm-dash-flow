@@ -8,6 +8,8 @@ import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { Button } from "@/components/ui/button";
 import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle, Upload, Trash2, Paperclip, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useDebounce } from "@/hooks/useDebounce";
+import { DEBOUNCE } from "@/config/performance";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { exportCsv } from "@/lib/export/exportService";
 import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
@@ -111,7 +113,9 @@ interface OpportunitiesTableProps {
 export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChange }: OpportunitiesTableProps) {
   const [opportunities, setOpportunities] = useState<OpportunityRaw[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE.SEARCH);
   const [selectedOpportunity, setSelectedOpportunity] = useState<OpportunityRaw | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -275,12 +279,8 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
   
   // Debounced effect to prevent rapid re-fetching
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchOpportunities();
-    }, 200); // Small delay to batch rapid changes
-    
-    return () => clearTimeout(timeoutId);
-  }, [sortLevels, filtersKey, searchTerm]);
+    fetchOpportunities();
+  }, [sortLevels, filtersKey, debouncedSearchTerm]);
 
   const fetchOpportunities = async () => {
     // Generate unique request ID to prevent race conditions
@@ -288,7 +288,13 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
     requestIdRef.current = requestId;
     
     try {
-      setLoading(true);
+      // Distinguish between initial load and search/filter changes
+      const isInitialLoad = opportunities.length === 0;
+      if (isInitialLoad) {
+        setLoading(true);
+      } else {
+        setIsSearching(true);
+      }
       let query = supabase
         .from("opportunities_raw")
         .select("*");
@@ -456,6 +462,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
       // Only set loading to false if this is still the current request
       if (requestIdRef.current === requestId) {
         setLoading(false);
+        setIsSearching(false);
         requestIdRef.current = null;
       }
     }
