@@ -22,8 +22,9 @@ import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
+import { QuarterYearDropdown } from "./QuarterYearDropdown";
 import { 
-  splitTokens, 
+  splitTokens,
   tierDisplayOptions, 
   getTierDisplayValue, 
   getTierDatabaseValue,
@@ -560,12 +561,11 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               />
 
               {/* Date of Origination */}
-              <SingleSelectDropdown
+              <QuarterYearDropdown
                 label="Date of Origination"
-                options={['2024', '2025', '2026', '2027']}
                 value={opportunity.date_of_origination || ""}
                 onChange={(value) => handleFieldChange("date_of_origination", value)}
-                placeholder="Select year"
+                placeholder="Select quarter and year"
                 disabled={isLoading}
               />
 
