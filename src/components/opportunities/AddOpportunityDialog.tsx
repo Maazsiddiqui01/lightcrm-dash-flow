@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getCurrentQuarterYear } from "@/utils/dateUtils";
 import {
   Dialog,
   DialogContent,
@@ -48,7 +49,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     sector: "",
     lg_focus_area: "",
     platform_add_on: "",
-    date_of_origination: "",
+    date_of_origination: getCurrentQuarterYear(),
     deal_source_company: "",
     deal_source_individual_1: "",
     deal_source_individual_2: "",
@@ -256,7 +257,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       sector: "",
       lg_focus_area: "",
       platform_add_on: "",
-      date_of_origination: "",
+      date_of_origination: getCurrentQuarterYear(),
       deal_source_company: "",
       deal_source_individual_1: "",
       deal_source_individual_2: "",
