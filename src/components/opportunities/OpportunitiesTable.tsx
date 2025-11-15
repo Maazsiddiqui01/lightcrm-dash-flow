@@ -115,7 +115,6 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE.SEARCH);
   const [selectedOpportunity, setSelectedOpportunity] = useState<OpportunityRaw | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -277,10 +276,10 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
   // Stable key for filters to avoid effect thrashing on referential changes
   const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
   
-  // Debounced effect to prevent rapid re-fetching
+  // Effect to fetch opportunities when filters, sort, or search changes
   useEffect(() => {
     fetchOpportunities();
-  }, [sortLevels, filtersKey, debouncedSearchTerm]);
+  }, [sortLevels, filtersKey, searchTerm]);
 
   const fetchOpportunities = async () => {
     // Generate unique request ID to prevent race conditions
