@@ -18,8 +18,10 @@ interface AllNextStepsDialogProps {
   onOpenChange: (open: boolean) => void;
   steps: UpcomingNextStep[];
   onComplete: (step: UpcomingNextStep) => void;
+  onDelete: (step: UpcomingNextStep) => void;
   onEntityClick: (step: UpcomingNextStep) => void;
   isCompleting?: boolean;
+  isDeleting?: boolean;
 }
 
 export function AllNextStepsDialog({
@@ -27,8 +29,10 @@ export function AllNextStepsDialog({
   onOpenChange,
   steps,
   onComplete,
+  onDelete,
   onEntityClick,
   isCompleting,
+  isDeleting,
 }: AllNextStepsDialogProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'overdue' | 'week' | 'month'>('all');
@@ -115,8 +119,10 @@ export function AllNextStepsDialog({
                   key={`${step.entity_type}-${step.id}`}
                   step={step}
                   onComplete={onComplete}
+                  onDelete={onDelete}
                   onEntityClick={onEntityClick}
                   isCompleting={isCompleting}
+                  isDeleting={isDeleting}
                 />
               ))
             )}

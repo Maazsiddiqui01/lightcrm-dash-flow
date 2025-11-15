@@ -180,11 +180,49 @@ export function useUpcomingNextSteps(limit?: number) {
     },
   });
 
+  // Delete next step mutation
+  const deleteNextStepMutation = useMutation({
+    mutationFn: async (step: UpcomingNextStep) => {
+      // Simply clear the next steps without archiving
+      if (step.entity_type === 'contact') {
+        const { error } = await supabase
+          .from('contacts_raw')
+          .update({ next_steps: null, next_steps_due_date: null })
+          .eq('id', step.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('opportunities_raw')
+          .update({ next_steps: null, next_steps_due_date: null })
+          .eq('id', step.id);
+
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Next Step Deleted",
+        description: "The next step has been removed.",
+      });
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete next step",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     data: data || [],
     isLoading,
     markAsComplete: markAsCompleteMutation.mutate,
     isMarkingComplete: markAsCompleteMutation.isPending,
+    deleteNextStep: deleteNextStepMutation.mutate,
+    isDeletingNextStep: deleteNextStepMutation.isPending,
     refresh: refetch,
   };
 }
