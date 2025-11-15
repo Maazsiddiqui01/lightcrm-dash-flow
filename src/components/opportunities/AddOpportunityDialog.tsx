@@ -17,6 +17,7 @@ import { Plus, Target } from "lucide-react";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
+import { QuarterYearDropdown } from "./QuarterYearDropdown";
 import { useSectors, useFocusAreasBySector } from "@/hooks/useLookups";
 import { calculateLgTeam } from "@/utils/opportunityHelpers";
 import { ContactPickerWithAddNew } from "./ContactPickerWithAddNew";
@@ -466,12 +467,11 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                 disabled={isLoading}
               />
 
-            <SingleSelectDropdown
+            <QuarterYearDropdown
               label="Date of Origination"
-              options={['2024', '2025', '2026', '2027']}
               value={formData.date_of_origination}
               onChange={(value) => handleInputChange("date_of_origination", value)}
-              placeholder="Select year"
+              placeholder="Select quarter and year"
               disabled={isLoading}
             />
             </div>
