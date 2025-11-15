@@ -40,6 +40,8 @@ import { AttachmentUpload } from "@/components/attachments/AttachmentUpload";
 import { AttachmentList } from "@/components/attachments/AttachmentList";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FullHistoryDialog, TimelineItem } from "@/components/shared/FullHistoryDialog";
+import { SingleSelectDropdown } from "@/components/opportunities/SingleSelectDropdown";
+import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 
 interface ContactRaw {
   id: string;
@@ -195,6 +197,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   // Use canonical lookup options
   const sectorsQuery = useSectors();
   const focusAreasQuery = useFocusAreasBySector(contactData?.lg_sector || undefined);
+  const { lgLeadOptions } = useOpportunityOptions();
 
   // Hook to fetch opportunities for this contact
   const { data: contactOpps = [], isLoading: isLoadingOpps, error: oppsError } = useContactOpps(contactData?.full_name);
@@ -753,11 +756,13 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 </div>
 
                 <div>
-                  <Label htmlFor="lg_lead">LG Lead</Label>
-                  <Input
-                    id="lg_lead"
+                  <SingleSelectDropdown
+                    label="LG Lead"
+                    options={lgLeadOptions}
                     value={contactData.lg_lead || ""}
-                    onChange={(e) => updateField("lg_lead", e.target.value)}
+                    onChange={(value) => updateField("lg_lead", value)}
+                    placeholder="Select LG Lead"
+                    allowCustom={false}
                   />
                 </div>
 

@@ -11,33 +11,21 @@ export const useContactLgLeads = (search?: string) => {
     queryKey: ['contact-lg-leads', search],
     queryFn: async () => {
       let query = supabase
-        .from('contacts_raw')
-        .select('lg_lead', { head: false })
-        .not('lg_lead', 'is', null)
-        .neq('lg_lead', '');
+        .from('lg_leads_directory')
+        .select('lead_name')
+        .order('lead_name');
       
       if (search) {
-        query = query.ilike('lg_lead', `%${search}%`);
+        query = query.ilike('lead_name', `%${search}%`);
       }
       
-      const { data, error } = await query.order('lg_lead').limit(1000);
+      const { data, error } = await query;
       if (error) throw error;
       
-      const uniqueValues = new Set<string>();
-      
-      // Parse comma-separated values from lg_lead field
-      (data || []).forEach(row => {
-        const leadsList = row.lg_lead?.toString().trim();
-        if (leadsList) {
-          // Split by comma and clean each lead name
-          const leads = leadsList.split(',').map(lead => lead.trim()).filter(lead => lead.length > 0);
-          leads.forEach(lead => uniqueValues.add(lead));
-        }
-      });
-      
-      return Array.from(uniqueValues)
-        .sort()
-        .map(value => ({ value, label: value }));
+      return (data || []).map(row => ({ 
+        value: row.lead_name, 
+        label: row.lead_name 
+      }));
     },
     staleTime: 10 * 60 * 1000,
   });
