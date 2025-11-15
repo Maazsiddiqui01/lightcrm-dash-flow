@@ -11,7 +11,7 @@ import { AllNextStepsDialog } from './AllNextStepsDialog';
 export function UpcomingNextStepsWidget() {
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { data: allSteps, isLoading, markAsComplete, isMarkingComplete } = useUpcomingNextSteps();
+  const { data: allSteps, isLoading, markAsComplete, isMarkingComplete, deleteNextStep, isDeletingNextStep } = useUpcomingNextSteps();
   
   // Show only top 5 in widget
   const displaySteps = allSteps.slice(0, 5);
@@ -89,8 +89,10 @@ export function UpcomingNextStepsWidget() {
               key={`${step.entity_type}-${step.id}`}
               step={step}
               onComplete={markAsComplete}
+              onDelete={deleteNextStep}
               onEntityClick={handleEntityClick}
               isCompleting={isMarkingComplete}
+              isDeleting={isDeletingNextStep}
             />
           ))}
 
@@ -112,8 +114,10 @@ export function UpcomingNextStepsWidget() {
         onOpenChange={setIsDialogOpen}
         steps={allSteps}
         onComplete={markAsComplete}
+        onDelete={deleteNextStep}
         onEntityClick={handleEntityClick}
         isCompleting={isMarkingComplete}
+        isDeleting={isDeletingNextStep}
       />
     </>
   );
