@@ -563,7 +563,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               {/* Date of Origination */}
               <QuarterYearDropdown
                 label="Date of Origination"
-                value={opportunity.date_of_origination || ""}
+                value={editedFields.date_of_origination || opportunity.date_of_origination || ""}
                 onChange={(value) => handleFieldChange("date_of_origination", value)}
                 placeholder="Select quarter and year"
                 disabled={isLoading}

@@ -394,7 +394,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         );
       }
 
-      // Date of origination filter - support both year-only and date ranges
+      // Date of origination filter - support quarters, years, and partial matching
       if (filters.dateOfOrigination.length > 0) {
         const dateConditions = filters.dateOfOrigination.map(dateValue => {
           // Check if it's a date range (contains " to ")
@@ -402,7 +402,14 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
             const [start, end] = dateValue.split(' to ');
             return `date_of_origination.gte.${start},date_of_origination.lte.${end}`;
           }
-          // Otherwise treat as exact year match
+          
+          // Check if it's a year-only value (e.g., "2024")
+          // Use partial matching so "2024" matches "2024", "Q1 2024", "Q2 2024", etc.
+          if (/^\d{4}$/.test(dateValue)) {
+            return `date_of_origination.ilike.%${dateValue}%`;
+          }
+          
+          // Otherwise treat as exact match (for "Q1 2024", "Q2 2025", etc.)
           return `date_of_origination.eq.${dateValue}`;
         });
         query = query.or(dateConditions.join(','));
