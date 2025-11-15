@@ -480,7 +480,23 @@ export const editableColumns: EditableConfig = {
     deal_source_contacts: { type: 'textarea' },
     date_of_origination: { 
       type: 'select',
-      options: ['2024', '2025', '2026', '2027']
+      options: [
+        // 2024
+        '2024',
+        'Q1 2024', 'Q2 2024', 'Q3 2024', 'Q4 2024',
+        // 2025
+        '2025',
+        'Q1 2025', 'Q2 2025', 'Q3 2025', 'Q4 2025',
+        // 2026
+        '2026',
+        'Q1 2026', 'Q2 2026', 'Q3 2026', 'Q4 2026',
+        // 2027
+        '2027',
+        'Q1 2027', 'Q2 2027', 'Q3 2027', 'Q4 2027',
+        // 2028
+        '2028',
+        'Q1 2028', 'Q2 2028', 'Q3 2028', 'Q4 2028',
+      ]
     },
     dealcloud: { type: 'boolean' },
     headquarters: { type: 'text' },
