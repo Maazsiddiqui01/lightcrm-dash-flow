@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { useCsvImport } from "@/hooks/useCsvImport";
 import { CsvTablePreview } from "./CsvTablePreview";
+import { UpdatePreview } from "./UpdatePreview";
 import { ImportResults } from "./ImportResults";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -28,13 +29,14 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
     importResults,
     progress,
     hasHeaderRow,
+    updatePreview,
     columnMappings,
     dbRecordsCache,
     parseFile,
     executeImport,
     reset,
     setHasHeaderRow,
-  } = useCsvImport(entityType);
+  } = useCsvImport(entityType, onImportComplete);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -72,6 +74,7 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
     reset();
     setStep('upload');
     onOpenChange(false);
+    // Note: onImportComplete is now called immediately after import, not on close
   };
 
   const handleDownloadTemplate = async () => {
@@ -169,15 +172,23 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
 
           {step === 'preview' && validationResults && (
             <div className="h-[70vh] flex flex-col">
-              <CsvTablePreview
-                parsedData={parsedData}
-                validationResults={validationResults}
-                columnMappings={columnMappings}
-                entityType={entityType}
-                dbRecordsCache={dbRecordsCache}
-                onImport={handleImport}
-                onCancel={() => setStep('upload')}
-              />
+              {updatePreview && updatePreview.length > 0 ? (
+                <UpdatePreview
+                  changes={updatePreview}
+                  onConfirm={handleImport}
+                  onCancel={() => setStep('upload')}
+                />
+              ) : (
+                <CsvTablePreview
+                  parsedData={parsedData}
+                  validationResults={validationResults}
+                  columnMappings={columnMappings}
+                  entityType={entityType}
+                  dbRecordsCache={dbRecordsCache}
+                  onImport={handleImport}
+                  onCancel={() => setStep('upload')}
+                />
+              )}
             </div>
           )}
 
