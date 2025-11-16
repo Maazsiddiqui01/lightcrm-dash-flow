@@ -53,9 +53,9 @@ export function ExportDropdown({
             filteredRow.id = row.id;
           }
           
-          // Add other visible columns
+          // Add other visible columns (excluding UI-only columns like 'actions')
           visibleColumns.forEach(col => {
-            if (col !== 'id') { // Skip id since we already added it
+            if (col !== 'id' && col !== 'actions') { // Skip id since we already added it, and skip UI-only columns
               filteredRow[col] = row[col];
             }
           });
@@ -63,9 +63,9 @@ export function ExportDropdown({
           return filteredRow;
         });
       } else {
-        // If no visible columns specified, ensure id is first
+        // If no visible columns specified, ensure id is first and exclude actions
         exportData = data.map(row => {
-          const { id, ...rest } = row;
+          const { id, actions, ...rest } = row;
           return { id, ...rest };
         });
       }

@@ -82,8 +82,8 @@ function getColumnsAndHeaders(options: ExportOptions): { columns: string[]; head
     return { columns, headers: columns };
   }
 
-  // Current view mode
-  const columns = options.visibleColumns || [];
+  // Current view mode - filter out UI-only columns like 'actions'
+  const columns = (options.visibleColumns || []).filter(col => col !== 'actions');
   const headers = columns.map(col => options.columnHeaders?.[col] || col);
   
   return { columns, headers };

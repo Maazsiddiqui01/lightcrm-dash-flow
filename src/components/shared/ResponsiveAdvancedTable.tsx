@@ -547,7 +547,7 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
       selectedRowExportFn(selectedRows);
     } else if (selectedRows.length > 0) {
       // Default export behavior for selected rows
-      const exportColumns = visibleColumns.filter(col => col.key !== 'select');
+      const exportColumns = visibleColumns.filter(col => col.key !== 'select' && col.key !== 'actions');
       
       const csvContent = [
         exportColumns.map(col => `"${col.label}"`).join(','),
@@ -675,14 +675,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
-            {/* Export Selected (only show when rows are selected) */}
-            {enableRowSelection && rowSelection.selectedCount > 0 && (
-              <Button variant="outline" size="sm" onClick={exportSelectedToCSV}>
-                <Download className="h-4 w-4 mr-2" />
-                Export Selected ({rowSelection.selectedCount})
-              </Button>
-            )}
-
             {/* Column visibility */}
             {!hideColumnsButton && (
               <DropdownMenu>
@@ -810,14 +802,6 @@ export function ResponsiveAdvancedTable<T extends Record<string, any>>({
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2">
-            {/* Export Selected (only show when rows are selected) */}
-            {enableRowSelection && rowSelection.selectedCount > 0 && (
-              <Button variant="outline" size="sm" onClick={exportSelectedToCSV}>
-                <Download className="h-4 w-4 mr-2" />
-                Export Selected ({rowSelection.selectedCount})
-              </Button>
-            )}
-
             {/* Column visibility */}
             {!hideColumnsButton && (
               <DropdownMenu>
