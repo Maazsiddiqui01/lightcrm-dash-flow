@@ -46,9 +46,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
   const [validationResults, setValidationResults] = useState<ValidationResults | null>(null);
   const [importResults, setImportResults] = useState<ImportResults | null>(null);
   const [progress, setProgress] = useState(0);
-  const [importMode, setImportMode] = useState<ImportMode>('add-new');
-  const [matchingStrategy, setMatchingStrategy] = useState<MatchingStrategy>('auto');
-  const [firstRowIsHeader, setFirstRowIsHeader] = useState(true);
+  const [hasHeaderRow, setHasHeaderRow] = useState(true);
   const [updatePreview, setUpdatePreview] = useState<RecordChange[] | null>(null);
   const [columnMappings, setColumnMappings] = useState<Map<string, string>>(new Map());
   const [unmappedColumns, setUnmappedColumns] = useState<string[]>([]);
@@ -76,7 +74,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       
       // Parse CSV with papaparse (handles all edge cases)
       const parseResult = Papa.parse(text, {
-        header: firstRowIsHeader,
+        header: hasHeaderRow,
         skipEmptyLines: true,
         transformHeader: (header) => header.trim(),
         transform: (value) => value?.trim() || null
@@ -115,10 +113,10 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       }
 
       // Security: Log import attempt (without sensitive data)
-      logImportAttempt(entityType, data.length, importMode);
+      logImportAttempt(entityType, data.length, 'upsert');
 
       // Get headers from parsed data
-      const headers = firstRowIsHeader 
+      const headers = hasHeaderRow 
         ? Object.keys(data[0] || {})
         : Object.keys(data[0] || {}).map((_, i) => `column_${i}`);
       
@@ -136,7 +134,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       // Add row numbers for validation tracking
       const dataWithRowNumbers = data.map((row, idx) => ({
         ...row,
-        _rowNumber: idx + (firstRowIsHeader ? 2 : 1)
+        _rowNumber: idx + (hasHeaderRow ? 2 : 1)
       }));
 
       // Transform to use database column names
@@ -621,7 +619,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       });
       
       toast({
-        title: importMode === 'update-existing' ? "Update Failed" : "Import Failed",
+        title: "Import Failed",
         description: errorMessage,
         variant: "destructive"
       });
@@ -646,12 +644,8 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     validationResults,
     importResults,
     progress,
-    importMode,
-    setImportMode,
-    matchingStrategy,
-    setMatchingStrategy,
-    firstRowIsHeader,
-    setFirstRowIsHeader,
+    hasHeaderRow,
+    setHasHeaderRow,
     updatePreview,
     columnMappings,
     unmappedColumns,
