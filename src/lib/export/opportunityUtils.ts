@@ -95,11 +95,46 @@ export const tierValueMapping: Record<string, string> = {
 
 export const getTierDisplayValue = (value: string | null | undefined): string => {
   if (!value) return '';
-  return tierDisplayMapping[value] || value;
+  
+  // Normalize the input value
+  const normalized = String(value).trim();
+  
+  // Extract just the number if the value contains extra text
+  // e.g., "Tier 3- For Review" -> "3", "tier 3" -> "3"
+  const numberMatch = normalized.match(/(\d+)/);
+  if (numberMatch) {
+    const tierNumber = numberMatch[1];
+    return tierDisplayMapping[tierNumber] || normalized;
+  }
+  
+  // If it's already in display format, return it
+  if (Object.keys(tierValueMapping).includes(normalized)) {
+    return normalized;
+  }
+  
+  // Direct mapping lookup
+  return tierDisplayMapping[normalized] || normalized;
 };
 
 export const getTierDatabaseValue = (displayValue: string): string => {
-  return tierValueMapping[displayValue] || displayValue;
+  if (!displayValue) return '';
+  
+  // Normalize the input
+  const normalized = String(displayValue).trim();
+  
+  // If it's already a single digit, return it
+  if (/^[1-5]$/.test(normalized)) {
+    return normalized;
+  }
+  
+  // Extract number from display value like "3-For Review"
+  const numberMatch = normalized.match(/^(\d+)-/);
+  if (numberMatch) {
+    return numberMatch[1];
+  }
+  
+  // Try reverse mapping
+  return tierValueMapping[normalized] || normalized;
 };
 
 export const tierDisplayOptions = [
