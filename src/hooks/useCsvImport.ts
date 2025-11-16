@@ -528,13 +528,13 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             failed: parsedData.length,
             errors: [{
               row: 0,
-              error: `Upsert error: ${parsedError.userMessage}. Technical details: ${upsertError.message}`
+              error: `❌ Upsert Error: ${upsertError.message}${upsertError.details ? ` | Details: ${upsertError.details}` : ''}${upsertError.hint ? ` | Hint: ${upsertError.hint}` : ''}`
             }]
           });
           
           toast({
             title: "Import Failed",
-            description: `Upsert operation failed: ${parsedError.userMessage}`,
+            description: upsertError.message,
             variant: "destructive"
           });
           return;
@@ -582,13 +582,13 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             failed: parsedData.length - updatedCount,
             errors: [{
               row: 0,
-              error: `Insert error: ${parsedError.userMessage}. Technical details: ${insertError.message}`
+              error: `❌ Insert Error: ${insertError.message}${insertError.details ? ` | Details: ${insertError.details}` : ''}${insertError.hint ? ` | Hint: ${insertError.hint}` : ''}`
             }]
           });
           
           toast({
             title: "Import Partially Failed",
-            description: `${updatedCount} rows updated successfully, but insert failed: ${parsedError.userMessage}`,
+            description: `${updatedCount} rows updated, but insert failed: ${insertError.message}`,
             variant: "destructive"
           });
           return;
