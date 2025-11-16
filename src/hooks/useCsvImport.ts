@@ -130,6 +130,9 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       console.debug('[CSV Import] RAW parsed data first row:', data[0]);
       console.debug('[CSV Import] Detected CSV headers:', csvHeaders);
       
+      // Declare transformedData outside blocks so it's available for classification
+      let transformedData: any[] = [];
+      
       // For opportunities, use the enhanced parsing system
       if (entityType === 'opportunities') {
         // Use the dedicated parsing function
@@ -139,7 +142,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         });
         
         // Add row numbers for tracking
-        const transformedData = parseResult.data.map((row, idx) => ({
+        transformedData = parseResult.data.map((row, idx) => ({
           ...row,
           _rowNumber: idx + (hasHeaderRow ? 2 : 1)
         }));
@@ -199,7 +202,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         }));
 
         // Transform to use database column names
-        const transformedData = transformCsvData(dataWithRowNumbers, mapped);
+        transformedData = transformCsvData(dataWithRowNumbers, mapped);
         console.debug('[CSV Import] Sample transformed rows (first 2):');
         transformedData.slice(0, 2).forEach((row, idx) => {
           console.debug(`  Row ${idx}:`, row);
@@ -226,7 +229,8 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       
       if (entityType === 'opportunities') {
         // Simple classification: no validation, just partition by ID/deal_name presence
-        parsedData.forEach(row => {
+        // CRITICAL: Use transformedData directly, not parsedData state
+        transformedData.forEach(row => {
           if (row.id && String(row.id).trim() !== '') {
             row.__intent = 'update';
             row.__matchType = 'has-id';
@@ -246,7 +250,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         console.debug(`[CSV Import] Opportunities classified: ${rowsForUpdate.length} updates, ${rowsForInsert.length} inserts, ${skippedRows.length} skipped`);
         
         // All rows are considered "valid" except those marked to skip
-        const validRows = parsedData.filter(row => row.__intent !== 'skip');
+        const validRows = [...rowsForUpdate, ...rowsForInsert];
         
         setValidationResults({
           valid: validRows,
@@ -416,6 +420,12 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
   };
 
   const executeImport = async () => {
+    // For opportunities, use simplified import logic
+    if (entityType === 'opportunities') {
+      return executeOpportunitiesImport();
+    }
+
+    // For contacts, use the original validation-based logic
     // Collect all validation errors first
     const validationErrors: Array<{ row: number; error: string }> = [];
     
@@ -440,9 +450,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     // If no valid rows, set results with validation errors and return
     if (!validationResults || validationResults.valid.length === 0) {
       const totalRows = parsedData.length;
-      const errorMessage = entityType === 'opportunities' 
-        ? 'No valid rows found. Each row needs either an ID (for updates) or a deal_name (for new opportunities).'
-        : 'No valid rows found. Please check your CSV file and column mappings.';
+      const errorMessage = 'No valid rows found. Please check your CSV file and column mappings.';
       
       setImportResults({
         total: totalRows,
@@ -461,7 +469,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       return;
     }
 
-    const tableName = entityType === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
+    const tableName = 'contacts_raw';
     const validRows = validationResults.valid;
     const startTime = Date.now();
 
@@ -484,16 +492,8 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
           // Remove internal tracking fields
           const { __intent, __matchType, _rowNumber, ...cleanRow } = row;
           
-          // For opportunities, also remove read-only columns
-          // Note: 'id' is not in READ_ONLY_OPPORTUNITY_COLUMNS, so it's safe to keep
-          if (entityType === 'opportunities') {
-            READ_ONLY_OPPORTUNITY_COLUMNS.forEach(col => {
-              delete cleanRow[col];
-            });
-          }
-          
-          // Apply whitelist for safe database operations
-          return cleanRowForDatabase(cleanRow, tableName as 'contacts_raw' | 'opportunities_raw');
+          // Apply whitelist for safe database operations (contacts only)
+          return cleanRowForDatabase(cleanRow, 'contacts_raw');
         });
       };
 
@@ -545,10 +545,10 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       if (rowsToInsert.length > 0) {
         setProgress(70);
         
-        // Deduplicate within CSV by deal_name/email
+        // Deduplicate within CSV by email_address
         const seenKeys = new Set<string>();
         const deduplicated = rowsToInsert.filter(row => {
-          const key = entityType === 'opportunities' ? row.deal_name : row.email_address;
+          const key = row.email_address;
           if (!key || seenKeys.has(key)) {
             skipped++;
             return false;
@@ -652,6 +652,144 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       toast({
         title: "Import Failed",
         description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const executeOpportunitiesImport = async () => {
+    const allRows = parsedData ?? [];
+    
+    if (allRows.length === 0) {
+      setImportResults({
+        total: 0,
+        successful: 0,
+        failed: 0,
+        errors: [{ row: 0, error: 'No rows parsed from CSV.' }]
+      });
+      toast({
+        title: "Import Failed",
+        description: "No rows found in CSV file.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setProgress(10);
+      
+      // Clean up and classify rows
+      const cleanedRows = allRows.map((row) => {
+        const { __intent, __matchType, _rowNumber, ...cleanRow } = row;
+        
+        // Remove read-only columns
+        READ_ONLY_OPPORTUNITY_COLUMNS.forEach(col => {
+          delete cleanRow[col];
+        });
+        
+        // Trim ID if present
+        if (cleanRow.id != null) {
+          const trimmed = String(cleanRow.id).trim();
+          cleanRow.id = trimmed === '' ? undefined : trimmed;
+        }
+        
+        return { cleanRow, intent: __intent || 'skip', rowNumber: _rowNumber };
+      });
+
+      const rowsToUpsert = cleanedRows
+        .filter(r => r.intent === 'update' && r.cleanRow.id)
+        .map(r => r.cleanRow);
+      
+      const rowsToInsert = cleanedRows
+        .filter(r => r.intent === 'insert' && r.cleanRow.deal_name)
+        .map(r => r.cleanRow);
+
+      console.debug(`[CSV Import] Executing: ${rowsToUpsert.length} upserts, ${rowsToInsert.length} inserts`);
+
+      let successfulUpserts = 0;
+      let successfulInserts = 0;
+      const errors: Array<{ row: number; error: string }> = [];
+
+      // PHASE 1: Upsert rows with IDs
+      if (rowsToUpsert.length > 0) {
+        setProgress(30);
+        
+        console.debug(`[CSV Import] Upserting ${rowsToUpsert.length} rows`);
+
+        const { data: upsertData, error: upsertError } = await supabase
+          .from('opportunities_raw')
+          .upsert(rowsToUpsert, { onConflict: 'id' })
+          .select('id');
+
+        if (upsertError) {
+          console.error('[CSV Import] Upsert error:', upsertError);
+          errors.push({
+            row: 0,
+            error: `Upsert failed: ${upsertError.message}`
+          });
+        } else {
+          successfulUpserts = upsertData?.length || rowsToUpsert.length;
+        }
+      }
+
+      // PHASE 2: Insert new rows
+      if (rowsToInsert.length > 0 && errors.length === 0) {
+        setProgress(60);
+        
+        console.debug(`[CSV Import] Inserting ${rowsToInsert.length} new rows`);
+
+        const { data: insertData, error: insertError } = await supabase
+          .from('opportunities_raw')
+          .insert(rowsToInsert)
+          .select('id');
+
+        if (insertError) {
+          console.error('[CSV Import] Insert error:', insertError);
+          errors.push({
+            row: 0,
+            error: `Insert failed: ${insertError.message}`
+          });
+        } else {
+          successfulInserts = insertData?.length || rowsToInsert.length;
+        }
+      }
+
+      setProgress(100);
+
+      const totalSuccessful = successfulUpserts + successfulInserts;
+      const totalProcessed = allRows.length;
+
+      setImportResults({
+        total: totalProcessed,
+        successful: totalSuccessful,
+        failed: errors.length > 0 ? (totalProcessed - totalSuccessful) : 0,
+        errors: errors
+      });
+
+      if (errors.length > 0) {
+        toast({
+          title: "Import Failed",
+          description: errors[0].error,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Import Successful",
+          description: `${totalSuccessful} opportunities imported successfully (${successfulUpserts} updated, ${successfulInserts} new)`,
+        });
+      }
+    } catch (err: any) {
+      console.error('[CSV Import] Unexpected error:', err);
+      setImportResults({
+        total: allRows.length,
+        successful: 0,
+        failed: allRows.length,
+        errors: [{ row: 0, error: err.message || 'Unexpected error during import' }]
+      });
+      
+      toast({
+        title: "Import Failed",
+        description: err.message || 'Unexpected error during import',
         variant: "destructive"
       });
     }
