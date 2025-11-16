@@ -51,6 +51,15 @@ export const OPPORTUNITY_DB_COLUMNS = [
   'funds',
 ] as const;
 
+// Read-only columns that should never be written to during import
+// These are either generated columns or system-managed timestamps
+export const READ_ONLY_OPPORTUNITY_COLUMNS = [
+  'deal_source_contacts',        // GENERATED: concatenation of individuals
+  'created_at',                  // Auto-timestamp
+  'updated_at',                  // Auto-timestamp
+  'last_modified',               // Auto-timestamp
+] as const;
+
 // CSV header to Supabase column mapping
 export const OPPORTUNITY_COLUMN_MAP: Record<string, string> = {
   // Core identity

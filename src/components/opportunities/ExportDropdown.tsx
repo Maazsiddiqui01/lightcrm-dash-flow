@@ -15,6 +15,7 @@ import {
   buildCsvFromObjects,
   generateExportFilename 
 } from '@/utils/exportDetailedCsv';
+import { READ_ONLY_OPPORTUNITY_COLUMNS } from '@/utils/opportunityColumnMapping';
 
 interface ExportDropdownProps {
   data: any[];
@@ -45,6 +46,12 @@ export function ExportDropdown({
       // Filter data to visible columns if specified, ensuring 'id' is always first
       let exportData = data;
       if (visibleColumns && visibleColumns.length > 0) {
+        // Filter columns: remove 'actions' and read-only columns (keep 'id')
+        const columnsToExport = visibleColumns.filter(col => 
+          col !== 'actions' && 
+          (col === 'id' || !READ_ONLY_OPPORTUNITY_COLUMNS.includes(col as any))
+        );
+        
         exportData = data.map(row => {
           const filteredRow: any = {};
           
@@ -53,9 +60,9 @@ export function ExportDropdown({
             filteredRow.id = row.id;
           }
           
-          // Add other visible columns (excluding UI-only columns like 'actions')
-          visibleColumns.forEach(col => {
-            if (col !== 'id' && col !== 'actions') { // Skip id since we already added it, and skip UI-only columns
+          // Add other columns
+          columnsToExport.forEach(col => {
+            if (col !== 'id') { // Skip id since we already added it
               filteredRow[col] = row[col];
             }
           });
@@ -63,10 +70,15 @@ export function ExportDropdown({
           return filteredRow;
         });
       } else {
-        // If no visible columns specified, ensure id is first and exclude actions
+        // If no visible columns specified, filter out actions and read-only columns
         exportData = data.map(row => {
-          const { id, actions, ...rest } = row;
-          return { id, ...rest };
+          const filtered: any = { id: row.id };
+          Object.keys(row).forEach(key => {
+            if (key !== 'id' && key !== 'actions' && !READ_ONLY_OPPORTUNITY_COLUMNS.includes(key as any)) {
+              filtered[key] = row[key];
+            }
+          });
+          return filtered;
         });
       }
 

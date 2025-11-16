@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { chunk } from './csvUtils';
+import { READ_ONLY_OPPORTUNITY_COLUMNS } from '@/utils/opportunityColumnMapping';
 
 /**
  * Collect filtered IDs for export
@@ -271,13 +272,23 @@ export function getAllRawColumns(page: 'contacts' | 'opportunities'): string[] {
       'email_from', 'email_to', 'email_cc', 'meeting_from', 'meeting_to', 'meeting_cc'
     ];
   } else {
-    return [
+    // Opportunities - all columns except read-only ones
+    const allColumns = [
       'id', 'created_at', 'updated_at', 'deal_name', 'sector', 'lg_focus_area',
       'platform_add_on', 'tier', 'status', 'summary_of_opportunity', 'next_steps',
-      'ownership', 'ownership_type', 'ebitda', 'ebitda_in_ms', 'ebitda_notes',
+      'next_steps_due_date', 'ownership', 'ownership_type', 'ebitda', 'ebitda_in_ms', 
+      'ebitda_notes', 'revenue', 'est_deal_size', 'est_lg_equity_invest', 'headquarters',
       'investment_professional_point_person_1', 'investment_professional_point_person_2',
-      'deal_source_company', 'deal_source_individual_1', 'deal_source_individual_2',
-      'date_of_origination', 'url', 'most_recent_notes', 'dealcloud'
+      'investment_professional_point_person_3', 'investment_professional_point_person_4',
+      'lg_team', 'deal_source_company', 'deal_source_individual_1', 'deal_source_individual_2',
+      'deal_source_contact_1_id', 'deal_source_contact_2_id', 'date_of_origination', 
+      'acquisition_date', 'process_timeline', 'url', 'most_recent_notes', 'dealcloud',
+      'assigned_to', 'funds', 'deal_source_contacts', 'last_modified'
     ];
+    
+    // Filter out read-only columns (except 'id' which is needed for matching)
+    return allColumns.filter(col => 
+      col === 'id' || !READ_ONLY_OPPORTUNITY_COLUMNS.includes(col as any)
+    );
   }
 }
