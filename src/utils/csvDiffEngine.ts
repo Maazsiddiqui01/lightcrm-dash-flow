@@ -24,8 +24,8 @@ export interface RowChanges {
  * Determine the change type by comparing old and new values
  */
 export function getChangeType(oldValue: any, newValue: any): ChangeType {
-  const oldEmpty = oldValue === null || oldValue === undefined || oldValue === '';
-  const newEmpty = newValue === null || newValue === undefined || newValue === '';
+  const oldEmpty = oldValue === null || oldValue === undefined || oldValue === '' || String(oldValue).toLowerCase() === 'null';
+  const newEmpty = newValue === null || newValue === undefined || newValue === '' || String(newValue).toLowerCase() === 'null';
 
   if (oldEmpty && newEmpty) return 'unchanged';
   if (oldEmpty && !newEmpty) return 'added';

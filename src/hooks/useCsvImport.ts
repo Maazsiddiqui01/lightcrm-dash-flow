@@ -140,7 +140,8 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         console.debug('[CSV Import] Ignored columns:', invalidHeaders);
         
         // Transform rows to use DB column names with normalization
-        const numericColumns = ['revenue', 'ebitda', 'ebitda_in_ms', 'est_deal_size', 'est_lg_equity_invest'];
+        // Note: 'ebitda' is TEXT in DB, so we don't normalize it as numeric
+        const numericColumns = ['revenue', 'ebitda_in_ms', 'est_deal_size', 'est_lg_equity_invest'];
         
         const transformedData = data.map((row, idx) => {
           const transformed: Record<string, any> = {
