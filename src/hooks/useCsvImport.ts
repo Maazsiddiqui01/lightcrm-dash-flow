@@ -47,7 +47,7 @@ export interface ImportResults {
 export type ImportMode = 'add-new' | 'update-existing';
 export type MatchingStrategy = 'id' | 'deal_name' | 'auto';
 
-export function useCsvImport(entityType: 'contacts' | 'opportunities') {
+export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportComplete?: () => void) {
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<any[]>([]);
   const [validationResults, setValidationResults] = useState<ValidationResults | null>(null);
@@ -251,6 +251,97 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         
         // All rows are considered "valid" except those marked to skip
         const validRows = [...rowsForUpdate, ...rowsForInsert];
+        
+        // Fetch existing records and build change preview for updates
+        if (rowsForUpdate.length > 0) {
+          console.log(`[Opportunities] Fetching ${rowsForUpdate.length} existing records for change detection...`);
+          
+          const idsToFetch = rowsForUpdate
+            .map(row => row.id)
+            .filter(id => id && String(id).trim() !== '');
+
+          const { data: existingRecords, error: fetchError } = await supabase
+            .from('opportunities_raw')
+            .select('*')
+            .in('id', idsToFetch);
+
+          if (fetchError) {
+            console.error('[Opportunities] Error fetching existing records:', fetchError);
+          } else if (existingRecords) {
+            console.log(`[Opportunities] Fetched ${existingRecords.length} existing records`);
+            
+            // Build cache for quick lookup
+            const cache = new Map<string, any>();
+            existingRecords.forEach(record => {
+              cache.set(record.id, record);
+            });
+            setDbRecordsCache(cache);
+
+            // Build change detection
+            const changes: RecordChange[] = [];
+            
+            rowsForUpdate.forEach(csvRow => {
+              const dbRow = cache.get(csvRow.id);
+              if (!dbRow) return; // Skip if not found in DB
+              
+              const fieldChanges: FieldChange[] = [];
+              
+              // Compare each field (excluding read-only and internal fields)
+              Object.keys(csvRow).forEach(key => {
+                if (key === 'id' || key === '__intent' || key.startsWith('__') || key === '_rowNumber') return;
+                if ((READ_ONLY_OPPORTUNITY_COLUMNS as readonly string[]).includes(key)) return;
+                
+                const csvValue = csvRow[key];
+                const dbValue = dbRow[key];
+                
+                // Normalize for comparison
+                const csvNormalized = csvValue == null || csvValue === '' ? null : String(csvValue).trim();
+                const dbNormalized = dbValue == null || dbValue === '' ? null : String(dbValue).trim();
+                
+                // Skip if values are the same
+                if (csvNormalized === dbNormalized) return;
+                
+                // Determine change type
+                let changeType: 'added' | 'updated' | 'cleared';
+                if (dbNormalized === null && csvNormalized !== null) {
+                  changeType = 'added';
+                } else if (dbNormalized !== null && csvNormalized === null) {
+                  changeType = 'cleared';
+                } else {
+                  changeType = 'updated';
+                }
+                
+                // Get display name (convert snake_case to Title Case)
+                const displayName = key
+                  .split('_')
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ');
+                
+                fieldChanges.push({
+                  field: key,
+                  displayName,
+                  oldValue: dbValue,
+                  newValue: csvValue,
+                  changeType
+                });
+              });
+              
+              // Only add to changes if there are actual field changes
+              if (fieldChanges.length > 0) {
+                changes.push({
+                  id: csvRow.id,
+                  recordName: csvRow.deal_name || dbRow.deal_name || `Opportunity ${csvRow.id}`,
+                  changes: fieldChanges
+                });
+              }
+            });
+            
+            console.log(`[Opportunities] Detected changes in ${changes.length} records`);
+            setUpdatePreview(changes.length > 0 ? changes : null);
+          }
+        } else {
+          setUpdatePreview(null);
+        }
         
         setValidationResults({
           valid: validRows,
@@ -777,6 +868,12 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
           title: "Import Successful",
           description: `${totalSuccessful} opportunities imported successfully (${successfulUpserts} updated, ${successfulInserts} new)`,
         });
+        
+        // Trigger data refresh immediately after successful import
+        if (totalSuccessful > 0 && onImportComplete) {
+          console.log('[Opportunities] Triggering data refresh...');
+          onImportComplete();
+        }
       }
     } catch (err: any) {
       console.error('[CSV Import] Unexpected error:', err);
@@ -805,6 +902,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     setColumnMappings(new Map());
     setUnmappedColumns([]);
     setDbRecordsCache(new Map());
+    setHasHeaderRow(true);
   };
 
   return {
