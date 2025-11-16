@@ -559,15 +559,28 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
     setIsExporting(true);
     
     // Get only visible columns (exclude 'actions' column as it's not in the database)
-    const visibleColumns = dynamicColumns
+    let visibleColumns = dynamicColumns
       .filter(col => col.key !== 'actions' && columnVisibility.columnVisibility[col.key] !== false)
       .map(col => col.key);
+    
+    // ALWAYS include 'id' as first column, even if hidden (needed for bulk reimport)
+    if (!visibleColumns.includes('id')) {
+      visibleColumns = ['id', ...visibleColumns];
+    } else {
+      // Ensure 'id' is first
+      visibleColumns = ['id', ...visibleColumns.filter(col => col !== 'id')];
+    }
     
     const columnHeaders = Object.fromEntries(
       dynamicColumns
         .filter(col => col.key !== 'actions')
         .map(col => [col.key, col.label])
     );
+    
+    // Ensure 'id' has a header mapping
+    if (!columnHeaders['id']) {
+      columnHeaders['id'] = 'ID';
+    }
 
     try {
       await exportCsv({
