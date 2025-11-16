@@ -463,7 +463,6 @@ export const editableColumns: EditableConfig = {
     most_recent_notes: { type: 'textarea' },
     
     ebitda_in_ms: { type: 'number', validation: validateNumber },
-    ebitda: { type: 'text' },
     ebitda_notes: { type: 'textarea' },
     ownership: { type: 'text' },
     ownership_type: { 

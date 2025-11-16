@@ -79,7 +79,7 @@ export function normalizeCsvRow(
  */
 export function getOpportunitiesColumnTypes(): Map<string, string> {
   return new Map([
-    ['ebitda', 'numeric'],
+    ['ebitda_in_ms', 'numeric'],
     ['revenue', 'numeric'],
     ['est_deal_size', 'numeric'],
     ['est_lg_equity_invest', 'numeric'],
