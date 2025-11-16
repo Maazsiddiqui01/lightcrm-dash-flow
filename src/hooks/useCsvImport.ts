@@ -217,61 +217,58 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         setParsedData(transformedData);
       }
 
-      // HYBRID STRATEGY: Auto-match existing records by deal_name for opportunities
-      console.debug('[CSV Import] Starting hybrid validation strategy');
+      // SIMPLIFIED CLASSIFICATION: No validation, just partition by ID presence
+      console.debug('[CSV Import] Starting simplified classification strategy');
       
       let rowsForUpdate: any[] = [];
       let rowsForInsert: any[] = [];
+      const skippedRows: any[] = [];
       
       if (entityType === 'opportunities') {
-        // Split rows: those with ID vs those with only deal_name
-        const rowsWithId = parsedData.filter(row => row.id && String(row.id).trim() !== '');
-        const rowsWithoutIdButWithName = parsedData.filter(row => 
-          (!row.id || String(row.id).trim() === '') && 
-          row.deal_name && 
-          String(row.deal_name).trim() !== ''
-        );
-        
-        console.debug(`[CSV Import] Classification: ${rowsWithId.length} with ID, ${rowsWithoutIdButWithName.length} with deal_name only`);
-        
-        // For rows with ID, they go straight to update
-        rowsWithId.forEach(row => {
-          row.__intent = 'update';
-          rowsForUpdate.push(row);
+        // Simple classification: no validation, just partition by ID/deal_name presence
+        parsedData.forEach(row => {
+          if (row.id && String(row.id).trim() !== '') {
+            row.__intent = 'update';
+            row.__matchType = 'has-id';
+            rowsForUpdate.push(row);
+          } else if (row.deal_name && String(row.deal_name).trim() !== '') {
+            row.__intent = 'insert';
+            row.__matchType = 'new-record';
+            rowsForInsert.push(row);
+          } else {
+            // Skip rows with neither ID nor deal_name
+            row.__intent = 'skip';
+            row.__matchType = 'invalid';
+            skippedRows.push(row);
+          }
         });
         
-        // For rows with deal_name but no ID, check if they match existing records
-        if (rowsWithoutIdButWithName.length > 0) {
-          const dealNames = rowsWithoutIdButWithName.map(row => row.deal_name).filter(Boolean);
-          
-          const { data: existingRecords } = await supabase
-            .from('opportunities_raw')
-            .select('id, deal_name')
-            .in('deal_name', dealNames);
-
-          const dealNameToId = new Map(
-            (existingRecords || []).map(r => [r.deal_name as string, r.id as string])
-          );
-
-          // Partition: if deal_name matches existing, attach ID and mark for update
-          rowsWithoutIdButWithName.forEach(row => {
-            if (dealNameToId.has(row.deal_name)) {
-              row.id = dealNameToId.get(row.deal_name);
-              row.__intent = 'update';
-              row.__matchType = 'matched-by-deal-name';
-              rowsForUpdate.push(row);
-            } else {
-              // No match - will be inserted as new
-              row.__intent = 'insert';
-              row.__matchType = 'new-record';
-              rowsForInsert.push(row);
-            }
-          });
-        }
+        console.debug(`[CSV Import] Opportunities classified: ${rowsForUpdate.length} updates, ${rowsForInsert.length} inserts, ${skippedRows.length} skipped`);
         
-        console.debug(`[CSV Import] Final partition: ${rowsForUpdate.length} updates (upsert), ${rowsForInsert.length} inserts (new)`);
+        // All rows are considered "valid" except those marked to skip
+        const validRows = parsedData.filter(row => row.__intent !== 'skip');
+        
+        setValidationResults({
+          valid: validRows,
+          invalid: [],
+          warnings: skippedRows.map((row, idx) => ({
+            row: row._rowNumber || (idx + 2),
+            message: '⚠️ Row has no ID and no deal_name - will be skipped'
+          }))
+        });
+        
+        // Show summary toast
+        const summary = [
+          rowsForUpdate.length > 0 ? `${rowsForUpdate.length} potential updates` : null,
+          rowsForInsert.length > 0 ? `${rowsForInsert.length} potential inserts` : null
+        ].filter(Boolean).join(', ');
+        
+        toast({
+          title: "File Parsed - Simple Import",
+          description: `Found ${parsedData.length} rows: ${summary}. ${validRows.length} valid, ${skippedRows.length} skipped.`,
+        });
       } else {
-        // Contacts: partition by ID presence
+        // Contacts: partition by ID presence and use dynamic validation
         parsedData.forEach(row => {
           if (row.id) {
             row.__intent = 'update';
@@ -281,51 +278,51 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             rowsForInsert.push(row);
           }
         });
+        
+        // Validate updates (isUpdate=true, no normalization)
+        let updateValidation: ValidationResults = { valid: [], invalid: [], warnings: [] };
+        if (rowsForUpdate.length > 0) {
+          updateValidation = await validateCsvDataDynamic(rowsForUpdate, entityType, true);
+          console.debug(`[CSV Import] Updates validated: ${updateValidation.valid.length} valid, ${updateValidation.invalid.length} invalid`);
+        }
+
+        // Validate inserts (isUpdate=false, with normalization)
+        let insertValidation: ValidationResults = { valid: [], invalid: [], warnings: [] };
+        if (rowsForInsert.length > 0) {
+          const normalized = normalizeCsvData(rowsForInsert, entityType);
+          const normalizationChanges = trackNormalizationChanges(rowsForInsert, normalized);
+          insertValidation = await validateCsvDataDynamic(normalized, entityType, false);
+          insertValidation.normalized = normalizationChanges;
+          console.debug(`[CSV Import] Inserts validated: ${insertValidation.valid.length} valid, ${insertValidation.invalid.length} invalid`);
+        }
+
+        // Merge validation results
+        const mergedValidation: ValidationResults = {
+          valid: [...updateValidation.valid, ...insertValidation.valid],
+          invalid: [...updateValidation.invalid, ...insertValidation.invalid],
+          warnings: [...updateValidation.warnings, ...insertValidation.warnings],
+          normalized: insertValidation.normalized || []
+        };
+        
+        setValidationResults(mergedValidation);
+
+        // Generate update preview for rows that will be updated
+        if (updateValidation.valid.length > 0) {
+          const preview = await generateUpdatePreview(updateValidation.valid, columnMapResult.columnToDisplay);
+          setUpdatePreview(preview);
+        }
+
+        // Show summary toast
+        const summary = [
+          rowsForUpdate.length > 0 ? `${rowsForUpdate.length} potential updates` : null,
+          rowsForInsert.length > 0 ? `${rowsForInsert.length} potential inserts` : null
+        ].filter(Boolean).join(', ');
+        
+        toast({
+          title: "File Parsed - Hybrid Import",
+          description: `Found ${parsedData.length} rows: ${summary}. ${mergedValidation.valid.length} valid, ${mergedValidation.invalid.length} with errors.`,
+        });
       }
-
-      // Validate updates (isUpdate=true, no normalization)
-      let updateValidation: ValidationResults = { valid: [], invalid: [], warnings: [] };
-      if (rowsForUpdate.length > 0) {
-        updateValidation = await validateCsvDataDynamic(rowsForUpdate, entityType, true);
-        console.debug(`[CSV Import] Updates validated: ${updateValidation.valid.length} valid, ${updateValidation.invalid.length} invalid`);
-      }
-
-      // Validate inserts (isUpdate=false, with normalization)
-      let insertValidation: ValidationResults = { valid: [], invalid: [], warnings: [] };
-      if (rowsForInsert.length > 0) {
-        const normalized = normalizeCsvData(rowsForInsert, entityType);
-        const normalizationChanges = trackNormalizationChanges(rowsForInsert, normalized);
-        insertValidation = await validateCsvDataDynamic(normalized, entityType, false);
-        insertValidation.normalized = normalizationChanges;
-        console.debug(`[CSV Import] Inserts validated: ${insertValidation.valid.length} valid, ${insertValidation.invalid.length} invalid`);
-      }
-
-      // Merge validation results
-      const mergedValidation: ValidationResults = {
-        valid: [...updateValidation.valid, ...insertValidation.valid],
-        invalid: [...updateValidation.invalid, ...insertValidation.invalid],
-        warnings: [...updateValidation.warnings, ...insertValidation.warnings],
-        normalized: insertValidation.normalized || []
-      };
-      
-      setValidationResults(mergedValidation);
-
-      // Generate update preview for rows that will be updated
-      if (updateValidation.valid.length > 0) {
-        const preview = await generateUpdatePreview(updateValidation.valid, columnMapResult.columnToDisplay);
-        setUpdatePreview(preview);
-      }
-
-      // Show summary toast
-      const summary = [
-        rowsForUpdate.length > 0 ? `${rowsForUpdate.length} potential updates` : null,
-        rowsForInsert.length > 0 ? `${rowsForInsert.length} potential inserts` : null
-      ].filter(Boolean).join(', ');
-      
-      toast({
-        title: "File Parsed - Hybrid Import",
-        description: `Found ${parsedData.length} rows: ${summary}. ${mergedValidation.valid.length} valid, ${mergedValidation.invalid.length} with errors.`,
-      });
     } catch (error) {
       console.error('Error parsing CSV:', error);
       toast({
@@ -443,12 +440,16 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
     // If no valid rows, set results with validation errors and return
     if (!validationResults || validationResults.valid.length === 0) {
       const totalRows = parsedData.length;
+      const errorMessage = entityType === 'opportunities' 
+        ? 'No valid rows found. Each row needs either an ID (for updates) or a deal_name (for new opportunities).'
+        : 'No valid rows found. Please check your CSV file and column mappings.';
+      
       setImportResults({
         total: totalRows,
         successful: 0,
         failed: totalRows,
         errors: validationErrors.length > 0 ? validationErrors : [
-          { row: 0, error: 'No valid rows found. Please check your CSV file and column mappings.' }
+          { row: 0, error: errorMessage }
         ]
       });
       

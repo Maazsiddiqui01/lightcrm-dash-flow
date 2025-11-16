@@ -55,6 +55,8 @@ export const OPPORTUNITY_DB_COLUMNS = [
 // These are either generated columns or system-managed timestamps
 export const READ_ONLY_OPPORTUNITY_COLUMNS = [
   'deal_source_contacts',        // GENERATED: concatenation of individuals
+  'investment_professional_point_person',  // GENERATED: concatenation
+  'lg_team',                     // GENERATED: assigned team
   'created_at',                  // Auto-timestamp
   'updated_at',                  // Auto-timestamp
   'last_modified',               // Auto-timestamp
