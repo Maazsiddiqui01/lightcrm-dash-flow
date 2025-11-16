@@ -14,7 +14,11 @@ import {
 } from "@/utils/csvImportSecurity";
 import { cleanRowForDatabase } from "@/utils/databaseUpdateHelpers";
 import { parseSupabaseError } from "@/utils/supabaseErrorParser";
-import { mapRowsToDbColumns, mapHeaderToColumn } from "@/utils/opportunityColumnMapping";
+import { 
+  mapRowsToDbColumns, 
+  mapHeaderToColumn,
+  READ_ONLY_OPPORTUNITY_COLUMNS 
+} from "@/utils/opportunityColumnMapping";
 import { normalizeCsvRow } from "@/utils/csvNormalizer";
 
 export interface ValidationResults {
@@ -138,6 +142,24 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         
         console.debug('[CSV Import] Valid column mappings:', validHeaders);
         console.debug('[CSV Import] Ignored columns:', invalidHeaders);
+        
+        // Warn about read-only columns for opportunities
+        if (entityType === 'opportunities') {
+          const readOnlyFound = validHeaders.filter(h => 
+            h.db && h.db !== 'id' && READ_ONLY_OPPORTUNITY_COLUMNS.includes(h.db as any)
+          );
+          
+          if (readOnlyFound.length > 0) {
+            console.warn('[CSV Import] Read-only columns detected and will be ignored:', 
+              readOnlyFound.map(h => h.db));
+            
+            toast({
+              title: "Read-Only Columns Ignored",
+              description: `${readOnlyFound.length} read-only column(s) will be skipped during import: ${readOnlyFound.map(h => h.csv).join(', ')}`,
+              variant: "default"
+            });
+          }
+        }
         
         // Transform rows to use DB column names with normalization
         // Note: 'ebitda' is TEXT in DB, so we don't normalize it as numeric
@@ -497,6 +519,15 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         return rows.map(row => {
           // Remove internal tracking fields
           const { __intent, __matchType, _rowNumber, ...cleanRow } = row;
+          
+          // For opportunities, also remove read-only columns
+          // Note: 'id' is not in READ_ONLY_OPPORTUNITY_COLUMNS, so it's safe to keep
+          if (entityType === 'opportunities') {
+            READ_ONLY_OPPORTUNITY_COLUMNS.forEach(col => {
+              delete cleanRow[col];
+            });
+          }
+          
           // Apply whitelist for safe database operations
           return cleanRowForDatabase(cleanRow, tableName as 'contacts_raw' | 'opportunities_raw');
         });

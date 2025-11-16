@@ -2,6 +2,7 @@ import { toast } from 'sonner';
 import { buildCsv, downloadCsv, generateExportFilename, safeCell } from './csvUtils';
 import { collectFilteredIds, fetchRowsByIds, getAllRawColumns } from './dataFetcher';
 import { createMultiSortComparator } from '../sort/customSort';
+import { READ_ONLY_OPPORTUNITY_COLUMNS } from '@/utils/opportunityColumnMapping';
 
 export interface ExportOptions {
   page: 'contacts' | 'opportunities';
@@ -83,7 +84,15 @@ function getColumnsAndHeaders(options: ExportOptions): { columns: string[]; head
   }
 
   // Current view mode - filter out UI-only columns like 'actions'
-  const columns = (options.visibleColumns || []).filter(col => col !== 'actions');
+  let columns = (options.visibleColumns || []).filter(col => col !== 'actions');
+  
+  // For opportunities, also filter out read-only columns (except 'id')
+  if (options.page === 'opportunities') {
+    columns = columns.filter(col => 
+      col === 'id' || !READ_ONLY_OPPORTUNITY_COLUMNS.includes(col as any)
+    );
+  }
+  
   const headers = columns.map(col => options.columnHeaders?.[col] || col);
   
   return { columns, headers };
