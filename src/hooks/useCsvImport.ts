@@ -14,7 +14,7 @@ import {
 } from "@/utils/csvImportSecurity";
 import { cleanRowForDatabase } from "@/utils/databaseUpdateHelpers";
 import { parseSupabaseError } from "@/utils/supabaseErrorParser";
-import { mapRowsToDbColumns } from "@/utils/opportunityColumnMapping";
+import { mapRowsToDbColumns, mapHeaderToColumn } from "@/utils/opportunityColumnMapping";
 import { normalizeCsvRow } from "@/utils/csvNormalizer";
 
 export interface ValidationResults {
@@ -118,43 +118,117 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       logImportAttempt(entityType, data.length, 'upsert');
 
       // Get headers from parsed data
-      const headers = hasHeaderRow 
+      const csvHeaders = hasHeaderRow 
         ? Object.keys(data[0] || {})
         : Object.keys(data[0] || {}).map((_, i) => `column_${i}`);
       
       console.debug('[CSV Import] RAW parsed data first row:', data[0]);
-      console.debug('[CSV Import] Detected headers:', headers);
+      console.debug('[CSV Import] Detected CSV headers:', csvHeaders);
       
-      // Map CSV headers to database columns
-      const { mapped, unmapped } = mapCsvHeaders(headers, columnMapResult.displayToColumn);
-      console.debug('[CSV Import] Mapped columns:', Array.from(mapped.entries()));
-      console.debug('[CSV Import] Unmapped columns:', unmapped);
-      
-      setColumnMappings(mapped);
-      setUnmappedColumns(unmapped);
-      
-      // Add row numbers for validation tracking
-      const dataWithRowNumbers = data.map((row, idx) => ({
-        ...row,
-        _rowNumber: idx + (hasHeaderRow ? 2 : 1)
-      }));
-
-      // Transform to use database column names
-      const transformedData = transformCsvData(dataWithRowNumbers, mapped);
-      console.debug('[CSV Import] Sample transformed rows (first 2):');
-      transformedData.slice(0, 2).forEach((row, idx) => {
-        console.debug(`  Row ${idx}:`, row);
-        console.debug(`  Row ${idx} keys:`, Object.keys(row));
-      });
-      setParsedData(transformedData);
-
-      // Show warnings for unmapped columns
-      if (unmapped.length > 0) {
-        toast({
-          title: "Unmapped Columns",
-          description: `${unmapped.length} columns not recognized: ${unmapped.join(', ')}`,
-          variant: "default"
+      // For opportunities, use the new mapping system
+      if (entityType === 'opportunities') {
+        // Map headers to DB columns, filtering out unknown/view-only columns
+        const headerMapping: Array<{ csv: string; db: string | null }> = csvHeaders.map(header => ({
+          csv: header,
+          db: mapHeaderToColumn(header)
+        }));
+        
+        const validHeaders = headerMapping.filter(h => h.db !== null);
+        const invalidHeaders = headerMapping.filter(h => h.db === null).map(h => h.csv);
+        
+        console.debug('[CSV Import] Valid column mappings:', validHeaders);
+        console.debug('[CSV Import] Ignored columns:', invalidHeaders);
+        
+        // Transform rows to use DB column names with normalization
+        const numericColumns = ['revenue', 'ebitda', 'ebitda_in_ms', 'est_deal_size', 'est_lg_equity_invest'];
+        
+        const transformedData = data.map((row, idx) => {
+          const transformed: Record<string, any> = {
+            _rowNumber: idx + (hasHeaderRow ? 2 : 1)
+          };
+          
+          validHeaders.forEach(({ csv, db }) => {
+            if (!db) return;
+            
+            let value: any = row[csv];
+            
+            // Normalize null-like values
+            if (
+              value === '' ||
+              value === ' ' ||
+              value === null ||
+              value === undefined ||
+              String(value).toLowerCase() === 'null'
+            ) {
+              value = null;
+            } else if (typeof value === 'string') {
+              value = value.trim();
+            }
+            
+            // Numeric normalization
+            if (numericColumns.includes(db) && value !== null) {
+              const n = Number(value);
+              value = Number.isNaN(n) ? null : n;
+            }
+            
+            transformed[db] = value;
+          });
+          
+          return transformed;
         });
+        
+        console.debug('[CSV Import] Sample transformed rows (first 2):');
+        transformedData.slice(0, 2).forEach((row, idx) => {
+          console.debug(`  Row ${idx}:`, row);
+          console.debug(`  Row ${idx} keys:`, Object.keys(row));
+        });
+        
+        // Store mappings for preview
+        const mappedColumns = new Map(validHeaders.map(h => [h.csv, h.db!]));
+        setColumnMappings(mappedColumns);
+        setUnmappedColumns(invalidHeaders);
+        
+        if (invalidHeaders.length > 0) {
+          toast({
+            title: "Ignored Columns",
+            description: `${invalidHeaders.length} columns not recognized and will be ignored: ${invalidHeaders.join(', ')}`,
+            variant: "default"
+          });
+        }
+        
+        setParsedData(transformedData);
+      } else {
+        // For contacts, use the old mapping system
+        const { mapped, unmapped } = mapCsvHeaders(csvHeaders, columnMapResult.displayToColumn);
+        console.debug('[CSV Import] Mapped columns:', Array.from(mapped.entries()));
+        console.debug('[CSV Import] Unmapped columns:', unmapped);
+        
+        setColumnMappings(mapped);
+        setUnmappedColumns(unmapped);
+        
+        // Add row numbers for validation tracking
+        const dataWithRowNumbers = data.map((row, idx) => ({
+          ...row,
+          _rowNumber: idx + (hasHeaderRow ? 2 : 1)
+        }));
+
+        // Transform to use database column names
+        const transformedData = transformCsvData(dataWithRowNumbers, mapped);
+        console.debug('[CSV Import] Sample transformed rows (first 2):');
+        transformedData.slice(0, 2).forEach((row, idx) => {
+          console.debug(`  Row ${idx}:`, row);
+          console.debug(`  Row ${idx} keys:`, Object.keys(row));
+        });
+        
+        if (unmapped.length > 0) {
+          toast({
+            title: "Unmapped Columns",
+            description: `${unmapped.length} columns not recognized: ${unmapped.join(', ')}`,
+            variant: "default"
+          });
+        }
+        
+        setParsedData(transformedData);
       }
 
       // HYBRID STRATEGY: Auto-match existing records by deal_name for opportunities
@@ -164,7 +238,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       let rowsForInsert: any[] = [];
       
       if (entityType === 'opportunities') {
-        const dealNames = transformedData
+        const dealNames = parsedData
           .map(row => row.deal_name)
           .filter(Boolean);
         
@@ -180,7 +254,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
           );
 
           // Partition rows into updates and inserts based on matching
-          transformedData.forEach(row => {
+          parsedData.forEach(row => {
             if (row.id) {
               // Already has ID - definitely an update
               row.__intent = 'update';
@@ -200,11 +274,11 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
           console.debug(`[CSV Import] Partitioned: ${rowsForUpdate.length} updates, ${rowsForInsert.length} inserts`);
         } else {
           // No deal names, all are inserts
-          rowsForInsert = transformedData.map(row => ({ ...row, __intent: 'insert' }));
+          rowsForInsert = parsedData.map(row => ({ ...row, __intent: 'insert' }));
         }
       } else {
         // Contacts: partition by ID presence
-        transformedData.forEach(row => {
+        parsedData.forEach(row => {
           if (row.id) {
             row.__intent = 'update';
             rowsForUpdate.push(row);
@@ -256,7 +330,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       
       toast({
         title: "File Parsed - Hybrid Import",
-        description: `Found ${transformedData.length} rows: ${summary}. ${mergedValidation.valid.length} valid, ${mergedValidation.invalid.length} with errors.`,
+        description: `Found ${parsedData.length} rows: ${summary}. ${mergedValidation.valid.length} valid, ${mergedValidation.invalid.length} with errors.`,
       });
     } catch (error) {
       console.error('Error parsing CSV:', error);
@@ -422,10 +496,9 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
           const batch = rowsToUpdate.slice(i * batchSize, (i + 1) * batchSize);
           const sanitizedBatch = sanitizeImportBatch(batch);
           
-          // CRITICAL: Map CSV headers to DB columns for opportunities
-          const mappedBatch = entityType === 'opportunities' 
-            ? mapRowsToDbColumns(sanitizedBatch)
-            : sanitizedBatch;
+          // Note: For opportunities, headers are already mapped during parsing
+          // For contacts, we still need to apply mapping here
+          const mappedBatch = sanitizedBatch;
           
           // Use field whitelisting to prevent NULL constraint violations
           const cleanedBatch = mappedBatch.map(row => {
@@ -450,11 +523,9 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             // Retry row by row
             for (const row of batch) {
               const sanitized = sanitizeImportBatch([row])[0];
-              const mapped = entityType === 'opportunities' 
-                ? mapRowsToDbColumns([sanitized])[0]
-                : sanitized;
+              // Note: For opportunities, headers are already mapped during parsing
               const cleanRow = cleanRowForDatabase(
-                mapped,
+                sanitized,
                 tableName as 'contacts_raw' | 'opportunities_raw'
               );
               
@@ -512,10 +583,9 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
           const sanitizedBatch = sanitizeImportBatch(deduplicatedBatch);
           
-          // CRITICAL: Map CSV headers to DB columns for opportunities
-          const mappedBatch = entityType === 'opportunities' 
-            ? mapRowsToDbColumns(sanitizedBatch)
-            : sanitizedBatch;
+          // Note: For opportunities, headers are already mapped during parsing
+          // For contacts, we still need to apply mapping here
+          const mappedBatch = sanitizedBatch;
           
           // Use field whitelisting for inserts too
           const cleanedBatch = mappedBatch.map(row => {
@@ -538,11 +608,9 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             // Retry row by row
             for (const row of deduplicatedBatch) {
               const sanitized = sanitizeImportBatch([row])[0];
-              const mapped = entityType === 'opportunities' 
-                ? mapRowsToDbColumns([sanitized])[0]
-                : sanitized;
+              // Note: For opportunities, headers are already mapped during parsing
               const cleanRow = cleanRowForDatabase(
-                mapped,
+                sanitized,
                 tableName as 'contacts_raw' | 'opportunities_raw'
               );
               
