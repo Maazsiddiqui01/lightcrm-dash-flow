@@ -4,18 +4,17 @@ import { downloadFile } from '@/utils/csvExport';
 export function buildCsvFromObjects(rows: any[], headers?: string[]): string {
   if (!rows.length) return '';
   
-  // Get all columns, ensuring 'id' is first
+  // Get all columns, ensuring 'id' is ALWAYS first
   let cols: string[];
   if (headers && headers.length) {
-    cols = headers;
+    // Ensure 'id' is first even if provided in headers
+    cols = headers.filter(h => h !== 'id');
+    cols.unshift('id');
   } else {
     const allKeys = Array.from(new Set(rows.flatMap(r => Object.keys(r))));
     // Sort: id first, then alphabetically
-    cols = allKeys.sort((a, b) => {
-      if (a === 'id') return -1;
-      if (b === 'id') return 1;
-      return a.localeCompare(b);
-    });
+    cols = allKeys.filter(k => k !== 'id').sort();
+    cols.unshift('id');
   }
   
   const esc = (v: any) => {

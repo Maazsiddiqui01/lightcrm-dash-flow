@@ -1,18 +1,14 @@
 import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Upload, FileText, AlertCircle, CheckCircle2, Download, Table as TableIcon } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Upload, Download, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { useCsvImport } from "@/hooks/useCsvImport";
 import { CsvTablePreview } from "./CsvTablePreview";
 import { ImportResults } from "./ImportResults";
-import { generateTemplate } from "@/utils/csvValidation";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 
 interface BulkImportModalProps {
   open: boolean;
@@ -31,19 +27,13 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
     validationResults,
     importResults,
     progress,
-    importMode,
-    setImportMode,
-    matchingStrategy,
-    setMatchingStrategy,
-    firstRowIsHeader,
-    setFirstRowIsHeader,
-    updatePreview,
+    hasHeaderRow,
     columnMappings,
-    unmappedColumns,
     dbRecordsCache,
     parseFile,
     executeImport,
-    reset
+    reset,
+    setHasHeaderRow,
   } = useCsvImport(entityType);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -62,16 +52,13 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
     setDragActive(false);
     
     if (e.dataTransfer.files?.[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
+      handleFileUpload(e.dataTransfer.files[0]);
     }
   }, []);
 
-  const handleFileSelect = async (file: File) => {
-    if (!file.name.endsWith('.csv')) {
-      return;
-    }
-    
-    await parseFile(file);
+  const handleFileUpload = async (selectedFile: File) => {
+    if (!selectedFile.name.endsWith('.csv')) return;
+    await parseFile(selectedFile);
     setStep('preview');
   };
 
@@ -112,74 +99,31 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
         <div className="flex-1 overflow-y-auto">
           {step === 'upload' && (
             <div className="space-y-4">
-              <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Import Mode</Label>
-                  <ToggleGroup 
-                    type="single" 
-                    value={importMode} 
-                    onValueChange={(value) => value && setImportMode(value as any)}
-                    className="justify-start"
-                  >
-                    <ToggleGroupItem value="add-new" className="flex-1">
-                      Add New {entityType === 'contacts' ? 'Contacts' : 'Opportunities'}
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="update-existing" className="flex-1">
-                      Update Existing
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                </div>
+              <Alert>
+                <Upload className="h-4 w-4" />
+                <AlertTitle>Upsert Mode (Smart Import)</AlertTitle>
+                <AlertDescription className="space-y-2 mt-2">
+                  <p>Upload a CSV with {entityType}. The system will automatically:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    <li><strong>Update</strong> records with existing <code className="bg-muted px-1 rounded">id</code> values</li>
+                    <li><strong>Update</strong> records matched by <code className="bg-muted px-1 rounded">{entityType === 'opportunities' ? 'deal_name' : 'email_address'}</code></li>
+                    <li><strong>Insert</strong> new records that don't match existing data</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
 
-                {importMode === 'update-existing' && entityType === 'opportunities' && (
-                  <div className="space-y-2 pt-2 border-t">
-                    <Label className="text-sm font-medium">Matching Strategy</Label>
-                    <ToggleGroup 
-                      type="single" 
-                      value={matchingStrategy} 
-                      onValueChange={(value) => value && setMatchingStrategy(value as any)}
-                      className="justify-start flex-col sm:flex-row"
-                    >
-                      <ToggleGroupItem value="auto" className="flex-1 text-xs">
-                        🔄 Auto-detect
-                        <span className="block text-[10px] text-muted-foreground mt-0.5">Let system decide</span>
-                      </ToggleGroupItem>
-                      <ToggleGroupItem value="id" className="flex-1 text-xs">
-                        🔑 Match by ID
-                        <span className="block text-[10px] text-muted-foreground mt-0.5">Most reliable</span>
-                      </ToggleGroupItem>
-                      <ToggleGroupItem value="deal_name" className="flex-1 text-xs">
-                        📝 Match by Deal Name
-                        <span className="block text-[10px] text-muted-foreground mt-0.5">If ID missing</span>
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-                    <p className="text-xs text-muted-foreground">
-                      {matchingStrategy === 'auto' && '✨ Will use ID column if present, otherwise Deal Name'}
-                      {matchingStrategy === 'id' && '🔑 Requires ID column in your CSV'}
-                      {matchingStrategy === 'deal_name' && '📝 Requires Deal Name column in your CSV'}
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="first-row-header" 
-                    checked={firstRowIsHeader}
-                    onCheckedChange={(checked) => setFirstRowIsHeader(checked === true)}
-                  />
-                  <Label 
-                    htmlFor="first-row-header" 
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    First row is header
-                  </Label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="first-row-header" 
+                  checked={hasHeaderRow}
+                  onCheckedChange={(checked) => setHasHeaderRow(checked === true)}
+                />
+                <Label htmlFor="first-row-header" className="text-sm font-normal cursor-pointer">
+                  First row is header
+                </Label>
               </div>
 
-              <Button
-                variant="outline"
-                onClick={handleDownloadTemplate}
-                className="w-full"
-              >
+              <Button variant="outline" onClick={handleDownloadTemplate} className="w-full">
                 <Download className="h-4 w-4 mr-2" />
                 Download CSV Template
               </Button>
@@ -189,83 +133,37 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
-                className={`
-                  border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
-                  transition-colors
-                  ${dragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'}
-                  hover:border-primary hover:bg-primary/5
-                `}
+                className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors
+                  ${dragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'} hover:border-primary hover:bg-primary/5`}
                 onClick={() => document.getElementById('file-upload')?.click()}
               >
                 <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">
-                  Drop your CSV file here or click to browse
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Supports CSV files up to 10MB
-                </p>
+                <p className="text-lg font-medium mb-2">Drop your CSV file here or click to browse</p>
+                <p className="text-sm text-muted-foreground">{file ? `Selected: ${file.name}` : 'Supports .csv files'}</p>
                 <input
                   id="file-upload"
                   type="file"
                   accept=".csv"
                   className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+                  onChange={(e) => {
+                    const selectedFile = e.target.files?.[0];
+                    if (selectedFile) handleFileUpload(selectedFile);
+                  }}
                 />
               </div>
 
               <Alert>
                 <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Import Guidelines</AlertTitle>
                 <AlertDescription>
-                  <strong>Important:</strong>
-                  {importMode === 'update-existing' 
-                    ? ' Your CSV must include the ID column to match existing records. Column headers will be automatically mapped to database fields.'
-                    : ' Your CSV must follow the template format. Invalid rows will be rejected automatically to maintain data integrity.'
-                  }
+                  <ul className="list-disc list-inside space-y-1 text-sm mt-2">
+                    <li>To <strong>update existing records</strong>, include the <code className="bg-muted px-1 rounded">id</code> column</li>
+                    <li>To <strong>match by name</strong>, ensure <code className="bg-muted px-1 rounded">{entityType === 'opportunities' ? 'deal_name' : 'email_address'}</code> is accurate</li>
+                    <li>Records without ID or matching name will be created as new entries</li>
+                    <li>Empty cells and "null" values will be treated as null in the database</li>
+                  </ul>
                 </AlertDescription>
               </Alert>
-
-              {columnMappings.size > 0 && (
-                <Alert className="bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertDescription>
-                    <strong className="text-green-900 dark:text-green-100">
-                      ✅ {columnMappings.size} column{columnMappings.size !== 1 ? 's' : ''} matched successfully
-                    </strong>
-                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      {Array.from(columnMappings.entries()).slice(0, 8).map(([csv, db]) => (
-                        <div key={csv} className="flex items-center gap-2 bg-white/50 dark:bg-black/20 p-1.5 rounded">
-                          <Badge variant="outline" className="text-[10px] bg-blue-50 border-blue-200">{csv}</Badge>
-                          <span className="text-green-600">→</span>
-                          <span className="font-mono text-green-700 dark:text-green-300 text-[10px]">{db}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {columnMappings.size > 8 && (
-                      <p className="text-xs text-green-700 dark:text-green-300 mt-2">
-                        ... and {columnMappings.size - 8} more columns
-                      </p>
-                    )}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {unmappedColumns.length > 0 && (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Extra columns detected ({unmappedColumns.length})</strong>
-                    <p className="mt-1 text-xs">
-                      These columns don't match database fields and will be <strong>automatically ignored</strong>:
-                    </p>
-                    <div className="mt-2 text-xs font-mono bg-muted/50 p-2 rounded border max-h-20 overflow-y-auto">
-                      {unmappedColumns.join(', ')}
-                    </div>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      ℹ️ Only matched columns will be imported. This is normal if your CSV contains extra data.
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              )}
             </div>
           )}
 
@@ -276,7 +174,6 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
                 validationResults={validationResults}
                 columnMappings={columnMappings}
                 entityType={entityType}
-                importMode={importMode}
                 dbRecordsCache={dbRecordsCache}
                 onImport={handleImport}
                 onCancel={() => setStep('upload')}
@@ -288,15 +185,15 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
             <div className="space-y-4 py-8">
               <div className="text-center">
                 <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-                <p className="text-lg font-medium">Importing {entityType}...</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Please wait while we process your data
-                </p>
+                <h3 className="text-lg font-semibold mb-2">Importing Data...</h3>
+                <p className="text-muted-foreground">Please wait while we process your {entityType}</p>
               </div>
-              <Progress value={progress} className="w-full" />
-              <p className="text-center text-sm text-muted-foreground">
-                {progress}% complete
-              </p>
+              {progress > 0 && (
+                <div className="max-w-md mx-auto space-y-2">
+                  <Progress value={progress} />
+                  <p className="text-sm text-center text-muted-foreground">{Math.round(progress)}% Complete</p>
+                </div>
+              )}
             </div>
           )}
 

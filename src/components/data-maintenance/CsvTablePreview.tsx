@@ -19,7 +19,6 @@ interface CsvTablePreviewProps {
   validationResults: ValidationResults;
   columnMappings: Map<string, string>;
   entityType: 'contacts' | 'opportunities';
-  importMode: 'add-new' | 'update-existing';
   dbRecordsCache?: Map<string, any>;
   onImport: () => void;
   onCancel: () => void;
@@ -30,7 +29,6 @@ export function CsvTablePreview({
   validationResults,
   columnMappings,
   entityType,
-  importMode,
   dbRecordsCache,
   onImport,
   onCancel,
@@ -40,9 +38,9 @@ export function CsvTablePreview({
   const [textWrap, setTextWrap] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
-  // Generate cell-level changes for update mode
+  // Generate cell-level changes for rows that will be updated
   const rowChangesMap = useMemo<Map<number, RowChanges>>(() => {
-    if (importMode !== 'update-existing' || !dbRecordsCache || dbRecordsCache.size === 0) {
+    if (!dbRecordsCache || dbRecordsCache.size === 0) {
       return new Map();
     }
 
@@ -54,11 +52,16 @@ export function CsvTablePreview({
     const rowChanges = generateRowChanges(parsedData, dbRecordsObj, dbToDbMappings, 'id');
     
     return new Map(rowChanges.map(rc => [rc.rowIndex, rc]));
-  }, [parsedData, dbRecordsCache, columnMappings, importMode]);
+  }, [parsedData, dbRecordsCache, columnMappings]);
 
-  // Map row index to validation status with enhanced messages
+  // Map row index to validation status with enhanced messages and match type
   const rowStatusMap = useMemo(() => {
-    const statusMap = new Map<number, { status: 'valid' | 'warning' | 'invalid', messages: string[], warnings?: string[] }>();
+    const statusMap = new Map<number, { 
+      status: 'valid' | 'warning' | 'invalid', 
+      messages: string[], 
+      warnings?: string[],
+      matchType?: string 
+    }>();
     
     // Mark invalid rows
     invalid.forEach(item => {
@@ -83,13 +86,19 @@ export function CsvTablePreview({
       }
     });
     
-    // Mark valid rows
-    parsedData.forEach((_, index) => {
+    // Mark valid rows with match type information
+    parsedData.forEach((row, index) => {
       if (!statusMap.has(index)) {
+        const matchType = row.__matchType || 'insert-new';
         statusMap.set(index, { 
           status: 'valid' as const, 
-          messages: ['Row is valid and ready to import']
+          messages: ['Row is valid and ready to import'],
+          matchType
         });
+      } else {
+        // Add match type to existing status
+        const existing = statusMap.get(index)!;
+        existing.matchType = row.__matchType || 'insert-new';
       }
     });
     
@@ -205,7 +214,7 @@ export function CsvTablePreview({
                 <div>
                   <p className="text-2xl font-bold text-green-600">{counts.valid}</p>
                   <p className="text-sm text-muted-foreground">
-                    ✅ Valid - Ready to {importMode === 'add-new' ? 'import' : 'update'}
+                    ✅ Valid - Ready to import/update
                   </p>
                 </div>
               </div>
@@ -278,7 +287,7 @@ export function CsvTablePreview({
                 entityType={entityType}
                 textWrap={textWrap}
                 onToggleTextWrap={() => setTextWrap(!textWrap)}
-                highlightChanges={importMode === 'update-existing'}
+                highlightChanges={dbRecordsCache !== undefined && dbRecordsCache.size > 0}
                 changeMap={changeMap}
               />
             )}
@@ -326,8 +335,8 @@ export function CsvTablePreview({
                 >
                   <Upload className="h-4 w-4" />
                   {valid.length === 0 
-                    ? `Cannot ${importMode === 'add-new' ? 'Import' : 'Update'} - Fix Errors`
-                    : `${importMode === 'add-new' ? 'Import' : 'Update'} ${valid.length} ${entityType === 'contacts' ? 'Contact' : 'Opportunit'}${valid.length !== 1 ? (entityType === 'contacts' ? 's' : 'ies') : 'y'}`
+                    ? `Cannot Import - Fix Errors`
+                    : `Import/Update ${valid.length} ${entityType === 'contacts' ? 'Contact' : 'Opportunit'}${valid.length !== 1 ? (entityType === 'contacts' ? 's' : 'ies') : 'y'}`
                   }
                   {invalid.length > 0 && valid.length > 0 && (
                     <Badge variant="outline" className="ml-1 bg-orange-100 dark:bg-orange-900 text-orange-900 dark:text-orange-100 border-orange-300">
