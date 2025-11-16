@@ -17,7 +17,8 @@ import { parseSupabaseError } from "@/utils/supabaseErrorParser";
 import { 
   mapRowsToDbColumns, 
   mapHeaderToColumn,
-  READ_ONLY_OPPORTUNITY_COLUMNS 
+  READ_ONLY_OPPORTUNITY_COLUMNS,
+  parseCsvToOpportunities
 } from "@/utils/opportunityColumnMapping";
 import { normalizeCsvRow } from "@/utils/csvNormalizer";
 
@@ -129,95 +130,57 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       console.debug('[CSV Import] RAW parsed data first row:', data[0]);
       console.debug('[CSV Import] Detected CSV headers:', csvHeaders);
       
-      // For opportunities, use the new mapping system
+      // For opportunities, use the enhanced parsing system
       if (entityType === 'opportunities') {
-        // Map headers to DB columns, filtering out unknown/view-only columns
-        const headerMapping: Array<{ csv: string; db: string | null }> = csvHeaders.map(header => ({
-          csv: header,
-          db: mapHeaderToColumn(header)
-        }));
-        
-        const validHeaders = headerMapping.filter(h => h.db !== null);
-        const invalidHeaders = headerMapping.filter(h => h.db === null).map(h => h.csv);
-        
-        console.debug('[CSV Import] Valid column mappings:', validHeaders);
-        console.debug('[CSV Import] Ignored columns:', invalidHeaders);
-        
-        // Warn about read-only columns for opportunities
-        if (entityType === 'opportunities') {
-          const readOnlyFound = validHeaders.filter(h => 
-            h.db && h.db !== 'id' && READ_ONLY_OPPORTUNITY_COLUMNS.includes(h.db as any)
-          );
-          
-          if (readOnlyFound.length > 0) {
-            console.warn('[CSV Import] Read-only columns detected and will be ignored:', 
-              readOnlyFound.map(h => h.db));
-            
-            toast({
-              title: "Read-Only Columns Ignored",
-              description: `${readOnlyFound.length} read-only column(s) will be skipped during import: ${readOnlyFound.map(h => h.csv).join(', ')}`,
-              variant: "default"
-            });
-          }
-        }
-        
-        // Transform rows to use DB column names with normalization
-        // Note: 'ebitda' is TEXT in DB, so we don't normalize it as numeric
-        const numericColumns = ['revenue', 'ebitda_in_ms', 'est_deal_size', 'est_lg_equity_invest'];
-        
-        const transformedData = data.map((row, idx) => {
-          const transformed: Record<string, any> = {
-            _rowNumber: idx + (hasHeaderRow ? 2 : 1)
-          };
-          
-          validHeaders.forEach(({ csv, db }) => {
-            if (!db) return;
-            
-            let value: any = row[csv];
-            
-            // Normalize null-like values
-            if (
-              value === '' ||
-              value === ' ' ||
-              value === null ||
-              value === undefined ||
-              String(value).toLowerCase() === 'null'
-            ) {
-              value = null;
-            } else if (typeof value === 'string') {
-              value = value.trim();
-            }
-            
-            // Numeric normalization
-            if (numericColumns.includes(db) && value !== null) {
-              const n = Number(value);
-              value = Number.isNaN(n) ? null : n;
-            }
-            
-            transformed[db] = value;
-          });
-          
-          return transformed;
+        // Use the dedicated parsing function
+        const parseResult = parseCsvToOpportunities({
+          headers: csvHeaders,
+          rows: data
         });
         
-        console.debug('[CSV Import] Sample transformed rows (first 2):');
+        // Add row numbers for tracking
+        const transformedData = parseResult.data.map((row, idx) => ({
+          ...row,
+          _rowNumber: idx + (hasHeaderRow ? 2 : 1)
+        }));
+        
+        // Store mappings for preview (only valid, non-read-only columns)
+        const mappedColumns = new Map<string, string>();
+        csvHeaders.forEach(header => {
+          const dbCol = mapHeaderToColumn(header);
+          if (dbCol && (dbCol === 'id' || !READ_ONLY_OPPORTUNITY_COLUMNS.includes(dbCol as any))) {
+            mappedColumns.set(header, dbCol);
+          }
+        });
+        
+        setColumnMappings(mappedColumns);
+        setUnmappedColumns(parseResult.warnings.invalidColumns);
+        
+        // Show warnings if needed
+        if (parseResult.warnings.readOnlyColumns.length > 0) {
+          console.warn('[CSV Import] Read-only columns detected and ignored:', 
+            parseResult.warnings.readOnlyColumns);
+          
+          toast({
+            title: "Read-Only Columns Ignored",
+            description: `${parseResult.warnings.readOnlyColumns.length} read-only column(s) skipped: ${parseResult.warnings.readOnlyColumns.join(', ')}`,
+            variant: "default"
+          });
+        }
+        
+        if (parseResult.warnings.invalidColumns.length > 0) {
+          toast({
+            title: "Ignored Columns",
+            description: `${parseResult.warnings.invalidColumns.length} column(s) not recognized: ${parseResult.warnings.invalidColumns.join(', ')}`,
+            variant: "default"
+          });
+        }
+        
+        console.debug('[CSV Import] Sample parsed rows (first 2):');
         transformedData.slice(0, 2).forEach((row, idx) => {
           console.debug(`  Row ${idx}:`, row);
           console.debug(`  Row ${idx} keys:`, Object.keys(row));
         });
-        
-        // Store mappings for preview
-        const mappedColumns = new Map(validHeaders.map(h => [h.csv, h.db!]));
-        setColumnMappings(mappedColumns);
-        setUnmappedColumns(invalidHeaders);
-        
-        if (invalidHeaders.length > 0) {
-          toast({
-            title: "Ignored Columns",
-            description: `${invalidHeaders.length} columns not recognized and will be ignored: ${invalidHeaders.join(', ')}`,
-            variant: "default"
-          });
-        }
         
         setParsedData(transformedData);
       } else {

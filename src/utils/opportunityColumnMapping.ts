@@ -257,3 +257,90 @@ export function mapRowToDbColumns(row: Record<string, any>): Record<string, any>
 export function mapRowsToDbColumns(rows: Record<string, any>[]): Record<string, any>[] {
   return rows.map(row => mapRowToDbColumns(row));
 }
+
+/**
+ * Parse CSV data specifically for opportunities import
+ * - Maps CSV headers to Supabase column names
+ * - Filters out read-only columns (except 'id' which is needed for matching)
+ * - Normalizes null-like values
+ * - Handles numeric columns appropriately
+ */
+export function parseCsvToOpportunities(csv: { 
+  headers: string[]; 
+  rows: Record<string, any>[] 
+}): { 
+  data: Record<string, any>[];
+  warnings: { readOnlyColumns: string[]; invalidColumns: string[] };
+} {
+  const { headers, rows } = csv;
+  
+  // Map each header to its DB column
+  const columnKeys = headers.map(mapHeaderToColumn);
+  
+  // Track warnings
+  const readOnlyFound: string[] = [];
+  const invalidColumns: string[] = [];
+  
+  headers.forEach((header, index) => {
+    const dbCol = columnKeys[index];
+    
+    if (dbCol === null) {
+      invalidColumns.push(header);
+    } else if (dbCol !== 'id' && READ_ONLY_OPPORTUNITY_COLUMNS.includes(dbCol as any)) {
+      readOnlyFound.push(header);
+    }
+  });
+  
+  // Columns that should be treated as numeric
+  const numericColumns = ['revenue', 'ebitda_in_ms', 'est_deal_size', 'est_lg_equity_invest'];
+  
+  // Transform each row
+  const parsedData = rows.map((row) => {
+    const obj: Record<string, any> = {};
+
+    headers.forEach((header, index) => {
+      const col = columnKeys[index];
+      
+      // Skip invalid columns
+      if (!col) return;
+
+      // Skip read-only columns (EXCEPT 'id' which we need for matching)
+      if (col !== 'id' && READ_ONLY_OPPORTUNITY_COLUMNS.includes(col as any)) {
+        return;
+      }
+
+      let value: any = row[header];
+
+      // Normalize null-like values
+      if (
+        value === '' ||
+        value === ' ' ||
+        value === null ||
+        value === undefined ||
+        String(value).toLowerCase() === 'null'
+      ) {
+        value = null;
+      } else if (typeof value === 'string') {
+        value = value.trim();
+      }
+
+      // Numeric normalization for specific columns
+      if (numericColumns.includes(col) && value !== null) {
+        const n = Number(value);
+        value = Number.isNaN(n) ? null : n;
+      }
+
+      obj[col] = value;
+    });
+
+    return obj;
+  });
+  
+  return {
+    data: parsedData,
+    warnings: {
+      readOnlyColumns: readOnlyFound,
+      invalidColumns
+    }
+  };
+}
