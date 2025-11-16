@@ -238,12 +238,26 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
       let rowsForInsert: any[] = [];
       
       if (entityType === 'opportunities') {
-        const dealNames = parsedData
-          .map(row => row.deal_name)
-          .filter(Boolean);
+        // Split rows: those with ID vs those with only deal_name
+        const rowsWithId = parsedData.filter(row => row.id && String(row.id).trim() !== '');
+        const rowsWithoutIdButWithName = parsedData.filter(row => 
+          (!row.id || String(row.id).trim() === '') && 
+          row.deal_name && 
+          String(row.deal_name).trim() !== ''
+        );
         
-        if (dealNames.length > 0) {
-          // Fetch existing opportunities by deal name
+        console.debug(`[CSV Import] Classification: ${rowsWithId.length} with ID, ${rowsWithoutIdButWithName.length} with deal_name only`);
+        
+        // For rows with ID, they go straight to update
+        rowsWithId.forEach(row => {
+          row.__intent = 'update';
+          rowsForUpdate.push(row);
+        });
+        
+        // For rows with deal_name but no ID, check if they match existing records
+        if (rowsWithoutIdButWithName.length > 0) {
+          const dealNames = rowsWithoutIdButWithName.map(row => row.deal_name).filter(Boolean);
+          
           const { data: existingRecords } = await supabase
             .from('opportunities_raw')
             .select('id, deal_name')
@@ -253,29 +267,23 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             (existingRecords || []).map(r => [r.deal_name as string, r.id as string])
           );
 
-          // Partition rows into updates and inserts based on matching
-          parsedData.forEach(row => {
-            if (row.id) {
-              // Already has ID - definitely an update
-              row.__intent = 'update';
-              rowsForUpdate.push(row);
-            } else if (row.deal_name && dealNameToId.has(row.deal_name)) {
-              // Matched by deal name - convert to update
+          // Partition: if deal_name matches existing, attach ID and mark for update
+          rowsWithoutIdButWithName.forEach(row => {
+            if (dealNameToId.has(row.deal_name)) {
               row.id = dealNameToId.get(row.deal_name);
               row.__intent = 'update';
+              row.__matchType = 'matched-by-deal-name';
               rowsForUpdate.push(row);
             } else {
-              // No match - insert as new
+              // No match - will be inserted as new
               row.__intent = 'insert';
+              row.__matchType = 'new-record';
               rowsForInsert.push(row);
             }
           });
-          
-          console.debug(`[CSV Import] Partitioned: ${rowsForUpdate.length} updates, ${rowsForInsert.length} inserts`);
-        } else {
-          // No deal names, all are inserts
-          rowsForInsert = parsedData.map(row => ({ ...row, __intent: 'insert' }));
         }
+        
+        console.debug(`[CSV Import] Final partition: ${rowsForUpdate.length} updates (upsert), ${rowsForInsert.length} inserts (new)`);
       } else {
         // Contacts: partition by ID presence
         parsedData.forEach(row => {
@@ -468,199 +476,144 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
     const tableName = entityType === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
     const validRows = validationResults.valid;
-    const batchSize = 50;
-    const batches = Math.ceil(validRows.length / batchSize);
     const startTime = Date.now();
 
     let successful = 0;
-    let failed = 0;
     let skipped = 0;
-    let batchesSuccessful = 0;
-    let batchesFailed = 0;
     const errors: Array<{ row: number; error: string; data?: any }> = [...validationErrors];
 
     // Partition valid rows by intent
-    const rowsToUpdate = validRows.filter(row => row.__intent === 'update');
+    const rowsToUpsert = validRows.filter(row => row.__intent === 'update');
     const rowsToInsert = validRows.filter(row => row.__intent === 'insert');
     
-    let updatedCount = 0;
-    let insertedCount = 0;
-    
-    console.debug(`[CSV Import] Executing: ${rowsToUpdate.length} updates, ${rowsToInsert.length} inserts`);
+    console.debug(`[CSV Import] Executing: ${rowsToUpsert.length} upserts, ${rowsToInsert.length} inserts`);
 
     try {
-      // PHASE 1: Execute updates
-      if (rowsToUpdate.length > 0) {
-        const updateBatches = Math.ceil(rowsToUpdate.length / batchSize);
-        for (let i = 0; i < updateBatches; i++) {
-          const batch = rowsToUpdate.slice(i * batchSize, (i + 1) * batchSize);
-          const sanitizedBatch = sanitizeImportBatch(batch);
-          
-          // Note: For opportunities, headers are already mapped during parsing
-          // For contacts, we still need to apply mapping here
-          const mappedBatch = sanitizedBatch;
-          
-          // Use field whitelisting to prevent NULL constraint violations
-          const cleanedBatch = mappedBatch.map(row => {
-            return cleanRowForDatabase(row, tableName as 'contacts_raw' | 'opportunities_raw');
+      setProgress(10);
+      
+      // Clean rows: remove tracking fields and apply field whitelisting
+      const cleanRows = (rows: any[]) => {
+        return rows.map(row => {
+          // Remove internal tracking fields
+          const { __intent, __matchType, _rowNumber, ...cleanRow } = row;
+          // Apply whitelist for safe database operations
+          return cleanRowForDatabase(cleanRow, tableName as 'contacts_raw' | 'opportunities_raw');
+        });
+      };
+
+      let updatedCount = 0;
+      let insertedCount = 0;
+
+      // PHASE 1: Upsert rows with IDs
+      if (rowsToUpsert.length > 0) {
+        setProgress(30);
+        const cleanedUpserts = cleanRows(sanitizeImportBatch(rowsToUpsert));
+        
+        console.debug(`[CSV Import] Upserting ${cleanedUpserts.length} rows, sample:`, cleanedUpserts[0]);
+
+        const { error: upsertError } = await supabase
+          .from(tableName)
+          .upsert(cleanedUpserts, { onConflict: 'id' });
+
+        if (upsertError) {
+          const parsedError = parseSupabaseError(upsertError, {
+            operation: 'CSV upsert',
+            table: tableName
           });
-
-          console.debug(`[CSV Import] UPDATE batch ${i+1} sample:`, cleanedBatch[0]);
-
-          const { error } = await supabase
-            .from(tableName)
-            .upsert(cleanedBatch, { onConflict: 'id' });
-
-          if (error) {
-            // Enhanced error logging
-            const parsedError = parseSupabaseError(error, {
-              operation: 'CSV update batch',
-              table: tableName
-            });
-            console.error(`[CSV Import] UPDATE batch ${i+1} failed:`, parsedError.technicalDetails);
-            
-            batchesFailed++;
-            // Retry row by row
-            for (const row of batch) {
-              const sanitized = sanitizeImportBatch([row])[0];
-              // Note: For opportunities, headers are already mapped during parsing
-              const cleanRow = cleanRowForDatabase(
-                sanitized,
-                tableName as 'contacts_raw' | 'opportunities_raw'
-              );
-              
-              const { error: rowError } = await supabase
-                .from(tableName)
-                .upsert([cleanRow], { onConflict: 'id' });
-              
-              if (rowError) {
-                failed++;
-                const rowParsedError = parseSupabaseError(rowError);
-                errors.push({ 
-                  row: row._rowNumber || 0, 
-                  error: rowParsedError.userMessage, 
-                  data: row 
-                });
-              } else {
-                successful++;
-                updatedCount++;
-              }
-            }
-          } else {
-            successful += batch.length;
-            updatedCount += batch.length;
-            batchesSuccessful++;
-          }
-
-          const totalBatches = updateBatches + Math.ceil(rowsToInsert.length / batchSize);
-          setProgress(Math.round(((i + 1) / totalBatches) * 100));
+          console.error('[CSV Import] Upsert failed:', parsedError);
+          
+          setImportResults({
+            total: parsedData.length,
+            successful: 0,
+            failed: parsedData.length,
+            errors: [{
+              row: 0,
+              error: `Upsert error: ${parsedError.userMessage}. Technical details: ${upsertError.message}`
+            }]
+          });
+          
+          toast({
+            title: "Import Failed",
+            description: `Upsert operation failed: ${parsedError.userMessage}`,
+            variant: "destructive"
+          });
+          return;
         }
+        
+        updatedCount = cleanedUpserts.length;
+        successful += updatedCount;
+        console.debug(`[CSV Import] Upserted ${updatedCount} rows successfully`);
       }
 
-      // PHASE 2: Execute inserts with deduplication
+      // PHASE 2: Insert new rows
       if (rowsToInsert.length > 0) {
-        const insertBatches = Math.ceil(rowsToInsert.length / batchSize);
-        for (let i = 0; i < insertBatches; i++) {
-          const batch = rowsToInsert.slice(i * batchSize, (i + 1) * batchSize);
-          
-          // Deduplicate within this CSV by deal_name/email before inserting
-          const seenKeys = new Set<string>();
-          const deduplicatedBatch = batch.filter(row => {
-            const key = entityType === 'opportunities' ? row.deal_name : row.email_address;
-            if (!key || seenKeys.has(key)) {
-              skipped++;
-              return false;
-            }
-            seenKeys.add(key);
-            return true;
-          });
-
-          if (deduplicatedBatch.length === 0) {
-            const totalBatches = Math.ceil(rowsToUpdate.length / batchSize) + insertBatches;
-            setProgress(Math.round(((Math.ceil(rowsToUpdate.length / batchSize) + i + 1) / totalBatches) * 100));
-            continue;
+        setProgress(70);
+        
+        // Deduplicate within CSV by deal_name/email
+        const seenKeys = new Set<string>();
+        const deduplicated = rowsToInsert.filter(row => {
+          const key = entityType === 'opportunities' ? row.deal_name : row.email_address;
+          if (!key || seenKeys.has(key)) {
+            skipped++;
+            return false;
           }
+          seenKeys.add(key);
+          return true;
+        });
+        
+        const cleanedInserts = cleanRows(sanitizeImportBatch(deduplicated));
+        
+        console.debug(`[CSV Import] Inserting ${cleanedInserts.length} rows, sample:`, cleanedInserts[0]);
 
-          const sanitizedBatch = sanitizeImportBatch(deduplicatedBatch);
-          
-          // Note: For opportunities, headers are already mapped during parsing
-          // For contacts, we still need to apply mapping here
-          const mappedBatch = sanitizedBatch;
-          
-          // Use field whitelisting for inserts too
-          const cleanedBatch = mappedBatch.map(row => {
-            return cleanRowForDatabase(row, tableName as 'contacts_raw' | 'opportunities_raw');
+        const { error: insertError } = await supabase
+          .from(tableName)
+          .insert(cleanedInserts);
+
+        if (insertError) {
+          const parsedError = parseSupabaseError(insertError, {
+            operation: 'CSV insert',
+            table: tableName
           });
-
-          const { error } = await supabase
-            .from(tableName)
-            .insert(cleanedBatch);
-
-          if (error) {
-            // Enhanced error logging
-            const parsedError = parseSupabaseError(error, {
-              operation: 'CSV insert batch',
-              table: tableName
-            });
-            console.error(`[CSV Import] INSERT batch ${i+1} failed:`, parsedError.technicalDetails);
-            
-            batchesFailed++;
-            // Retry row by row
-            for (const row of deduplicatedBatch) {
-              const sanitized = sanitizeImportBatch([row])[0];
-              // Note: For opportunities, headers are already mapped during parsing
-              const cleanRow = cleanRowForDatabase(
-                sanitized,
-                tableName as 'contacts_raw' | 'opportunities_raw'
-              );
-              
-              const { error: rowError } = await supabase
-                .from(tableName)
-                .insert([cleanRow]);
-              
-              if (rowError) {
-                failed++;
-                const rowParsedError = parseSupabaseError(rowError);
-                errors.push({ 
-                  row: row._rowNumber || 0, 
-                  error: rowParsedError.userMessage, 
-                  data: row 
-                });
-              } else {
-                successful++;
-                insertedCount++;
-              }
-            }
-          } else {
-            successful += cleanedBatch.length;
-            insertedCount += cleanedBatch.length;
-            batchesSuccessful++;
-          }
-
-          const totalBatches = Math.ceil(rowsToUpdate.length / batchSize) + insertBatches;
-          setProgress(Math.round(((Math.ceil(rowsToUpdate.length / batchSize) + i + 1) / totalBatches) * 100));
+          console.error('[CSV Import] Insert failed:', parsedError);
+          
+          setImportResults({
+            total: parsedData.length,
+            successful: updatedCount,
+            failed: parsedData.length - updatedCount,
+            errors: [{
+              row: 0,
+              error: `Insert error: ${parsedError.userMessage}. Technical details: ${insertError.message}`
+            }]
+          });
+          
+          toast({
+            title: "Import Partially Failed",
+            description: `${updatedCount} rows updated successfully, but insert failed: ${parsedError.userMessage}`,
+            variant: "destructive"
+          });
+          return;
         }
+        
+        insertedCount = cleanedInserts.length;
+        successful += insertedCount;
+        console.debug(`[CSV Import] Inserted ${insertedCount} rows successfully`);
       }
 
-      // Calculate total including validation errors
-      const totalAttempted = validRows.length;
-      const totalWithValidation = parsedData.length;
-      const failedValidation = validationErrors.length;
+      setProgress(100);
       const endTime = Date.now();
       
+      // Calculate totals
+      const totalRows = parsedData.length;
+      const failedValidation = validationErrors.length;
+      
       setImportResults({
-        total: totalWithValidation,
+        total: totalRows,
         successful,
-        failed: failed + failedValidation,
+        failed: failedValidation,
         skipped,
-        errors,
+        errors: validationErrors,
         startTime,
-        endTime,
-        batches: {
-          total: batches,
-          successful: batchesSuccessful,
-          failed: batchesFailed
-        }
+        endTime
       });
 
       // Build clear summary message
@@ -668,13 +621,12 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
         updatedCount > 0 ? `Updated ${updatedCount}` : null,
         insertedCount > 0 ? `Inserted ${insertedCount}` : null,
         skipped > 0 ? `Skipped ${skipped} duplicates` : null,
-        failed > 0 ? `Failed ${failed}` : null,
         failedValidation > 0 ? `${failedValidation} validation errors` : null
       ].filter(Boolean);
 
       toast({
         title: "Import Completed",
-        description: messages.join(' • '),
+        description: messages.length > 0 ? messages.join(' • ') : 'All rows processed successfully',
       });
     } catch (error: any) {
       console.error('Import error:', error);
@@ -698,12 +650,7 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
           }
         ],
         startTime,
-        endTime,
-        batches: {
-          total: batches,
-          successful: batchesSuccessful,
-          failed: batchesFailed
-        }
+        endTime
       });
       
       toast({
