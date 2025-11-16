@@ -14,6 +14,8 @@ import {
 } from "@/utils/csvImportSecurity";
 import { cleanRowForDatabase } from "@/utils/databaseUpdateHelpers";
 import { parseSupabaseError } from "@/utils/supabaseErrorParser";
+import { mapRowsToDbColumns } from "@/utils/opportunityColumnMapping";
+import { normalizeCsvRow } from "@/utils/csvNormalizer";
 
 export interface ValidationResults {
   valid: any[];
@@ -420,8 +422,13 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
           const batch = rowsToUpdate.slice(i * batchSize, (i + 1) * batchSize);
           const sanitizedBatch = sanitizeImportBatch(batch);
           
-          // CRITICAL: Use field whitelisting to prevent NULL constraint violations
-          const cleanedBatch = sanitizedBatch.map(row => {
+          // CRITICAL: Map CSV headers to DB columns for opportunities
+          const mappedBatch = entityType === 'opportunities' 
+            ? mapRowsToDbColumns(sanitizedBatch)
+            : sanitizedBatch;
+          
+          // Use field whitelisting to prevent NULL constraint violations
+          const cleanedBatch = mappedBatch.map(row => {
             return cleanRowForDatabase(row, tableName as 'contacts_raw' | 'opportunities_raw');
           });
 
@@ -442,8 +449,12 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             batchesFailed++;
             // Retry row by row
             for (const row of batch) {
+              const sanitized = sanitizeImportBatch([row])[0];
+              const mapped = entityType === 'opportunities' 
+                ? mapRowsToDbColumns([sanitized])[0]
+                : sanitized;
               const cleanRow = cleanRowForDatabase(
-                sanitizeImportBatch([row])[0],
+                mapped,
                 tableName as 'contacts_raw' | 'opportunities_raw'
               );
               
@@ -501,8 +512,13 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
 
           const sanitizedBatch = sanitizeImportBatch(deduplicatedBatch);
           
-          // CRITICAL: Use field whitelisting for inserts too
-          const cleanedBatch = sanitizedBatch.map(row => {
+          // CRITICAL: Map CSV headers to DB columns for opportunities
+          const mappedBatch = entityType === 'opportunities' 
+            ? mapRowsToDbColumns(sanitizedBatch)
+            : sanitizedBatch;
+          
+          // Use field whitelisting for inserts too
+          const cleanedBatch = mappedBatch.map(row => {
             return cleanRowForDatabase(row, tableName as 'contacts_raw' | 'opportunities_raw');
           });
 
@@ -521,8 +537,12 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities') {
             batchesFailed++;
             // Retry row by row
             for (const row of deduplicatedBatch) {
+              const sanitized = sanitizeImportBatch([row])[0];
+              const mapped = entityType === 'opportunities' 
+                ? mapRowsToDbColumns([sanitized])[0]
+                : sanitized;
               const cleanRow = cleanRowForDatabase(
-                sanitizeImportBatch([row])[0],
+                mapped,
                 tableName as 'contacts_raw' | 'opportunities_raw'
               );
               
