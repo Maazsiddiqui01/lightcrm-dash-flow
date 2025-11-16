@@ -27,7 +27,6 @@ interface Opportunity {
   ownership_type: string;
   summary_of_opportunity: string;
   ebitda_in_ms: number;
-  ebitda: string;
   ebitda_notes: string;
   investment_professional_point_person_1: string;
   investment_professional_point_person_2: string;
@@ -157,28 +156,21 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
       
       let filteredData = data || [];
 
-      // Client-side EBITDA filtering (since it's a text field with numbers)
+      // Client-side EBITDA filtering (numeric field)
       if (filters.ebitdaMin !== undefined || filters.ebitdaMax !== undefined) {
         filteredData = filteredData.filter(opp => {
-          const ebitdaText = opp.ebitda;
-          if (!ebitdaText) return false;
-          
-          // Extract number from text using regex
-          const match = ebitdaText.match(/[\d,]+\.?\d*/);
-          if (!match) return false;
-          
-          const numValue = parseFloat(match[0].replace(/,/g, ''));
-          if (isNaN(numValue)) return false;
+          const ebitdaValue = opp.ebitda_in_ms;
+          if (ebitdaValue === null || ebitdaValue === undefined) return false;
           
           let passesMin = true;
           let passesMax = true;
           
           if (filters.ebitdaMin !== undefined) {
-            passesMin = numValue >= filters.ebitdaMin;
+            passesMin = ebitdaValue >= filters.ebitdaMin;
           }
           
           if (filters.ebitdaMax !== undefined) {
-            passesMax = numValue <= filters.ebitdaMax;
+            passesMax = ebitdaValue <= filters.ebitdaMax;
           }
           
           return passesMin && passesMax;
@@ -305,7 +297,7 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
       render: (value) => value || "—"
     },
     {
-      key: "ebitda",
+      key: "ebitda_in_ms",
       label: "EBITDA",
       width: 120,
       minWidth: 100,
@@ -314,10 +306,10 @@ export function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="truncate block">{value || "—"}</span>
+              <span className="truncate block">{value ? `$${value}M` : "—"}</span>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{value || "No EBITDA data"}</p>
+              <p>{value ? `$${value}M` : "No EBITDA data"}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
