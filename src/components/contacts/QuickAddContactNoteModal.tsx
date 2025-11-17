@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useContactNotes } from '@/hooks/useContactNotes';
+import { formatDatePrefix } from '@/utils/dateUtils';
 
 interface QuickAddContactNoteModalProps {
   open: boolean;
@@ -29,7 +30,8 @@ export function QuickAddContactNoteModal({
 
   const handleSave = async () => {
     if (content.trim()) {
-      saveNotes(content.trim());
+      const contentWithDate = `${formatDatePrefix()}${content.trim()}`;
+      saveNotes(contentWithDate);
       // Wait a bit for the save to complete, then close
       setTimeout(() => {
         setContent('');

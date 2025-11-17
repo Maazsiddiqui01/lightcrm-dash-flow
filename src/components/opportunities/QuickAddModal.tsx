@@ -17,6 +17,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useOpportunityNotes } from '@/hooks/useOpportunityNotes';
+import { formatDatePrefix } from '@/utils/dateUtils';
 
 interface QuickAddModalProps {
   open: boolean;
@@ -47,11 +48,13 @@ export function QuickAddModal({
   const handleSave = () => {
     if (!content.trim()) return;
 
+    const contentWithDate = `${formatDatePrefix()}${content.trim()}`;
+
     if (isNextSteps) {
       const dueDateString = dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined;
-      saveNextSteps(content.trim(), dueDateString, addInToDo);
+      saveNextSteps(contentWithDate, dueDateString, addInToDo);
     } else {
-      saveMostRecentNotes(content.trim());
+      saveMostRecentNotes(contentWithDate);
     }
     
     // Close modal and reset content after save is initiated

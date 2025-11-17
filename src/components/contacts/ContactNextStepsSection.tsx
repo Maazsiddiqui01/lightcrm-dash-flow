@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { formatDatePrefix } from '@/utils/dateUtils';
 
 interface ContactNextStepsSectionProps {
   currentValue: string | null;
@@ -83,8 +84,9 @@ export function ContactNextStepsSection({
   const handleSave = () => {
     if (draft.trim() !== (currentValue || '').trim() || 
         dueDate?.toDateString() !== (currentDueDate ? new Date(currentDueDate).toDateString() : undefined)) {
+      const contentWithDate = `${formatDatePrefix()}${draft.trim()}`;
       const dueDateString = dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined;
-      onSave(draft.trim(), dueDateString, addInToDo);
+      onSave(contentWithDate, dueDateString, addInToDo);
     }
   };
 

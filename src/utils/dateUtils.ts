@@ -1,4 +1,4 @@
-import { parseISO, isValid } from 'date-fns';
+import { parseISO, isValid, format } from 'date-fns';
 
 /**
  * Parse dates flexibly from various formats returned by Supabase
@@ -66,4 +66,12 @@ export function getCurrentQuarterYear(): string {
   }
   
   return `Q${quarter} ${year}`;
+}
+
+/**
+ * Format today's date as a prefix for notes/next steps
+ * @returns Date string in format "MM/dd/yy: " (e.g., "11/16/25: ")
+ */
+export function formatDatePrefix(): string {
+  return format(new Date(), 'MM/dd/yy') + ': ';
 }

@@ -17,6 +17,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useContactNextSteps } from '@/hooks/useContactNextSteps';
+import { formatDatePrefix } from '@/utils/dateUtils';
 
 interface QuickAddContactNextStepModalProps {
   open: boolean;
@@ -39,8 +40,9 @@ export function QuickAddContactNextStepModal({
   const handleSave = () => {
     if (!content.trim()) return;
 
+    const contentWithDate = `${formatDatePrefix()}${content.trim()}`;
     const dueDateString = dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined;
-    saveNextSteps(content.trim(), dueDateString, addInToDo);
+    saveNextSteps(contentWithDate, dueDateString, addInToDo);
     
     // Close modal and reset content after save is initiated
     setContent('');
