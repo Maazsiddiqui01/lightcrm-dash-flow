@@ -76,26 +76,15 @@ export async function exportCsv(options: ExportOptions): Promise<void> {
 
 /**
  * Determine columns and headers for export
+ * Always exports all database columns regardless of UI visibility
  */
 function getColumnsAndHeaders(options: ExportOptions): { columns: string[]; headers: string[] } {
-  if (options.mode === 'detailed') {
-    const columns = getAllRawColumns(options.page);
-    return { columns, headers: columns };
-  }
-
-  // Current view mode - filter out UI-only columns like 'actions'
-  let columns = (options.visibleColumns || []).filter(col => col !== 'actions');
+  // Always export all database columns, excluding UI-only and system columns
+  // getAllRawColumns already filters out: actions, created_at, updated_at, 
+  // locked_by, locked_until, lock_reason, organization_id
+  const columns = getAllRawColumns(options.page);
   
-  // For opportunities, also filter out read-only columns (except 'id')
-  if (options.page === 'opportunities') {
-    columns = columns.filter(col => 
-      col === 'id' || !READ_ONLY_OPPORTUNITY_COLUMNS.includes(col as any)
-    );
-  }
-  
-  const headers = columns.map(col => options.columnHeaders?.[col] || col);
-  
-  return { columns, headers };
+  return { columns, headers: columns };
 }
 
 /**
