@@ -116,6 +116,7 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ queryKey: ['opportunity-current-notes', opportunityId] });
       queryClient.invalidateQueries({ queryKey: ['opportunity-notes-timeline', opportunityId] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
     },
     onError: (error) => {
       console.error('Error saving next steps:', error);
@@ -160,6 +161,7 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ queryKey: ['opportunity-current-notes', opportunityId] });
       queryClient.invalidateQueries({ queryKey: ['opportunity-notes-timeline', opportunityId] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
     },
     onError: (error: any) => {
       console.error('[useOpportunityNotes] Mutation error:', error);
