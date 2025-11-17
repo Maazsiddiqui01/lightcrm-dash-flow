@@ -78,6 +78,7 @@ export const useContactNotes = (contactId: string | undefined) => {
       // Invalidate both queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['contact-notes', contactId] });
       queryClient.invalidateQueries({ queryKey: ['contact-notes-timeline', contactId] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
     },
     onError: (error: any) => {
       console.error('Error saving notes:', error);
