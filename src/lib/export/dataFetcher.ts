@@ -258,18 +258,28 @@ export async function fetchRowsByIds({
  */
 export function getAllRawColumns(page: 'contacts' | 'opportunities'): string[] {
   if (page === 'contacts') {
+    // Return all columns from contacts_raw table, excluding:
+    // - created_at, updated_at (timestamp columns user doesn't want)
+    // - locked_by, locked_until, lock_reason (system locking columns)
+    // - organization_id (internal FK, user wants "organization" instead)
+    // - UI-only columns like actions, opportunities list, mapped_sectors, days_over_under_max_lag
     return [
-      'id', 'created_at', 'updated_at', 'full_name', 'first_name', 'last_name',
-      'email_address', 'organization', 'title', 'phone', 'category', 'notes',
-      'areas_of_specialization', 'lg_sector', 'lg_focus_areas_comprehensive_list',
-      'lg_focus_area_1', 'lg_focus_area_2', 'lg_focus_area_3', 'lg_focus_area_4',
-      'lg_focus_area_5', 'lg_focus_area_6', 'lg_focus_area_7', 'lg_focus_area_8',
-      'delta_type', 'delta', 'url_to_online_bio', 'contact_type',
-      'most_recent_contact', 'latest_contact_email', 'latest_contact_meeting',
+      'id', 'full_name', 'first_name', 'last_name', 'email_address', 'organization', 
+      'title', 'phone', 'category', 'notes', 'areas_of_specialization', 'lg_sector', 
+      'lg_focus_areas_comprehensive_list', 'lg_focus_area_1', 'lg_focus_area_2', 
+      'lg_focus_area_3', 'lg_focus_area_4', 'lg_focus_area_5', 'lg_focus_area_6', 
+      'lg_focus_area_7', 'lg_focus_area_8', 'delta_type', 'delta', 'url_to_online_bio', 
+      'contact_type', 'most_recent_contact', 'latest_contact_email', 'latest_contact_meeting',
       'total_of_contacts', 'of_emails', 'of_meetings', 'days_since_last_email',
       'days_since_last_meeting', 'no_of_lg_focus_areas', 'no_of_opps_sourced',
       'all_opps', 'all_emails', 'outreach_date', 'email_subject', 'meeting_title',
-      'email_from', 'email_to', 'email_cc', 'meeting_from', 'meeting_to', 'meeting_cc'
+      'email_from', 'email_to', 'email_cc', 'meeting_from', 'meeting_to', 'meeting_cc',
+      'assigned_to', 'city', 'state', 'created_by', 'follow_up_date', 'follow_up_days',
+      'follow_up_recency_threshold', 'group_contact', 'group_delta', 'group_email_role',
+      'group_focus_area', 'group_notes', 'group_sector', 'intentional_no_outreach',
+      'intentional_no_outreach_date', 'intentional_no_outreach_note', 'lg_assistant',
+      'lg_lead', 'linkedin_url', 'most_recent_group_contact', 'next_steps',
+      'next_steps_due_date', 'x_twitter_url'
     ];
   } else {
     // Opportunities - all columns except read-only ones
