@@ -535,18 +535,22 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     }
   };
 
-  // Simplified export function - exports visible columns of filtered rows
+  // Export all database columns regardless of UI visibility
   const handleExport = async () => {
     setIsExporting(true);
 
     try {
-      // Allowed DB columns only (exclude UI/computed like 'actions', 'opportunities', 'mapped_sectors', etc.)
-      const allowed = new Set(getAllRawColumns('contacts'));
-      const exportableColumns = dynamicColumns
-        .filter(col => col.key !== 'actions' && allowed.has(col.key) && columnVisibility.columnVisibility[col.key] !== false);
+      // Get all allowed DB columns (excludes UI-only columns like 'actions')
+      const allColumns = getAllRawColumns('contacts');
+      
+      // Build column headers from dynamic columns where available, otherwise use column key
+      const columnHeaders: Record<string, string> = {};
+      allColumns.forEach(col => {
+        const dynCol = dynamicColumns.find(dc => dc.key === col);
+        columnHeaders[col] = dynCol?.label || col;
+      });
 
-      const visibleColumns = exportableColumns.map(col => col.key);
-      const columnHeaders = Object.fromEntries(exportableColumns.map(col => [col.key, col.label]));
+      const exportColumns = allColumns;
 
       // Determine rows: selected vs all filtered
       const selectedRowIds = selectedRows.map(row => row.id);
@@ -560,11 +564,10 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       }
 
       // Build CSV
-      const headers = visibleColumns.length > 0 ? visibleColumns.map(k => columnHeaders[k] || k) : [];
-      const data = rowsToExport.map(row => {
-        if (visibleColumns.length === 0) return [];
-        return visibleColumns.map(col => safeCell((row as any)[col]));
-      });
+      const headers = exportColumns.map(k => columnHeaders[k] || k);
+      const data = rowsToExport.map(row => 
+        exportColumns.map(col => safeCell((row as any)[col]))
+      );
 
       const csv = buildCsv(headers, data);
       const filename = generateExportFilename(`contacts-current`);
