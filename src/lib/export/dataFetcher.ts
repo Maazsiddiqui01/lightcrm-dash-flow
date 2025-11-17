@@ -258,64 +258,25 @@ export async function fetchRowsByIds({
  */
 export function getAllRawColumns(page: 'contacts' | 'opportunities'): string[] {
   if (page === 'contacts') {
-    // All database columns from contacts_raw table
-    // Excludes only: actions (UI), opportunities (computed), mapped_sectors (computed), 
-    // days_over_under_max_lag (computed), locked_by/locked_until/lock_reason (internal),
-    // organization_id (internal)
     return [
-      // Core identification
-      'id', 'created_at', 'updated_at', 'created_by', 'assigned_to',
-      
-      // Basic info
-      'full_name', 'first_name', 'last_name', 'email_address', 'phone', 
-      'title', 'organization', 'category',
-      
-      // Focus areas and sectors
-      'lg_sector', 'lg_focus_areas_comprehensive_list',
+      'id', 'created_at', 'updated_at', 'full_name', 'first_name', 'last_name',
+      'email_address', 'organization', 'title', 'phone', 'category', 'notes',
+      'areas_of_specialization', 'lg_sector', 'lg_focus_areas_comprehensive_list',
       'lg_focus_area_1', 'lg_focus_area_2', 'lg_focus_area_3', 'lg_focus_area_4',
       'lg_focus_area_5', 'lg_focus_area_6', 'lg_focus_area_7', 'lg_focus_area_8',
-      'no_of_lg_focus_areas',
-      
-      // Contact details
-      'areas_of_specialization', 'notes', 'contact_type',
-      'url_to_online_bio', 'linkedin_url', 'x_twitter_url',
-      'city', 'state',
-      
-      // Contact tracking
-      'most_recent_contact', 'most_recent_group_contact',
-      'latest_contact_email', 'latest_contact_meeting',
-      'total_of_contacts', 'of_emails', 'of_meetings',
-      'days_since_last_email', 'days_since_last_meeting',
-      
-      // Email/meeting details
-      'email_subject', 'email_from', 'email_to', 'email_cc',
-      'meeting_title', 'meeting_from', 'meeting_to', 'meeting_cc',
-      'all_emails',
-      
-      // Follow-up and outreach
-      'delta_type', 'delta', 'outreach_date',
-      'follow_up_days', 'follow_up_recency_threshold', 'follow_up_date',
-      'intentional_no_outreach', 'intentional_no_outreach_date', 'intentional_no_outreach_note',
-      
-      // Next steps
-      'next_steps', 'next_steps_due_date',
-      
-      // Group contact info
-      'group_contact', 'group_email_role', 'group_notes', 
-      'group_delta', 'group_focus_area', 'group_sector',
-      
-      // LG team
-      'lg_lead', 'lg_assistant',
-      
-      // Opportunities sourced
-      'no_of_opps_sourced', 'all_opps'
+      'delta_type', 'delta', 'url_to_online_bio', 'contact_type',
+      'most_recent_contact', 'latest_contact_email', 'latest_contact_meeting',
+      'total_of_contacts', 'of_emails', 'of_meetings', 'days_since_last_email',
+      'days_since_last_meeting', 'no_of_lg_focus_areas', 'no_of_opps_sourced',
+      'all_opps', 'all_emails', 'outreach_date', 'email_subject', 'meeting_title',
+      'email_from', 'email_to', 'email_cc', 'meeting_from', 'meeting_to', 'meeting_cc'
     ];
   } else {
     // Opportunities - all columns except read-only ones
     const allColumns = [
       'id', 'created_at', 'updated_at', 'deal_name', 'sector', 'lg_focus_area',
       'platform_add_on', 'tier', 'status', 'summary_of_opportunity', 'next_steps',
-      'next_steps_due_date', 'ownership', 'ownership_type', 'ebitda_in_ms', 
+      'next_steps_due_date', 'ownership', 'ownership_type', 'ebitda', 'ebitda_in_ms', 
       'ebitda_notes', 'revenue', 'est_deal_size', 'est_lg_equity_invest', 'headquarters',
       'investment_professional_point_person_1', 'investment_professional_point_person_2',
       'investment_professional_point_person_3', 'investment_professional_point_person_4',
