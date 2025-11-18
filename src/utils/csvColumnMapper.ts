@@ -94,7 +94,7 @@ export async function createColumnMap(
       'next_steps': 'next_steps',
       'Next Steps Due Date': 'next_steps_due_date',
       'next_steps_due_date': 'next_steps_due_date',
-      'Summary of Opportunity': 'summary_of_opportunity',
+      'Description': 'summary_of_opportunity',
       'summary_of_opportunity': 'summary_of_opportunity',
       'Notes': 'most_recent_notes',
       'most_recent_notes': 'most_recent_notes',

@@ -825,7 +825,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                     value={selectedFocusAreas}
                     onChange={handleFocusAreaChange}
                     disabled={focusAreasQuery.isLoading}
-                    label="LG Focus Areas (Comprehensive List)"
+                    label="LG Focus Areas Comprehensive List"
                     sectorId={contactData?.lg_sector ? sectorsQuery.data?.find(s => s.label === contactData.lg_sector)?.meta?.id : undefined}
                   />
                   {selectedFocusAreas.length > 0 && !contactData?.lg_sector && (
@@ -962,7 +962,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="delta_type">Outreach Cadence</Label>
+                  <Label htmlFor="delta_type">Outreach Type</Label>
                   <Input
                     id="delta_type"
                     value={contactData.delta_type || ""}
@@ -971,7 +971,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 </div>
 
                 <div>
-                  <Label htmlFor="delta">Individual Max Lag (Days)</Label>
+                  <Label htmlFor="delta">Max Lag (Days)</Label>
                   <Input
                     id="delta"
                     type="number"

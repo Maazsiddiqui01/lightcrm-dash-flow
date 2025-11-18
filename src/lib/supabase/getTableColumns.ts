@@ -63,7 +63,7 @@ export const CONTACTS_RAW_COLUMNS: TableColumn[] = [
   { name: 'notes', type: 'text', nullable: true, displayName: 'Notes' },
   { name: 'next_steps', type: 'text', nullable: true, displayName: 'Next Steps' },
   { name: 'next_steps_due_date', type: 'date', nullable: true, displayName: 'Next Steps Due Date' },
-  { name: 'areas_of_specialization', type: 'text', nullable: true, displayName: 'Areas Of Specialization' },
+  { name: 'areas_of_specialization', type: 'text', nullable: true, displayName: 'Areas of Specialization' },
   { name: 'mapped_sectors', type: 'computed', nullable: true, displayName: 'LG Sectors' },
   { name: 'category', type: 'text', nullable: true, displayName: 'Profession' },
   { name: 'contact_type', type: 'text', nullable: true, displayName: 'Preferred Contact Method' },
