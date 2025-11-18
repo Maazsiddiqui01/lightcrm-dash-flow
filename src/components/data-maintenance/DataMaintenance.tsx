@@ -94,7 +94,7 @@ export function DataMaintenance() {
                     variant="outline"
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Import CSV
+                    Import CSV/Excel
                   </Button>
                 </div>
               </CardHeader>
@@ -161,7 +161,7 @@ export function DataMaintenance() {
                     variant="outline"
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Import CSV
+                    Import CSV/Excel
                   </Button>
                 </div>
               </CardHeader>

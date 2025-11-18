@@ -637,7 +637,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
             primaryAction={() => setIsAddDialogOpen(true)}
             menu={[
               { 
-                label: 'Import CSV', 
+                label: 'Import CSV/Excel', 
                 onClick: () => setIsImportModalOpen(true)
               }
             ]}
