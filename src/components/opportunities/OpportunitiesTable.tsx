@@ -772,7 +772,7 @@ function OpportunityFullHistoryWrapper({
       timeline={formattedTimeline}
       fieldLabels={{
         next_steps: "Next Steps",
-        most_recent_notes: "Most Recent Notes",
+        most_recent_notes: "Notes",
       }}
     />
   );
