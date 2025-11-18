@@ -63,8 +63,8 @@ export function downloadExcel(
   rows: any[][],
   hyperlinks?: { row: number; col: number; url: string; display?: string }[]
 ): void {
-  // Dynamic import to avoid loading xlsx unless needed
-  import('xlsx').then((XLSX) => {
+  // Dynamic import to avoid loading xlsx-js-style unless needed
+  import('xlsx-js-style').then((XLSX) => {
     // Create worksheet from array of arrays
     const wsData = [headers, ...rows];
     const worksheet = XLSX.utils.aoa_to_sheet(wsData);
@@ -134,7 +134,7 @@ export function downloadExcel(
     // Generate Excel file and trigger download
     XLSX.writeFile(workbook, filename);
   }).catch(error => {
-    console.error('Failed to load xlsx library:', error);
+    console.error('Failed to load xlsx-js-style library:', error);
     throw new Error('Excel export failed to load');
   });
 }
