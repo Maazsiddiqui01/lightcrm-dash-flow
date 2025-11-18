@@ -55,14 +55,35 @@ export function generateExportFilename(prefix: string): string {
 }
 
 /**
- * Download Excel file from headers and rows
+ * Download Excel file from headers and rows with optional hyperlinks
  */
-export function downloadExcel(filename: string, headers: string[], rows: any[][]): void {
+export function downloadExcel(
+  filename: string, 
+  headers: string[], 
+  rows: any[][],
+  hyperlinks?: { row: number; col: number; url: string; display?: string }[]
+): void {
   // Dynamic import to avoid loading xlsx unless needed
   import('xlsx').then((XLSX) => {
     // Create worksheet from array of arrays
     const wsData = [headers, ...rows];
     const worksheet = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Add hyperlinks using xlsx 'l' property
+    if (hyperlinks && hyperlinks.length > 0) {
+      hyperlinks.forEach(link => {
+        const cellRef = XLSX.utils.encode_cell({ r: link.row, c: link.col });
+        if (worksheet[cellRef]) {
+          // Add hyperlink using xlsx format
+          worksheet[cellRef].l = { Target: link.url };
+          
+          // If display text is provided, update cell value
+          if (link.display) {
+            worksheet[cellRef].v = link.display;
+          }
+        }
+      });
+    }
     
     // Auto-size columns
     const maxWidths = headers.map((header, colIndex) => {

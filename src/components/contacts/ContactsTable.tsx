@@ -563,21 +563,21 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     setIsExporting(true);
 
     try {
-      // Get all allowed DB columns (excludes UI-only columns like 'actions')
-      const allColumns = getAllRawColumns('contacts');
-      
-      // Ensure 'id' is always the first column for round-trip import
-      const columnsWithoutId = allColumns.filter(col => col !== 'id');
+      // Get only visible columns (exclude actions)
+      const visibleCols = dynamicColumns
+        .filter(col => col.key !== 'actions' && columnVisibility.columnVisibility[col.key] !== false)
+        .map(col => col.key);
+
+      // Ensure 'id' is always first for round-trip import
+      const columnsWithoutId = visibleCols.filter(col => col !== 'id');
       const orderedColumns = ['id', ...columnsWithoutId];
       
-      // Build column headers from dynamic columns where available, otherwise use column key
+      // Build column headers from dynamic columns
       const columnHeaders: Record<string, string> = {};
       orderedColumns.forEach(col => {
         const dynCol = dynamicColumns.find(dc => dc.key === col);
         columnHeaders[col] = dynCol?.label || col;
       });
-
-      const exportColumns = orderedColumns;
 
       // Determine rows: selected vs all filtered
       const selectedRowIds = selectedRows.map(row => row.id);
@@ -591,13 +591,13 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       }
 
       // Build CSV
-      const headers = exportColumns.map(k => columnHeaders[k] || k);
+      const headers = orderedColumns.map(k => columnHeaders[k] || k);
       const data = rowsToExport.map(row => 
-        exportColumns.map(col => safeCell((row as any)[col]))
+        orderedColumns.map(col => safeCell((row as any)[col]))
       );
 
       const csv = buildCsv(headers, data);
-      const filename = generateExportFilename(`contacts-current`);
+      const filename = generateExportFilename(`contacts`);
       downloadCsv(filename, csv);
 
       toast({ title: 'Export complete', description: `Exported ${rowsToExport.length} row(s).` });
@@ -613,9 +613,13 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     setIsExporting(true);
     
     try {
-      // Use same column and row logic as CSV export
-      const allColumns = getAllRawColumns('contacts');
-      const columnsWithoutId = allColumns.filter(col => col !== 'id');
+      // Get only visible columns (exclude actions)
+      const visibleCols = dynamicColumns
+        .filter(col => col.key !== 'actions' && columnVisibility.columnVisibility[col.key] !== false)
+        .map(col => col.key);
+
+      // Ensure 'id' is always first for round-trip import
+      const columnsWithoutId = visibleCols.filter(col => col !== 'id');
       const orderedColumns = ['id', ...columnsWithoutId];
       
       const columnHeaders: Record<string, string> = {};
@@ -639,8 +643,23 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         orderedColumns.map(col => safeCell((row as any)[col]))
       );
       
+      // Generate hyperlinks for email addresses
+      const hyperlinks: { row: number; col: number; url: string; display: string }[] = [];
+      rowsToExport.forEach((row, rowIndex) => {
+        orderedColumns.forEach((colKey, colIndex) => {
+          if (colKey === 'email_address' && row.email_address) {
+            hyperlinks.push({
+              row: rowIndex + 1, // +1 for header row
+              col: colIndex,
+              url: `mailto:${row.email_address}`,
+              display: row.email_address
+            });
+          }
+        });
+      });
+      
       const filename = generateExcelFilename('contacts');
-      downloadExcel(filename, headers, data);
+      downloadExcel(filename, headers, data, hyperlinks);
       
       toast({ title: 'Export complete', description: `Exported ${rowsToExport.length} row(s) to Excel.` });
     } catch (err: any) {
