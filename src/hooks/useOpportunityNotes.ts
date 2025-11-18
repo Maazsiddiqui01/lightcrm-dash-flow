@@ -113,10 +113,13 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
         }
       }
       
-      // Invalidate and refetch related queries
+      // Invalidate and refetch related queries with aggressive refetching
       queryClient.invalidateQueries({ queryKey: ['opportunity-current-notes', opportunityId] });
       queryClient.invalidateQueries({ queryKey: ['opportunity-notes-timeline', opportunityId] });
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunity-detail', opportunityId] });
+      // Force immediate refetch of main opportunities query
+      queryClient.refetchQueries({ queryKey: ['opportunities'] });
     },
     onError: (error) => {
       console.error('Error saving next steps:', error);
@@ -158,10 +161,13 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
         description: "Notes saved successfully",
       });
       
-      // Invalidate and refetch related queries
+      // Invalidate and refetch related queries with aggressive refetching
       queryClient.invalidateQueries({ queryKey: ['opportunity-current-notes', opportunityId] });
       queryClient.invalidateQueries({ queryKey: ['opportunity-notes-timeline', opportunityId] });
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunity-detail', opportunityId] });
+      // Force immediate refetch of main opportunities query
+      queryClient.refetchQueries({ queryKey: ['opportunities'] });
     },
     onError: (error: any) => {
       console.error('[useOpportunityNotes] Mutation error:', error);

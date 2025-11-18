@@ -1,4 +1,5 @@
 import { parseISO, isValid, format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 /**
  * Parse dates flexibly from various formats returned by Supabase
@@ -69,9 +70,9 @@ export function getCurrentQuarterYear(): string {
 }
 
 /**
- * Format today's date as a prefix for notes/next steps
- * @returns Date string in format "MM/dd/yy: " (e.g., "11/16/25: ")
+ * Format today's date in Pacific timezone as a prefix for notes/next steps
+ * @returns Date string in format "MM/dd/yy: " (e.g., "11/16/25: ") in PST/PDT
  */
 export function formatDatePrefix(): string {
-  return format(new Date(), 'MM/dd/yy') + ': ';
+  return formatInTimeZone(new Date(), 'America/Los_Angeles', 'MM/dd/yy') + ': ';
 }

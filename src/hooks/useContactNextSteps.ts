@@ -193,11 +193,15 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
         }
       }
       
-      // Invalidate and refetch related queries
+      // Invalidate and refetch related queries with aggressive refetching
       if (contactId) {
         queryClient.invalidateQueries({ queryKey: ['contact-current-next-steps', contactId] });
         queryClient.invalidateQueries({ queryKey: ['contact-next-steps-timeline', contactId] });
         queryClient.invalidateQueries({ queryKey: ['contacts'] });
+        queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
+        queryClient.invalidateQueries({ queryKey: ['contact-detail', contactId] });
+        // Force immediate refetch of main contacts query
+        queryClient.refetchQueries({ queryKey: ['contacts'] });
       }
     },
     onError: (error) => {

@@ -79,6 +79,10 @@ export const useContactNotes = (contactId: string | undefined) => {
       queryClient.invalidateQueries({ queryKey: ['contact-notes', contactId] });
       queryClient.invalidateQueries({ queryKey: ['contact-notes-timeline', contactId] });
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['contact-detail', contactId] });
+      // Force immediate refetch of main contacts query
+      queryClient.refetchQueries({ queryKey: ['contacts'] });
     },
     onError: (error: any) => {
       console.error('Error saving notes:', error);
@@ -111,6 +115,10 @@ export const useContactNotes = (contactId: string | undefined) => {
       queryClient.invalidateQueries({ queryKey: ['contact-notes-timeline', contactId] });
       queryClient.invalidateQueries({ queryKey: ['contact-notes', contactId] });
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['contact-detail', contactId] });
+      // Force immediate refetch
+      queryClient.refetchQueries({ queryKey: ['contacts'] });
     },
     onError: (error: any) => {
       console.error('Error deleting note:', error);
