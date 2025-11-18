@@ -195,7 +195,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   
   // Create dynamic columns with edit support
   const dynamicColumns = useMemo(() => {
-    return createDynamicColumns<ContactRaw>(
+    const baseColumns = createDynamicColumns<ContactRaw>(
       tableColumns,
       'contacts_raw',
       editMode.editState,
@@ -210,6 +210,29 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
         focusAreas: dynamicEditOptions.focusAreas,
       }
     );
+
+    // Override display for notes fields to use display values from timeline
+    return baseColumns.map(col => {
+      if (col.key === 'next_steps') {
+        return {
+          ...col,
+          render: (value: any, row: any) => row.next_steps_display || '',
+        };
+      }
+      if (col.key === 'notes') {
+        return {
+          ...col,
+          render: (value: any, row: any) => row.notes_display || '',
+        };
+      }
+      if (col.key === 'next_steps_due_date') {
+        return {
+          ...col,
+          render: (value: any, row: any) => row.next_steps_due_date_display || '',
+        };
+      }
+      return col;
+    });
   }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility, dynamicEditOptions.sectors, dynamicEditOptions.focusAreas]);
 
   // Handle draft email generation

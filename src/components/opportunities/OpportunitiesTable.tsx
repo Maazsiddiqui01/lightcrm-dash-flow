@@ -178,6 +178,29 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
       }
     );
 
+    // Override display for notes fields to use display values from timeline
+    const columnsWithDisplayOverrides = baseColumns.map(col => {
+      if (col.key === 'next_steps') {
+        return {
+          ...col,
+          render: (value: any, row: any) => row.next_steps_display || '',
+        };
+      }
+      if (col.key === 'most_recent_notes') {
+        return {
+          ...col,
+          render: (value: any, row: any) => row.notes_display || '',
+        };
+      }
+      if (col.key === 'next_steps_due_date') {
+        return {
+          ...col,
+          render: (value: any, row: any) => row.next_steps_due_date_display || '',
+        };
+      }
+      return col;
+    });
+
     // Add the Actions dropdown column at the end
     const actionsColumn = {
       key: 'actions',
@@ -261,7 +284,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
       ),
     };
 
-    return [actionsColumn, ...baseColumns];
+    return [actionsColumn, ...columnsWithDisplayOverrides];
   }, [tableColumns, editMode.editState, editMode.startEdit, editMode.commitEdit, editMode.cancelEdit, columnVisibility.columnVisibility, dynamicEditOptions.sectors, dynamicEditOptions.focusAreas]);
   
   // Create column options for sort dialog
@@ -294,7 +317,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         setIsSearching(true);
       }
       let query = supabase
-        .from("opportunities_raw")
+        .from("opportunities_with_display_fields")
         .select("*");
 
       // Apply filters
