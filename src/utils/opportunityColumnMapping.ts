@@ -165,10 +165,19 @@ export const OPPORTUNITY_COLUMN_MAP: Record<string, string> = {
   'investment_professional_point_person_3': 'investment_professional_point_person_3',
   'Investment Professional Point Person 4': 'investment_professional_point_person_4',
   'investment_professional_point_person_4': 'investment_professional_point_person_4',
+  // Export UI display names for LG Leads
+  'LG Lead #1': 'investment_professional_point_person_1',
+  'LG Lead #2': 'investment_professional_point_person_2',
+  'LG Lead #3': 'investment_professional_point_person_3',
+  'LG Lead #4': 'investment_professional_point_person_4',
+  // Export UI display names for Deal Source
+  'Deal Source Contact #1': 'deal_source_individual_1',
+  'Deal Source Contact #2': 'deal_source_individual_2',
 
   // System fields
   'DealCloud': 'dealcloud',
   'dealcloud': 'dealcloud',
+  'Deal Cloud': 'dealcloud',
   'Created At': 'created_at',
   'created_at': 'created_at',
   'Updated At': 'updated_at',

@@ -195,35 +195,55 @@ export const CONTACT_COLUMN_MAP: Record<string, string> = {
   // Delta fields
   'Delta Type': 'delta_type',
   'delta_type': 'delta_type',
+  'Outreach Type': 'delta_type',
   'Delta': 'delta',
   'delta': 'delta',
+  'Max Lag (Days)': 'delta',
   'Group Delta': 'group_delta',
   'group_delta': 'group_delta',
+  'Follow-Up Days': 'follow_up_days',
+  'follow_up_days': 'follow_up_days',
+  'Follow-Up Date': 'follow_up_date',
+  'follow_up_date': 'follow_up_date',
+  'Follow Up Recency Threshold': 'follow_up_recency_threshold',
+  'follow_up_recency_threshold': 'follow_up_recency_threshold',
 
   // URLs
   'URL to Online Bio': 'url_to_online_bio',
   'url_to_online_bio': 'url_to_online_bio',
+  'URL To Online Bio': 'url_to_online_bio',
   'Bio URL': 'url_to_online_bio',
   'LinkedIn URL': 'linkedin_url',
   'linkedin_url': 'linkedin_url',
   'LinkedIn': 'linkedin_url',
+  'LinkedIn Profile': 'linkedin_url',
   'X/Twitter URL': 'x_twitter_url',
   'x_twitter_url': 'x_twitter_url',
   'Twitter': 'x_twitter_url',
+  'X / Twitter': 'x_twitter_url',
 
   // Contact tracking
   'Most Recent Contact': 'most_recent_contact',
   'most_recent_contact': 'most_recent_contact',
+  'Most Recent Group Contact': 'most_recent_group_contact',
+  'most_recent_group_contact': 'most_recent_group_contact',
   'Latest Contact Email': 'latest_contact_email',
   'latest_contact_email': 'latest_contact_email',
+  'Most Recent Email (Sent/Received)': 'latest_contact_email',
   'Latest Contact Meeting': 'latest_contact_meeting',
   'latest_contact_meeting': 'latest_contact_meeting',
+  'Most Recent Meeting': 'latest_contact_meeting',
+  'Next Planned Outreach (date)': 'outreach_date',
+  'outreach_date': 'outreach_date',
   'Total # of Contacts': 'total_of_contacts',
   'total_of_contacts': 'total_of_contacts',
+  'Total # Of Contacts': 'total_of_contacts',
   '# of Emails': 'of_emails',
   'of_emails': 'of_emails',
+  '# Of Emails': 'of_emails',
   '# of Meetings': 'of_meetings',
   'of_meetings': 'of_meetings',
+  '# Of Meetings': 'of_meetings',
   'Days Since Last Email': 'days_since_last_email',
   'days_since_last_email': 'days_since_last_email',
   'Days Since Last Meeting': 'days_since_last_meeting',
@@ -263,14 +283,6 @@ export const CONTACT_COLUMN_MAP: Record<string, string> = {
   'assigned_to': 'assigned_to',
   'Assigned': 'assigned_to',
 
-  // Follow-up
-  'Follow Up Date': 'follow_up_date',
-  'follow_up_date': 'follow_up_date',
-  'Follow Up Days': 'follow_up_days',
-  'follow_up_days': 'follow_up_days',
-  'Follow Up Recency Threshold': 'follow_up_recency_threshold',
-  'follow_up_recency_threshold': 'follow_up_recency_threshold',
-
   // Next steps
   'Next Steps': 'next_steps',
   'next_steps': 'next_steps',
@@ -278,8 +290,6 @@ export const CONTACT_COLUMN_MAP: Record<string, string> = {
   'next_steps_due_date': 'next_steps_due_date',
 
   // Outreach
-  'Outreach Date': 'outreach_date',
-  'outreach_date': 'outreach_date',
   'Intentional No Outreach': 'intentional_no_outreach',
   'intentional_no_outreach': 'intentional_no_outreach',
   'No Outreach': 'intentional_no_outreach',
@@ -299,8 +309,6 @@ export const CONTACT_COLUMN_MAP: Record<string, string> = {
   'group_notes': 'group_notes',
   'Group Sector': 'group_sector',
   'group_sector': 'group_sector',
-  'Most Recent Group Contact': 'most_recent_group_contact',
-  'most_recent_group_contact': 'most_recent_group_contact',
 };
 
 /**
