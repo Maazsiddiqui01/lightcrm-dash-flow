@@ -5,13 +5,13 @@ import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedT
 import { OpportunityDrawer } from "./OpportunityDrawer";
 import { AddOpportunityDialog } from "./AddOpportunityDialog";
 import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
+import { ExportDropdown } from "./ExportDropdown";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle, Upload, Trash2, Paperclip, History } from "lucide-react";
+import { Plus, Briefcase, Mail, ArrowUpDown, ChevronDown, FileText, PlusCircle, Upload, Trash2, Paperclip, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/useDebounce";
 import { DEBOUNCE } from "@/config/performance";
 import { SplitButton } from "@/components/shared/SplitButton";
-import { exportCsv } from "@/lib/export/exportService";
 import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
 import {
   DropdownMenu,
@@ -128,7 +128,6 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [historyOpportunity, setHistoryOpportunity] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
-  const [isExporting, setIsExporting] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [opportunityToDelete, setOpportunityToDelete] = useState<OpportunityRaw | null>(null);
   
@@ -554,52 +553,6 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
     }
   };
 
-  // Simplified export function - exports visible columns of filtered rows
-  const handleExport = async () => {
-    setIsExporting(true);
-    
-    // Get only visible columns (exclude 'actions' column as it's not in the database)
-    let visibleColumns = dynamicColumns
-      .filter(col => col.key !== 'actions' && columnVisibility.columnVisibility[col.key] !== false)
-      .map(col => col.key);
-    
-    // ALWAYS include 'id' as first column, even if hidden (needed for bulk reimport)
-    if (!visibleColumns.includes('id')) {
-      visibleColumns = ['id', ...visibleColumns];
-    } else {
-      // Ensure 'id' is first
-      visibleColumns = ['id', ...visibleColumns.filter(col => col !== 'id')];
-    }
-    
-    const columnHeaders = Object.fromEntries(
-      dynamicColumns
-        .filter(col => col.key !== 'actions')
-        .map(col => [col.key, col.label])
-    );
-    
-    // Ensure 'id' has a header mapping
-    if (!columnHeaders['id']) {
-      columnHeaders['id'] = 'ID';
-    }
-
-    try {
-      await exportCsv({
-        page: 'opportunities',
-        mode: 'current',
-        selectedIds: selectedRows.length > 0 ? selectedRows : undefined,
-        filters: {
-          ...filters,
-          searchTerm
-        },
-        sortLevels,
-        visibleColumns,
-        columnHeaders
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const editedRowsCount = Object.keys(editMode.editState.editedRows).length;
 
   return (
@@ -630,15 +583,14 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
           </h3>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={isExporting}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isExporting ? 'Exporting...' : 'Export'}
-          </Button>
+          <ExportDropdown
+            data={filteredOpportunities}
+            selectedRows={new Set(selectedRows)}
+            filters={{ ...filters, searchTerm }}
+            visibleColumns={dynamicColumns
+              .filter(col => col.key !== 'actions' && columnVisibility.columnVisibility[col.key] !== false)
+              .map(col => col.key)}
+          />
           
           <ColumnsMenu
             columns={dynamicColumns}
