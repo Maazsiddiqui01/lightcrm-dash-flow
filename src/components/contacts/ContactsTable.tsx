@@ -871,7 +871,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
             primaryAction={() => setIsAddDialogOpen(true)}
             menu={[
               { 
-                label: 'Import CSV', 
+                label: 'Import CSV/Excel', 
                 onClick: () => setIsImportModalOpen(true)
               }
             ]}
