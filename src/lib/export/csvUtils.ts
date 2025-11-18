@@ -69,6 +69,36 @@ export function downloadExcel(
     const wsData = [headers, ...rows];
     const worksheet = XLSX.utils.aoa_to_sheet(wsData);
     
+    // Style header row (row 0) with dark background and white text
+    const headerStyle = {
+      fill: { 
+        fgColor: { rgb: "343646" }  // Dark gray-blue background
+      },
+      font: { 
+        color: { rgb: "FFFFFF" },    // White text
+        bold: true,                   // Bold font
+        sz: 11                        // Font size
+      },
+      alignment: { 
+        horizontal: "left",           // Left-aligned
+        vertical: "center"            // Vertically centered
+      },
+      border: {                       // Add bottom border
+        bottom: { style: "medium", color: { rgb: "000000" } }
+      }
+    };
+
+    // Apply style to all header cells in row 0
+    headers.forEach((header, colIndex) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
+      if (worksheet[cellRef]) {
+        worksheet[cellRef].s = headerStyle;
+      }
+    });
+
+    // Set header row height
+    worksheet['!rows'] = [{ hpt: 30 }]; // 30 points height for header row
+    
     // Add hyperlinks using xlsx 'l' property
     if (hyperlinks && hyperlinks.length > 0) {
       hyperlinks.forEach(link => {
