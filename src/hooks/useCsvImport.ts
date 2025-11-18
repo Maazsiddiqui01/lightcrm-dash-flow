@@ -21,6 +21,7 @@ import {
   parseCsvToOpportunities
 } from "@/utils/opportunityColumnMapping";
 import { normalizeCsvRow, getOpportunitiesColumnTypes, getContactsColumnTypes } from "@/utils/csvNormalizer";
+import { getTableColumnsAsync } from "@/lib/supabase/getTableColumns";
 
 export interface ValidationResults {
   valid: any[];
@@ -277,6 +278,12 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportC
             });
             setDbRecordsCache(cache);
 
+            // Fetch column display names for accurate preview
+            const tableColumns = await getTableColumnsAsync('opportunities_raw');
+            const columnDisplayNames = new Map(
+              tableColumns.map(col => [col.name, col.displayName])
+            );
+
             // Build change detection
             const changes: RecordChange[] = [];
             
@@ -311,8 +318,8 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportC
                   changeType = 'updated';
                 }
                 
-                // Get display name (convert snake_case to Title Case)
-                const displayName = key
+                // Get display name from column configurations (fallback to Title Case)
+                const displayName = columnDisplayNames.get(key) || key
                   .split('_')
                   .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                   .join(' ');
@@ -433,6 +440,12 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportC
             });
             setDbRecordsCache(cache);
 
+            // Fetch column display names for accurate preview
+            const tableColumns = await getTableColumnsAsync('contacts_raw');
+            const columnDisplayNames = new Map(
+              tableColumns.map(col => [col.name, col.displayName])
+            );
+
             // Build change detection
             const changes: RecordChange[] = [];
             const importableColumns = getImportableContactColumns();
@@ -471,8 +484,8 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportC
                   changeType = 'updated';
                 }
                 
-                // Get display name (convert snake_case to Title Case)
-                const displayName = key
+                // Get display name from column configurations (fallback to Title Case)
+                const displayName = columnDisplayNames.get(key) || key
                   .split('_')
                   .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                   .join(' ');
