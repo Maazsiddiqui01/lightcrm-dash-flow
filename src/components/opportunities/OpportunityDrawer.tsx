@@ -802,9 +802,9 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
 
           <Separator />
 
-          {/* Most Recent Notes - Interactive with Timeline */}
+          {/* Notes - Interactive with Timeline */}
           <OpportunityNotesSection
-            title="Most Recent Notes"
+            title="Notes"
             field="most_recent_notes"
             currentValue={currentNotes?.most_recent_notes || null}
             timeline={timeline}
@@ -926,11 +926,11 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
           open={historyDialogOpen}
           onOpenChange={setHistoryDialogOpen}
           title={`Full History: ${opportunity.deal_name || "Opportunity"}`}
-          description="Complete timeline of next steps and most recent notes"
+          description="Complete timeline of next steps and notes"
           timeline={(timeline || []) as TimelineItem[]}
           fieldLabels={{
             next_steps: "Next Steps",
-            most_recent_notes: "Most Recent Notes",
+            most_recent_notes: "Notes",
           }}
         />
       </SheetContent>

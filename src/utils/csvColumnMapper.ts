@@ -96,7 +96,7 @@ export async function createColumnMap(
       'next_steps_due_date': 'next_steps_due_date',
       'Summary of Opportunity': 'summary_of_opportunity',
       'summary_of_opportunity': 'summary_of_opportunity',
-      'Most Recent Notes': 'most_recent_notes',
+      'Notes': 'most_recent_notes',
       'most_recent_notes': 'most_recent_notes',
       
       // URLs and HQ

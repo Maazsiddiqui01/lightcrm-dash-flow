@@ -1045,7 +1045,6 @@ function ContactFullHistoryWrapper({
       fieldLabels={{
         notes: "Notes",
         next_steps: "Next Steps",
-        most_recent_notes: "Most Recent Notes",
       }}
     />
   );

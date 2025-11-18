@@ -564,7 +564,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="most_recent_notes">Most Recent Notes</Label>
+              <Label htmlFor="most_recent_notes">Notes</Label>
               <Textarea
                 id="most_recent_notes"
                 value={formData.most_recent_notes}
