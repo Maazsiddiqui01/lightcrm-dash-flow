@@ -20,7 +20,7 @@ import {
   READ_ONLY_OPPORTUNITY_COLUMNS,
   parseCsvToOpportunities
 } from "@/utils/opportunityColumnMapping";
-import { normalizeCsvRow } from "@/utils/csvNormalizer";
+import { normalizeCsvRow, getOpportunitiesColumnTypes, getContactsColumnTypes } from "@/utils/csvNormalizer";
 
 export interface ValidationResults {
   valid: any[];
@@ -363,59 +363,177 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportC
           description: `Found ${parsedData.length} rows: ${summary}. ${validRows.length} valid, ${skippedRows.length} skipped.`,
         });
       } else {
-        // Contacts: partition by ID presence and use dynamic validation
-        parsedData.forEach(row => {
-          if (row.id) {
+        // Contacts: use simplified validation matching opportunities logic
+        const { CONTACT_COLUMN_MAP, READ_ONLY_CONTACT_COLUMNS, getImportableContactColumns } = await import('@/utils/contactsColumnMapping');
+        
+        // Map CSV headers to database columns
+        const headerMapping = new Map(Object.entries(CONTACT_COLUMN_MAP));
+        
+        // Transform CSV data to use database column names
+        const mappedData = data.map((row, idx) => {
+          const mappedRow: any = { _rowNumber: idx + (hasHeaderRow ? 2 : 1) };
+          Object.keys(row).forEach(csvHeader => {
+            const dbColumn = headerMapping.get(csvHeader) || csvHeader;
+            mappedRow[dbColumn] = row[csvHeader];
+          });
+          return normalizeCsvRow(mappedRow, getContactsColumnTypes());
+        });
+        
+        transformedData = mappedData;
+        
+        // Simple classification: partition by ID or email_address presence
+        const rowsForUpdate: any[] = [];
+        const rowsForInsert: any[] = [];
+        const skippedRows: any[] = [];
+        
+        transformedData.forEach(row => {
+          if (row.id && String(row.id).trim() !== '') {
             row.__intent = 'update';
+            row.__matchType = 'has-id';
             rowsForUpdate.push(row);
-          } else {
+          } else if (row.email_address && String(row.email_address).trim() !== '') {
             row.__intent = 'insert';
+            row.__matchType = 'new-record';
             rowsForInsert.push(row);
+          } else {
+            // Skip rows with neither ID nor email_address
+            row.__intent = 'skip';
+            row.__matchType = 'invalid';
+            skippedRows.push(row);
           }
         });
         
-        // Validate updates (isUpdate=true, no normalization)
-        let updateValidation: ValidationResults = { valid: [], invalid: [], warnings: [] };
-        if (rowsForUpdate.length > 0) {
-          updateValidation = await validateCsvDataDynamic(rowsForUpdate, entityType, true);
-          console.debug(`[CSV Import] Updates validated: ${updateValidation.valid.length} valid, ${updateValidation.invalid.length} invalid`);
-        }
-
-        // Validate inserts (isUpdate=false, with normalization)
-        let insertValidation: ValidationResults = { valid: [], invalid: [], warnings: [] };
-        if (rowsForInsert.length > 0) {
-          const normalized = normalizeCsvData(rowsForInsert, entityType);
-          const normalizationChanges = trackNormalizationChanges(rowsForInsert, normalized);
-          insertValidation = await validateCsvDataDynamic(normalized, entityType, false);
-          insertValidation.normalized = normalizationChanges;
-          console.debug(`[CSV Import] Inserts validated: ${insertValidation.valid.length} valid, ${insertValidation.invalid.length} invalid`);
-        }
-
-        // Merge validation results
-        const mergedValidation: ValidationResults = {
-          valid: [...updateValidation.valid, ...insertValidation.valid],
-          invalid: [...updateValidation.invalid, ...insertValidation.invalid],
-          warnings: [...updateValidation.warnings, ...insertValidation.warnings],
-          normalized: insertValidation.normalized || []
-        };
+        console.debug(`[CSV Import] Contacts classified: ${rowsForUpdate.length} updates, ${rowsForInsert.length} inserts, ${skippedRows.length} skipped`);
         
-        setValidationResults(mergedValidation);
+        // All rows are considered "valid" except those marked to skip
+        const validRows = [...rowsForUpdate, ...rowsForInsert];
+        
+        // Fetch existing records and build change preview for updates
+        if (rowsForUpdate.length > 0) {
+          console.log(`[Contacts] Fetching ${rowsForUpdate.length} existing records for change detection...`);
+          
+          const idsToFetch = rowsForUpdate
+            .map(row => row.id)
+            .filter(id => id && String(id).trim() !== '');
 
-        // Generate update preview for rows that will be updated
-        if (updateValidation.valid.length > 0) {
-          const preview = await generateUpdatePreview(updateValidation.valid, columnMapResult.columnToDisplay);
-          setUpdatePreview(preview);
+          const { data: existingRecords, error: fetchError } = await supabase
+            .from('contacts_raw')
+            .select('*')
+            .in('id', idsToFetch);
+
+          if (fetchError) {
+            console.error('[Contacts] Error fetching existing records:', fetchError);
+          } else if (existingRecords) {
+            console.log(`[Contacts] Fetched ${existingRecords.length} existing records`);
+            
+            // Build cache for quick lookup
+            const cache = new Map<string, any>();
+            existingRecords.forEach(record => {
+              cache.set(record.id, record);
+            });
+            setDbRecordsCache(cache);
+
+            // Build change detection
+            const changes: RecordChange[] = [];
+            const importableColumns = getImportableContactColumns();
+            
+            rowsForUpdate.forEach(csvRow => {
+              const dbRow = cache.get(csvRow.id);
+              if (!dbRow) {
+                // ID doesn't exist in DB - will be skipped
+                console.warn(`[Contacts] ID ${csvRow.id} not found in database`);
+                return;
+              }
+              
+              const fieldChanges: FieldChange[] = [];
+              
+              // Compare each importable field
+              importableColumns.forEach(key => {
+                if (key === 'id') return; // Skip ID field itself
+                
+                const csvValue = csvRow[key];
+                const dbValue = dbRow[key];
+                
+                // Normalize for comparison
+                const csvNormalized = csvValue == null || csvValue === '' ? null : String(csvValue).trim();
+                const dbNormalized = dbValue == null || dbValue === '' ? null : String(dbValue).trim();
+                
+                // Skip if values are the same
+                if (csvNormalized === dbNormalized) return;
+                
+                // Determine change type
+                let changeType: 'added' | 'updated' | 'cleared';
+                if (dbNormalized === null && csvNormalized !== null) {
+                  changeType = 'added';
+                } else if (dbNormalized !== null && csvNormalized === null) {
+                  changeType = 'cleared';
+                } else {
+                  changeType = 'updated';
+                }
+                
+                // Get display name (convert snake_case to Title Case)
+                const displayName = key
+                  .split('_')
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ');
+                
+                fieldChanges.push({
+                  field: key,
+                  displayName,
+                  oldValue: dbValue,
+                  newValue: csvValue,
+                  changeType
+                });
+              });
+              
+              if (fieldChanges.length > 0) {
+                changes.push({
+                  id: csvRow.id,
+                  recordName: csvRow.full_name || dbRow.full_name || `Contact ${csvRow.id}`,
+                  changes: fieldChanges
+                });
+              }
+            });
+            
+            console.log(`[Contacts] Generated ${changes.length} change previews`);
+            setUpdatePreview(changes.length > 0 ? changes : null);
+            
+            // Filter out rows with non-existent IDs
+            const validUpdateIds = new Set(existingRecords.map(r => r.id));
+            const filteredUpdates = rowsForUpdate.filter(row => validUpdateIds.has(row.id));
+            const invalidIdRows = rowsForUpdate.filter(row => !validUpdateIds.has(row.id));
+            
+            if (invalidIdRows.length > 0) {
+              console.warn(`[Contacts] ${invalidIdRows.length} rows with non-existent IDs will be skipped`);
+              skippedRows.push(...invalidIdRows);
+              rowsForUpdate.length = 0;
+              rowsForUpdate.push(...filteredUpdates);
+            }
+          }
         }
-
+        
+        // Set validation results (simplified - all non-skipped rows are valid)
+        setValidationResults({
+          valid: validRows,
+          invalid: skippedRows,
+          warnings: skippedRows.map(row => ({
+            row: row._rowNumber,
+            message: `⚠️ Row missing both ID and email_address - will be skipped`
+          }))
+        });
+        
+        setParsedData(validRows);
+        
         // Show summary toast
         const summary = [
-          rowsForUpdate.length > 0 ? `${rowsForUpdate.length} potential updates` : null,
-          rowsForInsert.length > 0 ? `${rowsForInsert.length} potential inserts` : null
+          rowsForUpdate.length > 0 ? `${rowsForUpdate.length} updates` : null,
+          rowsForInsert.length > 0 ? `${rowsForInsert.length} inserts` : null,
+          skippedRows.length > 0 ? `${skippedRows.length} skipped` : null
         ].filter(Boolean).join(', ');
         
         toast({
-          title: "File Parsed - Hybrid Import",
-          description: `Found ${parsedData.length} rows: ${summary}. ${mergedValidation.valid.length} valid, ${mergedValidation.invalid.length} with errors.`,
+          title: "File Parsed - Simple Import",
+          description: `Found ${data.length} rows: ${summary}. ${validRows.length} valid, ${skippedRows.length} skipped.`,
         });
       }
     } catch (error) {
@@ -583,8 +701,16 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportC
           // Remove internal tracking fields
           const { __intent, __matchType, _rowNumber, ...cleanRow } = row;
           
-          // Apply whitelist for safe database operations (contacts only)
-          return cleanRowForDatabase(cleanRow, 'contacts_raw');
+          // Apply whitelist for safe database operations
+          const cleaned = cleanRowForDatabase(cleanRow, 'contacts_raw');
+          
+          // Additional filter for read-only columns (import from contactsColumnMapping)
+          const { READ_ONLY_CONTACT_COLUMNS } = require('@/utils/contactsColumnMapping');
+          READ_ONLY_CONTACT_COLUMNS.forEach((col: string) => {
+            delete cleaned[col];
+          });
+          
+          return cleaned;
         });
       };
 

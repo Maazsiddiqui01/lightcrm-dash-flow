@@ -543,14 +543,18 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
       // Get all allowed DB columns (excludes UI-only columns like 'actions')
       const allColumns = getAllRawColumns('contacts');
       
+      // Ensure 'id' is always the first column for round-trip import
+      const columnsWithoutId = allColumns.filter(col => col !== 'id');
+      const orderedColumns = ['id', ...columnsWithoutId];
+      
       // Build column headers from dynamic columns where available, otherwise use column key
       const columnHeaders: Record<string, string> = {};
-      allColumns.forEach(col => {
+      orderedColumns.forEach(col => {
         const dynCol = dynamicColumns.find(dc => dc.key === col);
         columnHeaders[col] = dynCol?.label || col;
       });
 
-      const exportColumns = allColumns;
+      const exportColumns = orderedColumns;
 
       // Determine rows: selected vs all filtered
       const selectedRowIds = selectedRows.map(row => row.id);
