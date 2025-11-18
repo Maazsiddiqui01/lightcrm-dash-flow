@@ -629,13 +629,16 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportC
   };
 
   const executeImport = async () => {
-    // For opportunities, use simplified import logic
+    // Use simplified import logic for both entities
     if (entityType === 'opportunities') {
       return executeOpportunitiesImport();
     }
+    
+    if (entityType === 'contacts') {
+      return executeContactsImport();
+    }
 
-    // For contacts, use the original validation-based logic
-    // Collect all validation errors first
+    // Fallback - collect all validation errors first
     const validationErrors: Array<{ row: number; error: string }> = [];
     
     if (validationResults) {
@@ -1013,6 +1016,150 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportC
       toast({
         title: "Import Failed",
         description: err.message || 'Unexpected error during import',
+        variant: "destructive"
+      });
+    }
+  };
+
+  const executeContactsImport = async () => {
+    const allRows = parsedData ?? [];
+    
+    if (allRows.length === 0) {
+      setImportResults({
+        total: 0,
+        successful: 0,
+        failed: 0,
+        errors: [{ row: 0, error: 'No rows parsed from CSV.' }]
+      });
+      toast({ title: "Import Failed", description: "No rows found in CSV file.", variant: "destructive" });
+      return;
+    }
+    
+    try {
+      setProgress(10);
+      
+      // Import READ_ONLY_CONTACT_COLUMNS
+      const { READ_ONLY_CONTACT_COLUMNS } = await import('@/utils/contactsColumnMapping');
+      
+      // Clean up and classify rows
+      const cleanedRows = allRows.map((row) => {
+        const { __intent, __matchType, _rowNumber, ...cleanRow } = row;
+        
+        // Remove read-only columns
+        READ_ONLY_CONTACT_COLUMNS.forEach(col => {
+          delete cleanRow[col];
+        });
+        
+        // Trim ID if present
+        if (cleanRow.id != null) {
+          const trimmed = String(cleanRow.id).trim();
+          cleanRow.id = trimmed === '' ? undefined : trimmed;
+        }
+        
+        return { cleanRow, intent: __intent || 'skip', rowNumber: _rowNumber };
+      });
+
+      const rowsToUpsert = cleanedRows
+        .filter(r => r.intent === 'update' && r.cleanRow.id)
+        .map(r => r.cleanRow);
+      
+      const rowsToInsert = cleanedRows
+        .filter(r => r.intent === 'insert' && r.cleanRow.email_address)
+        .map(r => r.cleanRow);
+
+      console.debug(`[CSV Import] Executing: ${rowsToUpsert.length} upserts, ${rowsToInsert.length} inserts`);
+
+      let successfulUpserts = 0;
+      let successfulInserts = 0;
+      const errors: Array<{ row: number; error: string }> = [];
+
+      // PHASE 1: Upsert rows with IDs
+      if (rowsToUpsert.length > 0) {
+        setProgress(30);
+        
+        console.debug(`[CSV Import] Upserting ${rowsToUpsert.length} rows`);
+
+        const { data: upsertData, error: upsertError } = await supabase
+          .from('contacts_raw')
+          .upsert(rowsToUpsert, { onConflict: 'id' })
+          .select('id');
+
+        if (upsertError) {
+          console.error('[CSV Import] Upsert error:', upsertError);
+          errors.push({
+            row: 0,
+            error: `Upsert failed: ${upsertError.message}`
+          });
+        } else {
+          successfulUpserts = upsertData?.length || rowsToUpsert.length;
+        }
+      }
+
+      // PHASE 2: Insert new rows
+      if (rowsToInsert.length > 0 && errors.length === 0) {
+        setProgress(60);
+        
+        console.debug(`[CSV Import] Inserting ${rowsToInsert.length} new rows`);
+
+        const { data: insertData, error: insertError } = await supabase
+          .from('contacts_raw')
+          .insert(rowsToInsert)
+          .select('id');
+
+        if (insertError) {
+          console.error('[CSV Import] Insert error:', insertError);
+          errors.push({
+            row: 0,
+            error: `Insert failed: ${insertError.message}`
+          });
+        } else {
+          successfulInserts = insertData?.length || rowsToInsert.length;
+        }
+      }
+
+      setProgress(100);
+
+      const totalSuccessful = successfulUpserts + successfulInserts;
+      const skippedCount = cleanedRows.filter(r => r.intent === 'skip').length;
+
+      setImportResults({
+        total: allRows.length,
+        successful: totalSuccessful,
+        failed: allRows.length - totalSuccessful - skippedCount,
+        skipped: skippedCount,
+        errors
+      });
+
+      if (errors.length === 0) {
+        toast({
+          title: "Import Complete",
+          description: `Successfully imported ${totalSuccessful} contact(s). ${successfulUpserts} updated, ${successfulInserts} new.${skippedCount > 0 ? ` ${skippedCount} skipped.` : ''}`,
+        });
+        
+        // Trigger data refresh immediately after successful import
+        if (totalSuccessful > 0 && onImportComplete) {
+          console.log('[Contacts] Triggering data refresh...');
+          onImportComplete();
+        }
+      } else {
+        toast({
+          title: "Import Partially Failed",
+          description: `${totalSuccessful} succeeded, ${errors.length} failed.`,
+          variant: "destructive"
+        });
+      }
+
+    } catch (error: any) {
+      console.error('[CSV Import] Fatal error:', error);
+      setImportResults({
+        total: allRows.length,
+        successful: 0,
+        failed: allRows.length,
+        errors: [{ row: 0, error: `Fatal error: ${error?.message || 'Unknown error'}` }]
+      });
+      toast({
+        title: "Import Failed",
+        description: error?.message || 'Unknown error occurred',
         variant: "destructive"
       });
     }
