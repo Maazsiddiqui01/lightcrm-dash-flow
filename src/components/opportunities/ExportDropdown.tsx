@@ -15,6 +15,7 @@ import {
 } from '@/utils/exportDetailedCsv';
 import { READ_ONLY_OPPORTUNITY_COLUMNS } from '@/utils/opportunityColumnMapping';
 import { downloadExcel, generateExcelFilename, safeCell, generateExportFilename } from '@/lib/export/csvUtils';
+import { getTableColumnsAsync } from '@/lib/supabase/getTableColumns';
 
 interface ExportDropdownProps {
   data: any[];
@@ -99,7 +100,23 @@ export function ExportDropdown({
         });
       }
 
-      const csv = jsonToCsv(exportData);
+      // Map database column names to UI-friendly display names
+      const tableColumns = await getTableColumnsAsync('opportunities_raw');
+      const columnLabels = new Map(
+        tableColumns.map(col => [col.name, col.displayName])
+      );
+      
+      // Create export data with UI-friendly headers
+      const exportDataWithLabels = exportData.map(row => {
+        const labeledRow: any = {};
+        Object.keys(row).forEach(dbCol => {
+          const displayName = columnLabels.get(dbCol) || dbCol;
+          labeledRow[displayName] = row[dbCol];
+        });
+        return labeledRow;
+      });
+      
+      const csv = jsonToCsv(exportDataWithLabels);
       const filename = generateExportFilename('opportunities');
       downloadFile(csv, filename, 'text/csv');
 
@@ -182,9 +199,15 @@ export function ExportDropdown({
         });
       }
 
-      const headers = orderedColumns;
+      // Map database column names to UI-friendly display names
+      const tableColumns = await getTableColumnsAsync('opportunities_raw');
+      const columnLabels = new Map(
+        tableColumns.map(col => [col.name, col.displayName])
+      );
+      
+      const headers = orderedColumns.map(col => columnLabels.get(col) || col);
       const dataRows = exportData.map(row => 
-        headers.map(h => safeCell(row[h]))
+        orderedColumns.map(col => safeCell(row[col]))
       );
 
       // Generate hyperlinks for deal names with URLs
