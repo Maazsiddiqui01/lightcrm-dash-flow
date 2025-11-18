@@ -15,7 +15,7 @@ export async function collectFilteredIds({
   filters?: any;
   sortLevels?: any[];
 }): Promise<string[]> {
-  const table = page === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
+  const table = page === 'contacts' ? 'contacts_with_display_fields' : 'opportunities_with_display_fields';
   
   // Type as any to avoid excessive depth errors with complex query chains
   let query: any = supabase
@@ -226,7 +226,7 @@ export async function fetchRowsByIds({
 }): Promise<any[]> {
   if (ids.length === 0) return [];
   
-  const table = page === 'contacts' ? 'contacts_raw' : 'opportunities_raw';
+  const table = page === 'contacts' ? 'contacts_with_display_fields' : 'opportunities_with_display_fields';
   const batches = chunk(ids, 1000);
   const allRows: any[] = [];
   

@@ -29,10 +29,10 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
         setIsRefreshing(true);
       }
 
-      // Fetch contacts directly from contacts_raw
+      // Fetch contacts directly from contacts_with_display_fields view
       let effectiveContactsData: any[] | null = null;
       let contactsQuery = supabase
-        .from("contacts_raw")
+        .from("contacts_with_display_fields")
         .select("*", { count: 'exact' });
 
       // Apply contact filters
@@ -255,11 +255,11 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       if (contactsError) {
         console.error(`[Contacts#${reqId}] Error fetching contacts:`, contactsError);
         
-        // Fallback to contacts_raw if dynamic view fails (ensures group fields exist)
+        // Fallback to contacts_with_display_fields if dynamic view fails (ensures group fields exist)
         try {
-          console.log(`[Contacts#${reqId}] Falling back to contacts_raw table with filters applied...`);
+          console.log(`[Contacts#${reqId}] Falling back to contacts_with_display_fields table with filters applied...`);
           let fallbackQuery = supabase
-            .from("contacts_raw")
+            .from("contacts_with_display_fields")
             .select("*");
           
           // Apply focus area filter via contact IDs to fallback

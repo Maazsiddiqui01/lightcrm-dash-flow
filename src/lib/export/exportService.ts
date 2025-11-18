@@ -57,12 +57,45 @@ export async function exportCsv(options: ExportOptions): Promise<void> {
     // 4) Apply client-side custom sort refinement if needed
     const sortedRows = applySortRefinement(rows, options.sortLevels);
 
-    // 5) Build data rows
-    const data = sortedRows.map(row =>
+    // 5) Apply display field mappings (use timeline values when appropriate)
+    const rowsWithDisplayValues = sortedRows.map(row => {
+      const mapped = { ...row };
+      
+      // For opportunities: use display fields for notes
+      if (options.page === 'opportunities') {
+        if (row.next_steps_display !== undefined) {
+          mapped.next_steps = row.next_steps_display;
+        }
+        if (row.notes_display !== undefined) {
+          mapped.most_recent_notes = row.notes_display;
+        }
+        if (row.next_steps_due_date_display !== undefined) {
+          mapped.next_steps_due_date = row.next_steps_due_date_display;
+        }
+      }
+      
+      // For contacts: use display fields for notes
+      if (options.page === 'contacts') {
+        if (row.next_steps_display !== undefined) {
+          mapped.next_steps = row.next_steps_display;
+        }
+        if (row.notes_display !== undefined) {
+          mapped.notes = row.notes_display;
+        }
+        if (row.next_steps_due_date_display !== undefined) {
+          mapped.next_steps_due_date = row.next_steps_due_date_display;
+        }
+      }
+      
+      return mapped;
+    });
+
+    // 6) Build data rows
+    const data = rowsWithDisplayValues.map(row =>
       columns.map(col => safeCell(row[col]))
     );
 
-    // 6) Export in requested format
+    // 7) Export in requested format
     const format = options.format || 'csv';
     
     if (format === 'excel') {

@@ -326,6 +326,13 @@ export type Database = {
             foreignKeyName: "contact_email_addresses_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_email_addresses_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "contacts_with_dynamic_interactions"
             referencedColumns: ["id"]
           },
@@ -461,6 +468,13 @@ export type Database = {
             foreignKeyName: "contact_email_builder_settings_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: true
+            referencedRelation: "contacts_with_display_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_email_builder_settings_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
             referencedRelation: "contacts_with_dynamic_interactions"
             referencedColumns: ["id"]
           },
@@ -557,6 +571,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
             referencedColumns: ["id"]
           },
           {
@@ -678,6 +699,13 @@ export type Database = {
             foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "contacts_with_dynamic_interactions"
             referencedColumns: ["id"]
           },
@@ -786,6 +814,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_module_defaults_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
             referencedColumns: ["id"]
           },
           {
@@ -914,6 +949,13 @@ export type Database = {
             foreignKeyName: "contact_note_events_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "contacts_with_dynamic_interactions"
             referencedColumns: ["id"]
           },
@@ -1025,6 +1067,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
             referencedColumns: ["id"]
           },
           {
@@ -1147,6 +1196,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
             referencedColumns: ["id"]
           },
           {
@@ -2568,6 +2624,13 @@ export type Database = {
             foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
             columns: ["deal_source_contact_1_id"]
             isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
             referencedRelation: "contacts_with_dynamic_interactions"
             referencedColumns: ["id"]
           },
@@ -2639,6 +2702,13 @@ export type Database = {
             columns: ["deal_source_contact_2_id"]
             isOneToOne: false
             referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
             referencedColumns: ["id"]
           },
           {
@@ -2760,6 +2830,13 @@ export type Database = {
             foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
             columns: ["opportunity_id"]
             isOneToOne: false
+            referencedRelation: "opportunities_with_display_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
             referencedRelation: "opps_date_norm"
             referencedColumns: ["id"]
           },
@@ -2871,6 +2948,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
             referencedColumns: ["id"]
           },
           {
@@ -3260,6 +3344,13 @@ export type Database = {
             foreignKeyName: "contact_note_events_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "contacts_with_dynamic_interactions"
             referencedColumns: ["id"]
           },
@@ -3359,6 +3450,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
             referencedColumns: ["id"]
           },
           {
@@ -3540,6 +3638,249 @@ export type Database = {
           notes?: string | null
           organization?: string | null
           title?: string | null
+        }
+        Relationships: []
+      }
+      contacts_with_display_fields: {
+        Row: {
+          all_emails: string | null
+          all_opps: number | null
+          areas_of_specialization: string | null
+          assigned_to: string | null
+          category: string | null
+          city: string | null
+          contact_type: string | null
+          created_at: string | null
+          created_by: string | null
+          days_since_last_email: number | null
+          days_since_last_meeting: number | null
+          delta: number | null
+          delta_type: string | null
+          email_address: string | null
+          email_cc: string | null
+          email_from: string | null
+          email_subject: string | null
+          email_to: string | null
+          first_name: string | null
+          follow_up_date: string | null
+          follow_up_days: number | null
+          follow_up_recency_threshold: number | null
+          full_name: string | null
+          group_contact: string | null
+          group_delta: number | null
+          group_email_role: string | null
+          group_focus_area: string | null
+          group_notes: string | null
+          group_sector: string | null
+          id: string | null
+          intentional_no_outreach: boolean | null
+          intentional_no_outreach_date: string | null
+          intentional_no_outreach_note: string | null
+          last_name: string | null
+          latest_contact_email: string | null
+          latest_contact_meeting: string | null
+          lg_assistant: string | null
+          lg_focus_area_1: string | null
+          lg_focus_area_2: string | null
+          lg_focus_area_3: string | null
+          lg_focus_area_4: string | null
+          lg_focus_area_5: string | null
+          lg_focus_area_6: string | null
+          lg_focus_area_7: string | null
+          lg_focus_area_8: string | null
+          lg_focus_areas_comprehensive_list: string | null
+          lg_lead: string | null
+          lg_sector: string | null
+          linkedin_url: string | null
+          lock_reason: string | null
+          locked_by: string | null
+          locked_until: string | null
+          meeting_cc: string | null
+          meeting_from: string | null
+          meeting_title: string | null
+          meeting_to: string | null
+          most_recent_contact: string | null
+          most_recent_group_contact: string | null
+          next_steps: string | null
+          next_steps_display: string | null
+          next_steps_due_date: string | null
+          next_steps_due_date_display: string | null
+          no_of_lg_focus_areas: number | null
+          no_of_opps_sourced: number | null
+          notes: string | null
+          notes_display: string | null
+          of_emails: number | null
+          of_meetings: number | null
+          organization: string | null
+          organization_id: string | null
+          outreach_date: string | null
+          phone: string | null
+          state: string | null
+          title: string | null
+          total_of_contacts: number | null
+          updated_at: string | null
+          url_to_online_bio: string | null
+          x_twitter_url: string | null
+        }
+        Insert: {
+          all_emails?: string | null
+          all_opps?: number | null
+          areas_of_specialization?: string | null
+          assigned_to?: string | null
+          category?: string | null
+          city?: string | null
+          contact_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          days_since_last_email?: number | null
+          days_since_last_meeting?: number | null
+          delta?: number | null
+          delta_type?: string | null
+          email_address?: string | null
+          email_cc?: string | null
+          email_from?: string | null
+          email_subject?: string | null
+          email_to?: string | null
+          first_name?: string | null
+          follow_up_date?: string | null
+          follow_up_days?: number | null
+          follow_up_recency_threshold?: number | null
+          full_name?: string | null
+          group_contact?: string | null
+          group_delta?: number | null
+          group_email_role?: string | null
+          group_focus_area?: string | null
+          group_notes?: string | null
+          group_sector?: string | null
+          id?: string | null
+          intentional_no_outreach?: boolean | null
+          intentional_no_outreach_date?: string | null
+          intentional_no_outreach_note?: string | null
+          last_name?: string | null
+          latest_contact_email?: string | null
+          latest_contact_meeting?: string | null
+          lg_assistant?: string | null
+          lg_focus_area_1?: string | null
+          lg_focus_area_2?: string | null
+          lg_focus_area_3?: string | null
+          lg_focus_area_4?: string | null
+          lg_focus_area_5?: string | null
+          lg_focus_area_6?: string | null
+          lg_focus_area_7?: string | null
+          lg_focus_area_8?: string | null
+          lg_focus_areas_comprehensive_list?: string | null
+          lg_lead?: string | null
+          lg_sector?: string | null
+          linkedin_url?: string | null
+          lock_reason?: string | null
+          locked_by?: string | null
+          locked_until?: string | null
+          meeting_cc?: string | null
+          meeting_from?: string | null
+          meeting_title?: string | null
+          meeting_to?: string | null
+          most_recent_contact?: string | null
+          most_recent_group_contact?: string | null
+          next_steps?: string | null
+          next_steps_display?: never
+          next_steps_due_date?: string | null
+          next_steps_due_date_display?: never
+          no_of_lg_focus_areas?: number | null
+          no_of_opps_sourced?: number | null
+          notes?: string | null
+          notes_display?: never
+          of_emails?: number | null
+          of_meetings?: number | null
+          organization?: string | null
+          organization_id?: string | null
+          outreach_date?: string | null
+          phone?: string | null
+          state?: string | null
+          title?: string | null
+          total_of_contacts?: number | null
+          updated_at?: string | null
+          url_to_online_bio?: string | null
+          x_twitter_url?: string | null
+        }
+        Update: {
+          all_emails?: string | null
+          all_opps?: number | null
+          areas_of_specialization?: string | null
+          assigned_to?: string | null
+          category?: string | null
+          city?: string | null
+          contact_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          days_since_last_email?: number | null
+          days_since_last_meeting?: number | null
+          delta?: number | null
+          delta_type?: string | null
+          email_address?: string | null
+          email_cc?: string | null
+          email_from?: string | null
+          email_subject?: string | null
+          email_to?: string | null
+          first_name?: string | null
+          follow_up_date?: string | null
+          follow_up_days?: number | null
+          follow_up_recency_threshold?: number | null
+          full_name?: string | null
+          group_contact?: string | null
+          group_delta?: number | null
+          group_email_role?: string | null
+          group_focus_area?: string | null
+          group_notes?: string | null
+          group_sector?: string | null
+          id?: string | null
+          intentional_no_outreach?: boolean | null
+          intentional_no_outreach_date?: string | null
+          intentional_no_outreach_note?: string | null
+          last_name?: string | null
+          latest_contact_email?: string | null
+          latest_contact_meeting?: string | null
+          lg_assistant?: string | null
+          lg_focus_area_1?: string | null
+          lg_focus_area_2?: string | null
+          lg_focus_area_3?: string | null
+          lg_focus_area_4?: string | null
+          lg_focus_area_5?: string | null
+          lg_focus_area_6?: string | null
+          lg_focus_area_7?: string | null
+          lg_focus_area_8?: string | null
+          lg_focus_areas_comprehensive_list?: string | null
+          lg_lead?: string | null
+          lg_sector?: string | null
+          linkedin_url?: string | null
+          lock_reason?: string | null
+          locked_by?: string | null
+          locked_until?: string | null
+          meeting_cc?: string | null
+          meeting_from?: string | null
+          meeting_title?: string | null
+          meeting_to?: string | null
+          most_recent_contact?: string | null
+          most_recent_group_contact?: string | null
+          next_steps?: string | null
+          next_steps_display?: never
+          next_steps_due_date?: string | null
+          next_steps_due_date_display?: never
+          no_of_lg_focus_areas?: number | null
+          no_of_opps_sourced?: number | null
+          notes?: string | null
+          notes_display?: never
+          of_emails?: number | null
+          of_meetings?: number | null
+          organization?: string | null
+          organization_id?: string | null
+          outreach_date?: string | null
+          phone?: string | null
+          state?: string | null
+          title?: string | null
+          total_of_contacts?: number | null
+          updated_at?: string | null
+          url_to_online_bio?: string | null
+          x_twitter_url?: string | null
         }
         Relationships: []
       }
@@ -4177,6 +4518,325 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities_with_display_fields: {
+        Row: {
+          acquisition_date: string | null
+          assigned_to: string | null
+          created_at: string | null
+          created_by: string | null
+          date_of_origination: string | null
+          deal_name: string | null
+          deal_source_company: string | null
+          deal_source_contact_1_id: string | null
+          deal_source_contact_2_id: string | null
+          deal_source_contacts: string | null
+          deal_source_individual_1: string | null
+          deal_source_individual_2: string | null
+          dealcloud: boolean | null
+          ebitda: string | null
+          ebitda_in_ms: number | null
+          ebitda_notes: string | null
+          est_deal_size: number | null
+          est_lg_equity_invest: number | null
+          funds: string | null
+          headquarters: string | null
+          id: string | null
+          investment_professional_point_person_1: string | null
+          investment_professional_point_person_2: string | null
+          investment_professional_point_person_3: string | null
+          investment_professional_point_person_4: string | null
+          last_modified: string | null
+          lg_focus_area: string | null
+          lg_team: string | null
+          most_recent_notes: string | null
+          next_steps: string | null
+          next_steps_display: string | null
+          next_steps_due_date: string | null
+          next_steps_due_date_display: string | null
+          notes_display: string | null
+          organization_id: string | null
+          ownership: string | null
+          ownership_type: string | null
+          platform_add_on: string | null
+          "Process Timeline": string | null
+          process_timeline: string | null
+          revenue: number | null
+          sector: string | null
+          status: string | null
+          summary_of_opportunity: string | null
+          tier: string | null
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          acquisition_date?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_of_origination?: string | null
+          deal_name?: string | null
+          deal_source_company?: string | null
+          deal_source_contact_1_id?: string | null
+          deal_source_contact_2_id?: string | null
+          deal_source_contacts?: string | null
+          deal_source_individual_1?: string | null
+          deal_source_individual_2?: string | null
+          dealcloud?: boolean | null
+          ebitda?: string | null
+          ebitda_in_ms?: number | null
+          ebitda_notes?: string | null
+          est_deal_size?: number | null
+          est_lg_equity_invest?: number | null
+          funds?: string | null
+          headquarters?: string | null
+          id?: string | null
+          investment_professional_point_person_1?: string | null
+          investment_professional_point_person_2?: string | null
+          investment_professional_point_person_3?: string | null
+          investment_professional_point_person_4?: string | null
+          last_modified?: string | null
+          lg_focus_area?: string | null
+          lg_team?: string | null
+          most_recent_notes?: string | null
+          next_steps?: string | null
+          next_steps_display?: never
+          next_steps_due_date?: string | null
+          next_steps_due_date_display?: never
+          notes_display?: never
+          organization_id?: string | null
+          ownership?: string | null
+          ownership_type?: string | null
+          platform_add_on?: string | null
+          "Process Timeline"?: string | null
+          process_timeline?: string | null
+          revenue?: number | null
+          sector?: string | null
+          status?: string | null
+          summary_of_opportunity?: string | null
+          tier?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          acquisition_date?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_of_origination?: string | null
+          deal_name?: string | null
+          deal_source_company?: string | null
+          deal_source_contact_1_id?: string | null
+          deal_source_contact_2_id?: string | null
+          deal_source_contacts?: string | null
+          deal_source_individual_1?: string | null
+          deal_source_individual_2?: string | null
+          dealcloud?: boolean | null
+          ebitda?: string | null
+          ebitda_in_ms?: number | null
+          ebitda_notes?: string | null
+          est_deal_size?: number | null
+          est_lg_equity_invest?: number | null
+          funds?: string | null
+          headquarters?: string | null
+          id?: string | null
+          investment_professional_point_person_1?: string | null
+          investment_professional_point_person_2?: string | null
+          investment_professional_point_person_3?: string | null
+          investment_professional_point_person_4?: string | null
+          last_modified?: string | null
+          lg_focus_area?: string | null
+          lg_team?: string | null
+          most_recent_notes?: string | null
+          next_steps?: string | null
+          next_steps_display?: never
+          next_steps_due_date?: string | null
+          next_steps_due_date_display?: never
+          notes_display?: never
+          organization_id?: string | null
+          ownership?: string | null
+          ownership_type?: string | null
+          platform_add_on?: string | null
+          "Process Timeline"?: string | null
+          process_timeline?: string | null
+          revenue?: number | null
+          sector?: string | null
+          status?: string | null
+          summary_of_opportunity?: string | null
+          tier?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_ai"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_app"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_computed"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_norm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_display_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_dynamic_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_opportunities_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "tom_new_view"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_email_composer"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_lag"
+            referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "v_contact_top_opps"
+            referencedColumns: ["contact_id"]
+          },
+        ]
+      }
       opportunity_notes_timeline: {
         Row: {
           content: string | null
@@ -4246,6 +4906,13 @@ export type Database = {
             columns: ["opportunity_id"]
             isOneToOne: false
             referencedRelation: "opportunities_raw"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_note_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities_with_display_fields"
             referencedColumns: ["id"]
           },
           {
