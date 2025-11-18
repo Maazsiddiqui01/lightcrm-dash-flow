@@ -9,7 +9,7 @@ import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { ContactMergeDialog } from "./ContactMergeDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2, CalendarIcon, Merge, Paperclip, History } from "lucide-react";
+import { Download, Plus, User, ArrowUpDown, MoreHorizontal, Edit, Eye, FileText, Mail, ChevronDown, UserX, RotateCcw, RefreshCw, Upload, Users, Database, Trash2, Loader2, CalendarIcon, Merge, Paperclip, History, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -23,7 +23,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useQuery } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
 import { useLastInteractionUpload } from "@/hooks/useLastInteractionUpload";
-import { buildCsv, downloadCsv, generateExportFilename, safeCell } from "@/lib/export/csvUtils";
+import { buildCsv, downloadCsv, generateExportFilename, safeCell, downloadExcel, generateExcelFilename } from "@/lib/export/csvUtils";
 import { AttachmentUploadDialog } from "@/components/attachments/AttachmentUploadDialog";
 import { FullHistoryDialog, TimelineItem } from "@/components/shared/FullHistoryDialog";
 import { useContactNotes } from "@/hooks/useContactNotes";
@@ -586,6 +586,48 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
     }
   };
 
+  const handleExcelExport = async () => {
+    setIsExporting(true);
+    
+    try {
+      // Use same column and row logic as CSV export
+      const allColumns = getAllRawColumns('contacts');
+      const columnsWithoutId = allColumns.filter(col => col !== 'id');
+      const orderedColumns = ['id', ...columnsWithoutId];
+      
+      const columnHeaders: Record<string, string> = {};
+      orderedColumns.forEach(col => {
+        const dynCol = dynamicColumns.find(dc => dc.key === col);
+        columnHeaders[col] = dynCol?.label || col;
+      });
+      
+      const selectedRowIds = selectedRows.map(row => row.id);
+      const rowsToExport = selectedRowIds.length > 0
+        ? selectedRows
+        : filteredContacts;
+      
+      if (!rowsToExport || rowsToExport.length === 0) {
+        toast({ title: 'No rows to export', variant: 'destructive' });
+        return;
+      }
+      
+      const headers = orderedColumns.map(k => columnHeaders[k] || k);
+      const data = rowsToExport.map(row => 
+        orderedColumns.map(col => safeCell((row as any)[col]))
+      );
+      
+      const filename = generateExcelFilename('contacts');
+      downloadExcel(filename, headers, data);
+      
+      toast({ title: 'Export complete', description: `Exported ${rowsToExport.length} row(s) to Excel.` });
+    } catch (err: any) {
+      console.error('Excel export failed:', err);
+      toast({ title: 'Export failed', description: err?.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const editedRowsCount = Object.keys(editMode.editState.editedRows).length;
 
   return (
@@ -748,19 +790,39 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
             Sort
           </Button>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={isExporting}
-          >
-            {isExporting ? (
-              <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Export
+                <ChevronDown className="ml-1 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem 
+                onClick={handleExport}
+                disabled={isExporting}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={handleExcelExport}
+                disabled={isExporting}
+              >
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Export as Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <SplitButton
             label="Add Contact"

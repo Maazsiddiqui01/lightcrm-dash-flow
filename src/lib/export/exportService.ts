@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import { buildCsv, downloadCsv, generateExportFilename, safeCell } from './csvUtils';
+import { buildCsv, downloadCsv, downloadExcel, generateExportFilename, generateExcelFilename, safeCell } from './csvUtils';
 import { collectFilteredIds, fetchRowsByIds, getAllRawColumns } from './dataFetcher';
 import { createMultiSortComparator } from '../sort/customSort';
 import { READ_ONLY_OPPORTUNITY_COLUMNS } from '@/utils/opportunityColumnMapping';
@@ -7,6 +7,7 @@ import { READ_ONLY_OPPORTUNITY_COLUMNS } from '@/utils/opportunityColumnMapping'
 export interface ExportOptions {
   page: 'contacts' | 'opportunities';
   mode: 'current' | 'detailed';
+  format?: 'csv' | 'excel';
   selectedIds?: string[];
   filters?: any;
   sortLevels?: any[];
@@ -56,14 +57,24 @@ export async function exportCsv(options: ExportOptions): Promise<void> {
     // 4) Apply client-side custom sort refinement if needed
     const sortedRows = applySortRefinement(rows, options.sortLevels);
 
-    // 5) Build CSV
+    // 5) Build data rows
     const data = sortedRows.map(row =>
       columns.map(col => safeCell(row[col]))
     );
 
-    const csv = buildCsv(headers, data);
-    const filename = generateFilename(options);
-    downloadCsv(filename, csv);
+    // 6) Export in requested format
+    const format = options.format || 'csv';
+    
+    if (format === 'excel') {
+      const filename = generateExcelFilename(
+        `${options.page === 'contacts' ? 'contacts' : 'opportunities'}-${options.mode}`
+      );
+      downloadExcel(filename, headers, data);
+    } else {
+      const csv = buildCsv(headers, data);
+      const filename = generateFilename(options);
+      downloadCsv(filename, csv);
+    }
 
     toast.success(`Exported ${rows.length} rows`);
   } catch (error: any) {
