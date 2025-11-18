@@ -10,6 +10,7 @@ import { UpdatePreview } from "./UpdatePreview";
 import { ImportResults } from "./ImportResults";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 interface BulkImportModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface BulkImportModalProps {
 export function BulkImportModal({ open, onOpenChange, entityType, onImportComplete }: BulkImportModalProps) {
   const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'results'>('upload');
   const [dragActive, setDragActive] = useState(false);
+  const { toast } = useToast();
   
   const {
     file,
@@ -59,7 +61,16 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
   }, []);
 
   const handleFileUpload = async (selectedFile: File) => {
-    if (!selectedFile.name.endsWith('.csv')) return;
+    const allowedExtensions = ['.csv', '.xlsx', '.xls'];
+    const fileExtension = selectedFile.name.toLowerCase().slice(selectedFile.name.lastIndexOf('.'));
+    if (!allowedExtensions.includes(fileExtension)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload a CSV or Excel (.xlsx, .xls) file",
+        variant: "destructive"
+      });
+      return;
+    }
     await parseFile(selectedFile);
     setStep('preview');
   };
@@ -95,7 +106,7 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
             Bulk Import {entityType === 'contacts' ? 'Contacts' : 'Opportunities'}
           </DialogTitle>
           <DialogDescription>
-            Upload a CSV file to bulk import {entityType}. Download the template for proper formatting.
+            Upload a CSV or Excel file (.xlsx, .xls) to bulk import {entityType}. Download the template for proper formatting.
           </DialogDescription>
         </DialogHeader>
 
@@ -141,12 +152,12 @@ export function BulkImportModal({ open, onOpenChange, entityType, onImportComple
                 onClick={() => document.getElementById('file-upload')?.click()}
               >
                 <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">Drop your CSV file here or click to browse</p>
-                <p className="text-sm text-muted-foreground">{file ? `Selected: ${file.name}` : 'Supports .csv files'}</p>
+                <p className="text-lg font-medium mb-2">Drop your file here or click to browse</p>
+                <p className="text-sm text-muted-foreground">{file ? `Selected: ${file.name}` : 'Supports CSV and Excel (.csv, .xlsx, .xls)'}</p>
                 <input
                   id="file-upload"
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   className="hidden"
                   onChange={(e) => {
                     const selectedFile = e.target.files?.[0];

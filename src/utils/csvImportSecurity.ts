@@ -24,9 +24,15 @@ export const MAX_FIELD_LENGTH = 10000;
  * Validates file before parsing
  */
 export function validateCsvFile(file: File): { valid: boolean; error?: string } {
-  // Check file type
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    return { valid: false, error: 'File must be a CSV (.csv extension)' };
+  const ALLOWED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
+  
+  // Check file extension
+  const extension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+  if (!ALLOWED_EXTENSIONS.includes(extension)) {
+    return { 
+      valid: false, 
+      error: 'Invalid file type. Please upload a CSV or Excel file (.csv, .xlsx, .xls)' 
+    };
   }
 
   // Check file size

@@ -22,6 +22,7 @@ import {
 } from "@/utils/opportunityColumnMapping";
 import { normalizeCsvRow, getOpportunitiesColumnTypes, getContactsColumnTypes } from "@/utils/csvNormalizer";
 import { getTableColumnsAsync } from "@/lib/supabase/getTableColumns";
+import { repairUtf8Encoding, hasEncodingIssues, countEncodingIssues } from "@/utils/utf8EncodingRepair";
 
 export interface ValidationResults {
   valid: any[];
@@ -47,6 +48,27 @@ export interface ImportResults {
 
 export type ImportMode = 'add-new' | 'update-existing';
 export type MatchingStrategy = 'id' | 'deal_name' | 'auto';
+
+/**
+ * Parse Excel file to CSV-like array of objects
+ */
+async function parseExcelFile(file: File): Promise<any[]> {
+  const XLSX = await import('xlsx');
+  const arrayBuffer = await file.arrayBuffer();
+  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+  
+  // Use first sheet
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  
+  // Convert to array of objects (like Papa.parse header:true output)
+  const data = XLSX.utils.sheet_to_json(worksheet, {
+    raw: false, // Get formatted strings, not raw values
+    defval: null, // Use null for empty cells
+  });
+  
+  return data;
+}
 
 export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportComplete?: () => void) {
   const [file, setFile] = useState<File | null>(null);
@@ -75,30 +97,49 @@ export function useCsvImport(entityType: 'contacts' | 'opportunities', onImportC
       }
 
       setFile(file);
-      const text = await file.text();
-
-      // Get column mappings from database
+      
+      let data: any[] = [];
+      const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+      
+      // Get column mappings from database (needed for both CSV and Excel)
       const columnMapResult = await createColumnMap(entityType);
       
-      // Parse CSV with papaparse (handles all edge cases)
-      const parseResult = Papa.parse(text, {
-        header: hasHeaderRow,
-        skipEmptyLines: true,
-        transformHeader: (header) => header.trim(),
-        transform: (value) => value?.trim() || null
-      });
-
-      if (parseResult.errors && parseResult.errors.length > 0) {
-        console.error('CSV parsing errors:', parseResult.errors);
-        toast({
-          title: "Parse Error",
-          description: "CSV file has formatting issues. Please check the file.",
-          variant: "destructive"
+      // Parse based on file type
+      if (fileExtension === '.csv') {
+        const text = await file.text();
+        
+        // Repair broken UTF-8 encoding before parsing
+        const repairedText = repairUtf8Encoding(text);
+        
+        // Optional: Log if repairs were made (for debugging)
+        if (hasEncodingIssues(text)) {
+          const issueCount = countEncodingIssues(text);
+          console.log(`Repaired ${issueCount} character encoding issues in CSV`);
+        }
+        
+        // Parse CSV with papaparse (handles all edge cases)
+        const parseResult = Papa.parse(repairedText, {
+          header: hasHeaderRow,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim(),
+          transform: (value) => value?.trim() || null
         });
-        return;
-      }
 
-      const data = (parseResult.data as any[]) || [];
+        if (parseResult.errors && parseResult.errors.length > 0) {
+          console.error('CSV parsing errors:', parseResult.errors);
+          toast({
+            title: "Parse Error",
+            description: "CSV file has formatting issues. Please check the file.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        data = (parseResult.data as any[]) || [];
+      } else if (fileExtension === '.xlsx' || fileExtension === '.xls') {
+        // Parse Excel file
+        data = await parseExcelFile(file);
+      }
       
       // Security: Validate row count
       const rowValidation = validateRowCount(data.length);
