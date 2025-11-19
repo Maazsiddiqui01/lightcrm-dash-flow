@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
-import ContactDrawer from "./ContactDrawer";
+import { ContactDrawer } from "./ContactDrawer";
 import { AddContactDialog } from "./AddContactDialog";
 import { QuickAddContactNoteModal } from "./QuickAddContactNoteModal";
 import { QuickAddContactNextStepModal } from "./QuickAddContactNextStepModal";
