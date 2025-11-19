@@ -80,6 +80,7 @@ export const CONTACT_DB_COLUMNS = [
   'locked_by',
   'locked_until',
   'lock_reason',
+  'priority',
 ] as const;
 
 // Read-only columns that should never be written to during import

@@ -28,6 +28,7 @@ export interface OpportunityBase {
   date_of_origination: string | null;
   process_timeline: string | null;
   dealcloud: boolean | null;
+  priority: boolean | null;
   headquarters: string | null;
   revenue: number | null;
   est_deal_size: number | null;
@@ -57,6 +58,7 @@ export interface OpportunityFilters {
   processTimeline: string[];
   funds: string[];
   dealcloud: string[];
+  priority: string[];
   acquisitionDateStart?: Date;
   acquisitionDateEnd?: Date;
   searchTerm?: string;

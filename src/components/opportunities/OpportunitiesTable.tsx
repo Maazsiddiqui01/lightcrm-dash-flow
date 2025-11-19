@@ -74,6 +74,7 @@ interface OpportunityRaw {
   date_of_origination: string | null;
   process_timeline?: string | null;
   dealcloud: boolean | null;
+  priority: boolean | null;
   headquarters: string | null;
   revenue: number | null;
   est_deal_size: number | null;
@@ -100,6 +101,8 @@ interface OpportunityFilters {
   headquarters: string[];
   processTimeline: string[];
   funds: string[];
+  dealcloud: string[];
+  priority: string[];
   acquisitionDateStart?: Date;
   acquisitionDateEnd?: Date;
 }
@@ -441,6 +444,17 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
         query = query.in('process_timeline', filters.processTimeline);
       }
 
+      // Dealcloud filter
+      if (filters.dealcloud && filters.dealcloud.length > 0 && filters.dealcloud.length < 2) {
+        const boolValue = filters.dealcloud[0] === 'Yes';
+        query = query.eq('dealcloud', boolValue);
+      }
+
+      // Priority filter
+      if (filters.priority && filters.priority.length === 1) {
+        query = query.eq('priority', filters.priority[0] === 'Yes');
+      }
+
       // Apply multi-sort (server-side for non-custom orders)
       const serverOrders = buildSupabaseOrder(sortLevels);
       if (serverOrders.length > 0) {
@@ -478,7 +492,7 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
       // Apply client-side sorting for custom orders
       const sortedData = applyClientSort(data || [], sortLevels);
       
-      setOpportunities(sortedData as OpportunityRaw[]);
+      setOpportunities(sortedData as any as OpportunityRaw[]);
     } catch (error) {
       console.error("Unexpected error:", error);
       toast({

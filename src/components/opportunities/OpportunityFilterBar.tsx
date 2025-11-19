@@ -255,6 +255,17 @@ export function OpportunityFilterBar({
         />
 
         <ComboboxMulti
+          label="Priority"
+          options={[
+            { value: 'Yes', label: 'Yes' },
+            { value: 'No', label: 'No' }
+          ]}
+          values={filters.priority || []}
+          onChange={(values) => updateFilter('priority', values)}
+          searchPlaceholder="Select Priority"
+        />
+
+        <ComboboxMulti
           label="Headquarters"
           options={headquarters}
           values={filters.headquarters}

@@ -40,6 +40,7 @@ interface ContactFilterBarProps {
     titles?: string[];
     categories?: string[];
     hasOpportunities?: string[];
+    priority?: string[];
     lgLead?: string[];
     groupContacts?: string[];
     opportunityTier?: string[];
@@ -276,6 +277,18 @@ export function ContactFilterBar({ filters, onFiltersChange, onClearFilters, sho
           values={filters.hasOpportunities || []}
           onChange={(values) => handleFilterChange('hasOpportunities', values)}
           searchPlaceholder="Select Option"
+        />
+
+        {/* Priority */}
+        <ComboboxMulti
+          label="Priority"
+          options={[
+            { value: 'Yes', label: 'Yes' },
+            { value: 'No', label: 'No' }
+          ]}
+          values={filters.priority || []}
+          onChange={(values) => handleFilterChange('priority', values)}
+          searchPlaceholder="Select Priority"
         />
 
         {/* Most Recent Contact Date Range */}

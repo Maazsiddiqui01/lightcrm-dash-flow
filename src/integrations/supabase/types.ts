@@ -1375,6 +1375,7 @@ export type Database = {
           organization_id: string | null
           outreach_date: string | null
           phone: string | null
+          priority: boolean | null
           state: string | null
           title: string | null
           total_of_contacts: number | null
@@ -1452,6 +1453,7 @@ export type Database = {
           organization_id?: string | null
           outreach_date?: string | null
           phone?: string | null
+          priority?: boolean | null
           state?: string | null
           title?: string | null
           total_of_contacts?: number | null
@@ -1529,6 +1531,7 @@ export type Database = {
           organization_id?: string | null
           outreach_date?: string | null
           phone?: string | null
+          priority?: boolean | null
           state?: string | null
           title?: string | null
           total_of_contacts?: number | null
@@ -2482,6 +2485,7 @@ export type Database = {
           ownership: string | null
           ownership_type: string | null
           platform_add_on: string | null
+          priority: boolean | null
           "Process Timeline": string | null
           process_timeline: string | null
           revenue: number | null
@@ -2528,6 +2532,7 @@ export type Database = {
           ownership?: string | null
           ownership_type?: string | null
           platform_add_on?: string | null
+          priority?: boolean | null
           "Process Timeline"?: string | null
           process_timeline?: string | null
           revenue?: number | null
@@ -2574,6 +2579,7 @@ export type Database = {
           ownership?: string | null
           ownership_type?: string | null
           platform_add_on?: string | null
+          priority?: boolean | null
           "Process Timeline"?: string | null
           process_timeline?: string | null
           revenue?: number | null

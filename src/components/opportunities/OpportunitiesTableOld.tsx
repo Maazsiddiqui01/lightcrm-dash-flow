@@ -39,6 +39,7 @@ interface Opportunity {
   created_at: string;
   updated_at: string;
   dealcloud: boolean;
+  priority: boolean | null;
   funds: string;
   acquisition_date: string | null;
 }
