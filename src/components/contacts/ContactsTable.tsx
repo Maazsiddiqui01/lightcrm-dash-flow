@@ -149,7 +149,10 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const contactsWithComputedSectors = useMemo(() => {
     if (!sectorMapping) return contacts;
     
-    return contacts.map(contact => {
+    // Filter out contacts with null IDs to prevent crashes
+    const safeContacts = contacts.filter(c => c && c.id);
+    
+    return safeContacts.map(contact => {
       // Calculate effective values using group logic if applicable
       const effective = calculateEffectiveOutreachData({
         group_contact: contact.group_contact,

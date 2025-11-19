@@ -63,7 +63,9 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     investment_professional_point_person_3: "",
     investment_professional_point_person_4: "",
     most_recent_notes: "",
+    next_steps: "",
     url: "",
+    priority: false,
   });
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [customStatusOptions, setCustomStatusOptions] = useState<string[]>([]);
@@ -95,7 +97,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
 
   const isLoading = isLoadingFocusAreas || isLoadingSectors || isLoadingOptions;
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -139,7 +141,9 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     ];
 
     for (const { field, name } of requiredFields) {
-      if (!formData[field as keyof typeof formData].trim()) {
+      const value = formData[field as keyof typeof formData];
+      if (typeof value === 'boolean') continue; // Skip boolean fields
+      if (!value.trim()) {
         toast({
           title: "Error",
           description: `${name} is required`,
@@ -192,6 +196,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
           formData.investment_professional_point_person_4
         ),
         most_recent_notes: opt(formData.most_recent_notes),
+        next_steps: opt(formData.next_steps),
+        priority: formData.priority || false,
       };
 
       // Note: Only lg_focus_area column exists in opportunities_raw table
@@ -231,7 +237,9 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         investment_professional_point_person_3: "",
         investment_professional_point_person_4: "",
         most_recent_notes: "",
+        next_steps: "",
         url: "",
+        priority: false,
       });
       setSelectedFocusAreas([]);
       setCustomStatusOptions([]);
@@ -271,7 +279,9 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       investment_professional_point_person_3: "",
       investment_professional_point_person_4: "",
       most_recent_notes: "",
+      next_steps: "",
       url: "",
+      priority: false,
     });
     setSelectedFocusAreas([]);
     setCustomStatusOptions([]);
@@ -572,6 +582,28 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                 placeholder="Latest notes or updates..."
                 className="min-h-[60px] resize-none"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="next_steps">Next Steps</Label>
+              <Textarea
+                id="next_steps"
+                value={formData.next_steps}
+                onChange={(e) => handleInputChange("next_steps", e.target.value)}
+                placeholder="Next steps or action items..."
+                className="min-h-[60px] resize-none"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="priority"
+                checked={formData.priority}
+                onChange={(e) => handleInputChange("priority", e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              <Label htmlFor="priority" className="cursor-pointer">Priority</Label>
             </div>
           </div>
           </form>
