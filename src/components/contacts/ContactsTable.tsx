@@ -129,13 +129,19 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   const { contacts, loading, isRefreshing, refetch } = useContactsWithOpportunities(externalFilters);
   const { data: sectorMapping } = useFocusAreaSectorMapping();
   
+  // Create a centralized safe contacts array to prevent null ID crashes
+  const safeContacts = useMemo(
+    () => (contacts || []).filter((c): c is ContactRaw => !!c && !!c.id),
+    [contacts]
+  );
+  
   // Create a setContacts function for compatibility with editMode
   const setContacts = () => {
     refetch();
   };
   
-  // Initialize edit mode and column visibility
-  const editMode = useEditMode('contacts_raw', contacts, setContacts);
+  // Initialize edit mode and column visibility using safe contacts
+  const editMode = useEditMode('contacts_raw', safeContacts, setContacts);
   const columnVisibility = useColumnVisibility('columns:contacts_raw');
   const dynamicEditOptions = useDynamicEditOptions();
 
@@ -147,10 +153,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
   
   // Add computed sectors and days over/under max lag to contacts data
   const contactsWithComputedSectors = useMemo(() => {
-    if (!sectorMapping) return contacts;
-    
-    // Filter out contacts with null IDs to prevent crashes
-    const safeContacts = contacts.filter(c => c && c.id);
+    if (!sectorMapping) return safeContacts;
     
     return safeContacts.map(contact => {
       // Calculate effective values using group logic if applicable
@@ -177,7 +180,7 @@ export function ContactsTable({ filters: externalFilters = {}, onOpportunityColu
             )
       };
     });
-  }, [contacts, sectorMapping]);
+  }, [safeContacts, sectorMapping]);
 
   // Get table columns metadata and add opportunities column
   const tableColumns = useMemo(() => {
