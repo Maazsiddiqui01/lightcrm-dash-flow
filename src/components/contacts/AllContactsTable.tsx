@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, Mail, User, Users, Calendar, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { ContactDrawer } from "./ContactDrawer";
+import ContactDrawer from "./ContactDrawer";
 import { GroupContactDrawer } from "./GroupContactDrawer";
 import { toast } from "sonner";
 import { useContactDraftGenerator } from "@/hooks/useContactDraftGenerator";
