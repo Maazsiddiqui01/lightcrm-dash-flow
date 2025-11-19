@@ -125,7 +125,7 @@ export default function ContactDrawer({ contact, open, onClose, onContactUpdated
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const { deleteContact, isDeleting } = useDeleteContact();
   
-  const { currentNotes, timeline, saveNotes, isLoadingCurrent, isLoadingTimeline, isSavingNotes, deleteNote, isDeletingNote } = useContactNotes(contact?.id);
+  const { currentNotes, timeline, saveNotes, isLoadingCurrent, isLoadingTimeline, isSavingNotes, deleteNote, isDeletingNote } = useContactNotes(contact.id);
   const { 
     currentNextSteps, 
     timeline: nextStepsTimeline, 
@@ -135,7 +135,7 @@ export default function ContactDrawer({ contact, open, onClose, onContactUpdated
     isSaving: isSavingNextSteps,
     deleteNextStep,
     isDeleting: isDeletingNextStep
-  } = useContactNextSteps(contact?.id);
+  } = useContactNextSteps(contact.id);
   const {
     currentNotes: groupCurrentNotes,
     timeline: groupTimeline,
@@ -146,7 +146,7 @@ export default function ContactDrawer({ contact, open, onClose, onContactUpdated
   } = useGroupNotes(contactData?.group_contact);
   const { data: contactGroupMemberships = [], isLoading: groupMembershipsLoading } = useContactGroups(contact?.id);
   const { mutate: removeFromGroup, isPending: removingFromGroup } = useRemoveContactFromGroup();
-  const contactEmailsQuery = useContactEmails(contact?.id);
+  const contactEmailsQuery = useContactEmails(contact.id);
   const focusAreasQuery = useFocusAreasBySector();
   const sectorsQuery = useSectors();
   const selectedFocusAreas = contactData?.lg_focus_areas_comprehensive_list?.split(',').map(fa => fa.trim()).filter(fa => fa) || [];

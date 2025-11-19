@@ -46,7 +46,6 @@ interface IndividualContactForm {
   lg_assistant: string;
   lg_focus_areas: string[];
   group_email_role: string;
-  priority: boolean;
 }
 
 const emptyContactForm: IndividualContactForm = {
@@ -68,7 +67,6 @@ const emptyContactForm: IndividualContactForm = {
   lg_assistant: "",
   lg_focus_areas: [],
   group_email_role: "",
-  priority: false,
 };
 
 export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDialogProps) {
@@ -97,7 +95,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
     }
   };
 
-  const updateContact = (index: number, field: string, value: string | string[] | boolean) => {
+  const updateContact = (index: number, field: string, value: string | string[]) => {
     const updatedContacts = [...contacts];
     updatedContacts[index] = {
       ...updatedContacts[index],
@@ -237,7 +235,6 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           x_twitter_url: opt(contact.x_twitter_url),
           lg_lead: opt(contact.lg_lead),
           lg_assistant: opt(contact.lg_assistant),
-          priority: contact.priority || false,
           // ✅ Legacy fields removed - now handled by groups table and contact_group_memberships junction table
           // group_delta is automatically synced via database triggers
         };
@@ -681,17 +678,6 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                         placeholder="Add any notes about this contact..."
                         className="min-h-[80px] resize-none"
                       />
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`priority_${index}`}
-                        checked={contact.priority}
-                        onChange={(e) => updateContact(index, "priority", e.target.checked)}
-                        className="h-4 w-4 rounded border-input"
-                      />
-                      <Label htmlFor={`priority_${index}`} className="cursor-pointer">Priority</Label>
                     </div>
                   </details>
                 </div>
