@@ -108,13 +108,14 @@ export function AllContactsTable() {
     fetchGroup();
   }, [selectedGroupId]);
 
-  // Filter contacts based on search
+  // Filter contacts based on search - also filter out null IDs to prevent crashes
   const filteredContacts = useMemo(() => {
     if (!contacts) return [];
-    if (!searchTerm) return contacts;
+    const safeContacts = contacts.filter(c => c && c.id);
+    if (!searchTerm) return safeContacts;
 
     const term = searchTerm.toLowerCase();
-    return contacts.filter(contact => 
+    return safeContacts.filter(contact => 
       contact.name?.toLowerCase().includes(term) ||
       contact.organization?.toLowerCase().includes(term) ||
       contact.member_names?.toLowerCase().includes(term) ||

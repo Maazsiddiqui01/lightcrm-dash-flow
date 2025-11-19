@@ -397,6 +397,7 @@ export const editableColumns: EditableConfig = {
         return null;
       }
     },
+    priority: { type: 'boolean' },
     // follow_up_date is READ-ONLY (computed via trigger)
   },
   opportunities_raw: {
@@ -511,6 +512,7 @@ export const editableColumns: EditableConfig = {
     acquisition_date: {
       type: 'date'
     },
+    priority: { type: 'boolean' },
   }
 };
 
