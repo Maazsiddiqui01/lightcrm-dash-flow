@@ -156,7 +156,12 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
 
   if (!opportunity) return null;
 
-  const displayLgTeam = calculateLgTeam(editedFields);
+  const displayLgTeam = calculateLgTeam(
+    editedFields.investment_professional_point_person_1,
+    editedFields.investment_professional_point_person_2,
+    editedFields.investment_professional_point_person_3,
+    editedFields.investment_professional_point_person_4
+  );
   const nextStepsTimeline = timeline.filter(t => t.field === 'next_steps');
   const notesTimeline = timeline.filter(t => t.field === 'most_recent_notes');
 
