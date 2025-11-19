@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail, Loader2, Trash2, Paperclip, ChevronDown, ChevronUp, History } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
@@ -77,6 +78,7 @@ interface Opportunity {
   created_at: string;
   updated_at: string;
   dealcloud: boolean;
+  priority: boolean | null;
   funds: string;
   acquisition_date: string | null;
 }
@@ -163,6 +165,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         investment_professional_point_person_4: opportunity.investment_professional_point_person_4 || "",
         acquisition_date: opportunity.acquisition_date || null,
         deal_source_company: opportunity.deal_source_company || "",
+        priority: opportunity.priority || false,
       });
 
       // Initialize contact selections if names exist
@@ -616,78 +619,28 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                     />
                   </PopoverContent>
                 </Popover>
-              </div>
             </div>
           </div>
 
-          <Separator />
-
-          {/* Financial Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center space-x-2">
-              <DollarSign className="h-5 w-5" />
-              <span>Financial Information</span>
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ebitda_in_ms">EBITDA (in M$)</Label>
-                <Input
-                  id="ebitda_in_ms"
-                  type="number"
-                  step="0.1"
-                  value={editedFields.ebitda_in_ms?.toString() || ""}
-                  onChange={(e) => handleFieldChange("ebitda_in_ms", e.target.value ? parseFloat(e.target.value) : null)}
-                  placeholder="Enter EBITDA in millions"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ebitda_notes">EBITDA Notes</Label>
-              <Textarea
-                id="ebitda_notes"
-                value={editedFields.ebitda_notes || ""}
-                onChange={(e) => handleFieldChange("ebitda_notes", e.target.value)}
-                placeholder="Enter EBITDA notes"
-                className="min-h-[80px] resize-none"
-              />
-            </div>
+          {/* Priority Checkbox */}
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox
+              id="priority"
+              checked={editedFields.priority === true}
+              onCheckedChange={(checked) => 
+                handleFieldChange('priority', checked as boolean)
+              }
+            />
+            <Label 
+              htmlFor="priority" 
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Priority
+            </Label>
           </div>
+        </div>
 
-          <Separator />
-
-          {/* Ownership Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center space-x-2">
-              <Building className="h-5 w-5" />
-              <span>Ownership</span>
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ownership">Ownership</Label>
-                <Input
-                  id="ownership"
-                  value={editedFields.ownership || ""}
-                  onChange={(e) => handleFieldChange("ownership", e.target.value)}
-                  placeholder="Enter ownership"
-                />
-              </div>
-              
-              {/* Ownership Type with All Defaults */}
-              <SingleSelectDropdown
-                label="Ownership Type"
-                options={defaultOwnershipTypes}
-                value={editedFields.ownership_type || ""}
-                onChange={(value) => handleFieldChange("ownership_type", value)}
-                placeholder="Select ownership type"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          <Separator />
+        <Separator />
 
           {/* Team Information */}
           <div className="space-y-4">

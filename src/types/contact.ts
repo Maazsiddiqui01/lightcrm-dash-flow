@@ -70,6 +70,7 @@ export interface ContactBase {
   intentional_no_outreach: boolean | null;
   intentional_no_outreach_date: string | null;
   intentional_no_outreach_note: string | null;
+  priority: boolean | null;
   follow_up_days: number | null;
   follow_up_recency_threshold: number | null;
   follow_up_date: string | null;
@@ -123,6 +124,8 @@ export interface ContactFilters {
   mostRecentContactEnd?: string;
   deltaMin?: number;
   deltaMax?: number;
+  priority?: string[];
+  intentionalNoOutreach?: string[];
   opportunityFilters?: OpportunityFilters;
   searchTerm?: string; // Full-text search term
 }

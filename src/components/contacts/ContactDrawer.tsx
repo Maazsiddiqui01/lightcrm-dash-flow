@@ -86,6 +86,7 @@ interface ContactRaw {
   follow_up_days: number | null;
   follow_up_recency_threshold: number | null;
   follow_up_date: string | null;
+  priority: boolean | null;
 }
 
 interface ContactApp {

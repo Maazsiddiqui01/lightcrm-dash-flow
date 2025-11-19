@@ -71,6 +71,7 @@ export function Opportunities() {
     referralCompanies: (rawFilters.referralCompanies as string[]) || [],
     dateOfOrigination: (rawFilters.dateOfOrigination as string[]) || [],
     dealcloud: (rawFilters.dealcloud as string[]) || [],
+    priority: (rawFilters.priority as string[]) || [],
     headquarters: (rawFilters.headquarters as string[]) || [],
     processTimeline: (rawFilters.processTimeline as string[]) || [],
     funds: (rawFilters.funds as string[]) || []

@@ -70,6 +70,7 @@ export const SAFE_UPDATE_FIELDS = {
     // Type and flags
     'contact_type',
     'intentional_no_outreach',
+    'priority',
     
     // Follow-up configuration
     'follow_up_days',
@@ -131,6 +132,7 @@ export const SAFE_UPDATE_FIELDS = {
     
     // Details
     'dealcloud',
+    'priority',
     'headquarters',
     'process_timeline',
     'acquisition_date',
