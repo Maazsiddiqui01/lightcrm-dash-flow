@@ -193,7 +193,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     }
   }, [opportunity]);
 
-  const handleFieldChange = (field: keyof Opportunity, value: string | number) => {
+  const handleFieldChange = (field: keyof Opportunity, value: string | number | boolean) => {
     setEditedFields(prev => ({
       ...prev,
       [field]: value
@@ -628,7 +628,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               id="priority"
               checked={editedFields.priority === true}
               onCheckedChange={(checked) => 
-                handleFieldChange('priority', checked as boolean)
+                handleFieldChange('priority', checked === true)
               }
             />
             <Label 
