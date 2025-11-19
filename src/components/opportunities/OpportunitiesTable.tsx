@@ -452,7 +452,9 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
 
       // Priority filter
       if (filters.priority && filters.priority.length === 1) {
-        query = query.eq('priority', filters.priority[0] === 'Yes');
+        const priorityValue = filters.priority[0] === 'Yes';
+        // Cast to any to prevent deep type instantiation error
+        query = (query as any).eq('priority', priorityValue);
       }
 
       // Apply multi-sort (server-side for non-custom orders)
