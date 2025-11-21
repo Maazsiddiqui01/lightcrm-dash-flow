@@ -62,6 +62,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     investment_professional_point_person_2: "",
     investment_professional_point_person_3: "",
     investment_professional_point_person_4: "",
+    next_steps: "",
     most_recent_notes: "",
     url: "",
   });
@@ -191,6 +192,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
           formData.investment_professional_point_person_3,
           formData.investment_professional_point_person_4
         ),
+        next_steps: opt(formData.next_steps),
         most_recent_notes: opt(formData.most_recent_notes),
       };
 
@@ -230,6 +232,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         investment_professional_point_person_2: "",
         investment_professional_point_person_3: "",
         investment_professional_point_person_4: "",
+        next_steps: "",
         most_recent_notes: "",
         url: "",
       });
@@ -270,6 +273,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       investment_professional_point_person_2: "",
       investment_professional_point_person_3: "",
       investment_professional_point_person_4: "",
+      next_steps: "",
       most_recent_notes: "",
       url: "",
     });
@@ -559,6 +563,17 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                 value={formData.ebitda_notes}
                 onChange={(e) => handleInputChange("ebitda_notes", e.target.value)}
                 placeholder="Additional EBITDA notes..."
+                className="min-h-[60px] resize-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="next_steps">Next Steps</Label>
+              <Textarea
+                id="next_steps"
+                value={formData.next_steps}
+                onChange={(e) => handleInputChange("next_steps", e.target.value)}
+                placeholder="Enter next steps..."
                 className="min-h-[60px] resize-none"
               />
             </div>
