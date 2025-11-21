@@ -573,7 +573,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             <Separator />
 
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Description</h3>
+              <h3 className="text-lg font-semibold">Summary of Opportunity</h3>
               <Textarea
                 value={editedFields.summary_of_opportunity || ""}
                 onChange={(e) => handleFieldChange("summary_of_opportunity", e.target.value)}

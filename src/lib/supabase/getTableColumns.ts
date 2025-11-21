@@ -125,7 +125,7 @@ export const OPPORTUNITIES_RAW_COLUMNS: TableColumn[] = [
   { name: 'lg_focus_area', type: 'text', nullable: true, displayName: 'LG Focus Area' },
   { name: 'funds', type: 'text', nullable: true, displayName: 'Funds' },
   { name: 'deal_name', type: 'text', nullable: true, displayName: 'Deal Name' },
-  { name: 'summary_of_opportunity', type: 'text', nullable: true, displayName: 'Description' },
+  { name: 'summary_of_opportunity', type: 'text', nullable: true, displayName: 'Summary of Opportunity' },
   { name: 'next_steps', type: 'text', nullable: true, displayName: 'Next Steps' },
   { name: 'headquarters', type: 'text', nullable: true, displayName: 'HQ' },
   { name: 'platform_add_on', type: 'text', nullable: true, displayName: 'Platform / Add-On' },
