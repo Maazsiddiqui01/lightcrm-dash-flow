@@ -475,6 +475,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
             <p className="text-center text-sm text-muted-foreground">Saving changes...</p>
           </div>
         ) : contactData ? (
+          <>
           <Tabs defaultValue="overview" className="w-full">
             <TabsList className="grid w-full grid-cols-7 mb-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -1423,6 +1424,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
               next_steps: "Next Steps",
             }}
           />
+          </>
         ) : !loading ? (
           <div className="flex items-center justify-center py-8">
             <p className="text-muted-foreground">Contact not found</p>
