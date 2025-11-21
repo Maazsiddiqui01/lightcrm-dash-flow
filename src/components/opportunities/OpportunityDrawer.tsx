@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -407,396 +408,9 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
           </div>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
-          {/* Attachments Section - Moved to Top */}
-          {opportunity && (
-            <>
-              <OpportunityAttachmentsSection opportunityId={opportunity.id} />
-              <Separator />
-            </>
-          )}
-
-          {/* Quick Actions */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              {editedFields.status && (
-                <Badge className={getStatusColor(editedFields.status)}>
-                  {editedFields.status}
-                </Badge>
-              )}
-              {editedFields.tier && (
-                <Badge className={getTierColor(editedFields.tier)}>
-                  {editedFields.tier}
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setHistoryDialogOpen(true)}
-              >
-                <History className="h-4 w-4 mr-2" />
-                View Full History
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
-                onClick={async () => {
-                  try {
-                    toast({ 
-                      title: 'AI is drafting your email…',
-                      description: 'This may take a moment'
-                    });
-                    await sendOpportunityEmail(opportunity.id);
-                    toast({ 
-                      title: 'Draft requested', 
-                      description: 'Check your inbox shortly.' 
-                    });
-                  } catch (error: any) {
-                    console.error('Send email error:', error);
-                    toast({
-                      title: 'Failed to request draft',
-                      description: error?.message ?? 'Please try again.',
-                      variant: 'destructive',
-                    });
-                  }
-                }}
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                Send Email
-              </Button>
-              <Button onClick={handleSave} disabled={isUpdating}>
-                <Save className="h-4 w-4 mr-2" />
-                {isUpdating ? "Saving..." : "Save Changes"}
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={() => setDeleteConfirmOpen(true)}
-                disabled={isDeleting}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            </div>
-          </div>
-
-          {/* Deal Information */}
-          <div className="space-y-4">
-            {/* LG Focus Area - Multi-select */}
-            <FocusAreaSelect
-              value={selectedFocusAreas}
-              onChange={handleFocusAreaChange}
-              disabled={isLoading}
-              label="LG Focus Area"
-              sectorId={currentSector ? sectorsQuery.data?.find(s => s.label === currentSector)?.meta?.id : undefined}
-            />
-
-            {/* Consolidated Focus Areas (Read-only) */}
-            {selectedFocusAreas.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm">LG Focus Area (Consolidated)</Label>
-                <p className="text-sm text-muted-foreground p-2 bg-muted rounded">
-                  {selectedFocusAreas.join(', ')}
-                </p>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Sector - Single-select dropdown */}
-              <SingleSelectDropdown
-                label="Sector"
-                options={(sectorsQuery.data || []).map(s => s.value)}
-                value={editedFields.sector || ""}
-                onChange={(value) => handleFieldChange("sector", value)}
-                placeholder="Select sector"
-                disabled={isLoading}
-              />
-
-              {/* Status - Single-select dropdown with predefined options */}
-              <SingleSelectDropdown
-                label="Status"
-                options={['Active','Pass','Likely Pass','Longer-Term Opportunity']}
-                value={editedFields.status || ""}
-                onChange={(value) => handleFieldChange("status", value)}
-                placeholder="Select status"
-                allowCustom
-                onAddCustom={(value) => setCustomStatusOptions(prev => [...prev, value])}
-                disabled={isLoading}
-              />
-
-              {/* Tier with Display Labels */}
-              <SingleSelectDropdown
-                label="Tier"
-                options={tierDisplayOptions}
-                value={getTierDisplayValue(editedFields.tier)}
-                onChange={(displayValue) => {
-                  const dbValue = getTierDatabaseValue(displayValue);
-                  handleFieldChange("tier", dbValue);
-                }}
-                placeholder="Select tier"
-                disabled={isLoading}
-              />
-
-              {/* Platform Add-On with Display Labels */}
-              <SingleSelectDropdown
-                label="Platform/Add-on"
-                options={platformAddonDisplayOptions}
-                value={getPlatformAddonDisplayValue(editedFields.platform_add_on)}
-                onChange={(displayValue) => {
-                  const dbValue = getPlatformAddonDatabaseValue(displayValue);
-                  handleFieldChange("platform_add_on", dbValue);
-                }}
-                placeholder="Select platform/add-on"
-                disabled={isLoading}
-              />
-
-              {/* Process Timeline */}
-              <SingleSelectDropdown
-                label="Process Timeline"
-                options={['1-90 days', '91-180 days', '181-270 days', '271-365 days', '365+ days']}
-                value={editedFields.process_timeline || ""}
-                onChange={(value) => handleFieldChange("process_timeline", value)}
-                placeholder="Select process timeline"
-                disabled={isLoading}
-              />
-
-              {/* Date of Origination */}
-              <QuarterYearDropdown
-                label="Date of Origination"
-                value={editedFields.date_of_origination || opportunity.date_of_origination || ""}
-                onChange={(value) => handleFieldChange("date_of_origination", value)}
-                placeholder="Select quarter and year"
-                disabled={isLoading}
-              />
-
-              {/* Funds */}
-              <SingleSelectDropdown
-                label="Funds"
-                options={['LG Fund VI']}
-                value={editedFields.funds || ""}
-                onChange={(value) => handleFieldChange("funds", value)}
-                placeholder="Select funds"
-                disabled={isLoading}
-              />
-
-              {/* Acquisition Date */}
-              <div className="space-y-2">
-                <Label>Acquisition Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !editedFields.acquisition_date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {editedFields.acquisition_date 
-                        ? format(new Date(editedFields.acquisition_date), "MMM yyyy")
-                        : "Select acquisition date"
-                      }
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={editedFields.acquisition_date ? new Date(editedFields.acquisition_date) : undefined}
-                      onSelect={(date) => {
-                        if (date) {
-                          // Set to first day of the month
-                          const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-                          handleFieldChange("acquisition_date", firstDay.toISOString().split('T')[0]);
-                        } else {
-                          handleFieldChange("acquisition_date", null);
-                        }
-                      }}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-            </div>
-          </div>
-
-          {/* Priority Checkbox */}
-          <div className="flex items-center space-x-2 pt-2">
-            <Checkbox
-              id="priority"
-              checked={editedFields.priority === true}
-              onCheckedChange={(checked) => 
-                handleFieldChange('priority', checked === true)
-              }
-            />
-            <Label 
-              htmlFor="priority" 
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Priority
-            </Label>
-          </div>
-        </div>
-
-        <Separator />
-
-          {/* Team Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">LG Leads</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* LG Lead 1 */}
-              <SingleSelectDropdown
-                label="LG Lead 1"
-                options={lgLeadOptions}
-                value={editedFields.investment_professional_point_person_1 || ""}
-                onChange={(value) => handleFieldChange("investment_professional_point_person_1", value)}
-                placeholder="Select LG lead 1"
-                disabled={isLoading}
-              />
-
-              {/* LG Lead 2 */}
-              <SingleSelectDropdown
-                label="LG Lead 2"
-                options={lgLeadOptions}
-                value={editedFields.investment_professional_point_person_2 || ""}
-                onChange={(value) => handleFieldChange("investment_professional_point_person_2", value)}
-                placeholder="Select LG lead 2"
-                disabled={isLoading}
-              />
-
-              {/* LG Lead 3 */}
-              <SingleSelectDropdown
-                label="LG Lead 3"
-                options={lgLeadOptions}
-                value={editedFields.investment_professional_point_person_3 || ""}
-                onChange={(value) => handleFieldChange("investment_professional_point_person_3", value)}
-                placeholder="Select LG lead 3"
-                disabled={isLoading}
-              />
-
-              {/* LG Lead 4 */}
-              <SingleSelectDropdown
-                label="LG Lead 4"
-                options={lgLeadOptions}
-                value={editedFields.investment_professional_point_person_4 || ""}
-                onChange={(value) => handleFieldChange("investment_professional_point_person_4", value)}
-                placeholder="Select LG lead 4"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Deal Source Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Deal Source</h3>
-            
-            <div className="grid grid-cols-1 gap-4">
-              <SingleSelectDropdown
-                label="Deal Source Company"
-                options={dealSourceCompanyOptions}
-                value={editedFields.deal_source_company || ""}
-                onChange={(value) => handleFieldChange("deal_source_company", value)}
-                placeholder="Search or add company..."
-                allowCustom
-                onAddCustom={(value) => handleFieldChange("deal_source_company", value)}
-                disabled={isUpdating}
-              />
-
-              <ContactPickerWithAddNew
-                label="Deal Source Individual #1"
-                selectedContact={selectedSourceContact1}
-                onContactSelect={handleSourceContact1Select}
-                onAddNewContact={() => handleAddNewContact('contact1')}
-              />
-
-              <ContactPickerWithAddNew
-                label="Deal Source Individual #2"
-                selectedContact={selectedSourceContact2}
-                onContactSelect={handleSourceContact2Select}
-                onAddNewContact={() => handleAddNewContact('contact2')}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Summary */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Description</h3>
-            <Textarea
-              value={editedFields.summary_of_opportunity || ""}
-              onChange={(e) => handleFieldChange("summary_of_opportunity", e.target.value)}
-              placeholder="Enter opportunity summary"
-              className="min-h-[120px] resize-none"
-            />
-          </div>
-
-          <Separator />
-
-          {/* Next Steps - Interactive with Timeline */}
-          <OpportunityNotesSection
-            title="Next Steps"
-            field="next_steps"
-            currentValue={currentNotes?.next_steps || null}
-            currentDueDate={currentNotes?.next_steps_due_date || null}
-            timeline={timeline}
-            onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
-            onDelete={deleteNote}
-            isSaving={isSavingNextSteps}
-            isDeleting={isDeletingNote}
-            isLoadingCurrent={isLoadingCurrent}
-            isLoadingTimeline={isLoadingTimeline}
-          />
-
-          <Separator />
-
-          {/* Notes - Interactive with Timeline */}
-          <OpportunityNotesSection
-            title="Notes"
-            field="most_recent_notes"
-            currentValue={currentNotes?.most_recent_notes || null}
-            timeline={timeline}
-            onSave={(content) => saveMostRecentNotes(content)}
-            onDelete={deleteNote}
-            isSaving={isSavingNotes}
-            isDeleting={isDeletingNote}
-            isLoadingCurrent={isLoadingCurrent}
-            isLoadingTimeline={isLoadingTimeline}
-          />
-
-          <Separator />
-
-          {/* URL */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">URL</h3>
-            <div className="flex space-x-2">
-              <Input
-                value={editedFields.url || ""}
-                onChange={(e) => handleFieldChange("url", e.target.value)}
-                placeholder="Enter URL"
-                className="flex-1"
-              />
-              {editedFields.url && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => window.open(editedFields.url, "_blank")}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Action Buttons - Bottom */}
-          <div className="flex justify-between pt-4">
+        {/* Sticky Action Bar */}
+        <div className="sticky top-0 z-10 bg-background border-b py-3 -mx-6 px-6 mb-4">
+          <div className="flex justify-between items-center">
             <div className="flex space-x-2">
               <Button 
                 variant="destructive" 
@@ -833,12 +447,12 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                       title: 'Draft requested', 
                       description: 'Check your inbox shortly.' 
                     });
-                  } catch (error) {
-                    console.error("Failed to send email:", error);
+                  } catch (error: any) {
+                    console.error('Send email error:', error);
                     toast({
-                      title: "Error",
-                      description: "Failed to draft email. Please try again.",
-                      variant: "destructive"
+                      title: 'Failed to request draft',
+                      description: error?.message ?? 'Please try again.',
+                      variant: 'destructive',
                     });
                   }
                 }}
@@ -852,8 +466,346 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               </Button>
             </div>
           </div>
-
         </div>
+
+        <>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="source">Source</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="flex items-center space-x-2">
+              {editedFields.status && (
+                <Badge className={getStatusColor(editedFields.status)}>
+                  {editedFields.status}
+                </Badge>
+              )}
+              {editedFields.tier && (
+                <Badge className={getTierColor(editedFields.tier)}>
+                  {editedFields.tier}
+                </Badge>
+              )}
+              {editedFields.priority && (
+                <Badge variant="secondary">Priority</Badge>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Key Information</h3>
+              
+              {/* LG Focus Area - Multi-select */}
+              <FocusAreaSelect
+                value={selectedFocusAreas}
+                onChange={handleFocusAreaChange}
+                disabled={isLoading}
+                label="LG Focus Area"
+                sectorId={currentSector ? sectorsQuery.data?.find(s => s.label === currentSector)?.meta?.id : undefined}
+              />
+
+              {/* Consolidated Focus Areas (Read-only) */}
+              {selectedFocusAreas.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm">LG Focus Area (Consolidated)</Label>
+                  <p className="text-sm text-muted-foreground p-2 bg-muted rounded">
+                    {selectedFocusAreas.join(', ')}
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <SingleSelectDropdown
+                  label="Sector"
+                  options={(sectorsQuery.data || []).map(s => s.value)}
+                  value={editedFields.sector || ""}
+                  onChange={(value) => handleFieldChange("sector", value)}
+                  placeholder="Select sector"
+                  disabled={isLoading}
+                />
+
+                <SingleSelectDropdown
+                  label="Status"
+                  options={['Active','Pass','Likely Pass','Longer-Term Opportunity']}
+                  value={editedFields.status || ""}
+                  onChange={(value) => handleFieldChange("status", value)}
+                  placeholder="Select status"
+                  allowCustom
+                  onAddCustom={(value) => setCustomStatusOptions(prev => [...prev, value])}
+                  disabled={isLoading}
+                />
+
+                <SingleSelectDropdown
+                  label="Tier"
+                  options={tierDisplayOptions}
+                  value={getTierDisplayValue(editedFields.tier)}
+                  onChange={(displayValue) => {
+                    const dbValue = getTierDatabaseValue(displayValue);
+                    handleFieldChange("tier", dbValue);
+                  }}
+                  placeholder="Select tier"
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Priority Checkbox */}
+              <div className="flex items-center space-x-2 pt-2">
+                <Checkbox
+                  id="priority"
+                  checked={editedFields.priority === true}
+                  onCheckedChange={(checked) => 
+                    handleFieldChange('priority', checked === true)
+                  }
+                />
+                <Label 
+                  htmlFor="priority" 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Priority
+                </Label>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Description</h3>
+              <Textarea
+                value={editedFields.summary_of_opportunity || ""}
+                onChange={(e) => handleFieldChange("summary_of_opportunity", e.target.value)}
+                placeholder="Enter opportunity summary"
+                className="min-h-[120px] resize-none"
+              />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">LG Leads</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <SingleSelectDropdown
+                  label="LG Lead 1"
+                  options={lgLeadOptions}
+                  value={editedFields.investment_professional_point_person_1 || ""}
+                  onChange={(value) => handleFieldChange("investment_professional_point_person_1", value)}
+                  placeholder="Select LG lead 1"
+                  disabled={isLoading}
+                />
+
+                <SingleSelectDropdown
+                  label="LG Lead 2"
+                  options={lgLeadOptions}
+                  value={editedFields.investment_professional_point_person_2 || ""}
+                  onChange={(value) => handleFieldChange("investment_professional_point_person_2", value)}
+                  placeholder="Select LG lead 2"
+                  disabled={isLoading}
+                />
+
+                <SingleSelectDropdown
+                  label="LG Lead 3"
+                  options={lgLeadOptions}
+                  value={editedFields.investment_professional_point_person_3 || ""}
+                  onChange={(value) => handleFieldChange("investment_professional_point_person_3", value)}
+                  placeholder="Select LG lead 3"
+                  disabled={isLoading}
+                />
+
+                <SingleSelectDropdown
+                  label="LG Lead 4"
+                  options={lgLeadOptions}
+                  value={editedFields.investment_professional_point_person_4 || ""}
+                  onChange={(value) => handleFieldChange("investment_professional_point_person_4", value)}
+                  placeholder="Select LG lead 4"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">URL</h3>
+              <div className="flex space-x-2">
+                <Input
+                  value={editedFields.url || ""}
+                  onChange={(e) => handleFieldChange("url", e.target.value)}
+                  placeholder="Enter URL"
+                  className="flex-1"
+                />
+                {editedFields.url && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => window.open(editedFields.url, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Details Tab */}
+          <TabsContent value="details" className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Deal Details</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <SingleSelectDropdown
+                  label="Platform/Add-on"
+                  options={platformAddonDisplayOptions}
+                  value={getPlatformAddonDisplayValue(editedFields.platform_add_on)}
+                  onChange={(displayValue) => {
+                    const dbValue = getPlatformAddonDatabaseValue(displayValue);
+                    handleFieldChange("platform_add_on", dbValue);
+                  }}
+                  placeholder="Select platform/add-on"
+                  disabled={isLoading}
+                />
+
+                <SingleSelectDropdown
+                  label="Process Timeline"
+                  options={['1-90 days', '91-180 days', '181-270 days', '271-365 days', '365+ days']}
+                  value={editedFields.process_timeline || ""}
+                  onChange={(value) => handleFieldChange("process_timeline", value)}
+                  placeholder="Select process timeline"
+                  disabled={isLoading}
+                />
+
+                <QuarterYearDropdown
+                  label="Date of Origination"
+                  value={editedFields.date_of_origination || opportunity.date_of_origination || ""}
+                  onChange={(value) => handleFieldChange("date_of_origination", value)}
+                  placeholder="Select quarter and year"
+                  disabled={isLoading}
+                />
+
+                <SingleSelectDropdown
+                  label="Funds"
+                  options={['LG Fund VI']}
+                  value={editedFields.funds || ""}
+                  onChange={(value) => handleFieldChange("funds", value)}
+                  placeholder="Select funds"
+                  disabled={isLoading}
+                />
+
+                <div className="space-y-2">
+                  <Label>Acquisition Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !editedFields.acquisition_date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editedFields.acquisition_date 
+                          ? format(new Date(editedFields.acquisition_date), "MMM yyyy")
+                          : "Select acquisition date"
+                        }
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={editedFields.acquisition_date ? new Date(editedFields.acquisition_date) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+                            handleFieldChange("acquisition_date", firstDay.toISOString().split('T')[0]);
+                          } else {
+                            handleFieldChange("acquisition_date", null);
+                          }
+                        }}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Activity Tab */}
+          <TabsContent value="activity" className="space-y-6">
+            <OpportunityNotesSection
+              title="Next Steps"
+              field="next_steps"
+              currentValue={currentNotes?.next_steps || null}
+              currentDueDate={currentNotes?.next_steps_due_date || null}
+              timeline={timeline}
+              onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
+              onDelete={deleteNote}
+              isSaving={isSavingNextSteps}
+              isDeleting={isDeletingNote}
+              isLoadingCurrent={isLoadingCurrent}
+              isLoadingTimeline={isLoadingTimeline}
+            />
+
+            <Separator />
+
+            <OpportunityNotesSection
+              title="Notes"
+              field="most_recent_notes"
+              currentValue={currentNotes?.most_recent_notes || null}
+              timeline={timeline}
+              onSave={(content) => saveMostRecentNotes(content)}
+              onDelete={deleteNote}
+              isSaving={isSavingNotes}
+              isDeleting={isDeletingNote}
+              isLoadingCurrent={isLoadingCurrent}
+              isLoadingTimeline={isLoadingTimeline}
+            />
+          </TabsContent>
+
+          {/* Source Tab */}
+          <TabsContent value="source" className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Deal Source</h3>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <SingleSelectDropdown
+                  label="Deal Source Company"
+                  options={dealSourceCompanyOptions}
+                  value={editedFields.deal_source_company || ""}
+                  onChange={(value) => handleFieldChange("deal_source_company", value)}
+                  placeholder="Search or add company..."
+                  allowCustom
+                  onAddCustom={(value) => handleFieldChange("deal_source_company", value)}
+                  disabled={isUpdating}
+                />
+
+                <ContactPickerWithAddNew
+                  label="Deal Source Individual #1"
+                  selectedContact={selectedSourceContact1}
+                  onContactSelect={handleSourceContact1Select}
+                  onAddNewContact={() => handleAddNewContact('contact1')}
+                />
+
+                <ContactPickerWithAddNew
+                  label="Deal Source Individual #2"
+                  selectedContact={selectedSourceContact2}
+                  onContactSelect={handleSourceContact2Select}
+                  onAddNewContact={() => handleAddNewContact('contact2')}
+                />
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Files Tab */}
+          <TabsContent value="files" className="space-y-6">
+            {opportunity && (
+              <OpportunityAttachmentsSection opportunityId={opportunity.id} />
+            )}
+          </TabsContent>
+        </Tabs>
 
         <AddContactDialog
           open={isAddContactModalOpen}
@@ -886,6 +838,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             most_recent_notes: "Notes",
           }}
         />
+        </>
       </SheetContent>
     </Sheet>
   );
