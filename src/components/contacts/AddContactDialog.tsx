@@ -34,6 +34,7 @@ interface IndividualContactForm {
   title: string;
   areas_of_specialization: string;
   notes: string;
+  next_steps: string;
   delta_type: string;
   delta: string;
   lg_sector: string;
@@ -55,6 +56,7 @@ const emptyContactForm: IndividualContactForm = {
   title: "",
   areas_of_specialization: "",
   notes: "",
+  next_steps: "",
   delta_type: "",
   delta: "",
   lg_sector: "",
@@ -225,6 +227,7 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
           title: opt(contact.title),
           areas_of_specialization: opt(contact.areas_of_specialization),
           notes: opt(contact.notes),
+          next_steps: opt(contact.next_steps),
           delta_type: opt(contact.delta_type),
           delta: numOrNull(contact.delta),
           lg_sector: opt(contact.lg_sector),
@@ -666,6 +669,17 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                         value={contact.areas_of_specialization}
                         onChange={(e) => updateContact(index, "areas_of_specialization", e.target.value)}
                         placeholder="Enter specializations (comma-separated)"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`next_steps_${index}`}>Next Steps</Label>
+                      <Textarea
+                        id={`next_steps_${index}`}
+                        value={contact.next_steps}
+                        onChange={(e) => updateContact(index, "next_steps", e.target.value)}
+                        placeholder="Enter next steps..."
+                        className="min-h-[60px] resize-none"
                       />
                     </div>
 
