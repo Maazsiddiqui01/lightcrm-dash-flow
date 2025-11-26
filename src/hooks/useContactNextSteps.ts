@@ -36,9 +36,10 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
         .from('contacts_raw')
         .select('id, next_steps, next_steps_due_date, updated_at')
         .eq('id', contactId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) return null;
       return data as ContactCurrentNextSteps;
     },
     enabled: !!contactId,
@@ -132,7 +133,7 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
         .from('contacts_raw')
         .select('email_address, organization, full_name')
         .eq('id', contactId)
-        .single();
+        .maybeSingle();
       
       // Fetch opportunities for this contact
       let opportunities: string[] = [];

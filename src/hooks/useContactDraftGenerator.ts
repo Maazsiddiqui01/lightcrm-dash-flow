@@ -49,7 +49,7 @@ export function useContactDraftGenerator() {
         .from('v_contact_email_composer')
         .select('*')
         .eq('contact_id', contactId)
-        .single();
+        .maybeSingle();
 
       if (contactError || !contact) {
         throw new Error('Contact not found or has insufficient data');

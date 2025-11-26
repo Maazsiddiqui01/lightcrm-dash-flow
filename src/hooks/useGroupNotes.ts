@@ -29,9 +29,10 @@ export const useGroupNotes = (groupId: string | undefined) => {
         .from('groups')
         .select('notes, updated_at')
         .eq('id', groupId)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
+      if (!data) return null;
       return data as GroupCurrentNotes;
     },
     enabled: !!groupId,
@@ -48,9 +49,10 @@ export const useGroupNotes = (groupId: string | undefined) => {
         .from('groups')
         .select('name')
         .eq('id', groupId)
-        .single();
+        .maybeSingle();
       
       if (groupError) throw groupError;
+      if (!groupData) throw new Error('Group not found');
       
       const { data, error } = await supabase
         .from('group_notes_timeline')

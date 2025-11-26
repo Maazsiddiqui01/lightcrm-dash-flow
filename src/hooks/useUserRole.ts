@@ -24,7 +24,7 @@ export function useUserRole() {
           .eq('user_id', user.id)
           .order('role')
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (!error && data) {
           setRole(data.role as AppRole);

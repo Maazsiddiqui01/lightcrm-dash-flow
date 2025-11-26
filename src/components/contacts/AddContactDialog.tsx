@@ -199,9 +199,10 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
             notes: groupNotes || null,
           })
           .select()
-          .single();
+          .maybeSingle();
 
         if (groupError) throw groupError;
+        if (!groupData) throw new Error('Failed to create group');
         newGroupId = groupData.id;
       }
 

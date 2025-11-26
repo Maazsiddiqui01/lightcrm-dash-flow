@@ -39,7 +39,7 @@ export async function pickSignature(tone: 'formal' | 'hybrid' | 'casual'): Promi
     .eq('tone', tone)
     .eq('is_global', true)
     .eq('active', true)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     console.warn('Failed to fetch signature, using fallback:', error);

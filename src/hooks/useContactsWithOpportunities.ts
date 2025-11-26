@@ -346,7 +346,9 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
           }
           
           // Use fallback data with empty opportunities and ensure required fields exist
-          const fallbackContacts: ContactWithOpportunities[] = (fallbackData || []).map((contact: any) => ({
+          const fallbackContacts: ContactWithOpportunities[] = (fallbackData || [])
+            .filter(contact => contact && contact.id) // Filter out null/undefined contacts
+            .map((contact: any) => ({
             id: contact.id,
             full_name: contact.full_name ?? null,
             first_name: contact.first_name ?? null,
@@ -464,13 +466,15 @@ export function useContactsWithOpportunities(filters: ContactFilters = {}) {
       console.log(`[Contacts#${reqId}] Opportunities map built:`, oppsMap.size, 'contacts have opportunities');
 
       // Attach opportunities to each contact with proper null handling for group fields
-      const contactsWithOpportunities = contactsData?.map(contact => ({
-        ...contact,
-        group_email_role: (contact as any).group_email_role ?? null,
-        group_contact: (contact as any).group_contact && (contact as any).group_contact.trim() !== '' ? (contact as any).group_contact : null,
-        most_recent_group_contact: (contact as any).most_recent_group_contact ?? null,
-        opportunities: oppsMap.get(contact.id) || ''
-      })) || [];
+      const contactsWithOpportunities = contactsData
+        ?.filter(contact => contact && contact.id) // Filter out null/undefined contacts
+        ?.map(contact => ({
+          ...contact,
+          group_email_role: (contact as any).group_email_role ?? null,
+          group_contact: (contact as any).group_contact && (contact as any).group_contact.trim() !== '' ? (contact as any).group_contact : null,
+          most_recent_group_contact: (contact as any).most_recent_group_contact ?? null,
+          opportunities: oppsMap.get(contact.id) || ''
+        })) || [];
 
       // Check if this request is still the latest before updating state
       if (reqId !== requestIdRef.current) {

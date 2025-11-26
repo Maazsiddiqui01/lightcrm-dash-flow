@@ -202,9 +202,10 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         .from('opportunities_raw')
         .insert([payload])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('Failed to create opportunity');
 
       toast({
         title: "Success",
