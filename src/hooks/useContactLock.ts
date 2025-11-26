@@ -22,9 +22,10 @@ export function useContactLock(contactId: string | null) {
         .from('contacts_raw')
         .select('locked_by, locked_until, lock_reason')
         .eq('id', contactId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) return null;
 
       return {
         locked: data.locked_by !== null && new Date(data.locked_until) > new Date(),

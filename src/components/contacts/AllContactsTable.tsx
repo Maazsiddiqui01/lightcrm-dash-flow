@@ -52,9 +52,14 @@ export function AllContactsTable() {
           .from('contacts_raw')
           .select('*')
           .eq('id', selectedContactId)
-          .single();
+          .maybeSingle();
         
         if (error) throw error;
+        if (!data) {
+          toast.error('Contact not found');
+          setSelectedContactId(null);
+          return;
+        }
         setSelectedContact(data);
       } catch (err) {
         console.error('Error fetching contact:', err);

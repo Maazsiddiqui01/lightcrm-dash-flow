@@ -74,9 +74,10 @@ export function useKpiData() {
       const { data, error } = await supabase
         .from('kpi_filter_values')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) return null;
       return data;
     } catch (error) {
       console.error('Error fetching filter values:', error);

@@ -88,7 +88,7 @@ interface OpportunityDrawerProps {
   opportunity: Opportunity | null;
   open: boolean;
   onClose: () => void;
-  onOpportunityUpdated: () => void;
+  onOpportunityUpdated: () => void | Promise<void>;
 }
 
 export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpdated }: OpportunityDrawerProps) {
@@ -289,7 +289,9 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         description: "Opportunity updated successfully",
       });
 
-      onOpportunityUpdated();
+      // Trigger refresh and wait before closing
+      await onOpportunityUpdated();
+      onClose();
     } catch (error) {
       console.error("Error updating opportunity:", error);
       toast({
@@ -322,8 +324,8 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
       // Close drawer first
       onClose();
       
-      // Then trigger refresh
-      onOpportunityUpdated();
+      // Then trigger async refresh
+      await onOpportunityUpdated();
     } catch (error) {
       console.error('Error deleting opportunity:', error);
       toast({

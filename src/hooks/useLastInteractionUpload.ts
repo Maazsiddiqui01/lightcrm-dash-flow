@@ -14,7 +14,7 @@ export function useLastInteractionUpload() {
         .select("created_at")
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data?.created_at ? new Date(data.created_at) : null;

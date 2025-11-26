@@ -35,9 +35,10 @@ export function useOpportunityNotes(opportunityId: string | undefined, opportuni
         .from('opportunities_raw')
         .select('id, next_steps, next_steps_due_date, most_recent_notes, updated_at')
         .eq('id', opportunityId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) return null;
       return data as OpportunityCurrentNotes;
     },
     enabled: !!opportunityId,

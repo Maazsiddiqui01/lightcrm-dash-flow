@@ -34,9 +34,10 @@ export function useValidateGroupMembership() {
         .from('groups')
         .select('id, name, max_lag_days')
         .eq('id', newGroupId)
-        .single();
+        .maybeSingle();
       
       if (newGroupError) throw newGroupError;
+      if (!newGroup) throw new Error('Group not found');
       
       // Check for conflicts in max_lag_days
       if (existingMemberships && existingMemberships.length > 0) {

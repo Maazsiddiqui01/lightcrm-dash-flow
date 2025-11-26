@@ -120,7 +120,7 @@ interface ContactDrawerProps {
   contact: ContactApp | null;
   open: boolean;
   onClose: () => void;
-  onContactUpdated: () => void;
+  onContactUpdated: () => void | Promise<void>;
 }
 
 export function ContactDrawer({ contact, open, onClose, onContactUpdated }: ContactDrawerProps) {
@@ -239,19 +239,24 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
         .from("contacts_raw")
         .select("*")
         .eq("id", contactId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error({ where: 'ContactDrawer', contactId, error });
-        if (error.code === 'PGRST116') {
-          toast({
-            title: "Contact not found",
-            description: "This contact record could not be found.",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
+        toast({
+          title: "Error loading contact",
+          description: "Failed to load contact details.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!data) {
+        toast({
+          title: "Contact not found",
+          description: "This contact record could not be found.",
+          variant: "destructive",
+        });
         return;
       }
       
@@ -321,7 +326,8 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
         description: "Contact updated successfully",
       });
 
-      onContactUpdated();
+      // Trigger refresh and wait for it to complete before closing
+      await onContactUpdated();
       onClose();
     } catch (error) {
       console.error({ where: 'ContactDrawer', contactId: contactData?.id, error });

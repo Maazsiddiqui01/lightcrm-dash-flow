@@ -15,7 +15,7 @@ export function useContactTopOpps(contactId: string | null) {
           .from('contacts_raw')
           .select('full_name')
           .eq('id', contactId)
-          .single();
+          .maybeSingle();
         
         if (!contact?.full_name) return [];
         

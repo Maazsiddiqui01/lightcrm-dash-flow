@@ -31,9 +31,10 @@ export const useContactNotes = (contactId: string | undefined) => {
         .from('contacts_raw')
         .select('notes, updated_at')
         .eq('id', contactId)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
+      if (!data) return null;
       return data as ContactCurrentNotes;
     },
     enabled: !!contactId,
