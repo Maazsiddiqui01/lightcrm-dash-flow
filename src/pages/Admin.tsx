@@ -1,4 +1,5 @@
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +16,8 @@ export function Admin() {
   const { duplicates } = useContactDuplicates();
   
   return (
-    <ResponsiveContainer>
+    <PageErrorBoundary pageName="Admin">
+      <ResponsiveContainer>
       <PageHeader
         title="Admin Panel"
         description="Manage users, roles, and system settings"
@@ -80,5 +82,6 @@ export function Admin() {
         </Card>
       </div>
     </ResponsiveContainer>
+    </PageErrorBoundary>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { AskAI as AskAIComponent } from "@/components/ai/AskAI";
 import DataMaintenance from "@/pages/DataMaintenance";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +7,8 @@ import { Bot, Database } from "lucide-react";
 
 export function AskAI() {
   return (
-    <section className="h-full flex flex-col overflow-hidden">
+    <PageErrorBoundary pageName="Ask AI">
+      <section className="h-full flex flex-col overflow-hidden">
       <Tabs defaultValue="ai" className="h-full flex flex-col">
         <div className="p-4 pb-0">
           <TabsList className="grid w-full grid-cols-2">
@@ -43,5 +45,6 @@ export function AskAI() {
         </TabsContent>
       </Tabs>
     </section>
+    </PageErrorBoundary>
   );
 }

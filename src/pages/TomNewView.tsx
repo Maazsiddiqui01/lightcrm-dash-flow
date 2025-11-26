@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -55,6 +56,14 @@ interface TomNewViewRow {
 }
 
 export function TomNewView() {
+  return (
+    <PageErrorBoundary pageName="Tom New View">
+      <TomNewViewContent />
+    </PageErrorBoundary>
+  );
+}
+
+function TomNewViewContent() {
   const { filters, updateFilters, clearFilters } = useUrlFilters();
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');

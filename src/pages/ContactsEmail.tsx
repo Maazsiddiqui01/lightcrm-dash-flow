@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 import { TemplatesSection } from "@/components/email-builder/TemplatesSection";
 import { DraftSection } from "@/components/email-builder/DraftSection";
@@ -6,7 +7,8 @@ import { Mail } from "lucide-react";
 
 export function ContactsEmail() {
   return (
-    <div className="min-h-0 flex-1">
+    <PageErrorBoundary pageName="Contacts Email">
+      <div className="min-h-0 flex-1">
       <ResponsiveContainer className="flex flex-col gap-6 py-6">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -49,5 +51,6 @@ export function ContactsEmail() {
         </div>
       </ResponsiveContainer>
     </div>
+    </PageErrorBoundary>
   );
 }

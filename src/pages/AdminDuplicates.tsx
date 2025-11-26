@@ -1,4 +1,5 @@
 import { ResponsiveContainer } from '@/components/layout/ResponsiveContainer';
+import { PageErrorBoundary } from '@/components/shared/PageErrorBoundary';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -43,18 +44,21 @@ export function AdminDuplicates() {
 
   if (isLoading) {
     return (
-      <ResponsiveContainer>
+      <PageErrorBoundary pageName="Admin Duplicates">
+        <ResponsiveContainer>
         <PageHeader
           title="Duplicate Contacts"
           description="Manage duplicate contacts across your organization"
         />
         <div className="p-6">Loading...</div>
       </ResponsiveContainer>
+      </PageErrorBoundary>
     );
   }
 
   return (
-    <ResponsiveContainer>
+    <PageErrorBoundary pageName="Admin Duplicates">
+      <ResponsiveContainer>
       <PageHeader
         title="Duplicate Contacts"
         description="Manage duplicate contacts across your organization"
@@ -172,7 +176,8 @@ export function AdminDuplicates() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
-    </ResponsiveContainer>
+        </Dialog>
+      </ResponsiveContainer>
+    </PageErrorBoundary>
   );
 }
