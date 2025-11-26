@@ -4564,6 +4564,7 @@ export type Database = {
           ownership: string | null
           ownership_type: string | null
           platform_add_on: string | null
+          priority: boolean | null
           "Process Timeline": string | null
           process_timeline: string | null
           revenue: number | null
@@ -4613,6 +4614,7 @@ export type Database = {
           ownership?: string | null
           ownership_type?: string | null
           platform_add_on?: string | null
+          priority?: boolean | null
           "Process Timeline"?: string | null
           process_timeline?: string | null
           revenue?: number | null
@@ -4662,6 +4664,7 @@ export type Database = {
           ownership?: string | null
           ownership_type?: string | null
           platform_add_on?: string | null
+          priority?: boolean | null
           "Process Timeline"?: string | null
           process_timeline?: string | null
           revenue?: number | null
