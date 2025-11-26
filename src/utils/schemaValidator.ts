@@ -141,6 +141,7 @@ export async function detectOverloadedRpcFunctions(): Promise<void> {
 export async function runSchemaValidation(): Promise<void> {
   console.group('🔍 Schema Validation');
   
+  // Configuration validation
   const configValidation = validateEditableColumnsConfig();
   
   console.log('Configuration Validation:', {
@@ -166,4 +167,21 @@ export async function runSchemaValidation(): Promise<void> {
   
   // Check for overloaded RPC functions
   await detectOverloadedRpcFunctions();
+  
+  // View-table synchronization check
+  console.group('🔍 View-Table Synchronization');
+  try {
+    const { validateViewColumnSync, formatViewSyncReport } = await import('./viewSyncValidator');
+    const viewSyncResult = await validateViewColumnSync();
+    
+    console.log(formatViewSyncReport(viewSyncResult));
+    
+    if (!viewSyncResult.valid) {
+      console.error('❌ View synchronization issues detected!');
+      console.log('💡 Run generateAllViewsSQL() from viewSqlGenerator.ts to fix');
+    }
+  } catch (err) {
+    console.error('Failed to validate view synchronization:', err);
+  }
+  console.groupEnd();
 }

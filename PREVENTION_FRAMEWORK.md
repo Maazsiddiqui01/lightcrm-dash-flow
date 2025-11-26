@@ -108,9 +108,183 @@ const { error } = await supabase.rpc('add_contact_note', {
 - ✅ `src/utils/rpcHelpers.ts` - Type-safe RPC wrappers
 - ✅ `src/utils/schemaValidator.ts` - Overloaded function detection
 
+## View-Table Column Synchronization
+
+### Problem
+When columns are added to base tables (e.g., `opportunities_raw`, `contacts_raw`), dependent database views don't automatically inherit these columns. This causes "Failed to fetch" errors when filtering or displaying data using the new columns.
+
+### Solution Framework
+
+#### 1. View Dependencies Registry (`src/utils/viewDependencies.ts`)
+Maintains a registry of:
+- Base tables and their dependent views
+- Filterable columns that MUST be in views
+- Excluded columns (computed fields that don't exist in base tables)
+
+#### 2. Automated Validation (`src/utils/viewSyncValidator.ts`)
+- Compares base table columns with view columns
+- Detects missing columns that would cause filter errors
+- Run via `runSchemaValidation()` during development
+
+#### 3. SQL Generation Helper (`src/utils/viewSqlGenerator.ts`)
+- Generates correct view definitions automatically
+- Use `generateAllViewsSQL('base_table_name')` to get SQL
+- Includes all base columns plus computed display fields
+
+### Mandatory Process: Adding a New Column
+
+#### Step 1: Add Column to Base Table
+```sql
+ALTER TABLE opportunities_raw ADD COLUMN new_column_name data_type;
+```
+
+#### Step 2: Update View Dependencies Registry
+In `src/utils/viewDependencies.ts`:
+```typescript
+export const VIEW_DEPENDENCIES = {
+  opportunities_raw: {
+    views: ['opportunities_with_display_fields'],
+    filterableColumns: [
+      // ... existing columns
+      'new_column_name', // ADD HERE
+    ],
+  },
+};
+```
+
+#### Step 3: Generate View Update SQL
+```typescript
+import { generateAllViewsSQL } from '@/utils/viewSqlGenerator';
+
+// Run in console:
+const sql = await generateAllViewsSQL('opportunities_raw');
+console.log(sql);
+```
+
+#### Step 4: Create Migration with Generated SQL
+Create a new migration file with the generated SQL:
+```sql
+-- Drop and recreate view with new column
+DROP VIEW IF EXISTS opportunities_with_display_fields;
+
+CREATE VIEW opportunities_with_display_fields AS
+SELECT 
+    id,
+    -- ... all existing columns
+    new_column_name, -- NEW COLUMN
+    -- ... computed columns
+FROM opportunities_raw o;
+```
+
+#### Step 5: Verify with Schema Validator
+```typescript
+import { runSchemaValidation } from '@/utils/schemaValidator';
+
+// Run in console:
+await runSchemaValidation();
+// Should show ✅ No issues found
+```
+
+### Quick Reference: Base Tables and Their Views
+
+| Base Table | Dependent Views | Purpose |
+|-----------|----------------|---------|
+| `opportunities_raw` | `opportunities_with_display_fields` | Adds computed display fields for next_steps and notes |
+| `contacts_raw` | `contacts_app`, `contacts_norm`, `contacts_with_display_fields` | Multiple views for different query patterns |
+
+### View Definition Patterns
+
+#### Pattern 1: Simple Column Pass-Through
+```sql
+CREATE VIEW view_name AS
+SELECT 
+    column1,
+    column2,
+    column3
+FROM base_table;
+```
+
+#### Pattern 2: With Computed Display Fields
+```sql
+CREATE VIEW view_name AS
+SELECT 
+    base_column1,
+    base_column2,
+    COALESCE(base_field, 
+        (SELECT content FROM timeline_table 
+         WHERE entity_id = t.id 
+         ORDER BY created_at DESC LIMIT 1)
+    ) AS computed_display_field
+FROM base_table t;
+```
+
+### Common Mistakes to Avoid
+
+❌ **Adding column to base table without updating views**
+```sql
+-- This will cause "Failed to fetch" errors
+ALTER TABLE opportunities_raw ADD COLUMN priority boolean;
+-- Missing: View update!
+```
+
+✅ **Correct: Update views in same migration**
+```sql
+ALTER TABLE opportunities_raw ADD COLUMN priority boolean;
+
+-- Update dependent views
+DROP VIEW IF EXISTS opportunities_with_display_fields;
+CREATE VIEW opportunities_with_display_fields AS
+SELECT 
+    -- ... all columns including:
+    priority,
+    -- ... rest of view
+FROM opportunities_raw o;
+```
+
+❌ **Hardcoding column lists in view definitions**
+```sql
+-- Brittle: Must remember to update when columns change
+CREATE VIEW my_view AS SELECT id, name, email FROM contacts_raw;
+```
+
+✅ **Use SQL generator for complete column lists**
+```typescript
+// Generates complete, correct SQL automatically
+const sql = await generateAllViewsSQL('contacts_raw');
+```
+
+### Automated Detection
+
+Run schema validation regularly during development:
+
+```typescript
+import { runSchemaValidation } from '@/utils/schemaValidator';
+
+// In browser console or during development
+await runSchemaValidation();
+```
+
+This checks:
+- Configuration drift in editable columns
+- RPC function overloads
+- **View-table column synchronization** ← NEW
+
+### Database Helper Function
+
+A SQL function exists to detect missing columns:
+
+```sql
+-- Query to find columns in base tables missing from views
+SELECT * FROM public.validate_view_columns();
+```
+
+Returns: `(view_name, missing_column, base_table)` for each issue found.
+
 ## Success Metrics
 - Zero NULL constraint violations
 - Clear, actionable error messages
 - Automated validation during development
 - All database operations use safe patterns
 - No RPC parameter ambiguity errors
+- **No view-table synchronization issues** ← NEW
+- **Automated detection of missing view columns** ← NEW

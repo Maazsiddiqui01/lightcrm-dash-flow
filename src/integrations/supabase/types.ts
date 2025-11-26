@@ -5302,6 +5302,7 @@ export type Database = {
           deal_name: string
         }[]
       }
+      get_table_columns: { Args: { p_table_name: string }; Returns: string[] }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -5560,6 +5561,14 @@ export type Database = {
       validate_column_type_change: {
         Args: { p_column: string; p_new_type: string; p_table: string }
         Returns: Json
+      }
+      validate_view_columns: {
+        Args: never
+        Returns: {
+          base_table: string
+          missing_column: string
+          view_name: string
+        }[]
       }
     }
     Enums: {
