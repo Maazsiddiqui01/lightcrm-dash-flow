@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { importCSVInteractions } from "@/utils/csvInteractionsImporter";
@@ -45,7 +46,8 @@ export default function ImportInteractions() {
   };
 
   return (
-    <div className="container mx-auto p-8">
+    <PageErrorBoundary pageName="Import Interactions">
+      <div className="container mx-auto p-8">
       <h1 className="text-2xl font-bold mb-4">Import Interactions</h1>
       
       <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
@@ -71,7 +73,8 @@ export default function ImportInteractions() {
             </span>
           </Button>
         </label>
+        </div>
       </div>
-    </div>
+    </PageErrorBoundary>
   );
 }

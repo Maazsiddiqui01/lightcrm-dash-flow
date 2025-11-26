@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { ChatHistory } from "@/components/chat/ChatHistory";
 import { ChatHeader } from "@/components/chat/ChatHeader";
@@ -261,7 +262,9 @@ function ChatContent() {
 export default function Chat() {
   return (
     <ChatThemeProvider>
-      <ChatContent />
+      <PageErrorBoundary pageName="Chat">
+        <ChatContent />
+      </PageErrorBoundary>
     </ChatThemeProvider>
   );
 }

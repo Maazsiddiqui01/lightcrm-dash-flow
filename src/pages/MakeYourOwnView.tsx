@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { SqlAgentPrompt } from "@/components/sql-agent/SqlAgentPrompt";
 import { DynamicTable } from "@/components/sql-agent/DynamicTable";
 import { ProcessingStatus } from "@/components/sql-agent/ProcessingStatus";
@@ -55,7 +56,8 @@ export function MakeYourOwnView() {
   };
 
   return (
-    <section className="h-full flex flex-col overflow-hidden">
+    <PageErrorBoundary pageName="Make Your Own View">
+      <section className="h-full flex flex-col overflow-hidden">
       {/* Page Header */}
       <div className="p-4 space-y-4">
         <div>
@@ -128,5 +130,6 @@ export function MakeYourOwnView() {
         </div>
       )}
     </section>
+    </PageErrorBoundary>
   );
 }

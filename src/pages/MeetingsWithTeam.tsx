@@ -1,4 +1,5 @@
 import React from "react";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,7 +81,8 @@ export function MeetingsWithTeam() {
   );
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <PageErrorBoundary pageName="Meetings With Team">
+      <div className="h-full flex flex-col overflow-hidden">
       <PageHeader
         title="Meetings with Team"
         description="Track time spent in 1:1 meetings with LG team members"
@@ -163,5 +165,6 @@ export function MeetingsWithTeam() {
         </Card>
       </main>
     </div>
+    </PageErrorBoundary>
   );
 }
