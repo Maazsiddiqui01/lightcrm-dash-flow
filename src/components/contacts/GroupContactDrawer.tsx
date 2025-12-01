@@ -319,14 +319,14 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
               <div>
                 {editMode ? (
                   <Select 
-                    value={editedGroupFocusArea || group.group_focus_area || ''} 
-                    onValueChange={setEditedGroupFocusArea}
+                    value={editedGroupFocusArea || group.group_focus_area || '__none__'} 
+                    onValueChange={(v) => setEditedGroupFocusArea(v === '__none__' ? '' : v)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select focus area..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="__none__">None</SelectItem>
                       {focusAreaOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -351,14 +351,14 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
               <div>
                 {editMode ? (
                   <Select 
-                    value={editedGroupSector || group.group_sector || ''} 
-                    onValueChange={setEditedGroupSector}
+                    value={editedGroupSector || group.group_sector || '__none__'} 
+                    onValueChange={(v) => setEditedGroupSector(v === '__none__' ? '' : v)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select sector..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="__none__">None</SelectItem>
                       {sectorOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
