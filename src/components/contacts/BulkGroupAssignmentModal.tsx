@@ -323,12 +323,12 @@ export function BulkGroupAssignmentModal({
 
               <div className="space-y-2">
                 <Label htmlFor="group-focus-area">Group Focus Area</Label>
-                <Select value={groupFocusArea} onValueChange={setGroupFocusArea}>
+                <Select value={groupFocusArea || "__none__"} onValueChange={(v) => setGroupFocusArea(v === "__none__" ? "" : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select focus area..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {focusAreaOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -340,12 +340,12 @@ export function BulkGroupAssignmentModal({
 
               <div className="space-y-2">
                 <Label htmlFor="group-sector">Group Sector</Label>
-                <Select value={groupSector} onValueChange={setGroupSector}>
+                <Select value={groupSector || "__none__"} onValueChange={(v) => setGroupSector(v === "__none__" ? "" : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select sector..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {sectorOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}

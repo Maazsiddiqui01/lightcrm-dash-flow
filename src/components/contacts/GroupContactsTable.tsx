@@ -259,11 +259,11 @@ export function GroupContactsTable() {
         if (isEditing) {
           return (
             <Select
-              value={currentValue || ''}
+              value={currentValue || '__none__'}
               onValueChange={(value) => {
                 setEditedRows(prev => ({
                   ...prev,
-                  [row.group_id]: { ...prev[row.group_id], group_focus_area: value }
+                  [row.group_id]: { ...prev[row.group_id], group_focus_area: value === '__none__' ? '' : value }
                 }));
                 setEditingCell(null);
               }}
@@ -275,7 +275,7 @@ export function GroupContactsTable() {
                 <SelectValue placeholder="Select focus area..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {focusAreaOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -317,11 +317,11 @@ export function GroupContactsTable() {
         if (isEditing) {
           return (
             <Select
-              value={currentValue || ''}
+              value={currentValue || '__none__'}
               onValueChange={(value) => {
                 setEditedRows(prev => ({
                   ...prev,
-                  [row.group_id]: { ...prev[row.group_id], group_sector: value }
+                  [row.group_id]: { ...prev[row.group_id], group_sector: value === '__none__' ? '' : value }
                 }));
                 setEditingCell(null);
               }}
@@ -333,7 +333,7 @@ export function GroupContactsTable() {
                 <SelectValue placeholder="Select sector..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {sectorOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}

@@ -417,12 +417,12 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="group_focus_area">Group Focus Area</Label>
-                    <Select value={groupFocusArea} onValueChange={setGroupFocusArea}>
+                    <Select value={groupFocusArea || "__none__"} onValueChange={(v) => setGroupFocusArea(v === "__none__" ? "" : v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select focus area..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="__none__">None</SelectItem>
                         {focusAreasQuery.data?.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -437,12 +437,12 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
 
                   <div className="space-y-2">
                     <Label htmlFor="group_sector">Group Sector</Label>
-                    <Select value={groupSector} onValueChange={setGroupSector}>
+                    <Select value={groupSector || "__none__"} onValueChange={(v) => setGroupSector(v === "__none__" ? "" : v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select sector..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="__none__">None</SelectItem>
                         {sectorsQuery.data?.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
