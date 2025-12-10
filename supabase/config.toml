@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.ai_create_or_update_opportunity]
 verify_jwt = false
+
+[functions.ai_add_contact_next_step]
+verify_jwt = false
