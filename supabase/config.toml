@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.ai_add_contact_note]
 verify_jwt = false
+
+[functions.ai_add_opportunity_note]
+verify_jwt = false
