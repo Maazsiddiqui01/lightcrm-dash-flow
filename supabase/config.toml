@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.ai_tools]
 verify_jwt = true
+
+[functions.ai_add_opportunity_next_step]
+verify_jwt = false
