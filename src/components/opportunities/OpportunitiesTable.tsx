@@ -52,7 +52,6 @@ interface OpportunityRaw {
   sector: string | null;
   platform_add_on: string | null;
   tier: string | null;
-  status: string | null;
   url: string | null;
   summary_of_opportunity: string | null;
   next_steps: string | null;
@@ -91,7 +90,6 @@ interface OpportunityFilters {
   ebitdaMin?: number;
   ebitdaMax?: number;
   tier: string[];
-  status: string[];
   sector: string[];
   leads: string[];
   platformAddOn: string[];
@@ -334,10 +332,6 @@ export function OpportunitiesTable({ filters, selectedRows = [], onSelectionChan
 
       if (filters.tier.length > 0) {
         query = query.in('tier', filters.tier);
-      }
-
-      if (filters.status.length > 0) {
-        query = query.in('status', filters.status);
       }
 
       if (filters.ownershipType.length > 0) {

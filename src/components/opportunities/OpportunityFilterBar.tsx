@@ -5,7 +5,6 @@ import { RangeInput } from '@/components/shared/RangeInput';
 import { DateRangeInput } from '@/components/shared/DateRangeInput';
 import {
   useOpportunityOwnershipTypes,
-  useOpportunityStatuses,
   useOpportunityLeads,
   useOpportunityPlatformAddOn,
   useOpportunityReferralContacts,
@@ -23,7 +22,6 @@ interface OpportunityFilters {
   ebitdaMin?: number;
   ebitdaMax?: number;
   tier: string[];
-  status: string[];
   sector: string[];
   leads: string[];
   platformAddOn: string[];
@@ -68,7 +66,6 @@ export function OpportunityFilterBar({
     { value: '4', label: '4-Likely Pass' },
     { value: '5', label: '5-Passed' }
   ];
-  const { data: statuses = [], isLoading: statusesLoading } = useOpportunityStatuses();
   const { data: leads = [], isLoading: leadsLoading } = useOpportunityLeads();
   const { data: platformAddOns = [], isLoading: platformLoading } = useOpportunityPlatformAddOn();
   const { data: referralContacts = [], isLoading: referralContactsLoading } = useOpportunityReferralContacts();
@@ -163,15 +160,6 @@ export function OpportunityFilterBar({
           onChange={(values) => updateFilter('focusArea', values.filter(v => v !== 'HC: (All)'))} // Filter out virtual option from actual filters
           searchPlaceholder="Search Focus Areas"
           loading={focusAreasQuery.isLoading}
-        />
-
-        <ComboboxMulti
-          label="Status"
-          options={statuses}
-          values={filters.status}
-          onChange={(values) => updateFilter('status', values)}
-          searchPlaceholder="Search Statuses"
-          loading={statusesLoading}
         />
 
         <ComboboxMulti

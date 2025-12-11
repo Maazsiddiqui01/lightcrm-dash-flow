@@ -54,7 +54,6 @@ import { FullHistoryDialog, TimelineItem } from "@/components/shared/FullHistory
 interface Opportunity {
   id: string;
   deal_name: string;
-  status: string;
   tier: string;
   sector: string;
   lg_focus_area: string;
@@ -94,7 +93,6 @@ interface OpportunityDrawerProps {
 export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpdated }: OpportunityDrawerProps) {
   const [editedFields, setEditedFields] = useState<Partial<Opportunity>>({});
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
-  const [customStatusOptions, setCustomStatusOptions] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -112,7 +110,6 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
   const focusAreasQuery = useFocusAreasBySector(currentSector || undefined);
   
   const { 
-    statusOptions,
     platformAddonOptions,
     ownershipTypeOptions,
     dealSourceCompanyOptions,
@@ -121,8 +118,6 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
   } = useOpportunityOptions();
 
   const isLoading = focusAreasQuery.isLoading || sectorsQuery.isLoading || isLoadingOptions;
-
-  const allStatusOptions = [...statusOptions, ...customStatusOptions];
   
   // Use the opportunity notes hook
   const {
@@ -148,7 +143,6 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         summary_of_opportunity: opportunity.summary_of_opportunity || "",
         ebitda_notes: opportunity.ebitda_notes || "",
         most_recent_notes: opportunity.most_recent_notes || "",
-        status: opportunity.status || "",
         tier: opportunity.tier || "",
         sector: opportunity.sector || "",
         lg_focus_area: opportunity.lg_focus_area || "",
@@ -339,21 +333,6 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "active":
-      case "open":
-        return "bg-success-light text-success";
-      case "closed":
-      case "won":
-        return "bg-primary-light text-primary";
-      case "lost":
-        return "bg-destructive/10 text-destructive";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
-
   const getTierColor = (tier: string) => {
     switch (tier?.toLowerCase()) {
       case "tier 1":
@@ -483,11 +462,6 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <div className="flex items-center space-x-2">
-              {editedFields.status && (
-                <Badge className={getStatusColor(editedFields.status)}>
-                  {editedFields.status}
-                </Badge>
-              )}
               {editedFields.tier && (
                 <Badge className={getTierColor(editedFields.tier)}>
                   {editedFields.tier}
@@ -527,17 +501,6 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                   value={editedFields.sector || ""}
                   onChange={(value) => handleFieldChange("sector", value)}
                   placeholder="Select sector"
-                  disabled={isLoading}
-                />
-
-                <SingleSelectDropdown
-                  label="Status"
-                  options={['Active','Pass','Likely Pass','Longer-Term Opportunity']}
-                  value={editedFields.status || ""}
-                  onChange={(value) => handleFieldChange("status", value)}
-                  placeholder="Select status"
-                  allowCustom
-                  onAddCustom={(value) => setCustomStatusOptions(prev => [...prev, value])}
                   disabled={isLoading}
                 />
 
