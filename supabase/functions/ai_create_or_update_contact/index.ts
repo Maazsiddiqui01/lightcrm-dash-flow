@@ -155,69 +155,81 @@ interface Payload {
   groupNotes?: string | null;
 }
 
-// Build database object from payload (only include defined fields)
+// Helper: Check if a value is a non-empty string
+function isNonEmptyString(val: unknown): val is string {
+  return val != null && typeof val === 'string' && val.trim() !== '';
+}
+
+// Helper: Check if a value is a valid number
+function isValidNumber(val: unknown): boolean {
+  return val != null && !isNaN(Number(val));
+}
+
+// Helper: Check if a value is an explicit boolean
+function isExplicitBoolean(val: unknown): val is boolean {
+  return val === true || val === false;
+}
+
+// Build database object from payload (only include fields with meaningful values)
+// Gracefully handles null, undefined, and empty strings by skipping them
 function buildDbObject(payload: Payload): Record<string, unknown> {
   const obj: Record<string, unknown> = {};
 
-  // Core fields
-  if (payload.fullName !== undefined) obj.full_name = payload.fullName?.trim() || null;
-  if (payload.firstName !== undefined) obj.first_name = payload.firstName?.trim() || null;
-  if (payload.lastName !== undefined) obj.last_name = payload.lastName?.trim() || null;
-  if (payload.email !== undefined) obj.email_address = payload.email?.trim().toLowerCase() || null;
-  if (payload.title !== undefined) obj.title = payload.title?.trim() || null;
-  if (payload.organization !== undefined) obj.organization = payload.organization?.trim() || null;
-  if (payload.phone !== undefined) obj.phone = payload.phone?.trim() || null;
-  if (payload.city !== undefined) obj.city = payload.city?.trim() || null;
-  if (payload.state !== undefined) obj.state = payload.state?.trim() || null;
+  // Core string fields - only include if non-empty
+  if (isNonEmptyString(payload.fullName)) obj.full_name = payload.fullName.trim();
+  if (isNonEmptyString(payload.firstName)) obj.first_name = payload.firstName.trim();
+  if (isNonEmptyString(payload.lastName)) obj.last_name = payload.lastName.trim();
+  if (isNonEmptyString(payload.email)) obj.email_address = payload.email.trim().toLowerCase();
+  if (isNonEmptyString(payload.title)) obj.title = payload.title.trim();
+  if (isNonEmptyString(payload.organization)) obj.organization = payload.organization.trim();
+  if (isNonEmptyString(payload.phone)) obj.phone = payload.phone.trim();
+  if (isNonEmptyString(payload.city)) obj.city = payload.city.trim();
+  if (isNonEmptyString(payload.state)) obj.state = payload.state.trim();
 
   // LG fields
-  if (payload.lgSector !== undefined) obj.lg_sector = payload.lgSector?.trim() || null;
-  if (payload.lgLead !== undefined) obj.lg_lead = payload.lgLead?.trim() || null;
-  if (payload.lgAssistant !== undefined) obj.lg_assistant = payload.lgAssistant?.trim() || null;
+  if (isNonEmptyString(payload.lgSector)) obj.lg_sector = payload.lgSector.trim();
+  if (isNonEmptyString(payload.lgLead)) obj.lg_lead = payload.lgLead.trim();
+  if (isNonEmptyString(payload.lgAssistant)) obj.lg_assistant = payload.lgAssistant.trim();
 
   // Social URLs
-  if (payload.linkedinUrl !== undefined) obj.linkedin_url = payload.linkedinUrl?.trim() || null;
-  if (payload.twitterUrl !== undefined) obj.x_twitter_url = payload.twitterUrl?.trim() || null;
-  if (payload.bioUrl !== undefined) obj.url_to_online_bio = payload.bioUrl?.trim() || null;
+  if (isNonEmptyString(payload.linkedinUrl)) obj.linkedin_url = payload.linkedinUrl.trim();
+  if (isNonEmptyString(payload.twitterUrl)) obj.x_twitter_url = payload.twitterUrl.trim();
+  if (isNonEmptyString(payload.bioUrl)) obj.url_to_online_bio = payload.bioUrl.trim();
 
   // Notes and next steps
-  if (payload.notes !== undefined) obj.notes = payload.notes?.trim() || null;
-  if (payload.nextSteps !== undefined) obj.next_steps = payload.nextSteps?.trim() || null;
-  if (payload.nextStepsDueDate !== undefined) obj.next_steps_due_date = payload.nextStepsDueDate || null;
+  if (isNonEmptyString(payload.notes)) obj.notes = payload.notes.trim();
+  if (isNonEmptyString(payload.nextSteps)) obj.next_steps = payload.nextSteps.trim();
+  if (isNonEmptyString(payload.nextStepsDueDate)) obj.next_steps_due_date = payload.nextStepsDueDate.trim();
 
   // Classification
-  if (payload.areasOfSpecialization !== undefined) obj.areas_of_specialization = payload.areasOfSpecialization?.trim() || null;
-  if (payload.category !== undefined) obj.category = payload.category?.trim() || null;
-  if (payload.contactType !== undefined) obj.contact_type = payload.contactType?.trim() || null;
-  if (payload.priority !== undefined) obj.priority = payload.priority;
+  if (isNonEmptyString(payload.areasOfSpecialization)) obj.areas_of_specialization = payload.areasOfSpecialization.trim();
+  if (isNonEmptyString(payload.category)) obj.category = payload.category.trim();
+  if (isNonEmptyString(payload.contactType)) obj.contact_type = payload.contactType.trim();
+  if (isExplicitBoolean(payload.priority)) obj.priority = payload.priority;
 
   // Focus areas
-  if (payload.lgFocusAreasComprehensiveList !== undefined) obj.lg_focus_areas_comprehensive_list = payload.lgFocusAreasComprehensiveList?.trim() || null;
-  if (payload.lgFocusArea1 !== undefined) obj.lg_focus_area_1 = payload.lgFocusArea1?.trim() || null;
-  if (payload.lgFocusArea2 !== undefined) obj.lg_focus_area_2 = payload.lgFocusArea2?.trim() || null;
-  if (payload.lgFocusArea3 !== undefined) obj.lg_focus_area_3 = payload.lgFocusArea3?.trim() || null;
-  if (payload.lgFocusArea4 !== undefined) obj.lg_focus_area_4 = payload.lgFocusArea4?.trim() || null;
-  if (payload.lgFocusArea5 !== undefined) obj.lg_focus_area_5 = payload.lgFocusArea5?.trim() || null;
-  if (payload.lgFocusArea6 !== undefined) obj.lg_focus_area_6 = payload.lgFocusArea6?.trim() || null;
-  if (payload.lgFocusArea7 !== undefined) obj.lg_focus_area_7 = payload.lgFocusArea7?.trim() || null;
-  if (payload.lgFocusArea8 !== undefined) obj.lg_focus_area_8 = payload.lgFocusArea8?.trim() || null;
+  if (isNonEmptyString(payload.lgFocusAreasComprehensiveList)) obj.lg_focus_areas_comprehensive_list = payload.lgFocusAreasComprehensiveList.trim();
+  if (isNonEmptyString(payload.lgFocusArea1)) obj.lg_focus_area_1 = payload.lgFocusArea1.trim();
+  if (isNonEmptyString(payload.lgFocusArea2)) obj.lg_focus_area_2 = payload.lgFocusArea2.trim();
+  if (isNonEmptyString(payload.lgFocusArea3)) obj.lg_focus_area_3 = payload.lgFocusArea3.trim();
+  if (isNonEmptyString(payload.lgFocusArea4)) obj.lg_focus_area_4 = payload.lgFocusArea4.trim();
+  if (isNonEmptyString(payload.lgFocusArea5)) obj.lg_focus_area_5 = payload.lgFocusArea5.trim();
+  if (isNonEmptyString(payload.lgFocusArea6)) obj.lg_focus_area_6 = payload.lgFocusArea6.trim();
+  if (isNonEmptyString(payload.lgFocusArea7)) obj.lg_focus_area_7 = payload.lgFocusArea7.trim();
+  if (isNonEmptyString(payload.lgFocusArea8)) obj.lg_focus_area_8 = payload.lgFocusArea8.trim();
 
-  // Tracking
-  if (payload.deltaType !== undefined) obj.delta_type = payload.deltaType?.trim() || null;
-  if (payload.followUpDays !== undefined) {
-    obj.follow_up_days = payload.followUpDays !== null ? Number(payload.followUpDays) : null;
-  }
-  if (payload.followUpRecencyThreshold !== undefined) {
-    obj.follow_up_recency_threshold = payload.followUpRecencyThreshold !== null ? Number(payload.followUpRecencyThreshold) : null;
-  }
-  if (payload.followUpDate !== undefined) obj.follow_up_date = payload.followUpDate || null;
+  // Tracking - numbers only if valid
+  if (isNonEmptyString(payload.deltaType)) obj.delta_type = payload.deltaType.trim();
+  if (isValidNumber(payload.followUpDays)) obj.follow_up_days = Number(payload.followUpDays);
+  if (isValidNumber(payload.followUpRecencyThreshold)) obj.follow_up_recency_threshold = Number(payload.followUpRecencyThreshold);
+  if (isNonEmptyString(payload.followUpDate)) obj.follow_up_date = payload.followUpDate.trim();
 
   // Group fields
-  if (payload.groupContact !== undefined) obj.group_contact = payload.groupContact?.trim() || null;
-  if (payload.groupEmailRole !== undefined) obj.group_email_role = payload.groupEmailRole?.trim() || null;
-  if (payload.groupFocusArea !== undefined) obj.group_focus_area = payload.groupFocusArea?.trim() || null;
-  if (payload.groupSector !== undefined) obj.group_sector = payload.groupSector?.trim() || null;
-  if (payload.groupNotes !== undefined) obj.group_notes = payload.groupNotes?.trim() || null;
+  if (isNonEmptyString(payload.groupContact)) obj.group_contact = payload.groupContact.trim();
+  if (isNonEmptyString(payload.groupEmailRole)) obj.group_email_role = payload.groupEmailRole.trim();
+  if (isNonEmptyString(payload.groupFocusArea)) obj.group_focus_area = payload.groupFocusArea.trim();
+  if (isNonEmptyString(payload.groupSector)) obj.group_sector = payload.groupSector.trim();
+  if (isNonEmptyString(payload.groupNotes)) obj.group_notes = payload.groupNotes.trim();
 
   return obj;
 }

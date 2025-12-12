@@ -11,9 +11,12 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { contactId, content } = body;
 
-    // Validate required fields
-    if (!contactId || !content) {
-      return jsonError("MISSING_FIELDS", "contactId and content are required", 400);
+    // Validate required fields - handle both null and empty string
+    if (!contactId || (typeof contactId === 'string' && contactId.trim() === '')) {
+      return jsonError("MISSING_FIELDS", "contactId is required and must be a non-empty string", 400);
+    }
+    if (!content || (typeof content === 'string' && content.trim() === '')) {
+      return jsonError("MISSING_FIELDS", "content is required and must be a non-empty string", 400);
     }
 
     if (!isValidUUID(contactId)) {
