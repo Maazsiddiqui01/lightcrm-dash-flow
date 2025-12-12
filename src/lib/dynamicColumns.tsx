@@ -33,6 +33,12 @@ export interface DynamicOptions {
 export const formatCellValue = (value: any, column: TableColumn): string => {
   if (value === null || value === undefined) return '';
   
+  // Show blank for numeric columns when value is 0 or falsy
+  if (column.type === 'numeric' || column.type.includes('integer')) {
+    if (value === 0 || value === '0' || !value) return '';
+    return String(value);
+  }
+  
   if (column.type === 'timestamp with time zone') {
     const date = parseFlexibleDate(value);
     if (date) {
