@@ -140,67 +140,75 @@ interface Payload {
   priority?: boolean;
 }
 
-// Build database object from payload (only include defined fields)
+// Helper: Check if a value is a non-empty string
+function isNonEmptyString(val: unknown): val is string {
+  return val != null && typeof val === 'string' && val.trim() !== '';
+}
+
+// Helper: Check if a value is a valid number
+function isValidNumber(val: unknown): boolean {
+  return val != null && !isNaN(Number(val));
+}
+
+// Helper: Check if a value is an explicit boolean
+function isExplicitBoolean(val: unknown): val is boolean {
+  return val === true || val === false;
+}
+
+// Build database object from payload (only include fields with meaningful values)
+// Gracefully handles null, undefined, and empty strings by skipping them
 function buildDbObject(payload: Payload): Record<string, unknown> {
   const obj: Record<string, unknown> = {};
 
-  // Core fields
-  if (payload.dealName !== undefined) obj.deal_name = payload.dealName?.trim() || null;
-  if (payload.sector !== undefined) obj.sector = normalizeSector(payload.sector);
-  if (payload.tier !== undefined) obj.tier = payload.tier?.trim() || null;
-  if (payload.headquarters !== undefined) obj.headquarters = payload.headquarters?.trim() || null;
-  if (payload.summaryOfOpportunity !== undefined) obj.summary_of_opportunity = payload.summaryOfOpportunity?.trim() || null;
-  if (payload.lgTeam !== undefined) obj.lg_team = payload.lgTeam?.trim() || null;
+  // Core string fields - only include if non-empty
+  if (isNonEmptyString(payload.dealName)) obj.deal_name = payload.dealName.trim();
+  if (isNonEmptyString(payload.sector)) obj.sector = normalizeSector(payload.sector);
+  if (isNonEmptyString(payload.tier)) obj.tier = payload.tier.trim();
+  if (isNonEmptyString(payload.headquarters)) obj.headquarters = payload.headquarters.trim();
+  if (isNonEmptyString(payload.summaryOfOpportunity)) obj.summary_of_opportunity = payload.summaryOfOpportunity.trim();
+  if (isNonEmptyString(payload.lgTeam)) obj.lg_team = payload.lgTeam.trim();
 
   // LG Leads
-  if (payload.lgLead1 !== undefined) obj.investment_professional_point_person_1 = payload.lgLead1?.trim() || null;
-  if (payload.lgLead2 !== undefined) obj.investment_professional_point_person_2 = payload.lgLead2?.trim() || null;
-  if (payload.lgLead3 !== undefined) obj.investment_professional_point_person_3 = payload.lgLead3?.trim() || null;
-  if (payload.lgLead4 !== undefined) obj.investment_professional_point_person_4 = payload.lgLead4?.trim() || null;
+  if (isNonEmptyString(payload.lgLead1)) obj.investment_professional_point_person_1 = payload.lgLead1.trim();
+  if (isNonEmptyString(payload.lgLead2)) obj.investment_professional_point_person_2 = payload.lgLead2.trim();
+  if (isNonEmptyString(payload.lgLead3)) obj.investment_professional_point_person_3 = payload.lgLead3.trim();
+  if (isNonEmptyString(payload.lgLead4)) obj.investment_professional_point_person_4 = payload.lgLead4.trim();
 
   // Deal source
-  if (payload.dealSourceCompany !== undefined) obj.deal_source_company = payload.dealSourceCompany?.trim() || null;
-  if (payload.dealSourceIndividual1 !== undefined) obj.deal_source_individual_1 = payload.dealSourceIndividual1?.trim() || null;
-  if (payload.dealSourceIndividual2 !== undefined) obj.deal_source_individual_2 = payload.dealSourceIndividual2?.trim() || null;
+  if (isNonEmptyString(payload.dealSourceCompany)) obj.deal_source_company = payload.dealSourceCompany.trim();
+  if (isNonEmptyString(payload.dealSourceIndividual1)) obj.deal_source_individual_1 = payload.dealSourceIndividual1.trim();
+  if (isNonEmptyString(payload.dealSourceIndividual2)) obj.deal_source_individual_2 = payload.dealSourceIndividual2.trim();
 
   // Notes
-  if (payload.mostRecentNotes !== undefined) obj.most_recent_notes = payload.mostRecentNotes?.trim() || null;
+  if (isNonEmptyString(payload.mostRecentNotes)) obj.most_recent_notes = payload.mostRecentNotes.trim();
 
   // Focus area and platform
-  if (payload.lgFocusArea !== undefined) obj.lg_focus_area = payload.lgFocusArea?.trim() || null;
-  if (payload.platformAddOn !== undefined) obj.platform_add_on = payload.platformAddOn?.trim() || null;
-  if (payload.url !== undefined) obj.url = payload.url?.trim() || null;
+  if (isNonEmptyString(payload.lgFocusArea)) obj.lg_focus_area = payload.lgFocusArea.trim();
+  if (isNonEmptyString(payload.platformAddOn)) obj.platform_add_on = payload.platformAddOn.trim();
+  if (isNonEmptyString(payload.url)) obj.url = payload.url.trim();
 
-  // Financial metrics (numbers)
-  if (payload.ebitdaInMs !== undefined) {
-    obj.ebitda_in_ms = payload.ebitdaInMs !== null ? Number(payload.ebitdaInMs) : null;
-  }
-  if (payload.ebitdaNotes !== undefined) obj.ebitda_notes = payload.ebitdaNotes?.trim() || null;
-  if (payload.revenue !== undefined) {
-    obj.revenue = payload.revenue !== null ? Number(payload.revenue) : null;
-  }
-  if (payload.estDealSize !== undefined) {
-    obj.est_deal_size = payload.estDealSize !== null ? Number(payload.estDealSize) : null;
-  }
-  if (payload.estLgEquityInvest !== undefined) {
-    obj.est_lg_equity_invest = payload.estLgEquityInvest !== null ? Number(payload.estLgEquityInvest) : null;
-  }
+  // Financial metrics (numbers) - only include if valid number
+  if (isValidNumber(payload.ebitdaInMs)) obj.ebitda_in_ms = Number(payload.ebitdaInMs);
+  if (isNonEmptyString(payload.ebitdaNotes)) obj.ebitda_notes = payload.ebitdaNotes.trim();
+  if (isValidNumber(payload.revenue)) obj.revenue = Number(payload.revenue);
+  if (isValidNumber(payload.estDealSize)) obj.est_deal_size = Number(payload.estDealSize);
+  if (isValidNumber(payload.estLgEquityInvest)) obj.est_lg_equity_invest = Number(payload.estLgEquityInvest);
 
   // Ownership
-  if (payload.ownership !== undefined) obj.ownership = payload.ownership?.trim() || null;
-  if (payload.ownershipType !== undefined) obj.ownership_type = payload.ownershipType?.trim() || null;
+  if (isNonEmptyString(payload.ownership)) obj.ownership = payload.ownership.trim();
+  if (isNonEmptyString(payload.ownershipType)) obj.ownership_type = payload.ownershipType.trim();
 
-  // Dates
-  if (payload.dateOfOrigination !== undefined) obj.date_of_origination = payload.dateOfOrigination || null;
-  if (payload.processTimeline !== undefined) obj.process_timeline = payload.processTimeline?.trim() || null;
-  if (payload.funds !== undefined) obj.funds = payload.funds?.trim() || null;
-  if (payload.acquisitionDate !== undefined) obj.acquisition_date = payload.acquisitionDate || null;
+  // Dates - only include if non-empty string
+  if (isNonEmptyString(payload.dateOfOrigination)) obj.date_of_origination = payload.dateOfOrigination.trim();
+  if (isNonEmptyString(payload.processTimeline)) obj.process_timeline = payload.processTimeline.trim();
+  if (isNonEmptyString(payload.funds)) obj.funds = payload.funds.trim();
+  if (isNonEmptyString(payload.acquisitionDate)) obj.acquisition_date = payload.acquisitionDate.trim();
 
-  // Tracking
-  if (payload.dealcloud !== undefined) obj.dealcloud = payload.dealcloud;
-  if (payload.nextSteps !== undefined) obj.next_steps = payload.nextSteps?.trim() || null;
-  if (payload.nextStepsDueDate !== undefined) obj.next_steps_due_date = payload.nextStepsDueDate || null;
-  if (payload.priority !== undefined) obj.priority = payload.priority;
+  // Tracking - booleans only if explicit true/false
+  if (isExplicitBoolean(payload.dealcloud)) obj.dealcloud = payload.dealcloud;
+  if (isNonEmptyString(payload.nextSteps)) obj.next_steps = payload.nextSteps.trim();
+  if (isNonEmptyString(payload.nextStepsDueDate)) obj.next_steps_due_date = payload.nextStepsDueDate.trim();
+  if (isExplicitBoolean(payload.priority)) obj.priority = payload.priority;
 
   return obj;
 }
