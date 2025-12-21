@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { getCurrentQuarterYear } from "@/utils/dateUtils";
+import { getCurrentQuarterYear, formatDatePrefix } from "@/utils/dateUtils";
 import {
   Dialog,
   DialogContent,
@@ -190,7 +190,9 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
           formData.investment_professional_point_person_3,
           formData.investment_professional_point_person_4
         ),
-        next_steps: opt(formData.next_steps),
+        next_steps: formData.next_steps.trim() 
+          ? `${formatDatePrefix()}${formData.next_steps.trim()}` 
+          : null,
         most_recent_notes: opt(formData.most_recent_notes),
       };
 
@@ -336,7 +338,19 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               />
             </div>
 
-            {/* Description/Summary - Right below Deal Name */}
+            {/* Next Steps - Right below Deal Name */}
+            <div className="space-y-2">
+              <Label htmlFor="next_steps">Next Steps</Label>
+              <Textarea
+                id="next_steps"
+                value={formData.next_steps}
+                onChange={(e) => handleInputChange("next_steps", e.target.value)}
+                placeholder="Enter next steps..."
+                className="min-h-[60px] resize-none"
+              />
+            </div>
+
+            {/* Description/Summary */}
             <div className="space-y-2">
               <Label htmlFor="summary_of_opportunity">Description / Summary of Opportunity</Label>
               <Textarea
