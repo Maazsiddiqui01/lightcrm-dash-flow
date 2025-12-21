@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Target } from "lucide-react";
+import { Plus, ChevronDown } from "lucide-react";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
@@ -26,14 +26,16 @@ import { ContactSearchResult } from "@/hooks/useContactSearch";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { 
-  tierDisplayOptions, 
-  getTierDisplayValue, 
-  getTierDatabaseValue,
   platformAddonDisplayOptions,
   getPlatformAddonDisplayValue,
   getPlatformAddonDatabaseValue,
   defaultOwnershipTypes
 } from "@/lib/export/opportunityUtils";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface AddOpportunityDialogProps {
   open: boolean;
@@ -44,8 +46,6 @@ interface AddOpportunityDialogProps {
 export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddOpportunityDialogProps) {
   const [formData, setFormData] = useState({
     deal_name: "",
-    status: "",
-    tier: "",
     sector: "",
     lg_focus_area: "",
     platform_add_on: "",
@@ -67,12 +67,12 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     url: "",
   });
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
-  const [customStatusOptions, setCustomStatusOptions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSourceContact1, setSelectedSourceContact1] = useState<ContactSearchResult | null>(null);
   const [selectedSourceContact2, setSelectedSourceContact2] = useState<ContactSearchResult | null>(null);
   const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
   const [pendingContactField, setPendingContactField] = useState<'contact1' | 'contact2' | null>(null);
+  const [showMoreLeads, setShowMoreLeads] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -135,8 +135,6 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     const requiredFields = [
       { field: 'deal_name', name: 'Deal Name' },
       { field: 'sector', name: 'Sector' },
-      { field: 'status', name: 'Status' },
-      { field: 'tier', name: 'Tier' }
     ];
 
     for (const { field, name } of requiredFields) {
@@ -163,8 +161,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         lg_focus_area: consolidated,
         deal_name: req(formData.deal_name),
         sector: req(formData.sector),
-        status: req(formData.status),
-        tier: req(formData.tier),
+        status: 'Active', // Default status
+        tier: 'Tier 1',   // Default tier
         // Optionals
         platform_add_on: opt(formData.platform_add_on) 
           ? getPlatformAddonDatabaseValue(formData.platform_add_on) 
@@ -196,8 +194,6 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         most_recent_notes: opt(formData.most_recent_notes),
       };
 
-      // Note: Only lg_focus_area column exists in opportunities_raw table
-
       const { data, error } = await supabase
         .from('opportunities_raw')
         .insert([payload])
@@ -215,8 +211,6 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       // Reset form
       setFormData({
         deal_name: "",
-        status: "",
-        tier: "",
         sector: "",
         lg_focus_area: "",
         platform_add_on: "",
@@ -238,7 +232,9 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         url: "",
       });
       setSelectedFocusAreas([]);
-      setCustomStatusOptions([]);
+      setSelectedSourceContact1(null);
+      setSelectedSourceContact2(null);
+      setShowMoreLeads(false);
 
       onOpportunityAdded();
     } catch (error: any) {
@@ -256,8 +252,6 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
   const handleClose = () => {
     setFormData({
       deal_name: "",
-      status: "",
-      tier: "",
       sector: "",
       lg_focus_area: "",
       platform_add_on: "",
@@ -279,9 +273,9 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       url: "",
     });
     setSelectedFocusAreas([]);
-    setCustomStatusOptions([]);
     setSelectedSourceContact1(null);
     setSelectedSourceContact2(null);
+    setShowMoreLeads(false);
     onClose();
   };
 
@@ -330,29 +324,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
 
         <div className="overflow-y-auto max-h-[calc(80vh-8rem)] pr-2">
           <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Required Fields */}
-          <div className="space-y-4 border-b pb-4">
-            <h3 className="text-sm font-medium text-foreground">Required Fields</h3>
-            
-            {/* LG Focus Area - Multi-select */}
-            <FocusAreaSelect
-              value={selectedFocusAreas}
-              onChange={handleFocusAreaChange}
-              disabled={isLoading}
-              label="LG Focus Area"
-              sectorId={selectedSectorId}
-            />
-
-            {/* Consolidated Focus Areas (Read-only) */}
-            {selectedFocusAreas.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm">LG Focus Area (Consolidated)</Label>
-                <p className="text-sm text-muted-foreground p-2 bg-muted rounded">
-                  {selectedFocusAreas.join(', ')}
-                </p>
-              </div>
-            )}
-
+            {/* Deal Name - Top */}
             <div className="space-y-2">
               <Label htmlFor="deal_name">Deal Name *</Label>
               <Input
@@ -364,232 +336,229 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               />
             </div>
 
-            {/* Sector - Single-select dropdown */}
-            <SingleSelectDropdown
-              label="Sector"
-              options={sectorOptions.map(opt => opt.label)}
-              value={formData.sector}
-              onChange={(value) => handleInputChange("sector", value)}
-              placeholder="Select sector"
-              required
-              disabled={isLoading}
-            />
+            {/* Description/Summary - Right below Deal Name */}
+            <div className="space-y-2">
+              <Label htmlFor="summary_of_opportunity">Description / Summary of Opportunity</Label>
+              <Textarea
+                id="summary_of_opportunity"
+                value={formData.summary_of_opportunity}
+                onChange={(e) => handleInputChange("summary_of_opportunity", e.target.value)}
+                placeholder="Enter opportunity summary..."
+                className="min-h-[80px] resize-none"
+              />
+            </div>
 
-            {/* Status - Single-select dropdown with predefined options */}
-            <SingleSelectDropdown
-              label="Status"
-              options={['Active','Pass','Likely Pass','Longer-Term Opportunity']}
-              value={formData.status}
-              onChange={(value) => handleInputChange("status", value)}
-              placeholder="Select status"
-              required
-              allowCustom
-              onAddCustom={(value) => setCustomStatusOptions(prev => [...prev, value])}
-              disabled={isLoading}
-            />
-
-            {/* Tier with Display Labels */}
-            <SingleSelectDropdown
-              label="Tier"
-              options={tierDisplayOptions}
-              value={getTierDisplayValue(formData.tier)}
-              onChange={(displayValue) => {
-                const dbValue = getTierDatabaseValue(displayValue);
-                handleInputChange("tier", dbValue);
-              }}
-              placeholder="Select tier"
-              required
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Optional Fields */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-foreground">Optional Fields</h3>
-            
+            {/* LG Focus Area and Sector - Side by Side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* LG Lead 1 */}
-              <SingleSelectDropdown
-                label="LG Lead 1"
-                options={lgLeadOptions}
-                value={formData.investment_professional_point_person_1}
-                onChange={(value) => handleInputChange("investment_professional_point_person_1", value)}
-                placeholder="Select LG lead 1"
+              <FocusAreaSelect
+                value={selectedFocusAreas}
+                onChange={handleFocusAreaChange}
                 disabled={isLoading}
+                label="LG Focus Area *"
+                sectorId={selectedSectorId}
               />
 
-              {/* LG Lead 2 */}
               <SingleSelectDropdown
-                label="LG Lead 2"
-                options={lgLeadOptions}
-                value={formData.investment_professional_point_person_2}
-                onChange={(value) => handleInputChange("investment_professional_point_person_2", value)}
-                placeholder="Select LG lead 2"
-                disabled={isLoading}
-              />
-
-              {/* LG Lead 3 */}
-              <SingleSelectDropdown
-                label="LG Lead 3"
-                options={lgLeadOptions}
-                value={formData.investment_professional_point_person_3}
-                onChange={(value) => handleInputChange("investment_professional_point_person_3", value)}
-                placeholder="Select LG lead 3"
-                disabled={isLoading}
-              />
-
-              {/* LG Lead 4 */}
-              <SingleSelectDropdown
-                label="LG Lead 4"
-                options={lgLeadOptions}
-                value={formData.investment_professional_point_person_4}
-                onChange={(value) => handleInputChange("investment_professional_point_person_4", value)}
-                placeholder="Select LG lead 4"
+                label="Sector *"
+                options={sectorOptions.map(opt => opt.label)}
+                value={formData.sector}
+                onChange={(value) => handleInputChange("sector", value)}
+                placeholder="Select sector"
+                required
                 disabled={isLoading}
               />
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Platform/Add-on with Display Labels */}
-              <SingleSelectDropdown
-                label="Platform/Add-on"
-                options={platformAddonDisplayOptions}
-                value={getPlatformAddonDisplayValue(formData.platform_add_on)}
-                onChange={(displayValue) => {
-                  const dbValue = getPlatformAddonDatabaseValue(displayValue);
-                  handleInputChange("platform_add_on", dbValue);
-                }}
-                placeholder="Select platform/add-on"
-                disabled={isLoading}
-              />
 
-              {/* Ownership Type with All Defaults */}
-              <SingleSelectDropdown
-                label="Ownership Type"
-                options={defaultOwnershipTypes}
-                value={formData.ownership_type}
-                onChange={(value) => handleInputChange("ownership_type", value)}
-                placeholder="Select ownership type"
-                disabled={isLoading}
-              />
+            {/* LG Leads Section */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-foreground">LG Team</h3>
+              
+              {/* LG Lead 1 & 2 - Always visible */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SingleSelectDropdown
+                  label="LG Lead 1"
+                  options={lgLeadOptions}
+                  value={formData.investment_professional_point_person_1}
+                  onChange={(value) => handleInputChange("investment_professional_point_person_1", value)}
+                  placeholder="Select LG lead 1"
+                  disabled={isLoading}
+                />
 
-            <QuarterYearDropdown
-              label="Date of Origination"
-              value={formData.date_of_origination}
-              onChange={(value) => handleInputChange("date_of_origination", value)}
-              placeholder="Select quarter and year"
-              disabled={isLoading}
-            />
-            </div>
-
-            <SingleSelectDropdown
-              label="Deal Source Company"
-              options={dealSourceCompanyOptions}
-              value={formData.deal_source_company}
-              onChange={(value) => handleInputChange("deal_source_company", value)}
-              placeholder="Search or add company..."
-              allowCustom
-              onAddCustom={(value) => handleInputChange("deal_source_company", value)}
-              disabled={isLoading}
-            />
-
-            <ContactPickerWithAddNew
-              label="Deal Source Individual #1"
-              selectedContact={selectedSourceContact1}
-              onContactSelect={setSelectedSourceContact1}
-              onAddNewContact={() => handleAddNewContact('contact1')}
-            />
-
-            <ContactPickerWithAddNew
-              label="Deal Source Individual #2"
-              selectedContact={selectedSourceContact2}
-              onContactSelect={setSelectedSourceContact2}
-              onAddNewContact={() => handleAddNewContact('contact2')}
-            />
-
-           {/* Ownership */}
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div className="space-y-2">
-               <Label htmlFor="ownership">Ownership</Label>
-               <Input
-                 id="ownership"
-                 value={formData.ownership}
-                 onChange={(e) => handleInputChange("ownership", e.target.value)}
-                 placeholder="Enter ownership"
-               />
-             </div>
-           </div>
-
-          {/* Summary */}
-          <div className="space-y-2">
-            <Label htmlFor="summary_of_opportunity">Summary of Opportunity</Label>
-            <Textarea
-              id="summary_of_opportunity"
-              value={formData.summary_of_opportunity}
-              onChange={(e) => handleInputChange("summary_of_opportunity", e.target.value)}
-              placeholder="Enter opportunity summary..."
-              className="min-h-[80px] resize-none"
-            />
-          </div>
-
-            {/* Financial & Additional Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ebitda_in_ms">EBITDA (in M$)</Label>
-                <Input
-                  id="ebitda_in_ms"
-                  type="number"
-                  step="0.1"
-                  value={formData.ebitda_in_ms}
-                  onChange={(e) => handleInputChange("ebitda_in_ms", e.target.value)}
-                  placeholder="e.g., 5.5"
+                <SingleSelectDropdown
+                  label="LG Lead 2"
+                  options={lgLeadOptions}
+                  value={formData.investment_professional_point_person_2}
+                  onChange={(value) => handleInputChange("investment_professional_point_person_2", value)}
+                  placeholder="Select LG lead 2"
+                  disabled={isLoading}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="url">URL</Label>
-                <Input
-                  id="url"
-                  type="url"
-                  value={formData.url}
-                  onChange={(e) => handleInputChange("url", e.target.value)}
-                  placeholder="https://..."
+
+              {/* LG Lead 3 & 4 - Collapsible */}
+              <Collapsible open={showMoreLeads} onOpenChange={setShowMoreLeads}>
+                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showMoreLeads ? 'rotate-180' : ''}`} />
+                  {showMoreLeads ? 'Hide additional leads' : 'Add more LG Leads'}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <SingleSelectDropdown
+                      label="LG Lead 3"
+                      options={lgLeadOptions}
+                      value={formData.investment_professional_point_person_3}
+                      onChange={(value) => handleInputChange("investment_professional_point_person_3", value)}
+                      placeholder="Select LG lead 3"
+                      disabled={isLoading}
+                    />
+
+                    <SingleSelectDropdown
+                      label="LG Lead 4"
+                      options={lgLeadOptions}
+                      value={formData.investment_professional_point_person_4}
+                      onChange={(value) => handleInputChange("investment_professional_point_person_4", value)}
+                      placeholder="Select LG lead 4"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+
+            {/* Deal Details Section */}
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="text-sm font-medium text-foreground">Deal Details</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SingleSelectDropdown
+                  label="Platform/Add-on"
+                  options={platformAddonDisplayOptions}
+                  value={getPlatformAddonDisplayValue(formData.platform_add_on)}
+                  onChange={(displayValue) => {
+                    const dbValue = getPlatformAddonDatabaseValue(displayValue);
+                    handleInputChange("platform_add_on", dbValue);
+                  }}
+                  placeholder="Select platform/add-on"
+                  disabled={isLoading}
                 />
+
+                <SingleSelectDropdown
+                  label="Ownership Type"
+                  options={defaultOwnershipTypes}
+                  value={formData.ownership_type}
+                  onChange={(value) => handleInputChange("ownership_type", value)}
+                  placeholder="Select ownership type"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <SingleSelectDropdown
+                label="Deal Source Company"
+                options={dealSourceCompanyOptions}
+                value={formData.deal_source_company}
+                onChange={(value) => handleInputChange("deal_source_company", value)}
+                placeholder="Search or add company..."
+                allowCustom
+                onAddCustom={(value) => handleInputChange("deal_source_company", value)}
+                disabled={isLoading}
+              />
+
+              <ContactPickerWithAddNew
+                label="Deal Source Individual #1"
+                selectedContact={selectedSourceContact1}
+                onContactSelect={setSelectedSourceContact1}
+                onAddNewContact={() => handleAddNewContact('contact1')}
+              />
+
+              <ContactPickerWithAddNew
+                label="Deal Source Individual #2"
+                selectedContact={selectedSourceContact2}
+                onContactSelect={setSelectedSourceContact2}
+                onAddNewContact={() => handleAddNewContact('contact2')}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ownership">Ownership</Label>
+                  <Input
+                    id="ownership"
+                    value={formData.ownership}
+                    onChange={(e) => handleInputChange("ownership", e.target.value)}
+                    placeholder="Enter ownership"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ebitda_in_ms">EBITDA (in M$)</Label>
+                  <Input
+                    id="ebitda_in_ms"
+                    type="number"
+                    step="0.1"
+                    value={formData.ebitda_in_ms}
+                    onChange={(e) => handleInputChange("ebitda_in_ms", e.target.value)}
+                    placeholder="e.g., 5.5"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ebitda_notes">EBITDA Notes</Label>
-              <Textarea
-                id="ebitda_notes"
-                value={formData.ebitda_notes}
-                onChange={(e) => handleInputChange("ebitda_notes", e.target.value)}
-                placeholder="Additional EBITDA notes..."
-                className="min-h-[60px] resize-none"
-              />
-            </div>
+            {/* Additional Information Section */}
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="text-sm font-medium text-foreground">Additional Information</h3>
 
-            <div className="space-y-2">
-              <Label htmlFor="next_steps">Next Steps</Label>
-              <Textarea
-                id="next_steps"
-                value={formData.next_steps}
-                onChange={(e) => handleInputChange("next_steps", e.target.value)}
-                placeholder="Enter next steps..."
-                className="min-h-[60px] resize-none"
-              />
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <QuarterYearDropdown
+                  label="Date of Origination"
+                  value={formData.date_of_origination}
+                  onChange={(value) => handleInputChange("date_of_origination", value)}
+                  placeholder="Select quarter and year"
+                  disabled={isLoading}
+                />
 
-            <div className="space-y-2">
-              <Label htmlFor="most_recent_notes">Notes</Label>
-              <Textarea
-                id="most_recent_notes"
-                value={formData.most_recent_notes}
-                onChange={(e) => handleInputChange("most_recent_notes", e.target.value)}
-                placeholder="Latest notes or updates..."
-                className="min-h-[60px] resize-none"
-              />
+                <div className="space-y-2">
+                  <Label htmlFor="url">URL</Label>
+                  <Input
+                    id="url"
+                    type="url"
+                    value={formData.url}
+                    onChange={(e) => handleInputChange("url", e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ebitda_notes">EBITDA Notes</Label>
+                <Textarea
+                  id="ebitda_notes"
+                  value={formData.ebitda_notes}
+                  onChange={(e) => handleInputChange("ebitda_notes", e.target.value)}
+                  placeholder="Additional EBITDA notes..."
+                  className="min-h-[60px] resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="next_steps">Next Steps</Label>
+                <Textarea
+                  id="next_steps"
+                  value={formData.next_steps}
+                  onChange={(e) => handleInputChange("next_steps", e.target.value)}
+                  placeholder="Enter next steps..."
+                  className="min-h-[60px] resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="most_recent_notes">Notes</Label>
+                <Textarea
+                  id="most_recent_notes"
+                  value={formData.most_recent_notes}
+                  onChange={(e) => handleInputChange("most_recent_notes", e.target.value)}
+                  placeholder="Latest notes or updates..."
+                  className="min-h-[60px] resize-none"
+                />
+              </div>
             </div>
-          </div>
           </form>
         </div>
 
