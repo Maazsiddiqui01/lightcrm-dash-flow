@@ -5,8 +5,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Shuffle, RotateCcw, AlertCircle } from "lucide-react";
-import { CompactMasterTemplateSelector } from "./CompactMasterTemplateSelector";
-import { CompactCoreSettings } from "./CompactCoreSettings";
 import { ModulesCard, type ModuleStates } from "./ModulesCard";
 import { SubjectPoolSummary } from "./SubjectPoolSummary";
 import { SubjectPoolDialog } from "./SubjectPoolDialog";
@@ -206,27 +204,6 @@ export function SharedSettingsPanel({
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-6 pt-2">
-                  {/* Master Template */}
-                  <CompactMasterTemplateSelector
-                    value={masterTemplateKey}
-                    onChange={onMasterTemplateChange}
-                    disabled={isDisabled}
-                  />
-
-                  {/* Core Settings */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Core Settings</h4>
-                    <CompactCoreSettings
-                      tone={toneOverride}
-                      length={lengthOverride}
-                      daysSince={daysSinceContact}
-                      onToneChange={onToneOverrideChange}
-                      onLengthChange={onLengthOverrideChange}
-                      onDaysSinceChange={onDaysSinceContactChange}
-                      disabled={isDisabled}
-                    />
-                  </div>
-
                   {/* Modules Card */}
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">Content Modules</h4>

@@ -15,8 +15,6 @@ import { QueueDialog } from "@/components/email-builder/QueueDialog";
 import { useBatchQueueManager } from "@/hooks/useBatchQueueManager";
 import { buildBatchPayload } from "@/lib/batchPayloadBuilder";
 import type { FilterValues, ContactOverride } from "@/types/groupEmailBuilder";
-import { MasterTemplateSelector } from "@/components/email-builder/MasterTemplateSelector";
-import { EmailBuilderCoreSettings } from "@/components/email-builder/EmailBuilderCoreSettings";
 import { ModulesCard, type ModuleStates, MODULE_DEFAULTS, getModuleDefaultsFromMaster } from "@/components/email-builder/ModulesCard";
 import { useMasterTemplates } from "@/hooks/useMasterTemplates";
 import { ArticlePicker } from "@/components/email-builder/ArticlePicker";
@@ -1793,22 +1791,6 @@ ${draftResult.signature}`;
 
           {/* Right Column - Configuration */}
           <div className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
-            {/* Master Template */}
-            <MasterTemplateSelector
-              selectedContactId={selectedContact?.contact_id || null}
-              selectedContactEmail={selectedContact?.email || null}
-            />
-            
-            {/* Core Settings */}
-            <EmailBuilderCoreSettings
-              daysSinceContact={daysSinceContact}
-              onDaysSinceContactChange={setDaysSinceContact}
-              toneOverride={toneOverride}
-              onToneOverrideChange={setToneOverride}
-              lengthOverride={lengthOverride}
-              onLengthOverrideChange={setLengthOverride}
-            />
-
             {/* Email Modules Configuration */}
             <ModulesCard
               masterTemplate={masterTemplate}
