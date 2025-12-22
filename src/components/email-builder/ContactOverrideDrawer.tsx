@@ -172,9 +172,9 @@ export function ContactOverrideDrawer({
     
     const seed = generateSeed(contactId);
     
-    // 1. Randomize module order
-    const randomizedOrder = shuffleModuleOrder(moduleOrder, seed);
-    setModuleOrder(randomizedOrder as Array<keyof ModuleStates>);
+    // Note: Module order is no longer randomized - only content/selections change
+    
+    // Randomize phrases
     
     // 2. Randomize phrases
     const newSelections: ModuleSelections = { ...moduleSelections };
