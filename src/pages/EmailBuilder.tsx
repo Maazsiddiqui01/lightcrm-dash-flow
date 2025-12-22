@@ -1839,8 +1839,8 @@ ${draftResult.signature}`;
               />
             )}
             
-            {/* Module Selection Validation Warnings */}
-            {moduleValidationErrors.length > 0 && (
+            {/* Module Selection Validation Warnings - only show when contact is selected */}
+            {contactData && moduleValidationErrors.length > 0 && (
               <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
                 <p className="text-sm text-destructive font-medium">
                   Module Configuration Required:
@@ -1853,8 +1853,8 @@ ${draftResult.signature}`;
               </div>
             )}
             
-            {/* Subject Line Validation Warning */}
-            {moduleStates.subject_line !== 'never' && !moduleSelections.subject_line?.phraseId && (
+            {/* Subject Line Validation Warning - only show when contact is selected */}
+            {contactData && moduleStates.subject_line !== 'never' && !moduleSelections.subject_line?.phraseId && (
               <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                 <p className="text-sm text-destructive font-medium">
                   ⚠️ Subject Line must be selected
