@@ -430,21 +430,9 @@ function EmailBuilderContent() {
     setRandomizationSeed(seed);
     
     // Track changes for visual feedback
-    const positionChanges = new Set<string>();
     const contentChanges = new Set<string>();
     
-    // 1. Randomize module order (respect pins)
-    const randomizedOrder = shuffleModuleOrder(moduleOrder, seed);
-    
-    // Detect position changes
-    randomizedOrder.forEach((moduleKey, newIndex) => {
-      const oldIndex = moduleOrder.indexOf(moduleKey as keyof ModuleStates);
-      if (oldIndex !== newIndex) {
-        positionChanges.add(moduleKey);
-      }
-    });
-    
-    setModuleOrder(randomizedOrder as Array<keyof ModuleStates>);
+    // Note: Module order is no longer randomized - only content/selections change
     
     // 2. Randomize phrases for each phrase-driven module
     const newSelections: ModuleSelections = { ...moduleSelections };
@@ -536,17 +524,15 @@ function EmailBuilderContent() {
     setModuleSelections(newSelections);
     setIsRandomized(true);
     
-    // Combine all changes for highlighting
-    const allChanges = new Set([...positionChanges, ...contentChanges]);
-    setChangedModules(allChanges);
+    // Set changed modules for highlighting
+    setChangedModules(contentChanges);
     
     // Enhanced toast with statistics
-    const positionCount = positionChanges.size;
     const contentCount = contentChanges.size;
     
     toast({
       title: "✨ Randomization Complete",
-      description: `${positionCount} position change${positionCount !== 1 ? 's' : ''}, ${contentCount} content change${contentCount !== 1 ? 's' : ''}`,
+      description: `${contentCount} content change${contentCount !== 1 ? 's' : ''}`,
     });
   };
 
