@@ -17,6 +17,7 @@ export type PhraseCategory =
   | 'platforms'
   | 'addons'
   | 'talking_points'
+  | 'talking_points_insurance'
   | 'org_update'
   | 'attachments'
   | 'focus_area_defaults'
@@ -127,6 +128,7 @@ export const PHRASE_CATEGORIES: Record<PhraseCategory, string> = {
   platforms: 'Platforms',
   addons: 'Add-on Opportunities',
   talking_points: 'Suggested Talking Points',
+  talking_points_insurance: 'Insurance Services Strike Zone',
   org_update: 'General Org Update',
   attachments: 'Attachments',
   focus_area_defaults: 'Focus Area Defaults',
