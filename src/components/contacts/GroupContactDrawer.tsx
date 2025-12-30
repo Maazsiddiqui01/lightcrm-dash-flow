@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Users, Calendar, Target, ExternalLink, Clock, Edit, Save, X, Trash2, UserMinus, UserPlus } from "lucide-react";
+import { Mail, Users, Calendar, Target, ExternalLink, Clock, Edit, Save, X, Trash2, UserMinus, UserPlus, Loader2, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +46,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const [editedRoles, setEditedRoles] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
   // Fetch canonical lookup options
   const { data: sectorOptions = [] } = useSectors();
@@ -199,6 +200,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
       return;
     }
 
+    setRemovingMemberId(contactId);
     try {
       await removeContactMutation.mutateAsync({
         contactId,
@@ -209,8 +211,13 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
         title: "Member Removed",
         description: `${memberName} has been removed from the group.`,
       });
+      
+      // Trigger update to refresh data
+      onUpdate?.();
     } catch (error) {
       // Error already handled by mutation
+    } finally {
+      setRemovingMemberId(null);
     }
   };
 
@@ -394,6 +401,10 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5" />
               <h3 className="text-lg font-semibold">Members ({group.member_count})</h3>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
+                <CheckCircle2 className="h-3 w-3" />
+                <span>Changes save automatically</span>
+              </div>
             </div>
 
             {/* TO Members */}
@@ -410,6 +421,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                       onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.contact_id]: role }))}
                       onRemove={() => handleRemoveMember(member.contact_id, member.full_name)}
                       groupId={group.group_id}
+                      isRemoving={removingMemberId === member.contact_id}
                     />
                   ))}
                 </div>
@@ -430,6 +442,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                       onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.contact_id]: role }))}
                       onRemove={() => handleRemoveMember(member.contact_id, member.full_name)}
                       groupId={group.group_id}
+                      isRemoving={removingMemberId === member.contact_id}
                     />
                   ))}
                 </div>
@@ -450,6 +463,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                       onRoleChange={(role) => setEditedRoles(prev => ({ ...prev, [member.contact_id]: role }))}
                       onRemove={() => handleRemoveMember(member.contact_id, member.full_name)}
                       groupId={group.group_id}
+                      isRemoving={removingMemberId === member.contact_id}
                     />
                   ))}
                 </div>
@@ -473,6 +487,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                       onRemove={() => handleRemoveMember(member.contact_id, member.full_name)}
                       isExcluded
                       groupId={group.group_id}
+                      isRemoving={removingMemberId === member.contact_id}
                     />
                   ))}
                 </div>
@@ -573,7 +588,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   );
 }
 
-function MemberCard({ member, editMode, editedRole, onRoleChange, onRemove, isExcluded, groupId }: { 
+function MemberCard({ member, editMode, editedRole, onRoleChange, onRemove, isExcluded, groupId, isRemoving }: { 
   member: any; 
   editMode?: boolean;
   editedRole?: string;
@@ -581,9 +596,10 @@ function MemberCard({ member, editMode, editedRole, onRoleChange, onRemove, isEx
   onRemove?: () => void;
   isExcluded?: boolean;
   groupId?: string;
+  isRemoving?: boolean;
 }) {
   return (
-    <div className={`border rounded-lg p-3 space-y-1 ${isExcluded ? 'bg-muted/30' : ''}`}>
+    <div className={`border rounded-lg p-3 space-y-1 ${isExcluded ? 'bg-muted/30' : ''} ${isRemoving ? 'opacity-50' : ''}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="font-medium">{member.full_name}</div>
@@ -615,10 +631,15 @@ function MemberCard({ member, editMode, editedRole, onRoleChange, onRemove, isEx
               variant="ghost"
               size="sm"
               onClick={onRemove}
+              disabled={isRemoving}
               className="h-8 w-8 p-0"
               title="Remove from group"
             >
-              <UserMinus className="h-4 w-4 text-destructive" />
+              {isRemoving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UserMinus className="h-4 w-4 text-destructive" />
+              )}
             </Button>
           )}
         </div>

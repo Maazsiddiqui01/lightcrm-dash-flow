@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
 import { GroupContactDrawer } from "./GroupContactDrawer";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSectors, useFocusAreas } from "@/hooks/useLookups";
 
 export function GroupContactsTable() {
-  const [selectedGroup, setSelectedGroup] = useState<GroupContactView | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // Store only the ID; derive the group data from query results for instant UI updates
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [editedRows, setEditedRows] = useState<Record<string, { 
@@ -38,9 +38,22 @@ export function GroupContactsTable() {
 
   const { data: groups = [], isLoading, error, refetch } = useGroupContactsView();
 
+  // Derive selectedGroup from query data - ensures instant UI updates when members change
+  const selectedGroup = selectedGroupId 
+    ? groups.find(g => g.group_id === selectedGroupId) || null 
+    : null;
+  const isDrawerOpen = !!selectedGroupId;
+
+  // Handle case where group is deleted or no longer exists
+  useEffect(() => {
+    if (selectedGroupId && !selectedGroup && !isLoading && groups.length > 0) {
+      // Group was deleted or no longer exists, close the drawer
+      setSelectedGroupId(null);
+    }
+  }, [selectedGroupId, selectedGroup, isLoading, groups.length]);
+
   const handleRowClick = (group: GroupContactView) => {
-    setSelectedGroup(group);
-    setIsDrawerOpen(true);
+    setSelectedGroupId(group.group_id);
   };
 
   const handleSaveChanges = async () => {
@@ -511,8 +524,7 @@ export function GroupContactsTable() {
         group={selectedGroup}
         open={isDrawerOpen}
         onOpenChange={(open) => {
-          setIsDrawerOpen(open);
-          if (!open) setSelectedGroup(null);
+          if (!open) setSelectedGroupId(null);
         }}
         onUpdate={refetch}
       />

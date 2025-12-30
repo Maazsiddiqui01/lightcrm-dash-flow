@@ -73,43 +73,43 @@ export function AllContactsTable() {
     fetchContact();
   }, [selectedContactId]);
 
-  // Fetch group when selected
-  useEffect(() => {
+  // Fetch group when selected - refetch function to get latest data
+  const fetchGroup = async () => {
     if (!selectedGroupId) {
       setSelectedGroup(null);
       return;
     }
 
-    const fetchGroup = async () => {
-      setLoadingGroup(true);
-      try {
-        const { data, error } = await supabase.rpc('get_group_contacts_view');
-        
-        if (error) throw error;
-        
-        const group = data.find((g: any) => g.group_id === selectedGroupId);
-        if (group) {
-          const membersData = typeof group.members === 'string' 
-            ? JSON.parse(group.members) 
-            : (Array.isArray(group.members) ? group.members : []);
-            
-          setSelectedGroup({
-            ...group,
-            members: membersData
-          } as GroupContactView);
-        } else {
-          toast.error('Group not found');
-          setSelectedGroupId(null);
-        }
-      } catch (err) {
-        console.error('Error fetching group:', err);
-        toast.error('Failed to load group details');
+    setLoadingGroup(true);
+    try {
+      const { data, error } = await supabase.rpc('get_group_contacts_view');
+      
+      if (error) throw error;
+      
+      const group = data.find((g: any) => g.group_id === selectedGroupId);
+      if (group) {
+        const membersData = typeof group.members === 'string' 
+          ? JSON.parse(group.members) 
+          : (Array.isArray(group.members) ? group.members : []);
+          
+        setSelectedGroup({
+          ...group,
+          members: membersData
+        } as GroupContactView);
+      } else {
+        toast.error('Group not found');
         setSelectedGroupId(null);
-      } finally {
-        setLoadingGroup(false);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching group:', err);
+      toast.error('Failed to load group details');
+      setSelectedGroupId(null);
+    } finally {
+      setLoadingGroup(false);
+    }
+  };
 
+  useEffect(() => {
     fetchGroup();
   }, [selectedGroupId]);
 
@@ -405,7 +405,9 @@ export function AllContactsTable() {
             }
           }}
           onUpdate={() => {
-            // Invalidate all views for sync
+            // Re-fetch group data to reflect changes immediately
+            fetchGroup();
+            // Also invalidate all views for sync
             queryClient.invalidateQueries({ queryKey: ['all-contacts-view'] });
             queryClient.invalidateQueries({ queryKey: ['contacts'] });
             queryClient.invalidateQueries({ queryKey: ['group-contacts-view'] });
