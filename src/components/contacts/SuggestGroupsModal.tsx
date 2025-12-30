@@ -292,8 +292,14 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
       {/* Group Configuration Modal */}
       {selectedSuggestion && (
         <GroupConfigModal
+          key={selectedSuggestion.suggestion_id}
           open={configModalOpen}
-          onOpenChange={setConfigModalOpen}
+          onOpenChange={(open) => {
+            setConfigModalOpen(open);
+            if (!open) {
+              setSelectedSuggestion(null);
+            }
+          }}
           suggestedName={selectedSuggestion.suggestedName}
           members={selectedSuggestion.members.map(m => ({
             contactId: m.contactId!,
