@@ -170,15 +170,15 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
     setConfigModalOpen(true);
   };
 
-  const handleDismiss = async (suggestionId: string) => {
-    await updateStatus({
+  const handleDismiss = (suggestionId: string) => {
+    updateStatus({
       suggestionId,
       status: 'dismissed',
     });
   };
 
-  const handleRestore = async (suggestionId: string) => {
-    await updateStatus({
+  const handleRestore = (suggestionId: string) => {
+    updateStatus({
       suggestionId,
       status: 'pending',
     });

@@ -8,6 +8,7 @@ import type {
   SuggestionMode,
   SuggestionStatus
 } from '@/types/groupSuggestion';
+import type { SuggestionCounts } from '@/hooks/useGroupSuggestionCounts';
 
 /**
  * Fetch persisted group suggestions from database
@@ -173,16 +174,86 @@ export function useUpdateSuggestionStatus() {
       if (error) throw error;
       return data as unknown as GroupSuggestion;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-suggestions'] });
-      queryClient.invalidateQueries({ queryKey: ['group-suggestion-counts'] });
+    
+    // Optimistic update for instant UI feedback
+    onMutate: async (input) => {
+      // Cancel outgoing refetches to prevent overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ['group-suggestions'] });
+      await queryClient.cancelQueries({ queryKey: ['group-suggestion-counts'] });
+      
+      // Snapshot previous values for rollback
+      const previousSuggestions = queryClient.getQueriesData({ queryKey: ['group-suggestions'] });
+      const previousCounts = queryClient.getQueriesData({ queryKey: ['group-suggestion-counts'] });
+      
+      // Find the suggestion's current status before update
+      let previousStatus: SuggestionStatus = 'pending';
+      queryClient.setQueriesData(
+        { queryKey: ['group-suggestions'] },
+        (old: GroupSuggestion[] | undefined) => {
+          if (!old) return old;
+          return old.map(suggestion => {
+            if (suggestion.suggestion_id === input.suggestionId) {
+              previousStatus = suggestion.status as SuggestionStatus;
+              return {
+                ...suggestion,
+                status: input.status,
+                dismissed_at: input.status === 'dismissed' ? new Date().toISOString() : null,
+                approved_at: input.status === 'approved' ? new Date().toISOString() : null,
+              };
+            }
+            return suggestion;
+          });
+        }
+      );
+      
+      // Optimistically update counts
+      queryClient.setQueriesData(
+        { queryKey: ['group-suggestion-counts'] },
+        (old: SuggestionCounts | undefined) => {
+          if (!old) return old;
+          const newCounts = { ...old };
+          
+          // Decrement old status count
+          if (previousStatus === 'pending') newCounts.pending = Math.max(0, newCounts.pending - 1);
+          else if (previousStatus === 'approved') newCounts.approved = Math.max(0, newCounts.approved - 1);
+          else if (previousStatus === 'dismissed') newCounts.dismissed = Math.max(0, newCounts.dismissed - 1);
+          
+          // Increment new status count
+          if (input.status === 'pending') newCounts.pending++;
+          else if (input.status === 'approved') newCounts.approved++;
+          else if (input.status === 'dismissed') newCounts.dismissed++;
+          
+          return newCounts;
+        }
+      );
+      
+      return { previousSuggestions, previousCounts };
     },
-    onError: (error: Error) => {
+    
+    // Rollback on error
+    onError: (error: Error, _input, context) => {
+      if (context?.previousSuggestions) {
+        for (const [queryKey, data] of context.previousSuggestions) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
+      if (context?.previousCounts) {
+        for (const [queryKey, data] of context.previousCounts) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
+      
       toast({
-        title: 'Error updating suggestion status',
+        title: 'Error updating suggestion',
         description: error.message,
         variant: 'destructive',
       });
+    },
+    
+    // Always refetch after mutation settles for consistency
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['group-suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['group-suggestion-counts'] });
     },
   });
 }
