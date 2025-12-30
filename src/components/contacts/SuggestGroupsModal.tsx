@@ -42,15 +42,41 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
   const [addedMembers, setAddedMembers] = useState<Record<string, ContactSearchResult[]>>({});
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
-  // Initialize member selections from persisted suggestions
+  // Initialize and clean up member selections from persisted suggestions
   useEffect(() => {
     if (!persistedSuggestions) return;
     
+    const validSuggestionIds = new Set(persistedSuggestions.map(s => s.suggestion_id));
+    
     setMemberSelections(prev => {
-      const next = { ...prev };
+      const next: Record<string, Set<string>> = {};
+      
       for (const suggestion of persistedSuggestions) {
-        if (!next[suggestion.suggestion_id]) {
-          next[suggestion.suggestion_id] = new Set(suggestion.members.map(m => m.email_address));
+        const validEmails = new Set(suggestion.members.map(m => m.email_address));
+        const existingSelection = prev[suggestion.suggestion_id];
+        
+        if (existingSelection) {
+          // Keep only valid emails that still exist in the suggestion
+          const cleanedSelection = new Set(
+            [...existingSelection].filter(email => validEmails.has(email))
+          );
+          // If all selections were removed, re-select all members
+          next[suggestion.suggestion_id] = cleanedSelection.size > 0 ? cleanedSelection : validEmails;
+        } else {
+          // Initialize new suggestions with all members selected
+          next[suggestion.suggestion_id] = validEmails;
+        }
+      }
+      
+      return next;
+    });
+    
+    // Clean up added members for suggestions that no longer exist
+    setAddedMembers(prev => {
+      const next: Record<string, ContactSearchResult[]> = {};
+      for (const [suggestionId, members] of Object.entries(prev)) {
+        if (validSuggestionIds.has(suggestionId)) {
+          next[suggestionId] = members;
         }
       }
       return next;
@@ -61,7 +87,14 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
     analyzeSuggestions(undefined, {
       onSuccess: async (freshSuggestions: EdgeGroupSuggestion[]) => {
         // Fetch dismissed suggestion IDs to filter them out
-        const dismissedIds = await fetchDismissedSuggestionIds(mode);
+        let dismissedIds: Set<string>;
+        try {
+          dismissedIds = await fetchDismissedSuggestionIds(mode);
+        } catch (error) {
+          console.error('Error fetching dismissed IDs:', error);
+          dismissedIds = new Set();
+          toast.warning('Could not check dismissed suggestions. Some may reappear.');
+        }
         
         // Filter out previously dismissed suggestions
         const newSuggestions = freshSuggestions.filter(
@@ -543,7 +576,11 @@ function SuggestionCard({
   onAddMember,
   onRemoveAddedMember
 }: SuggestionCardProps) {
-  const selectedCount = selectedMembers.size + addedMembers.length;
+  // Validate selectedMembers only contains valid emails from this suggestion
+  const validSelectedCount = [...selectedMembers].filter(email => 
+    suggestion.members.some(m => m.email === email)
+  ).length;
+  const selectedCount = Math.min(validSelectedCount + addedMembers.length, suggestion.members.length + addedMembers.length);
   const totalCount = suggestion.members.length + addedMembers.length;
   const status = suggestion.status || 'pending';
   const isManualGroup = (suggestion as any).isManualGroup;
@@ -677,7 +714,8 @@ function SuggestionCard({
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      if (selectedCount === suggestion.members.length) {
+                      // Use validSelectedCount (original members only) for toggle logic
+                      if (validSelectedCount === suggestion.members.length) {
                         onDeselectAll();
                       } else {
                         onSelectAll();
@@ -685,7 +723,7 @@ function SuggestionCard({
                     }}
                     className="h-6 text-xs"
                   >
-                    {selectedCount === suggestion.members.length ? 'Deselect All' : 'Select All'}
+                    {validSelectedCount === suggestion.members.length ? 'Deselect All' : 'Select All'}
                   </Button>
                 </div>
                 
@@ -735,6 +773,7 @@ function SuggestionCard({
 
                 {/* Add More Members Section */}
                 <AddMemberSearch 
+                  key={isExpanded ? 'open' : 'closed'}
                   excludeIds={[
                     ...suggestion.members.map(m => m.contactId || '').filter(Boolean),
                     ...addedMembers.map(c => c.id)
