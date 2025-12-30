@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +66,17 @@ export function GroupConfigModal({
 
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Reset state when props change (safety net for component reuse)
+  useEffect(() => {
+    setGroupName(suggestedName);
+    setFocusArea(suggestedFocusArea || '');
+    setSelectedSector(sector || '');
+    setAllMembers(members.map(m => ({ ...m, isManuallyAdded: false })));
+    setSelectedMembers(new Set(members.map(m => m.contactId)));
+    setMemberRoles(Object.fromEntries(members.map(m => [m.contactId, 'to' as const])));
+    setSearchTerm('');
+  }, [suggestedName, suggestedFocusArea, sector, members]);
 
   const { data: focusAreas = [] } = useDistinctFocusAreas();
   const { data: sectors = [] } = useDistinctSectors();

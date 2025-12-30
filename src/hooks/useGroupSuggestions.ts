@@ -76,6 +76,7 @@ export function useSaveGroupSuggestion() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group-suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['group-suggestion-counts'] });
     },
     onError: (error: Error) => {
       toast({
@@ -121,6 +122,7 @@ export function useBulkSaveGroupSuggestions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group-suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['group-suggestion-counts'] });
     },
     onError: (error: Error) => {
       toast({
@@ -173,6 +175,7 @@ export function useUpdateSuggestionStatus() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group-suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['group-suggestion-counts'] });
     },
     onError: (error: Error) => {
       toast({
