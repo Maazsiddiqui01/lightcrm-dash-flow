@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { buildModuleSequence } from './modulePositions';
 import { interpolateContent } from './contentInterpolation';
 import { pickRandomPhrase, generateSeed } from './randomization';
+import { hasInsuranceServicesFocusArea } from '@/utils/focusAreaDetection';
 
 export interface EnhancedDraftPayload {
   // Core contact info
@@ -64,6 +65,7 @@ export interface EnhancedDraftPayload {
     }>;
     platforms: string[];
     addons: string[];
+    hasInsuranceServices: boolean;  // Flag for Insurance Services focus area
   };
   
   // Opportunities (Active Tier 1 only, no cap)
@@ -765,6 +767,7 @@ export async function buildEnhancedDraftPayload(
       })),
       platforms,
       addons,
+      hasInsuranceServices: hasInsuranceServicesFocusArea(metadata.focusAreas),
     },
     opportunities: {
       hasOpps: metadata.topOpportunities.length > 0,
@@ -863,6 +866,7 @@ export async function buildEnhancedDraftPayload(
       descriptions: metadata.focusAreaDescriptions,
       platforms: [], // TODO: Extract from focus area descriptions
       addons: [], // TODO: Extract from focus area descriptions
+      hasInsuranceServices: hasInsuranceServicesFocusArea(contact.focus_areas),
     },
     opportunities: {
       hasOpps: contact.focus_areas.length > 0 && metadata.topOpportunities.length > 0,
@@ -967,6 +971,7 @@ function createFailedPayload(
       descriptions: [],
       platforms: [],
       addons: [],
+      hasInsuranceServices: false,
     },
     opportunities: {
       hasOpps: false,

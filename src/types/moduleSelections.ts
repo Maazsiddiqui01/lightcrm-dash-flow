@@ -35,6 +35,9 @@ export interface ModuleSelection {
   
   // Variable interpolation data
   variables?: Record<string, any>;
+  
+  // Insurance Services specific flag
+  isInsuranceSpecific?: boolean;
 }
 
 export interface ModuleSelections {
