@@ -10,6 +10,8 @@ import { useGroupSuggestions, useBulkSaveGroupSuggestions, useUpdateSuggestionSt
 import type { SuggestionStatus, GroupMember } from '@/types/groupSuggestion';
 import { GroupConfigModal } from './GroupConfigModal';
 import { Loader2, Users, Mail, Calendar, Sparkles, Building, Activity, X, Check, RotateCcw } from 'lucide-react';
+import { fetchDismissedSuggestionIds } from '@/hooks/useDismissedSuggestionIds';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 interface SuggestGroupsModalProps {
@@ -49,8 +51,26 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
   const handleStartAnalysis = async () => {
     analyzeSuggestions(undefined, {
       onSuccess: async (freshSuggestions: EdgeGroupSuggestion[]) => {
+        // Fetch dismissed suggestion IDs to filter them out
+        const dismissedIds = await fetchDismissedSuggestionIds(mode);
+        
+        // Filter out previously dismissed suggestions
+        const newSuggestions = freshSuggestions.filter(
+          s => !dismissedIds.has(s.suggestion_id)
+        );
+        
+        const dismissedCount = freshSuggestions.length - newSuggestions.length;
+        
+        if (newSuggestions.length === 0) {
+          if (dismissedCount > 0) {
+            toast.info(`No new suggestions found. ${dismissedCount} previously dismissed suggestion${dismissedCount > 1 ? 's were' : ' was'} skipped.`);
+          }
+          setHasAnalyzed(true);
+          return;
+        }
+        
         // Convert edge function suggestions to database format
-        const suggestionsToSave = freshSuggestions.map(s => ({
+        const suggestionsToSave = newSuggestions.map(s => ({
           suggestion_id: s.suggestion_id,
           mode,
           suggested_name: s.suggestedName,
@@ -74,6 +94,11 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
         }));
 
         await bulkSaveSuggestions(suggestionsToSave);
+        
+        if (dismissedCount > 0) {
+          toast.success(`Found ${newSuggestions.length} new suggestion${newSuggestions.length > 1 ? 's' : ''}. ${dismissedCount} previously dismissed ${dismissedCount > 1 ? 'were' : 'was'} skipped.`);
+        }
+        
         setHasAnalyzed(true);
       },
     });
