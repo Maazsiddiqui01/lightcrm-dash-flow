@@ -34,6 +34,7 @@ export const FOCUS_AREAS = [
   { id: 'media-marketing', label: 'Media & Marketing', sector_id: 'services' },
   { id: 'logistics-supply-chain', label: 'Logistics & Supply Chain', sector_id: 'services' },
   { id: 'real-estate-facilities', label: 'Real Estate & Facilities', sector_id: 'services' },
+  { id: 'property-management', label: 'Property Management', sector_id: 'services' },
   
   // General
   { id: 'distribution', label: 'Distribution', sector_id: 'general' },
