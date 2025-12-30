@@ -450,11 +450,13 @@ export function SuggestGroupsModal({ open, onOpenChange }: SuggestGroupsModalPro
             }
           }}
           suggestedName={selectedSuggestion.suggestedName}
-          members={selectedSuggestion.members.map(m => ({
-            contactId: m.contactId!,
-            email: m.email,
-            name: m.name || m.email
-          }))}
+          members={selectedSuggestion.members
+            .filter(m => m.contactId && m.contactId !== '')
+            .map(m => ({
+              contactId: m.contactId!,
+              email: m.email,
+              name: m.name || m.email
+            }))}
           sector={selectedSuggestion.sector}
           focusArea={selectedSuggestion.focusArea}
           organization={selectedSuggestion.organization}
