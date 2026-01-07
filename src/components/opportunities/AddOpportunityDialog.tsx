@@ -369,7 +369,6 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                 onChange={handleFocusAreaChange}
                 disabled={isLoading}
                 label="LG Focus Area *"
-                sectorId={selectedSectorId}
               />
 
               <SingleSelectDropdown

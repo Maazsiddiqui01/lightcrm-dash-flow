@@ -567,7 +567,6 @@ export function AddContactDialog({ open, onClose, onContactAdded }: AddContactDi
                     onChange={(newFocusAreas) => handleFocusAreaChange(index, newFocusAreas)}
                     disabled={focusAreasQuery.isLoading}
                     label="LG Focus Areas *"
-                    sectorId={contact.lg_sector ? sectorsQuery.data?.find(s => s.label === contact.lg_sector)?.meta?.id : undefined}
                   />
 
                   {/* Optional Fields - Collapsible */}
