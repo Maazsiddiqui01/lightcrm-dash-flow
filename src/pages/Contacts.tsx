@@ -273,12 +273,13 @@ export function Contacts() {
         {/* Cadence KPI Cards - Horizontal Scroll on Mobile */}
         <MobileStatsGrid>
           <StatsCard
-            title="Contacts with Cadence Data"
+            title="Entities with Cadence"
             value={stats.loading ? "..." : stats.contactsWithCadenceData}
+            subtitle="Groups + Individuals"
             icon={Clock}
           />
           <StatsCard
-            title="Overdue Contacts"
+            title="Overdue Entities"
             value={stats.loading ? "..." : stats.overdueContacts}
             icon={AlertTriangle}
           />
