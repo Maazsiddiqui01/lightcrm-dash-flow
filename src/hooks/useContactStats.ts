@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateDaysOverUnderMaxLag, calculateEffectiveOutreachData } from "@/utils/contactCalculations";
 import { useToast } from "@/hooks/use-toast";
 
 interface ContactStats {
@@ -306,54 +305,45 @@ export function useContactStats(filters?: ContactFilters): ContactStats {
       const totalMeetings = contactsWithStats?.reduce((sum, contact: any) => 
         sum + (contact.of_meetings || 0), 0) || 0;
 
-      // Calculate cadence metrics
-      let contactsWithCadenceData = 0;
-      let overdueContacts = 0;
-      let intentionallySkippedContacts = 0;
+      // Calculate entity-based cadence metrics from email_pipeline_contacts_v
+      // This treats groups as single entities instead of counting individual members
+      const { data: entityStats, error: entityError } = await supabase
+        .from("email_pipeline_contacts_v")
+        .select("entity_key, is_group, is_overdue");
 
-      if (contactsWithStats) {
-        contactsWithStats.forEach((contact: any) => {
-          // Count intentionally skipped contacts
-          if (contact.intentional_no_outreach) {
-            intentionallySkippedContacts++;
-            return;
-          }
-          
-          const effective = calculateEffectiveOutreachData({
-            group_contact: contact.group_contact,
-            most_recent_contact: contact.most_recent_contact,
-            most_recent_group_contact: contact.most_recent_group_contact,
-            delta: contact.delta,
-            group_delta: contact.group_delta
-          });
-          
-          const daysOverUnder = calculateDaysOverUnderMaxLag(
-            effective.effectiveMostRecentContact,
-            effective.effectiveMaxLagDays
-          );
-          
-          if (daysOverUnder !== null) {
-            contactsWithCadenceData++;
-            if (daysOverUnder < 0) {
-              overdueContacts++;
-            }
-          }
-        });
+      if (entityError) {
+        console.error("[ContactStats] Error fetching entity stats:", entityError);
       }
 
-      const overdueRate = contactsWithCadenceData > 0 
-        ? (overdueContacts / contactsWithCadenceData) * 100 
+      const entitiesWithCadenceData = entityStats?.length || 0;
+      const overdueEntities = entityStats?.filter(e => e.is_overdue).length || 0;
+      const overdueRate = entitiesWithCadenceData > 0 
+        ? (overdueEntities / entitiesWithCadenceData) * 100 
         : 0;
+
+      // Count intentionally skipped at entity level
+      // Groups where ALL members are skipped count as 1, plus individual skipped contacts
+      const { data: skippedData } = await supabase
+        .from("contacts_raw")
+        .select("id, group_contact, intentional_no_outreach")
+        .eq("intentional_no_outreach", true);
+
+      // Dedupe by entity (group_contact or individual id)
+      const skippedEntities = new Set<string>();
+      skippedData?.forEach(c => {
+        skippedEntities.add(c.group_contact || c.id);
+      });
+      const intentionallySkippedEntities = skippedEntities.size;
 
       setStats({
         totalContacts: totalContacts || 0,
         activeContacts: activeContacts || 0,
         totalEmails,
         totalMeetings,
-        contactsWithCadenceData,
-        overdueContacts,
+        contactsWithCadenceData: entitiesWithCadenceData,
+        overdueContacts: overdueEntities,
         overdueRate,
-        intentionallySkippedContacts,
+        intentionallySkippedContacts: intentionallySkippedEntities,
         loading: false,
       });
     } catch (error) {
