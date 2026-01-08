@@ -26,6 +26,7 @@ import Chat from "@/pages/Chat";
 import { Auth } from "@/pages/Auth";
 import { SetPassword } from "@/pages/SetPassword";
 import NotFound from "@/pages/NotFound";
+import { LgHorizons } from "@/pages/LgHorizons";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { PageTransition } from "@/components/shared/PageTransition";
@@ -65,6 +66,7 @@ function App() {
                       <Route path="/contacts" element={<Contacts />} />
                       <Route path="/missing-contacts" element={<MissingContacts />} />
                       <Route path="/opportunities" element={<Opportunities />} />
+                      <Route path="/lg-horizons" element={<LgHorizons />} />
                       <Route path="/interactions" element={<Interactions />} />
                       <Route path="/articles" element={<Articles />} />
                       <Route path="/email-builder" element={<EmailBuilder />} />

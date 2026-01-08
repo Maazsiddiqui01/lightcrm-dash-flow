@@ -1,0 +1,426 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StatsCard } from "@/components/shared/StatsCard";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { Plus, Building2, Users2, TrendingUp, DollarSign, Trash2, UserPlus } from "lucide-react";
+import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
+import { CollapsibleFilter } from "@/components/shared/CollapsibleFilter";
+import { MobileStatsGrid } from "@/components/shared/MobileStatsGrid";
+import { FloatingActionButton } from "@/components/shared/FloatingActionButton";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import { HorizonCompaniesTable } from "@/components/horizons/companies/HorizonCompaniesTable";
+import { HorizonCompanyFilterBar } from "@/components/horizons/companies/HorizonCompanyFilterBar";
+import { AddHorizonCompanyDialog } from "@/components/horizons/companies/AddHorizonCompanyDialog";
+import { HorizonGpsTable } from "@/components/horizons/gps/HorizonGpsTable";
+import { HorizonGpFilterBar } from "@/components/horizons/gps/HorizonGpFilterBar";
+import { AddHorizonGpDialog } from "@/components/horizons/gps/AddHorizonGpDialog";
+import { useHorizonCompanyStats } from "@/hooks/useHorizonCompanyStats";
+import { useHorizonGpStats } from "@/hooks/useHorizonGpStats";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useUsersList } from "@/hooks/useUsersList";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+
+export function LgHorizons() {
+  const [activeTab, setActiveTab] = useState<"companies" | "gps">("companies");
+  const [isAddCompanyDialogOpen, setIsAddCompanyDialogOpen] = useState(false);
+  const [isAddGpDialogOpen, setIsAddGpDialogOpen] = useState(false);
+  const [selectedCompanyRows, setSelectedCompanyRows] = useState<string[]>([]);
+  const [selectedGpRows, setSelectedGpRows] = useState<string[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { data: users } = useUsersList();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
+
+  // Company filters
+  const { filters: companyRawFilters, updateFilters: updateCompanyRawFilters, clearFilters: clearCompanyFilters } = useUrlFilters({
+    sector: [],
+    subsector: [],
+    processStatus: [],
+    ownership: [],
+    priority: [],
+    lgRelationship: [],
+    ebitdaMin: undefined,
+    ebitdaMax: undefined,
+    state: [],
+    source: [],
+    parentGp: [],
+  });
+
+  // GP filters
+  const { filters: gpRawFilters, updateFilters: updateGpRawFilters, clearFilters: clearGpFilters } = useUrlFilters({
+    lgRelationship: [],
+    aumMin: undefined,
+    aumMax: undefined,
+    state: [],
+    industrySector: [],
+    priority: [],
+  });
+
+  // Type-safe filter conversion for companies
+  const companyFilters = {
+    sector: (companyRawFilters.sector as string[]) || [],
+    subsector: (companyRawFilters.subsector as string[]) || [],
+    processStatus: (companyRawFilters.processStatus as string[]) || [],
+    ownership: (companyRawFilters.ownership as string[]) || [],
+    priority: (companyRawFilters.priority as string[]) || [],
+    lgRelationship: (companyRawFilters.lgRelationship as string[]) || [],
+    ebitdaMin: typeof companyRawFilters.ebitdaMin === 'number' ? companyRawFilters.ebitdaMin : undefined,
+    ebitdaMax: typeof companyRawFilters.ebitdaMax === 'number' ? companyRawFilters.ebitdaMax : undefined,
+    state: (companyRawFilters.state as string[]) || [],
+    source: (companyRawFilters.source as string[]) || [],
+    parentGp: (companyRawFilters.parentGp as string[]) || [],
+  };
+
+  // Type-safe filter conversion for GPs
+  const gpFilters = {
+    lgRelationship: (gpRawFilters.lgRelationship as string[]) || [],
+    aumMin: typeof gpRawFilters.aumMin === 'number' ? gpRawFilters.aumMin : undefined,
+    aumMax: typeof gpRawFilters.aumMax === 'number' ? gpRawFilters.aumMax : undefined,
+    state: (gpRawFilters.state as string[]) || [],
+    industrySector: (gpRawFilters.industrySector as string[]) || [],
+    priority: (gpRawFilters.priority as string[]) || [],
+  };
+
+  const companyStats = useHorizonCompanyStats(companyFilters);
+  const gpStats = useHorizonGpStats(gpFilters);
+
+  const selectedRows = activeTab === "companies" ? selectedCompanyRows : selectedGpRows;
+  const setSelectedRows = activeTab === "companies" ? setSelectedCompanyRows : setSelectedGpRows;
+  const tableName = activeTab === "companies" ? "lg_horizons_companies" : "lg_horizons_gps";
+
+  const handleBulkAssignment = async (userId: string) => {
+    if (selectedRows.length === 0) return;
+
+    setIsAssigning(true);
+    try {
+      const { error } = await supabase
+        .from(tableName)
+        .update({ created_by: userId })
+        .in('id', selectedRows);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Assigned ${selectedRows.length} ${activeTab} to user`,
+      });
+      setSelectedRows([]);
+      queryClient.invalidateQueries({ queryKey: [`horizon-${activeTab}`] });
+    } catch (error) {
+      console.error('Error in bulk assignment:', error);
+      toast({
+        title: "Error",
+        description: `Failed to assign ${activeTab}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .in('id', selectedRows);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Deleted ${selectedRows.length} ${activeTab === "companies" ? "companies" : "GPs"}`,
+      });
+      
+      setSelectedRows([]);
+      queryClient.invalidateQueries({ queryKey: [`horizon-${activeTab}`] });
+    } catch (error) {
+      console.error('Error in bulk delete:', error);
+      toast({
+        title: "Error",
+        description: `Failed to delete ${activeTab}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsBulkDeleteDialogOpen(false);
+    }
+  };
+
+  const handleAddClick = () => {
+    if (activeTab === "companies") {
+      setIsAddCompanyDialogOpen(true);
+    } else {
+      setIsAddGpDialogOpen(true);
+    }
+  };
+
+  const activeFilters = activeTab === "companies" ? companyFilters : gpFilters;
+  const activeFiltersCount = Object.values(activeFilters).filter(v => 
+    Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null
+  ).length;
+
+  return (
+    <div className="min-h-0 flex-1">
+      <ResponsiveContainer className="flex flex-col gap-6 py-6">
+        {/* Header */}
+        <div className="flex justify-between items-start gap-4">
+          <div>
+            <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>LG Horizons</h1>
+            {!isMobile && (
+              <p className="text-muted-foreground">Track target companies and GP relationships</p>
+            )}
+          </div>
+          {!isMobile && (
+            <div className="flex gap-2">
+              {selectedRows.length > 0 && (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="touch-target" disabled={isAssigning}>
+                        <UserPlus className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">
+                          {isAssigning ? "Assigning..." : `Assign (${selectedRows.length})`}
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {users?.map((user) => (
+                        <DropdownMenuItem
+                          key={user.id}
+                          onClick={() => handleBulkAssignment(user.id)}
+                          disabled={isAssigning}
+                        >
+                          {user.full_name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button 
+                    variant="destructive" 
+                    className="touch-target" 
+                    disabled={isDeleting}
+                    onClick={() => setIsBulkDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">
+                      {isDeleting ? "Deleting..." : `Delete (${selectedRows.length})`}
+                    </span>
+                  </Button>
+                </>
+              )}
+              <Button onClick={handleAddClick} className="bg-primary hover:bg-primary/90 touch-target">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  {activeTab === "companies" ? "Add Company" : "Add GP"}
+                </span>
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "companies" | "gps")}>
+          <TabsList>
+            <TabsTrigger value="companies" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Companies
+            </TabsTrigger>
+            <TabsTrigger value="gps" className="flex items-center gap-2">
+              <Users2 className="h-4 w-4" />
+              GPs
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="companies" className="space-y-6 mt-6">
+            {/* Company Filter Bar */}
+            <CollapsibleFilter activeCount={activeFiltersCount}>
+              <HorizonCompanyFilterBar 
+                filters={companyFilters}
+                onFiltersChange={updateCompanyRawFilters}
+                onClearFilters={clearCompanyFilters}
+              />
+            </CollapsibleFilter>
+
+            {/* Company KPI Cards */}
+            <MobileStatsGrid>
+              <StatsCard
+                title="Total Companies"
+                value={companyStats.loading ? "..." : companyStats.totalCompanies}
+                icon={Building2}
+              />
+              <StatsCard
+                title="Priority 1"
+                value={companyStats.loading ? "..." : companyStats.priority1Count}
+                icon={TrendingUp}
+              />
+              <StatsCard
+                title="Expected/Monitoring"
+                value={companyStats.loading ? "..." : companyStats.expectedMonitoringCount}
+                icon={Users2}
+              />
+              <StatsCard
+                title="Avg EBITDA"
+                value={companyStats.loading ? "..." : companyStats.averageEbitda}
+                icon={DollarSign}
+              />
+            </MobileStatsGrid>
+
+            {/* Companies Table */}
+            <HorizonCompaniesTable 
+              filters={companyFilters}
+              onSelectionChange={setSelectedCompanyRows}
+              selectedRows={selectedCompanyRows}
+            />
+          </TabsContent>
+
+          <TabsContent value="gps" className="space-y-6 mt-6">
+            {/* GP Filter Bar */}
+            <CollapsibleFilter activeCount={activeFiltersCount}>
+              <HorizonGpFilterBar 
+                filters={gpFilters}
+                onFiltersChange={updateGpRawFilters}
+                onClearFilters={clearGpFilters}
+              />
+            </CollapsibleFilter>
+
+            {/* GP KPI Cards */}
+            <MobileStatsGrid>
+              <StatsCard
+                title="Total GPs"
+                value={gpStats.loading ? "..." : gpStats.totalGps}
+                icon={Users2}
+              />
+              <StatsCard
+                title="Priority 1"
+                value={gpStats.loading ? "..." : gpStats.priority1Count}
+                icon={TrendingUp}
+              />
+              <StatsCard
+                title="Total AUM"
+                value={gpStats.loading ? "..." : gpStats.totalAum}
+                icon={DollarSign}
+              />
+              <StatsCard
+                title="Avg Active Holdings"
+                value={gpStats.loading ? "..." : gpStats.avgActiveHoldings}
+                icon={Building2}
+              />
+            </MobileStatsGrid>
+
+            {/* GPs Table */}
+            <HorizonGpsTable 
+              filters={gpFilters}
+              onSelectionChange={setSelectedGpRows}
+              selectedRows={selectedGpRows}
+            />
+          </TabsContent>
+        </Tabs>
+
+        {/* Dialogs */}
+        <AddHorizonCompanyDialog 
+          open={isAddCompanyDialogOpen} 
+          onClose={() => setIsAddCompanyDialogOpen(false)} 
+          onCompanyAdded={() => {
+            setIsAddCompanyDialogOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['horizon-companies'] });
+          }} 
+        />
+
+        <AddHorizonGpDialog 
+          open={isAddGpDialogOpen} 
+          onClose={() => setIsAddGpDialogOpen(false)} 
+          onGpAdded={() => {
+            setIsAddGpDialogOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['horizon-gps'] });
+          }} 
+        />
+
+        <ConfirmDialog
+          open={isBulkDeleteDialogOpen}
+          onOpenChange={setIsBulkDeleteDialogOpen}
+          onConfirm={handleBulkDelete}
+          title={`Delete ${activeTab === "companies" ? "Companies" : "GPs"}`}
+          description={`Are you sure you want to delete ${selectedRows.length} ${activeTab === "companies" ? "companies" : "GPs"}? This action cannot be undone.`}
+          confirmText="Delete All"
+          cancelText="Cancel"
+          variant="destructive"
+        />
+
+        {/* Floating Action Button - Mobile Only */}
+        {isMobile && (
+          <FloatingActionButton
+            onClick={handleAddClick}
+            aria-label={`Add new ${activeTab === "companies" ? "company" : "GP"}`}
+          />
+        )}
+
+        {/* Sticky Bottom Action Bar - Mobile Only when rows selected */}
+        {isMobile && selectedRows.length > 0 && (
+          <div className="mobile-action-bar">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">
+                {selectedRows.length} selected
+              </span>
+              <div className="flex gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      disabled={isAssigning}
+                      className="touch-target"
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Assign
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {users?.map((user) => (
+                      <DropdownMenuItem
+                        key={user.id}
+                        onClick={() => handleBulkAssignment(user.id)}
+                        disabled={isAssigning}
+                      >
+                        {user.full_name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => setIsBulkDeleteDialogOpen(true)}
+                  disabled={isDeleting}
+                  className="touch-target"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export default LgHorizons;

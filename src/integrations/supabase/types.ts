@@ -2310,6 +2310,176 @@ export type Database = {
         }
         Relationships: []
       }
+      lg_horizons_companies: {
+        Row: {
+          additional_information: string | null
+          additional_size_info: string | null
+          company_hq_city: string | null
+          company_hq_state: string | null
+          company_name: string
+          company_url: string | null
+          created_at: string | null
+          created_by: string | null
+          date_of_acquisition: string | null
+          description: string | null
+          ebitda: string | null
+          ebitda_numeric: number | null
+          gp_aum: string | null
+          gp_aum_numeric: number | null
+          gp_contact: string | null
+          id: string
+          latest_process_date: string | null
+          lg_relationship: string | null
+          original_date: string | null
+          ownership: string | null
+          parent_gp_id: string | null
+          parent_gp_name: string | null
+          priority: number | null
+          process_status: string | null
+          revenue: string | null
+          revenue_numeric: number | null
+          sector: string | null
+          source: string | null
+          subsector: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          additional_information?: string | null
+          additional_size_info?: string | null
+          company_hq_city?: string | null
+          company_hq_state?: string | null
+          company_name: string
+          company_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_of_acquisition?: string | null
+          description?: string | null
+          ebitda?: string | null
+          ebitda_numeric?: number | null
+          gp_aum?: string | null
+          gp_aum_numeric?: number | null
+          gp_contact?: string | null
+          id?: string
+          latest_process_date?: string | null
+          lg_relationship?: string | null
+          original_date?: string | null
+          ownership?: string | null
+          parent_gp_id?: string | null
+          parent_gp_name?: string | null
+          priority?: number | null
+          process_status?: string | null
+          revenue?: string | null
+          revenue_numeric?: number | null
+          sector?: string | null
+          source?: string | null
+          subsector?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          additional_information?: string | null
+          additional_size_info?: string | null
+          company_hq_city?: string | null
+          company_hq_state?: string | null
+          company_name?: string
+          company_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_of_acquisition?: string | null
+          description?: string | null
+          ebitda?: string | null
+          ebitda_numeric?: number | null
+          gp_aum?: string | null
+          gp_aum_numeric?: number | null
+          gp_contact?: string | null
+          id?: string
+          latest_process_date?: string | null
+          lg_relationship?: string | null
+          original_date?: string | null
+          ownership?: string | null
+          parent_gp_id?: string | null
+          parent_gp_name?: string | null
+          priority?: number | null
+          process_status?: string | null
+          revenue?: string | null
+          revenue_numeric?: number | null
+          sector?: string | null
+          source?: string | null
+          subsector?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lg_horizons_companies_parent_gp_id_fkey"
+            columns: ["parent_gp_id"]
+            isOneToOne: false
+            referencedRelation: "lg_horizons_gps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lg_horizons_gps: {
+        Row: {
+          active_funds: number | null
+          active_holdings: number | null
+          aum: string | null
+          aum_numeric: number | null
+          created_at: string | null
+          created_by: string | null
+          fund_hq_city: string | null
+          fund_hq_state: string | null
+          gp_contact: string | null
+          gp_name: string
+          gp_url: string | null
+          id: string
+          index_number: number | null
+          industry_sector_focus: string | null
+          lg_relationship: string | null
+          priority: number | null
+          total_funds: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_funds?: number | null
+          active_holdings?: number | null
+          aum?: string | null
+          aum_numeric?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          fund_hq_city?: string | null
+          fund_hq_state?: string | null
+          gp_contact?: string | null
+          gp_name: string
+          gp_url?: string | null
+          id?: string
+          index_number?: number | null
+          industry_sector_focus?: string | null
+          lg_relationship?: string | null
+          priority?: number | null
+          total_funds?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active_funds?: number | null
+          active_holdings?: number | null
+          aum?: string | null
+          aum_numeric?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          fund_hq_city?: string | null
+          fund_hq_state?: string | null
+          gp_contact?: string | null
+          gp_name?: string
+          gp_url?: string | null
+          id?: string
+          index_number?: number | null
+          industry_sector_focus?: string | null
+          lg_relationship?: string | null
+          priority?: number | null
+          total_funds?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       lg_leads_directory: {
         Row: {
           email: string
@@ -2353,6 +2523,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lookup_horizon_process_status: {
+        Row: {
+          created_at: string | null
+          id: string
+          label: string
+          sort_order: number | null
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          label: string
+          sort_order?: number | null
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          label?: string
+          sort_order?: number | null
+          value?: string
+        }
+        Relationships: []
       }
       lookup_sectors: {
         Row: {
