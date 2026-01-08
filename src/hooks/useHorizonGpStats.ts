@@ -40,10 +40,16 @@ export function useHorizonGpStats(filters?: HorizonGpFilters): HorizonGpStats {
     if (!filters) return query;
 
     if (filters.lgRelationship && filters.lgRelationship.length > 0) {
-      const lgQuery = filters.lgRelationship.map(rel => 
-        `lg_relationship.ilike.%${rel}%`
-      ).join(',');
-      query = query.or(lgQuery);
+      const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+      const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+      
+      if (hasNoKnownRelationship && regularValues.length > 0) {
+        query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+      } else if (hasNoKnownRelationship) {
+        query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+      } else if (regularValues.length > 0) {
+        query = query.in('lg_relationship', regularValues);
+      }
     }
 
     if (filters.aumMin !== null && filters.aumMin !== undefined) {

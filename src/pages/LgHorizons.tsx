@@ -297,9 +297,33 @@ export function LgHorizons() {
           )}
         </div>
 
+        {/* Sticky Section Navigation - Both Mode Only */}
+        {recordType === "both" && (
+          <div className="sticky top-16 z-10 bg-background/95 backdrop-blur py-2 border-b -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => document.getElementById('companies-section')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                <Building2 className="h-4 w-4 mr-1" /> 
+                Companies ({companyStats.loading ? "..." : companyStats.totalCompanies})
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => document.getElementById('gps-section')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                <Users2 className="h-4 w-4 mr-1" /> 
+                GPs ({gpStats.loading ? "..." : gpStats.totalGps})
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Companies Section */}
         {showCompanies && (
-          <div className="space-y-6">
+          <div id="companies-section" className="space-y-6 scroll-mt-24">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Building2 className="h-5 w-5" />
               Companies
@@ -349,7 +373,7 @@ export function LgHorizons() {
         {showGps && (
           <>
             {showCompanies && <div className="border-t pt-6" />}
-            <div className="space-y-6">
+            <div id="gps-section" className="space-y-6 scroll-mt-24">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Users2 className="h-5 w-5" />
                 GPs
