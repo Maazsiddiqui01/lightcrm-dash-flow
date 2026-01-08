@@ -126,6 +126,37 @@ export const useHorizonParentGps = () => {
   });
 };
 
+export const useHorizonCompanyCities = () => {
+  return useQuery({
+    queryKey: ['horizon-company-cities'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('lg_horizons_companies')
+        .select('company_hq_city')
+        .not('company_hq_city', 'is', null)
+        .neq('company_hq_city', '');
+      return uniqCasefoldAsOptions(data?.map(r => r.company_hq_city) ?? []);
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+// GP distinct options
+export const useHorizonGpCities = () => {
+  return useQuery({
+    queryKey: ['horizon-gp-cities'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('lg_horizons_gps')
+        .select('fund_hq_city')
+        .not('fund_hq_city', 'is', null)
+        .neq('fund_hq_city', '');
+      return uniqCasefoldAsOptions(data?.map(r => r.fund_hq_city) ?? []);
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
 // GP distinct options
 export const useHorizonGpStates = () => {
   return useQuery({

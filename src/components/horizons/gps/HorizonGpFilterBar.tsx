@@ -4,6 +4,7 @@ import { ComboboxMulti } from '@/components/shared/ComboboxMulti';
 import { RangeInput } from '@/components/shared/RangeInput';
 import {
   useHorizonGpStates,
+  useHorizonGpCities,
   useHorizonGpIndustrySectors,
   useHorizonLgRelationships,
 } from '@/hooks/useHorizonDistinctOptions';
@@ -13,8 +14,13 @@ interface HorizonGpFilters {
   aumMin?: number;
   aumMax?: number;
   state: string[];
+  city: string[];
   industrySector: string[];
   priority: string[];
+  activeFundsMin?: number;
+  activeFundsMax?: number;
+  activeHoldingsMin?: number;
+  activeHoldingsMax?: number;
 }
 
 interface HorizonGpFilterBarProps {
@@ -29,6 +35,7 @@ export function HorizonGpFilterBar({
   onClearFilters 
 }: HorizonGpFilterBarProps) {
   const { data: states = [], isLoading: statesLoading } = useHorizonGpStates();
+  const { data: cities = [], isLoading: citiesLoading } = useHorizonGpCities();
   const { data: industrySectors = [], isLoading: sectorsLoading } = useHorizonGpIndustrySectors();
   const { data: lgRelationships = [], isLoading: lgRelLoading } = useHorizonLgRelationships();
 
@@ -66,7 +73,15 @@ export function HorizonGpFilterBar({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        <ComboboxMulti
+          label="Priority"
+          options={priorityOptions}
+          values={filters.priority}
+          onChange={(values) => updateFilter('priority', values)}
+          searchPlaceholder="Select Priority"
+        />
+
         <ComboboxMulti
           label="LG Relationship"
           options={lgRelationships}
@@ -74,6 +89,15 @@ export function HorizonGpFilterBar({
           onChange={(values) => updateFilter('lgRelationship', values)}
           searchPlaceholder="Search LG Team"
           loading={lgRelLoading}
+        />
+
+        <ComboboxMulti
+          label="Industry/Sector Focus"
+          options={industrySectors}
+          values={filters.industrySector}
+          onChange={(values) => updateFilter('industrySector', values)}
+          searchPlaceholder="Search Sectors"
+          loading={sectorsLoading}
         />
 
         <RangeInput
@@ -87,6 +111,28 @@ export function HorizonGpFilterBar({
           step={0.1}
         />
 
+        <RangeInput
+          label="Active Funds"
+          minValue={filters.activeFundsMin}
+          maxValue={filters.activeFundsMax}
+          onMinChange={(value) => updateFilter('activeFundsMin', value)}
+          onMaxChange={(value) => updateFilter('activeFundsMax', value)}
+          minPlaceholder="Min"
+          maxPlaceholder="Max"
+          step={1}
+        />
+
+        <RangeInput
+          label="Active Holdings"
+          minValue={filters.activeHoldingsMin}
+          maxValue={filters.activeHoldingsMax}
+          onMinChange={(value) => updateFilter('activeHoldingsMin', value)}
+          onMaxChange={(value) => updateFilter('activeHoldingsMax', value)}
+          minPlaceholder="Min"
+          maxPlaceholder="Max"
+          step={1}
+        />
+
         <ComboboxMulti
           label="State"
           options={states}
@@ -97,20 +143,12 @@ export function HorizonGpFilterBar({
         />
 
         <ComboboxMulti
-          label="Industry/Sector Focus"
-          options={industrySectors}
-          values={filters.industrySector}
-          onChange={(values) => updateFilter('industrySector', values)}
-          searchPlaceholder="Search Sectors"
-          loading={sectorsLoading}
-        />
-
-        <ComboboxMulti
-          label="Priority"
-          options={priorityOptions}
-          values={filters.priority}
-          onChange={(values) => updateFilter('priority', values)}
-          searchPlaceholder="Select Priority"
+          label="City"
+          options={cities}
+          values={filters.city}
+          onChange={(values) => updateFilter('city', values)}
+          searchPlaceholder="Search Cities"
+          loading={citiesLoading}
         />
       </div>
     </div>

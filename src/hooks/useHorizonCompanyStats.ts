@@ -18,7 +18,12 @@ interface HorizonCompanyFilters {
   lgRelationship?: string[];
   ebitdaMin?: number;
   ebitdaMax?: number;
+  revenueMin?: number;
+  revenueMax?: number;
+  gpAumMin?: number;
+  gpAumMax?: number;
   state?: string[];
+  city?: string[];
   source?: string[];
   parentGp?: string[];
 }
@@ -76,8 +81,26 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
       query = query.lte('ebitda_numeric', filters.ebitdaMax);
     }
 
+    if (filters.revenueMin !== null && filters.revenueMin !== undefined) {
+      query = query.gte('revenue_numeric', filters.revenueMin);
+    }
+    if (filters.revenueMax !== null && filters.revenueMax !== undefined) {
+      query = query.lte('revenue_numeric', filters.revenueMax);
+    }
+
+    if (filters.gpAumMin !== null && filters.gpAumMin !== undefined) {
+      query = query.gte('gp_aum_numeric', filters.gpAumMin * 1_000_000_000);
+    }
+    if (filters.gpAumMax !== null && filters.gpAumMax !== undefined) {
+      query = query.lte('gp_aum_numeric', filters.gpAumMax * 1_000_000_000);
+    }
+
     if (filters.state && filters.state.length > 0) {
       query = query.in('company_hq_state', filters.state);
+    }
+
+    if (filters.city && filters.city.length > 0) {
+      query = query.in('company_hq_city', filters.city);
     }
 
     if (filters.source && filters.source.length > 0) {

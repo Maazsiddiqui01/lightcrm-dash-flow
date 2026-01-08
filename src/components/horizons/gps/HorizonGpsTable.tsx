@@ -13,8 +13,13 @@ interface HorizonGpFilters {
   aumMin?: number;
   aumMax?: number;
   state: string[];
+  city: string[];
   industrySector: string[];
   priority: string[];
+  activeFundsMin?: number;
+  activeFundsMax?: number;
+  activeHoldingsMin?: number;
+  activeHoldingsMax?: number;
 }
 
 interface HorizonGpsTableProps {
@@ -39,6 +44,9 @@ export function HorizonGpsTable({ filters, selectedRows, onSelectionChange }: Ho
       if (filters.state.length > 0) {
         query = query.in('fund_hq_state', filters.state);
       }
+      if (filters.city.length > 0) {
+        query = query.in('fund_hq_city', filters.city);
+      }
       if (filters.priority.length > 0) {
         const priorityValues = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
         if (priorityValues.length > 0) {
@@ -50,6 +58,18 @@ export function HorizonGpsTable({ filters, selectedRows, onSelectionChange }: Ho
       }
       if (filters.aumMax != null) {
         query = query.lte('aum_numeric', filters.aumMax * 1_000_000_000);
+      }
+      if (filters.activeFundsMin != null) {
+        query = query.gte('active_funds', filters.activeFundsMin);
+      }
+      if (filters.activeFundsMax != null) {
+        query = query.lte('active_funds', filters.activeFundsMax);
+      }
+      if (filters.activeHoldingsMin != null) {
+        query = query.gte('active_holdings', filters.activeHoldingsMin);
+      }
+      if (filters.activeHoldingsMax != null) {
+        query = query.lte('active_holdings', filters.activeHoldingsMax);
       }
       if (searchTerm.trim()) {
         query = query.or(`gp_name.ilike.%${searchTerm}%,industry_sector_focus.ilike.%${searchTerm}%`);
@@ -79,7 +99,12 @@ export function HorizonGpsTable({ filters, selectedRows, onSelectionChange }: Ho
 
   const getPriorityBadge = (priority: number | null) => {
     if (!priority) return null;
-    return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">{priority}</Badge>;
+    const variants: Record<number, string> = {
+      1: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+      2: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+      3: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+    };
+    return <Badge className={variants[priority] || ""}>{priority}</Badge>;
   };
 
   if (isLoading) {
@@ -119,6 +144,7 @@ export function HorizonGpsTable({ filters, selectedRows, onSelectionChange }: Ho
               <TableHead>GP Name</TableHead>
               <TableHead>LG Relationship</TableHead>
               <TableHead>AUM</TableHead>
+              <TableHead>Active Funds</TableHead>
               <TableHead>Active Holdings</TableHead>
               <TableHead>Industry/Sector</TableHead>
               <TableHead>HQ</TableHead>
@@ -127,7 +153,7 @@ export function HorizonGpsTable({ filters, selectedRows, onSelectionChange }: Ho
           <TableBody>
             {gps.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   No GPs found. Import data or add a new GP to get started.
                 </TableCell>
               </TableRow>
@@ -152,6 +178,7 @@ export function HorizonGpsTable({ filters, selectedRows, onSelectionChange }: Ho
                   </TableCell>
                   <TableCell>{gp.lg_relationship}</TableCell>
                   <TableCell>{gp.aum}</TableCell>
+                  <TableCell>{gp.active_funds}</TableCell>
                   <TableCell>{gp.active_holdings}</TableCell>
                   <TableCell className="max-w-xs truncate">{gp.industry_sector_focus}</TableCell>
                   <TableCell>

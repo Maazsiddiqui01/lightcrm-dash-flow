@@ -54,7 +54,12 @@ export function LgHorizons() {
     lgRelationship: [],
     ebitdaMin: undefined,
     ebitdaMax: undefined,
+    revenueMin: undefined,
+    revenueMax: undefined,
+    gpAumMin: undefined,
+    gpAumMax: undefined,
     state: [],
+    city: [],
     source: [],
     parentGp: [],
   });
@@ -65,8 +70,13 @@ export function LgHorizons() {
     aumMin: undefined,
     aumMax: undefined,
     state: [],
+    city: [],
     industrySector: [],
     priority: [],
+    activeFundsMin: undefined,
+    activeFundsMax: undefined,
+    activeHoldingsMin: undefined,
+    activeHoldingsMax: undefined,
   });
 
   // Type-safe filter conversion for companies
@@ -79,7 +89,12 @@ export function LgHorizons() {
     lgRelationship: (companyRawFilters.lgRelationship as string[]) || [],
     ebitdaMin: typeof companyRawFilters.ebitdaMin === 'number' ? companyRawFilters.ebitdaMin : undefined,
     ebitdaMax: typeof companyRawFilters.ebitdaMax === 'number' ? companyRawFilters.ebitdaMax : undefined,
+    revenueMin: typeof companyRawFilters.revenueMin === 'number' ? companyRawFilters.revenueMin : undefined,
+    revenueMax: typeof companyRawFilters.revenueMax === 'number' ? companyRawFilters.revenueMax : undefined,
+    gpAumMin: typeof companyRawFilters.gpAumMin === 'number' ? companyRawFilters.gpAumMin : undefined,
+    gpAumMax: typeof companyRawFilters.gpAumMax === 'number' ? companyRawFilters.gpAumMax : undefined,
     state: (companyRawFilters.state as string[]) || [],
+    city: (companyRawFilters.city as string[]) || [],
     source: (companyRawFilters.source as string[]) || [],
     parentGp: (companyRawFilters.parentGp as string[]) || [],
   };
@@ -90,8 +105,13 @@ export function LgHorizons() {
     aumMin: typeof gpRawFilters.aumMin === 'number' ? gpRawFilters.aumMin : undefined,
     aumMax: typeof gpRawFilters.aumMax === 'number' ? gpRawFilters.aumMax : undefined,
     state: (gpRawFilters.state as string[]) || [],
+    city: (gpRawFilters.city as string[]) || [],
     industrySector: (gpRawFilters.industrySector as string[]) || [],
     priority: (gpRawFilters.priority as string[]) || [],
+    activeFundsMin: typeof gpRawFilters.activeFundsMin === 'number' ? gpRawFilters.activeFundsMin : undefined,
+    activeFundsMax: typeof gpRawFilters.activeFundsMax === 'number' ? gpRawFilters.activeFundsMax : undefined,
+    activeHoldingsMin: typeof gpRawFilters.activeHoldingsMin === 'number' ? gpRawFilters.activeHoldingsMin : undefined,
+    activeHoldingsMax: typeof gpRawFilters.activeHoldingsMax === 'number' ? gpRawFilters.activeHoldingsMax : undefined,
   };
 
   const companyStats = useHorizonCompanyStats(companyFilters);
