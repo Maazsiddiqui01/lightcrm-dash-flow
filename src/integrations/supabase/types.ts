@@ -2327,6 +2327,7 @@ export type Database = {
           gp_aum: string | null
           gp_aum_numeric: number | null
           gp_contact: string | null
+          gp_url: string | null
           id: string
           latest_process_date: string | null
           lg_relationship: string | null
@@ -2359,6 +2360,7 @@ export type Database = {
           gp_aum?: string | null
           gp_aum_numeric?: number | null
           gp_contact?: string | null
+          gp_url?: string | null
           id?: string
           latest_process_date?: string | null
           lg_relationship?: string | null
@@ -2391,6 +2393,7 @@ export type Database = {
           gp_aum?: string | null
           gp_aum_numeric?: number | null
           gp_contact?: string | null
+          gp_url?: string | null
           id?: string
           latest_process_date?: string | null
           lg_relationship?: string | null
