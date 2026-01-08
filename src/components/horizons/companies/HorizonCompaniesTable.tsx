@@ -275,7 +275,7 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
     
     try {
       setLoading(true);
-      let query = supabase.from("lg_horizons_companies").select("*");
+      let query = supabase.from("lg_horizons_companies").select("*").limit(10000);
 
       // Apply filters
       if (filters.sector.length > 0) query = query.in('sector', filters.sector);

@@ -209,11 +209,23 @@ export function LgHorizons() {
       <ResponsiveContainer className="flex flex-col gap-6 py-6">
         {/* Header */}
         <div className="flex justify-between items-start gap-4">
-          <div>
-            <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>LG Horizons</h1>
-            {!isMobile && (
-              <p className="text-muted-foreground">Track target companies and GP relationships</p>
-            )}
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>LG Horizons</h1>
+              {!isMobile && (
+                <p className="text-muted-foreground">Track target companies and GP relationships</p>
+              )}
+            </div>
+            <Select value={recordType} onValueChange={(v) => setRecordType(v as "companies" | "gps" | "both")}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="both">Show Both</SelectItem>
+                <SelectItem value="companies">Companies Only</SelectItem>
+                <SelectItem value="gps">GPs Only</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {!isMobile && (
             <div className="flex gap-2">
@@ -254,12 +266,33 @@ export function LgHorizons() {
                   </Button>
                 </>
               )}
-              <Button onClick={handleAddClick} className="bg-primary hover:bg-primary/90 touch-target">
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">
-                  {recordType === "gps" ? "Add GP" : "Add Company"}
-                </span>
-              </Button>
+              {recordType === "both" ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="bg-primary hover:bg-primary/90 touch-target">
+                      <Plus className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Add New</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setIsAddCompanyDialogOpen(true)}>
+                      <Building2 className="h-4 w-4 mr-2" />
+                      Add Company
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsAddGpDialogOpen(true)}>
+                      <Users2 className="h-4 w-4 mr-2" />
+                      Add GP
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button onClick={handleAddClick} className="bg-primary hover:bg-primary/90 touch-target">
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    {recordType === "gps" ? "Add GP" : "Add Company"}
+                  </span>
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -267,22 +300,10 @@ export function LgHorizons() {
         {/* Companies Section */}
         {showCompanies && (
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Companies
-              </h2>
-              <Select value={recordType} onValueChange={(v) => setRecordType(v as "companies" | "gps" | "both")}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="both">Show Both</SelectItem>
-                  <SelectItem value="companies">Companies Only</SelectItem>
-                  <SelectItem value="gps">GPs Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Companies
+            </h2>
 
             {/* Company Filter Bar - Always visible */}
             <HorizonCompanyFilterBar 
@@ -326,64 +347,53 @@ export function LgHorizons() {
 
         {/* GPs Section */}
         {showGps && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
+          <>
+            {showCompanies && <div className="border-t pt-6" />}
+            <div className="space-y-6">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Users2 className="h-5 w-5" />
                 GPs
               </h2>
-              {!showCompanies && (
-                <Select value={recordType} onValueChange={(v) => setRecordType(v as "companies" | "gps" | "both")}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="both">Show Both</SelectItem>
-                    <SelectItem value="companies">Companies Only</SelectItem>
-                    <SelectItem value="gps">GPs Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+
+              {/* GP Filter Bar - Always visible */}
+              <HorizonGpFilterBar 
+                filters={gpFilters}
+                onFiltersChange={updateGpRawFilters}
+                onClearFilters={clearGpFilters}
+              />
+
+              {/* GP KPI Cards */}
+              <MobileStatsGrid>
+                <StatsCard
+                  title="Total GPs"
+                  value={gpStats.loading ? "..." : gpStats.totalGps}
+                  icon={Users2}
+                />
+                <StatsCard
+                  title="Priority 1"
+                  value={gpStats.loading ? "..." : gpStats.priority1Count}
+                  icon={TrendingUp}
+                />
+                <StatsCard
+                  title="Total AUM"
+                  value={gpStats.loading ? "..." : gpStats.totalAum}
+                  icon={DollarSign}
+                />
+                <StatsCard
+                  title="Avg Active Holdings"
+                  value={gpStats.loading ? "..." : gpStats.avgActiveHoldings}
+                  icon={Building2}
+                />
+              </MobileStatsGrid>
+
+              {/* GPs Table */}
+              <HorizonGpsTable 
+                filters={gpFilters}
+                onSelectionChange={setSelectedGpRows}
+                selectedRows={selectedGpRows}
+              />
             </div>
-
-            {/* GP Filter Bar - Always visible */}
-            <HorizonGpFilterBar 
-              filters={gpFilters}
-              onFiltersChange={updateGpRawFilters}
-              onClearFilters={clearGpFilters}
-            />
-
-            {/* GP KPI Cards */}
-            <MobileStatsGrid>
-              <StatsCard
-                title="Total GPs"
-                value={gpStats.loading ? "..." : gpStats.totalGps}
-                icon={Users2}
-              />
-              <StatsCard
-                title="Priority 1"
-                value={gpStats.loading ? "..." : gpStats.priority1Count}
-                icon={TrendingUp}
-              />
-              <StatsCard
-                title="Total AUM"
-                value={gpStats.loading ? "..." : gpStats.totalAum}
-                icon={DollarSign}
-              />
-              <StatsCard
-                title="Avg Active Holdings"
-                value={gpStats.loading ? "..." : gpStats.avgActiveHoldings}
-                icon={Building2}
-              />
-            </MobileStatsGrid>
-
-            {/* GPs Table */}
-            <HorizonGpsTable 
-              filters={gpFilters}
-              onSelectionChange={setSelectedGpRows}
-              selectedRows={selectedGpRows}
-            />
-          </div>
+          </>
         )}
 
         {/* Dialogs */}
