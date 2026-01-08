@@ -324,8 +324,8 @@ All colors MUST be HSL.
     /* Table specific colors - Template Design */
     --table-header-main: 0 0% 0%;           /* Black header #000000 */
     --table-header-main-foreground: 0 0% 100%; /* White text */
-    --table-header: 218 15% 28%;            /* Column headers #343646 */
-    --table-header-foreground: 0 0% 100%;   /* White text */
+    --table-header: 220 13% 91%;            /* Light gray column headers for readability */
+    --table-header-foreground: 220 26% 14%; /* Dark text for contrast */
     --table-row-hover: 210 40% 92%;         /* Light blue hover #E0F2FE */
     --table-row-even: 220 13% 95%;          /* Light alternating #F3F4F6 */
 

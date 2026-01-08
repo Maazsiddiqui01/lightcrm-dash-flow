@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { Plus, Building2, Users2, TrendingUp, DollarSign, Trash2, UserPlus } from "lucide-react";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
-import { CollapsibleFilter } from "@/components/shared/CollapsibleFilter";
 import { MobileStatsGrid } from "@/components/shared/MobileStatsGrid";
 import { FloatingActionButton } from "@/components/shared/FloatingActionButton";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -29,9 +27,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function LgHorizons() {
-  const [activeTab, setActiveTab] = useState<"companies" | "gps">("companies");
   const [isAddCompanyDialogOpen, setIsAddCompanyDialogOpen] = useState(false);
   const [isAddGpDialogOpen, setIsAddGpDialogOpen] = useState(false);
   const [selectedCompanyRows, setSelectedCompanyRows] = useState<string[]>([]);
@@ -43,6 +47,9 @@ export function LgHorizons() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+
+  // Record type filter for showing Companies, GPs, or Both
+  const [recordType, setRecordType] = useState<"companies" | "gps" | "both">("both");
 
   // Company filters
   const { filters: companyRawFilters, updateFilters: updateCompanyRawFilters, clearFilters: clearCompanyFilters } = useUrlFilters({
@@ -117,9 +124,10 @@ export function LgHorizons() {
   const companyStats = useHorizonCompanyStats(companyFilters);
   const gpStats = useHorizonGpStats(gpFilters);
 
-  const selectedRows = activeTab === "companies" ? selectedCompanyRows : selectedGpRows;
-  const setSelectedRows = activeTab === "companies" ? setSelectedCompanyRows : setSelectedGpRows;
-  const tableName = activeTab === "companies" ? "lg_horizons_companies" : "lg_horizons_gps";
+  // Combined selection logic based on record type
+  const selectedRows = recordType === "gps" ? selectedGpRows : selectedCompanyRows;
+  const setSelectedRows = recordType === "gps" ? setSelectedGpRows : setSelectedCompanyRows;
+  const tableName = recordType === "gps" ? "lg_horizons_gps" : "lg_horizons_companies";
 
   const handleBulkAssignment = async (userId: string) => {
     if (selectedRows.length === 0) return;
@@ -135,15 +143,16 @@ export function LgHorizons() {
 
       toast({
         title: "Success",
-        description: `Assigned ${selectedRows.length} ${activeTab} to user`,
+        description: `Assigned ${selectedRows.length} records to user`,
       });
       setSelectedRows([]);
-      queryClient.invalidateQueries({ queryKey: [`horizon-${activeTab}`] });
+      queryClient.invalidateQueries({ queryKey: ['horizon-companies'] });
+      queryClient.invalidateQueries({ queryKey: ['horizon-gps'] });
     } catch (error) {
       console.error('Error in bulk assignment:', error);
       toast({
         title: "Error",
-        description: `Failed to assign ${activeTab}`,
+        description: "Failed to assign records",
         variant: "destructive",
       });
     } finally {
@@ -165,16 +174,17 @@ export function LgHorizons() {
 
       toast({
         title: "Success",
-        description: `Deleted ${selectedRows.length} ${activeTab === "companies" ? "companies" : "GPs"}`,
+        description: `Deleted ${selectedRows.length} records`,
       });
       
       setSelectedRows([]);
-      queryClient.invalidateQueries({ queryKey: [`horizon-${activeTab}`] });
+      queryClient.invalidateQueries({ queryKey: ['horizon-companies'] });
+      queryClient.invalidateQueries({ queryKey: ['horizon-gps'] });
     } catch (error) {
       console.error('Error in bulk delete:', error);
       toast({
         title: "Error",
-        description: `Failed to delete ${activeTab}`,
+        description: "Failed to delete records",
         variant: "destructive",
       });
     } finally {
@@ -184,17 +194,15 @@ export function LgHorizons() {
   };
 
   const handleAddClick = () => {
-    if (activeTab === "companies") {
-      setIsAddCompanyDialogOpen(true);
-    } else {
+    if (recordType === "gps") {
       setIsAddGpDialogOpen(true);
+    } else {
+      setIsAddCompanyDialogOpen(true);
     }
   };
 
-  const activeFilters = activeTab === "companies" ? companyFilters : gpFilters;
-  const activeFiltersCount = Object.values(activeFilters).filter(v => 
-    Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null
-  ).length;
+  const showCompanies = recordType === "companies" || recordType === "both";
+  const showGps = recordType === "gps" || recordType === "both";
 
   return (
     <div className="min-h-0 flex-1">
@@ -249,35 +257,39 @@ export function LgHorizons() {
               <Button onClick={handleAddClick} className="bg-primary hover:bg-primary/90 touch-target">
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
-                  {activeTab === "companies" ? "Add Company" : "Add GP"}
+                  {recordType === "gps" ? "Add GP" : "Add Company"}
                 </span>
               </Button>
             </div>
           )}
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "companies" | "gps")}>
-          <TabsList>
-            <TabsTrigger value="companies" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Companies
-            </TabsTrigger>
-            <TabsTrigger value="gps" className="flex items-center gap-2">
-              <Users2 className="h-4 w-4" />
-              GPs
-            </TabsTrigger>
-          </TabsList>
+        {/* Companies Section */}
+        {showCompanies && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Companies
+              </h2>
+              <Select value={recordType} onValueChange={(v) => setRecordType(v as "companies" | "gps" | "both")}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="both">Show Both</SelectItem>
+                  <SelectItem value="companies">Companies Only</SelectItem>
+                  <SelectItem value="gps">GPs Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <TabsContent value="companies" className="space-y-6 mt-6">
-            {/* Company Filter Bar */}
-            <CollapsibleFilter activeCount={activeFiltersCount}>
-              <HorizonCompanyFilterBar 
-                filters={companyFilters}
-                onFiltersChange={updateCompanyRawFilters}
-                onClearFilters={clearCompanyFilters}
-              />
-            </CollapsibleFilter>
+            {/* Company Filter Bar - Always visible */}
+            <HorizonCompanyFilterBar 
+              filters={companyFilters}
+              onFiltersChange={updateCompanyRawFilters}
+              onClearFilters={clearCompanyFilters}
+            />
 
             {/* Company KPI Cards */}
             <MobileStatsGrid>
@@ -309,17 +321,37 @@ export function LgHorizons() {
               onSelectionChange={setSelectedCompanyRows}
               selectedRows={selectedCompanyRows}
             />
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="gps" className="space-y-6 mt-6">
-            {/* GP Filter Bar */}
-            <CollapsibleFilter activeCount={activeFiltersCount}>
-              <HorizonGpFilterBar 
-                filters={gpFilters}
-                onFiltersChange={updateGpRawFilters}
-                onClearFilters={clearGpFilters}
-              />
-            </CollapsibleFilter>
+        {/* GPs Section */}
+        {showGps && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Users2 className="h-5 w-5" />
+                GPs
+              </h2>
+              {!showCompanies && (
+                <Select value={recordType} onValueChange={(v) => setRecordType(v as "companies" | "gps" | "both")}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="both">Show Both</SelectItem>
+                    <SelectItem value="companies">Companies Only</SelectItem>
+                    <SelectItem value="gps">GPs Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* GP Filter Bar - Always visible */}
+            <HorizonGpFilterBar 
+              filters={gpFilters}
+              onFiltersChange={updateGpRawFilters}
+              onClearFilters={clearGpFilters}
+            />
 
             {/* GP KPI Cards */}
             <MobileStatsGrid>
@@ -351,8 +383,8 @@ export function LgHorizons() {
               onSelectionChange={setSelectedGpRows}
               selectedRows={selectedGpRows}
             />
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
 
         {/* Dialogs */}
         <AddHorizonCompanyDialog 
@@ -377,8 +409,8 @@ export function LgHorizons() {
           open={isBulkDeleteDialogOpen}
           onOpenChange={setIsBulkDeleteDialogOpen}
           onConfirm={handleBulkDelete}
-          title={`Delete ${activeTab === "companies" ? "Companies" : "GPs"}`}
-          description={`Are you sure you want to delete ${selectedRows.length} ${activeTab === "companies" ? "companies" : "GPs"}? This action cannot be undone.`}
+          title="Delete Records"
+          description={`Are you sure you want to delete ${selectedRows.length} record(s)? This action cannot be undone.`}
           confirmText="Delete All"
           cancelText="Cancel"
           variant="destructive"
@@ -388,7 +420,7 @@ export function LgHorizons() {
         {isMobile && (
           <FloatingActionButton
             onClick={handleAddClick}
-            aria-label={`Add new ${activeTab === "companies" ? "company" : "GP"}`}
+            aria-label="Add new record"
           />
         )}
 
