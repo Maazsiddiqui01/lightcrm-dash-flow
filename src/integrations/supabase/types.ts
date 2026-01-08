@@ -2335,6 +2335,7 @@ export type Database = {
           ownership: string | null
           parent_gp_id: string | null
           parent_gp_name: string | null
+          parent_gp_name_normalized: string | null
           priority: number | null
           process_status: string | null
           revenue: string | null
@@ -2368,6 +2369,7 @@ export type Database = {
           ownership?: string | null
           parent_gp_id?: string | null
           parent_gp_name?: string | null
+          parent_gp_name_normalized?: string | null
           priority?: number | null
           process_status?: string | null
           revenue?: string | null
@@ -2401,6 +2403,7 @@ export type Database = {
           ownership?: string | null
           parent_gp_id?: string | null
           parent_gp_name?: string | null
+          parent_gp_name_normalized?: string | null
           priority?: number | null
           process_status?: string | null
           revenue?: string | null
@@ -2432,6 +2435,7 @@ export type Database = {
           fund_hq_state: string | null
           gp_contact: string | null
           gp_name: string
+          gp_name_normalized: string | null
           gp_url: string | null
           id: string
           index_number: number | null
@@ -2452,6 +2456,7 @@ export type Database = {
           fund_hq_state?: string | null
           gp_contact?: string | null
           gp_name: string
+          gp_name_normalized?: string | null
           gp_url?: string | null
           id?: string
           index_number?: number | null
@@ -2472,6 +2477,7 @@ export type Database = {
           fund_hq_state?: string | null
           gp_contact?: string | null
           gp_name?: string
+          gp_name_normalized?: string | null
           gp_url?: string | null
           id?: string
           index_number?: number | null
@@ -5783,6 +5789,7 @@ export type Database = {
       }
       map_lg_lead_name: { Args: { input: string }; Returns: string }
       normalize_focus_area: { Args: { input_text: string }; Returns: string }
+      normalize_gp_name: { Args: { name: string }; Returns: string }
       normalize_name: { Args: { t: string }; Returns: string }
       opportunities_aggregate: {
         Args: { p_end?: string; p_group_by: string; p_start?: string }
