@@ -89,6 +89,7 @@ export function HorizonGpFilterBar({
           onChange={(values) => updateFilter('lgRelationship', values)}
           searchPlaceholder="Search LG Team"
           loading={lgRelLoading}
+          specialOption={{ value: "NO_KNOWN_RELATIONSHIP", label: "No Known Relationship" }}
         />
 
         <ComboboxMulti

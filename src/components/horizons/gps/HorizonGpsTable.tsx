@@ -258,6 +258,26 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
       if (filters.activeFundsMax != null) query = query.lte('active_funds', filters.activeFundsMax);
       if (filters.activeHoldingsMin != null) query = query.gte('active_holdings', filters.activeHoldingsMin);
       if (filters.activeHoldingsMax != null) query = query.lte('active_holdings', filters.activeHoldingsMax);
+      
+      // LG Relationship filter with special "No Known Relationship" handling
+      if (filters.lgRelationship.length > 0) {
+        const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+        const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+        
+        if (hasNoKnownRelationship && regularValues.length > 0) {
+          query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+        } else if (hasNoKnownRelationship) {
+          query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+        } else {
+          query = query.in('lg_relationship', regularValues);
+        }
+      }
+      
+      // Industry/Sector filter
+      if (filters.industrySector.length > 0) {
+        const conditions = filters.industrySector.map(sector => `industry_sector_focus.ilike.%${sector}%`).join(',');
+        query = query.or(conditions);
+      }
 
       // Search
       if (searchTerm.trim()) {
