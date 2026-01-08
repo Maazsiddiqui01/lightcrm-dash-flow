@@ -118,7 +118,8 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
     try {
       let query = supabase
         .from("lg_horizons_companies")
-        .select("priority, process_status, ebitda_numeric");
+        .select("priority, process_status, ebitda_numeric")
+        .limit(10000);
       query = applyFilters(query);
       const { data: companies, error } = await query;
 
@@ -139,8 +140,10 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
         ? totalEbitda / companiesWithEbitda.length 
         : 0;
       
-      const averageEbitda = averageEbitdaNum > 0 
-        ? `$${averageEbitdaNum.toFixed(1)}M`
+      // Convert from raw value to millions for display
+      const averageEbitdaInMillions = averageEbitdaNum / 1_000_000;
+      const averageEbitda = averageEbitdaInMillions > 0 
+        ? `$${averageEbitdaInMillions.toFixed(1)}M`
         : "$0M";
 
       setStats({

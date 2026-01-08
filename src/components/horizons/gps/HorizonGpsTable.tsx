@@ -243,7 +243,7 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
     
     try {
       setLoading(true);
-      let query = supabase.from("lg_horizons_gps").select("*");
+      let query = supabase.from("lg_horizons_gps").select("*").limit(10000);
 
       // Apply filters
       if (filters.state.length > 0) query = query.in('fund_hq_state', filters.state);

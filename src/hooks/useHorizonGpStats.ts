@@ -96,7 +96,8 @@ export function useHorizonGpStats(filters?: HorizonGpFilters): HorizonGpStats {
     try {
       let query = supabase
         .from("lg_horizons_gps")
-        .select("priority, aum_numeric, active_holdings");
+        .select("priority, aum_numeric, active_holdings")
+        .limit(10000);
       query = applyFilters(query);
       const { data: gps, error } = await query;
 
