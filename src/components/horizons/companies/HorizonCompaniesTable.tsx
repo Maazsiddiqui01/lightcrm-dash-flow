@@ -290,12 +290,29 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
       if (filters.city.length > 0) query = query.in('company_hq_city', filters.city);
       if (filters.source.length > 0) query = query.in('source', filters.source);
       if (filters.parentGp.length > 0) query = query.in('parent_gp_name', filters.parentGp);
-      if (filters.ebitdaMin != null) query = query.gte('ebitda_numeric', filters.ebitdaMin);
-      if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax);
-      if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin);
-      if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
+      if (filters.ebitdaMin != null) query = query.gte('ebitda_numeric', filters.ebitdaMin * 1_000_000);
+      if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax * 1_000_000);
+      if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin * 1_000_000);
+      if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax * 1_000_000);
       if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin * 1_000_000_000);
       if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax * 1_000_000_000);
+      
+      // LG Relationship filter with special "No Known Relationship" handling
+      if (filters.lgRelationship.length > 0) {
+        const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+        const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+        
+        if (hasNoKnownRelationship && regularValues.length > 0) {
+          // Both null/empty AND specific values
+          query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+        } else if (hasNoKnownRelationship) {
+          // Only null/empty
+          query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+        } else {
+          // Only specific values
+          query = query.in('lg_relationship', regularValues);
+        }
+      }
 
       // Search
       if (searchTerm.trim()) {

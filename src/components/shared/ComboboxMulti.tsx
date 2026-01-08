@@ -20,6 +20,8 @@ interface ComboboxMultiProps {
   className?: string;
   loading?: boolean;
   onSearch?: (search: string) => void;
+  /** Special option that appears between "All" and "Clear All" - typically for "No Known X" filters */
+  specialOption?: { value: string; label: string };
 }
 
 export function ComboboxMulti({
@@ -30,7 +32,8 @@ export function ComboboxMulti({
   searchPlaceholder = "Search...",
   className,
   loading = false,
-  onSearch
+  onSearch,
+  specialOption
 }: ComboboxMultiProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -46,18 +49,22 @@ export function ComboboxMulti({
       )
     : options;
 
-  // Add "All" and "Clear All" options at the top, plus "HC: (All)" if there are HC options
+  // Add "All", optional special option, and "Clear All" options at the top, plus "HC: (All)" if there are HC options
   const allOption = { value: "ALL", label: "All" };
   const clearAllOption = { value: "CLEAR_ALL", label: "Clear All" };
   const hasHcOptions = options.some(opt => opt.value.startsWith("HC:") && opt.value !== "HC: (All)");
   const hcAllOption = hasHcOptions ? { value: "HC: (All)", label: "HC: (All)" } : null;
   
-  const controlOptions = [allOption, clearAllOption];
+  // Build control options: All -> specialOption (if provided) -> Clear All -> HC: (All)
+  const controlOptions = [allOption];
+  if (specialOption) controlOptions.push(specialOption);
+  controlOptions.push(clearAllOption);
   if (hcAllOption) controlOptions.push(hcAllOption);
   
+  const reservedValues = ["ALL", "CLEAR_ALL", "HC: (All)", specialOption?.value].filter(Boolean);
   const optionsWithControls = [
     ...controlOptions, 
-    ...filteredOptions.filter(opt => opt.value !== "ALL" && opt.value !== "CLEAR_ALL" && opt.value !== "HC: (All)")
+    ...filteredOptions.filter(opt => !reservedValues.includes(opt.value))
   ];
 
   const handleSelect = (value: string) => {
