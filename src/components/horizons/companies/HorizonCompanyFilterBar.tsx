@@ -8,6 +8,7 @@ import {
   useHorizonProcessStatuses,
   useHorizonCompanyOwnerships,
   useHorizonCompanyStates,
+  useHorizonCompanyCities,
   useHorizonCompanySources,
   useHorizonParentGps,
   useHorizonLgRelationships,
@@ -22,7 +23,12 @@ interface HorizonCompanyFilters {
   lgRelationship: string[];
   ebitdaMin?: number;
   ebitdaMax?: number;
+  revenueMin?: number;
+  revenueMax?: number;
+  gpAumMin?: number;
+  gpAumMax?: number;
   state: string[];
+  city: string[];
   source: string[];
   parentGp: string[];
 }
@@ -43,6 +49,7 @@ export function HorizonCompanyFilterBar({
   const { data: processStatuses = [], isLoading: statusesLoading } = useHorizonProcessStatuses();
   const { data: ownerships = [], isLoading: ownershipsLoading } = useHorizonCompanyOwnerships();
   const { data: states = [], isLoading: statesLoading } = useHorizonCompanyStates();
+  const { data: cities = [], isLoading: citiesLoading } = useHorizonCompanyCities();
   const { data: sources = [], isLoading: sourcesLoading } = useHorizonCompanySources();
   const { data: parentGps = [], isLoading: parentGpsLoading } = useHorizonParentGps();
   const { data: lgRelationships = [], isLoading: lgRelLoading } = useHorizonLgRelationships();
@@ -81,7 +88,7 @@ export function HorizonCompanyFilterBar({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         <ComboboxMulti
           label="Sector"
           options={sectors}
@@ -98,6 +105,14 @@ export function HorizonCompanyFilterBar({
           onChange={(values) => updateFilter('subsector', values)}
           searchPlaceholder="Search Subsectors"
           loading={subsectorsLoading}
+        />
+
+        <ComboboxMulti
+          label="Priority"
+          options={priorityOptions}
+          values={filters.priority}
+          onChange={(values) => updateFilter('priority', values)}
+          searchPlaceholder="Select Priority"
         />
 
         <ComboboxMulti
@@ -119,20 +134,21 @@ export function HorizonCompanyFilterBar({
         />
 
         <ComboboxMulti
-          label="Priority"
-          options={priorityOptions}
-          values={filters.priority}
-          onChange={(values) => updateFilter('priority', values)}
-          searchPlaceholder="Select Priority"
-        />
-
-        <ComboboxMulti
           label="LG Relationship"
           options={lgRelationships}
           values={filters.lgRelationship}
           onChange={(values) => updateFilter('lgRelationship', values)}
           searchPlaceholder="Search LG Team"
           loading={lgRelLoading}
+        />
+
+        <ComboboxMulti
+          label="Parent/GP"
+          options={parentGps}
+          values={filters.parentGp}
+          onChange={(values) => updateFilter('parentGp', values)}
+          searchPlaceholder="Search GPs"
+          loading={parentGpsLoading}
         />
 
         <RangeInput
@@ -146,6 +162,28 @@ export function HorizonCompanyFilterBar({
           step={1}
         />
 
+        <RangeInput
+          label="Revenue ($M)"
+          minValue={filters.revenueMin}
+          maxValue={filters.revenueMax}
+          onMinChange={(value) => updateFilter('revenueMin', value)}
+          onMaxChange={(value) => updateFilter('revenueMax', value)}
+          minPlaceholder="Min"
+          maxPlaceholder="Max"
+          step={1}
+        />
+
+        <RangeInput
+          label="GP AUM ($B)"
+          minValue={filters.gpAumMin}
+          maxValue={filters.gpAumMax}
+          onMinChange={(value) => updateFilter('gpAumMin', value)}
+          onMaxChange={(value) => updateFilter('gpAumMax', value)}
+          minPlaceholder="Min"
+          maxPlaceholder="Max"
+          step={0.1}
+        />
+
         <ComboboxMulti
           label="State"
           options={states}
@@ -156,21 +194,21 @@ export function HorizonCompanyFilterBar({
         />
 
         <ComboboxMulti
+          label="City"
+          options={cities}
+          values={filters.city}
+          onChange={(values) => updateFilter('city', values)}
+          searchPlaceholder="Search Cities"
+          loading={citiesLoading}
+        />
+
+        <ComboboxMulti
           label="Source"
           options={sources}
           values={filters.source}
           onChange={(values) => updateFilter('source', values)}
           searchPlaceholder="Search Sources"
           loading={sourcesLoading}
-        />
-
-        <ComboboxMulti
-          label="Parent/GP"
-          options={parentGps}
-          values={filters.parentGp}
-          onChange={(values) => updateFilter('parentGp', values)}
-          searchPlaceholder="Search GPs"
-          loading={parentGpsLoading}
         />
       </div>
     </div>

@@ -14,8 +14,13 @@ interface HorizonGpFilters {
   aumMin?: number;
   aumMax?: number;
   state?: string[];
+  city?: string[];
   industrySector?: string[];
   priority?: string[];
+  activeFundsMin?: number;
+  activeFundsMax?: number;
+  activeHoldingsMin?: number;
+  activeHoldingsMax?: number;
 }
 
 export function useHorizonGpStats(filters?: HorizonGpFilters): HorizonGpStats {
@@ -42,14 +47,32 @@ export function useHorizonGpStats(filters?: HorizonGpFilters): HorizonGpStats {
     }
 
     if (filters.aumMin !== null && filters.aumMin !== undefined) {
-      query = query.gte('aum_numeric', filters.aumMin);
+      query = query.gte('aum_numeric', filters.aumMin * 1_000_000_000);
     }
     if (filters.aumMax !== null && filters.aumMax !== undefined) {
-      query = query.lte('aum_numeric', filters.aumMax);
+      query = query.lte('aum_numeric', filters.aumMax * 1_000_000_000);
+    }
+
+    if (filters.activeFundsMin !== null && filters.activeFundsMin !== undefined) {
+      query = query.gte('active_funds', filters.activeFundsMin);
+    }
+    if (filters.activeFundsMax !== null && filters.activeFundsMax !== undefined) {
+      query = query.lte('active_funds', filters.activeFundsMax);
+    }
+
+    if (filters.activeHoldingsMin !== null && filters.activeHoldingsMin !== undefined) {
+      query = query.gte('active_holdings', filters.activeHoldingsMin);
+    }
+    if (filters.activeHoldingsMax !== null && filters.activeHoldingsMax !== undefined) {
+      query = query.lte('active_holdings', filters.activeHoldingsMax);
     }
 
     if (filters.state && filters.state.length > 0) {
       query = query.in('fund_hq_state', filters.state);
+    }
+
+    if (filters.city && filters.city.length > 0) {
+      query = query.in('fund_hq_city', filters.city);
     }
 
     if (filters.industrySector && filters.industrySector.length > 0) {

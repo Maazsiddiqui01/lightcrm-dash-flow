@@ -17,7 +17,12 @@ interface HorizonCompanyFilters {
   lgRelationship: string[];
   ebitdaMin?: number;
   ebitdaMax?: number;
+  revenueMin?: number;
+  revenueMax?: number;
+  gpAumMin?: number;
+  gpAumMax?: number;
   state: string[];
+  city: string[];
   source: string[];
   parentGp: string[];
 }
@@ -62,6 +67,9 @@ export function HorizonCompaniesTable({ filters, selectedRows, onSelectionChange
       if (filters.state.length > 0) {
         query = query.in('company_hq_state', filters.state);
       }
+      if (filters.city.length > 0) {
+        query = query.in('company_hq_city', filters.city);
+      }
       if (filters.source.length > 0) {
         query = query.in('source', filters.source);
       }
@@ -73,6 +81,18 @@ export function HorizonCompaniesTable({ filters, selectedRows, onSelectionChange
       }
       if (filters.ebitdaMax != null) {
         query = query.lte('ebitda_numeric', filters.ebitdaMax);
+      }
+      if (filters.revenueMin != null) {
+        query = query.gte('revenue_numeric', filters.revenueMin);
+      }
+      if (filters.revenueMax != null) {
+        query = query.lte('revenue_numeric', filters.revenueMax);
+      }
+      if (filters.gpAumMin != null) {
+        query = query.gte('gp_aum_numeric', filters.gpAumMin * 1_000_000_000);
+      }
+      if (filters.gpAumMax != null) {
+        query = query.lte('gp_aum_numeric', filters.gpAumMax * 1_000_000_000);
       }
       if (searchTerm.trim()) {
         query = query.or(`company_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,sector.ilike.%${searchTerm}%`);
@@ -150,6 +170,7 @@ export function HorizonCompaniesTable({ filters, selectedRows, onSelectionChange
               <TableHead>EBITDA</TableHead>
               <TableHead>Ownership</TableHead>
               <TableHead>Parent/GP</TableHead>
+              <TableHead>GP AUM</TableHead>
               <TableHead>Process Status</TableHead>
               <TableHead>HQ</TableHead>
             </TableRow>
@@ -157,7 +178,7 @@ export function HorizonCompaniesTable({ filters, selectedRows, onSelectionChange
           <TableBody>
             {companies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                   No companies found. Import data or add a new company to get started.
                 </TableCell>
               </TableRow>
@@ -185,6 +206,7 @@ export function HorizonCompaniesTable({ filters, selectedRows, onSelectionChange
                   <TableCell>{company.ebitda}</TableCell>
                   <TableCell>{company.ownership}</TableCell>
                   <TableCell>{company.parent_gp_name}</TableCell>
+                  <TableCell>{company.gp_aum}</TableCell>
                   <TableCell>
                     {company.process_status && (
                       <Badge variant="outline">{company.process_status}</Badge>
