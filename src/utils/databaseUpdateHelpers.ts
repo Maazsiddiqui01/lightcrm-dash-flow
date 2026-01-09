@@ -163,6 +163,60 @@ export const SAFE_UPDATE_FIELDS = {
     // - created_at (never update)
     // - created_by (never update)
     // - user_id (set on creation, should not be modified)
+  ],
+  
+  lg_horizons_companies: [
+    // Core fields
+    'priority',
+    'company_name',
+    'company_url',
+    'sector',
+    'subsector',
+    'ebitda',
+    'ebitda_numeric',
+    'revenue',
+    'revenue_numeric',
+    'ownership',
+    'parent_gp_name',
+    'parent_gp_id',
+    'gp_aum',
+    'gp_aum_numeric',
+    'lg_relationship',
+    'gp_contact',
+    'process_status',
+    'original_date',
+    'latest_process_date',
+    'company_hq_city',
+    'company_hq_state',
+    'date_of_acquisition',
+    'description',
+    'additional_size_info',
+    'additional_information',
+    'source',
+    
+    // System timestamp
+    'updated_at',
+  ],
+  
+  lg_horizons_gps: [
+    // Core fields
+    'priority',
+    'index_number',
+    'gp_name',
+    'gp_url',
+    'lg_relationship',
+    'gp_contact',
+    'aum',
+    'aum_numeric',
+    'fund_hq_city',
+    'fund_hq_state',
+    'active_funds',
+    'total_funds',
+    'active_holdings',
+    'industry_sector_focus',
+    
+    // System timestamp
+    'updated_at',
   ]
 } as const;
 
@@ -183,7 +237,7 @@ export const SAFE_UPDATE_FIELDS = {
  * }));
  * ```
  */
-export function getSafeUpdate<T extends 'contacts_raw' | 'opportunities_raw' | 'groups'>(
+export function getSafeUpdate<T extends keyof typeof SAFE_UPDATE_FIELDS>(
   tableName: T,
   data: Record<string, any>,
   preserveFields: string[] = []
@@ -217,7 +271,7 @@ export function getSafeUpdate<T extends 'contacts_raw' | 'opportunities_raw' | '
  * @returns Validation result with any violations
  */
 export function validateUpdate(
-  tableName: 'contacts_raw' | 'opportunities_raw' | 'groups',
+  tableName: keyof typeof SAFE_UPDATE_FIELDS,
   data: Record<string, any>
 ): { valid: boolean; violations: string[] } {
   const forbiddenFields = ['id', 'created_at', 'created_by'];
@@ -245,7 +299,7 @@ export function validateUpdate(
  * @param tableName - Table name
  * @returns Cleaned row data
  */
-export function cleanRowForDatabase<T extends 'contacts_raw' | 'opportunities_raw' | 'groups'>(
+export function cleanRowForDatabase<T extends keyof typeof SAFE_UPDATE_FIELDS>(
   row: Record<string, any>,
   tableName: T
 ): Record<string, any> {

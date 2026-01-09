@@ -181,7 +181,14 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
                   >
                     <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                     <SelectContent>
-                      {['Expected / Monitoring', 'Failed Process', 'Active Process', 'Completed'].map(s => (
+                      {[
+                        'Expected / Monitoring',
+                        'Failed Process', 
+                        'Active Process',
+                        'Completed',
+                        'No Known Process',
+                        'Prior Auction'
+                      ].map(s => (
                         <SelectItem key={s} value={s}>{s}</SelectItem>
                       ))}
                     </SelectContent>
