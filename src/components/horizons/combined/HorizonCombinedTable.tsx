@@ -639,6 +639,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       </div>
 
       <ResponsiveAdvancedTable
+        tableId="horizon-combined-table"
         data={companies}
         hideExportButton={true}
         columns={dynamicColumns}
