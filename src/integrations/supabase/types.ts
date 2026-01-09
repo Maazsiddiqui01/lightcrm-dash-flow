@@ -2423,6 +2423,33 @@ export type Database = {
           },
         ]
       }
+      lg_horizons_gp_mappings: {
+        Row: {
+          company_gp_name: string
+          created_at: string | null
+          id: string
+          matched_gp_name: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_gp_name: string
+          created_at?: string | null
+          id?: string
+          matched_gp_name?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_gp_name?: string
+          created_at?: string | null
+          id?: string
+          matched_gp_name?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       lg_horizons_gps: {
         Row: {
           active_funds: number | null

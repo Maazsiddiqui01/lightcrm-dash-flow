@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { Plus, Building2, Users2, TrendingUp, DollarSign, Trash2, UserPlus } from "lucide-react";
+import { Plus, Building2, Users2, TrendingUp, DollarSign, Trash2, UserPlus, Link2 } from "lucide-react";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 import { MobileStatsGrid } from "@/components/shared/MobileStatsGrid";
 import { FloatingActionButton } from "@/components/shared/FloatingActionButton";
@@ -16,6 +16,9 @@ import { HorizonGpFilterBar } from "@/components/horizons/gps/HorizonGpFilterBar
 import { AddHorizonGpDialog } from "@/components/horizons/gps/AddHorizonGpDialog";
 import { useHorizonCompanyStats } from "@/hooks/useHorizonCompanyStats";
 import { useHorizonGpStats } from "@/hooks/useHorizonGpStats";
+import { HorizonCombinedFilterBar, HorizonCombinedFilters } from "@/components/horizons/combined/HorizonCombinedFilterBar";
+import { HorizonCombinedTable } from "@/components/horizons/combined/HorizonCombinedTable";
+import { useHorizonCombinedStats } from "@/hooks/useHorizonCombinedStats";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +43,7 @@ export function LgHorizons() {
   const [isAddGpDialogOpen, setIsAddGpDialogOpen] = useState(false);
   const [selectedCompanyRows, setSelectedCompanyRows] = useState<string[]>([]);
   const [selectedGpRows, setSelectedGpRows] = useState<string[]>([]);
+  const [selectedCombinedRows, setSelectedCombinedRows] = useState<string[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -86,6 +90,69 @@ export function LgHorizons() {
     activeHoldingsMax: undefined,
   });
 
+  // Combined filters for "Show Both" mode
+  const [combinedFilters, setCombinedFilters] = useState<HorizonCombinedFilters>({
+    priority: [],
+    lgRelationship: [],
+    sector: [],
+    subsector: [],
+    processStatus: [],
+    ownership: [],
+    ebitdaMin: undefined,
+    ebitdaMax: undefined,
+    revenueMin: undefined,
+    revenueMax: undefined,
+    companyState: [],
+    companyCity: [],
+    source: [],
+    parentGp: [],
+    gpAumMin: undefined,
+    gpAumMax: undefined,
+    industrySector: [],
+    aumMin: undefined,
+    aumMax: undefined,
+    gpState: [],
+    gpCity: [],
+    activeFundsMin: undefined,
+    activeFundsMax: undefined,
+    activeHoldingsMin: undefined,
+    activeHoldingsMax: undefined,
+  });
+
+  const handleCombinedFiltersChange = (newFilters: Partial<HorizonCombinedFilters>) => {
+    setCombinedFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  const handleClearCombinedFilters = () => {
+    setCombinedFilters({
+      priority: [],
+      lgRelationship: [],
+      sector: [],
+      subsector: [],
+      processStatus: [],
+      ownership: [],
+      ebitdaMin: undefined,
+      ebitdaMax: undefined,
+      revenueMin: undefined,
+      revenueMax: undefined,
+      companyState: [],
+      companyCity: [],
+      source: [],
+      parentGp: [],
+      gpAumMin: undefined,
+      gpAumMax: undefined,
+      industrySector: [],
+      aumMin: undefined,
+      aumMax: undefined,
+      gpState: [],
+      gpCity: [],
+      activeFundsMin: undefined,
+      activeFundsMax: undefined,
+      activeHoldingsMin: undefined,
+      activeHoldingsMax: undefined,
+    });
+  };
+
   // Type-safe filter conversion for companies
   const companyFilters = {
     sector: (companyRawFilters.sector as string[]) || [],
@@ -123,10 +190,11 @@ export function LgHorizons() {
 
   const companyStats = useHorizonCompanyStats(companyFilters);
   const gpStats = useHorizonGpStats(gpFilters);
+  const combinedStats = useHorizonCombinedStats(combinedFilters);
 
-  // Combined selection logic based on record type
-  const selectedRows = recordType === "gps" ? selectedGpRows : selectedCompanyRows;
-  const setSelectedRows = recordType === "gps" ? setSelectedGpRows : setSelectedCompanyRows;
+  // Selection logic based on record type
+  const selectedRows = recordType === "gps" ? selectedGpRows : recordType === "companies" ? selectedCompanyRows : selectedCombinedRows;
+  const setSelectedRows = recordType === "gps" ? setSelectedGpRows : recordType === "companies" ? setSelectedCompanyRows : setSelectedCombinedRows;
   const tableName = recordType === "gps" ? "lg_horizons_gps" : "lg_horizons_companies";
 
   const handleBulkAssignment = async (userId: string) => {
@@ -200,9 +268,6 @@ export function LgHorizons() {
       setIsAddCompanyDialogOpen(true);
     }
   };
-
-  const showCompanies = recordType === "companies" || recordType === "both";
-  const showGps = recordType === "gps" || recordType === "both";
 
   return (
     <div className="min-h-0 flex-1">
@@ -297,39 +362,58 @@ export function LgHorizons() {
           )}
         </div>
 
-        {/* Sticky Section Navigation - Both Mode Only */}
+        {/* Show Both - Unified View */}
         {recordType === "both" && (
-          <div className="sticky top-16 z-10 bg-background/95 backdrop-blur py-2 border-b -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => document.getElementById('companies-section')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                <Building2 className="h-4 w-4 mr-1" /> 
-                Companies ({companyStats.loading ? "..." : companyStats.totalCompanies})
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => document.getElementById('gps-section')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                <Users2 className="h-4 w-4 mr-1" /> 
-                GPs ({gpStats.loading ? "..." : gpStats.totalGps})
-              </Button>
-            </div>
+          <div className="space-y-6">
+            {/* Combined Filter Bar */}
+            <HorizonCombinedFilterBar 
+              filters={combinedFilters}
+              onFiltersChange={handleCombinedFiltersChange}
+              onClearFilters={handleClearCombinedFilters}
+            />
+
+            {/* Combined KPI Cards */}
+            <MobileStatsGrid>
+              <StatsCard
+                title="Total Companies"
+                value={combinedStats.loading ? "..." : combinedStats.totalCompanies}
+                icon={Building2}
+              />
+              <StatsCard
+                title="Linked to GPs"
+                value={combinedStats.loading ? "..." : combinedStats.linkedGps}
+                icon={Link2}
+              />
+              <StatsCard
+                title="Priority 1"
+                value={combinedStats.loading ? "..." : combinedStats.priority1Count}
+                icon={TrendingUp}
+              />
+              <StatsCard
+                title="Avg EBITDA"
+                value={combinedStats.loading ? "..." : combinedStats.averageEbitda}
+                icon={DollarSign}
+              />
+            </MobileStatsGrid>
+
+            {/* Combined Table */}
+            <HorizonCombinedTable 
+              filters={combinedFilters}
+              selectedRows={selectedCombinedRows}
+              onSelectionChange={setSelectedCombinedRows}
+            />
           </div>
         )}
 
-        {/* Companies Section */}
-        {showCompanies && (
+        {/* Companies Only Section */}
+        {recordType === "companies" && (
           <div id="companies-section" className="space-y-6 scroll-mt-24">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Building2 className="h-5 w-5" />
               Companies
             </h2>
 
-            {/* Company Filter Bar - Always visible */}
+            {/* Company Filter Bar */}
             <HorizonCompanyFilterBar 
               filters={companyFilters}
               onFiltersChange={updateCompanyRawFilters}
@@ -369,55 +453,52 @@ export function LgHorizons() {
           </div>
         )}
 
-        {/* GPs Section */}
-        {showGps && (
-          <>
-            {showCompanies && <div className="border-t pt-6" />}
-            <div id="gps-section" className="space-y-6 scroll-mt-24">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Users2 className="h-5 w-5" />
-                GPs
-              </h2>
+        {/* GPs Only Section */}
+        {recordType === "gps" && (
+          <div id="gps-section" className="space-y-6 scroll-mt-24">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Users2 className="h-5 w-5" />
+              GPs
+            </h2>
 
-              {/* GP Filter Bar - Always visible */}
-              <HorizonGpFilterBar 
-                filters={gpFilters}
-                onFiltersChange={updateGpRawFilters}
-                onClearFilters={clearGpFilters}
+            {/* GP Filter Bar */}
+            <HorizonGpFilterBar 
+              filters={gpFilters}
+              onFiltersChange={updateGpRawFilters}
+              onClearFilters={clearGpFilters}
+            />
+
+            {/* GP KPI Cards */}
+            <MobileStatsGrid>
+              <StatsCard
+                title="Total GPs"
+                value={gpStats.loading ? "..." : gpStats.totalGps}
+                icon={Users2}
               />
-
-              {/* GP KPI Cards */}
-              <MobileStatsGrid>
-                <StatsCard
-                  title="Total GPs"
-                  value={gpStats.loading ? "..." : gpStats.totalGps}
-                  icon={Users2}
-                />
-                <StatsCard
-                  title="Priority 1"
-                  value={gpStats.loading ? "..." : gpStats.priority1Count}
-                  icon={TrendingUp}
-                />
-                <StatsCard
-                  title="Total AUM"
-                  value={gpStats.loading ? "..." : gpStats.totalAum}
-                  icon={DollarSign}
-                />
-                <StatsCard
-                  title="Avg Active Holdings"
-                  value={gpStats.loading ? "..." : gpStats.avgActiveHoldings}
-                  icon={Building2}
-                />
-              </MobileStatsGrid>
-
-              {/* GPs Table */}
-              <HorizonGpsTable 
-                filters={gpFilters}
-                onSelectionChange={setSelectedGpRows}
-                selectedRows={selectedGpRows}
+              <StatsCard
+                title="Priority 1"
+                value={gpStats.loading ? "..." : gpStats.priority1Count}
+                icon={TrendingUp}
               />
-            </div>
-          </>
+              <StatsCard
+                title="Total AUM"
+                value={gpStats.loading ? "..." : gpStats.totalAum}
+                icon={DollarSign}
+              />
+              <StatsCard
+                title="Avg Active Holdings"
+                value={gpStats.loading ? "..." : gpStats.avgActiveHoldings}
+                icon={Building2}
+              />
+            </MobileStatsGrid>
+
+            {/* GPs Table */}
+            <HorizonGpsTable 
+              filters={gpFilters}
+              onSelectionChange={setSelectedGpRows}
+              selectedRows={selectedGpRows}
+            />
+          </div>
         )}
 
         {/* Dialogs */}
