@@ -21,7 +21,7 @@ export interface UseEditModeReturn {
 }
 
 export function useEditMode<T extends { id: string }>(
-  tableName: 'contacts_raw' | 'opportunities_raw',
+  tableName: 'contacts_raw' | 'opportunities_raw' | 'lg_horizons_companies' | 'lg_horizons_gps',
   data: T[],
   onDataUpdate?: (updatedData: T[]) => void
 ): UseEditModeReturn {
@@ -52,7 +52,9 @@ export function useEditMode<T extends { id: string }>(
   }, []);
 
   const validateValue = useCallback((columnKey: string, value: any): string | null => {
-    const config = editableColumns[tableName][columnKey];
+    // Only validate for tables that have editable column configs
+    const tableConfig = editableColumns[tableName as keyof typeof editableColumns];
+    const config = tableConfig?.[columnKey];
     if (!config) return null;
 
     if (config.required && (!value || value === '')) {

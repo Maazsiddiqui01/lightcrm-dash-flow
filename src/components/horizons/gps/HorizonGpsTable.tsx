@@ -102,8 +102,8 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
     setSortLevels(savedSort);
   }, []);
   
-  // Edit mode - use opportunities_raw as compatible type
-  const editMode = useEditMode('opportunities_raw' as any, gps, setGps as any);
+  // Edit mode for horizon GPs
+  const editMode = useEditMode('lg_horizons_gps', gps, setGps);
   const columnVisibility = useColumnVisibility('columns:lg_horizons_gps');
   
   // Create column options for sort dialog
@@ -404,7 +404,7 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
           <SplitButton
             label="Add GP"
             primaryAction={() => setIsAddDialogOpen(true)}
-            menu={[{ label: 'Import CSV/Excel', onClick: () => setIsImportModalOpen(true) }]}
+            menu={[]}
             icon={<Plus className="h-4 w-4" />}
           />
         </div>

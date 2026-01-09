@@ -18,7 +18,14 @@ export const horizonCompaniesEditable: EditableTableConfig = {
   gp_contact: { type: 'text' },
   process_status: { 
     type: 'select',
-    options: ['Expected / Monitoring', 'Failed Process', 'Active Process', 'Completed']
+    options: [
+      'Expected / Monitoring',
+      'Failed Process',
+      'Active Process',
+      'Completed',
+      'No Known Process',
+      'Prior Auction'
+    ]
   },
   original_date: { type: 'date' },
   latest_process_date: { type: 'date' },

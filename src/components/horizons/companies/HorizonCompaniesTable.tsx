@@ -121,8 +121,8 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
     setSortLevels(savedSort);
   }, []);
   
-  // Edit mode - use opportunities_raw as compatible type for now
-  const editMode = useEditMode('opportunities_raw' as any, companies, setCompanies as any);
+  // Edit mode for horizon companies
+  const editMode = useEditMode('lg_horizons_companies', companies, setCompanies);
   const columnVisibility = useColumnVisibility('columns:lg_horizons_companies');
   
   // Create column options for sort dialog
@@ -439,7 +439,7 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
           <SplitButton
             label="Add Company"
             primaryAction={() => setIsAddDialogOpen(true)}
-            menu={[{ label: 'Import CSV/Excel', onClick: () => setIsImportModalOpen(true) }]}
+            menu={[]}
             icon={<Plus className="h-4 w-4" />}
           />
         </div>
