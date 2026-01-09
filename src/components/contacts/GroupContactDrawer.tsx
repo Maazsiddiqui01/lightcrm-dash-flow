@@ -40,6 +40,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
   const deleteGroupMutation = useDeleteGroup();
   const removeContactMutation = useRemoveContactFromGroup();
   const [editMode, setEditMode] = useState(false);
+  const [editedGroupName, setEditedGroupName] = useState<string>('');
   const [editedMaxLag, setEditedMaxLag] = useState<number | null>(null);
   const [editedGroupFocusArea, setEditedGroupFocusArea] = useState<string>('');
   const [editedGroupSector, setEditedGroupSector] = useState<string>('');
@@ -70,6 +71,12 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
       // Prepare group-level updates
       const groupUpdates: any = {};
       let hasGroupUpdates = false;
+
+      // Update group name if changed
+      if (editedGroupName.trim() && editedGroupName.trim() !== group.group_name) {
+        groupUpdates.name = editedGroupName.trim();
+        hasGroupUpdates = true;
+      }
 
       // Update max lag if changed
       if (editedMaxLag !== null && editedMaxLag !== group.max_lag_days) {
@@ -119,6 +126,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
       });
 
       setEditMode(false);
+      setEditedGroupName('');
       setEditedMaxLag(null);
       setEditedGroupFocusArea('');
       setEditedGroupSector('');
@@ -146,6 +154,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
 
   const handleCancelEdit = () => {
     setEditMode(false);
+    setEditedGroupName('');
     setEditedMaxLag(null);
     setEditedGroupFocusArea('');
     setEditedGroupSector('');
@@ -234,7 +243,19 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
         <SheetHeader>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <SheetTitle className="text-2xl">{group.group_name}</SheetTitle>
+              {editMode ? (
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground text-sm">Group Name</Label>
+                  <Input
+                    value={editedGroupName || group.group_name}
+                    onChange={(e) => setEditedGroupName(e.target.value)}
+                    placeholder="Enter group name"
+                    className="text-xl font-semibold"
+                  />
+                </div>
+              ) : (
+                <SheetTitle className="text-2xl">{group.group_name}</SheetTitle>
+              )}
               <SheetDescription>
                 Group of {group.member_count} contact{group.member_count !== 1 ? 's' : ''}
               </SheetDescription>
