@@ -87,13 +87,27 @@ export function useContactEmails(contactId: string | null | undefined) {
         throw new Error('Email address cannot be empty');
       }
 
+      // First, unset any existing primary email for this contact
+      const { error: unsetError } = await supabase
+        .from('contact_email_addresses')
+        .update({ is_primary: false })
+        .eq('contact_id', contactId)
+        .eq('is_primary', true);
+
+      if (unsetError) {
+        console.error('[DB Error]', {
+          operation: 'unset_previous_primary_email',
+          table: 'contact_email_addresses',
+          error: unsetError,
+          contactId,
+        });
+        throw unsetError;
+      }
+
       // Update the selected email to be primary
       const { error: updateError } = await supabase
         .from('contact_email_addresses')
-        .update({ 
-          is_primary: true,
-          updated_at: new Date().toISOString()
-        })
+        .update({ is_primary: true })
         .eq('id', emailId);
 
       if (updateError) {
