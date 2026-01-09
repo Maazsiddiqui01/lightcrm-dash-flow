@@ -154,7 +154,7 @@ export function AddHorizonGpDialog({ open, onClose, onGpAdded }: AddHorizonGpDia
             <span>Add New GP</span>
           </DialogTitle>
           <DialogDescription>
-            Add a new GP to LG Horizons. Required fields are marked with *.
+            Add a new GP to LG Horizon. Required fields are marked with *.
           </DialogDescription>
         </DialogHeader>
 

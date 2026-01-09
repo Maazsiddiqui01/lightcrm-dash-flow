@@ -276,7 +276,7 @@ export function LgHorizons() {
         <div className="flex justify-between items-start gap-4">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>LG Horizons</h1>
+              <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-2xl")}>LG Horizon</h1>
               {!isMobile && (
                 <p className="text-muted-foreground">Track target companies and GP relationships</p>
               )}

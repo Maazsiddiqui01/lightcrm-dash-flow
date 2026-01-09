@@ -1,6 +1,6 @@
 import { TableColumn } from './getTableColumns';
 
-// Hardcoded column metadata for LG Horizons Companies
+// Hardcoded column metadata for LG Horizon Companies
 export const LG_HORIZONS_COMPANIES_COLUMNS: TableColumn[] = [
   { name: 'priority', type: 'integer', nullable: true, displayName: 'Priority' },
   { name: 'company_name', type: 'text', nullable: false, displayName: 'Company' },
@@ -32,7 +32,7 @@ export const LG_HORIZONS_COMPANIES_COLUMNS: TableColumn[] = [
   { name: 'updated_at', type: 'timestamp with time zone', nullable: true, displayName: 'Updated At' },
 ];
 
-// Hardcoded column metadata for LG Horizons GPs
+// Hardcoded column metadata for LG Horizon GPs
 export const LG_HORIZONS_GPS_COLUMNS: TableColumn[] = [
   { name: 'priority', type: 'integer', nullable: true, displayName: 'Priority' },
   { name: 'index_number', type: 'integer', nullable: true, displayName: 'Index' },
