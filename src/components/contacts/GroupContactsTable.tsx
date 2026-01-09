@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
 import { GroupContactDrawer } from "./GroupContactDrawer";
 import { Button } from "@/components/ui/button";
-import { Mail, Users, Eye, Calendar } from "lucide-react";
+import { Mail, Users, Eye, Calendar, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useGroupContactsView } from "@/hooks/useGroupContactsView";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,9 @@ import { EditToolbar } from "@/components/shared/EditToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSectors, useFocusAreas } from "@/hooks/useLookups";
+import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
+import { SortChips } from "@/components/shared/SortChips";
+import { loadSortState, saveSortState, clearSortState, applyClientSort } from "@/lib/sort/customSort";
 
 export function GroupContactsTable() {
   // Store only the ID; derive the group data from query results for instant UI updates
@@ -29,6 +32,8 @@ export function GroupContactsTable() {
   }>>({});
   const [editingCell, setEditingCell] = useState<{ groupId: string; field: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [sortLevels, setSortLevels] = useState<SortLevel[]>([]);
+  const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -37,6 +42,14 @@ export function GroupContactsTable() {
   const { data: focusAreaOptions = [] } = useFocusAreas();
 
   const { data: groups = [], isLoading, error, refetch } = useGroupContactsView();
+
+  // Load persisted sort state on mount
+  useEffect(() => {
+    const savedSort = loadSortState('group_contacts_view');
+    if (savedSort.length > 0) {
+      setSortLevels(savedSort);
+    }
+  }, []);
 
   // Derive selectedGroup from query data - ensures instant UI updates when members change
   const selectedGroup = selectedGroupId 
@@ -474,6 +487,28 @@ export function GroupContactsTable() {
     },
   ];
 
+  // Create column options for sort dialog
+  const columnOptions: ColumnOption[] = useMemo(() => {
+    return columns
+      .filter(col => col.sortable)
+      .map(col => ({
+        key: col.key,
+        label: col.label,
+      }));
+  }, [columns]);
+
+  // Handle multi-sort changes
+  const handleSortChange = (newSortLevels: SortLevel[]) => {
+    setSortLevels(newSortLevels);
+    saveSortState('group_contacts_view', newSortLevels);
+  };
+
+  // Clear sort
+  const handleClearSort = () => {
+    setSortLevels([]);
+    clearSortState('group_contacts_view');
+  };
+
   if (error) {
     return (
       <div className="p-4 text-center text-destructive">
@@ -482,15 +517,20 @@ export function GroupContactsTable() {
     );
   }
 
-  const filteredGroups = groups.filter((group) => {
-    if (!searchTerm) return true;
-    const search = searchTerm.toLowerCase();
-    return (
-      group.group_name.toLowerCase().includes(search) ||
-      group.member_names?.toLowerCase().includes(search) ||
-      group.opportunities?.toLowerCase().includes(search)
-    );
-  });
+  const filteredGroups = useMemo(() => {
+    const filtered = groups.filter((group) => {
+      if (!searchTerm) return true;
+      const search = searchTerm.toLowerCase();
+      return (
+        group.group_name.toLowerCase().includes(search) ||
+        group.member_names?.toLowerCase().includes(search) ||
+        group.opportunities?.toLowerCase().includes(search)
+      );
+    });
+
+    // Apply client-side sorting
+    return applyClientSort(filtered, sortLevels);
+  }, [groups, searchTerm, sortLevels]);
 
   return (
     <div className="space-y-4">
@@ -502,6 +542,29 @@ export function GroupContactsTable() {
         onDiscard={handleDiscardChanges}
         isSaving={isSaving}
       />
+
+      {/* Sort Chips */}
+      <SortChips
+        sortLevels={sortLevels}
+        columns={columnOptions}
+        onClear={handleClearSort}
+        className="mb-2"
+      />
+
+      {/* Header with Sort Button */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">
+          {filteredGroups.length} Group{filteredGroups.length !== 1 ? 's' : ''}
+        </h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsSortDialogOpen(true)}
+        >
+          <ArrowUpDown className="h-4 w-4 mr-2" />
+          Sort
+        </Button>
+      </div>
       
       <ResponsiveAdvancedTable
         data={filteredGroups}
@@ -527,6 +590,15 @@ export function GroupContactsTable() {
           if (!open) setSelectedGroupId(null);
         }}
         onUpdate={refetch}
+      />
+
+      {/* Multi-Sort Dialog */}
+      <MultiSortDialog
+        open={isSortDialogOpen}
+        onOpenChange={setIsSortDialogOpen}
+        columns={columnOptions}
+        sortLevels={sortLevels}
+        onApply={handleSortChange}
       />
     </div>
   );
