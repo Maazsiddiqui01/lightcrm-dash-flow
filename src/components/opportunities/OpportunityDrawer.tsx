@@ -658,6 +658,20 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 />
 
                 <div className="space-y-2">
+                  <Label>EBITDA ($M)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={editedFields.ebitda_in_ms ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      handleFieldChange("ebitda_in_ms", val === "" ? null : parseFloat(val));
+                    }}
+                    placeholder="Enter EBITDA in millions"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label>Acquisition Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
