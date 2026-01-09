@@ -214,7 +214,7 @@ export function AddHorizonCompanyDialog({ open, onClose, onCompanyAdded }: AddHo
             <span>Add New Company</span>
           </DialogTitle>
           <DialogDescription>
-            Add a new company to LG Horizons. Required fields are marked with *.
+            Add a new company to LG Horizon. Required fields are marked with *.
           </DialogDescription>
         </DialogHeader>
 

@@ -20,7 +20,7 @@ const menuItems = [
   { title: "Contacts", url: "/contacts", icon: Users, roles: ['admin', 'user', 'viewer'] },
   { title: "Pending Contacts", url: "/missing-contacts", icon: Users, roles: ['admin', 'user'] },
   { title: "Opportunities", url: "/opportunities", icon: Target, roles: ['admin', 'user', 'viewer'] },
-  { title: "LG Horizons", url: "/lg-horizons", icon: Compass, roles: ['admin', 'user', 'viewer'] },
+  { title: "LG Horizon", url: "/lg-horizons", icon: Compass, roles: ['admin', 'user', 'viewer'] },
   { title: "Interactions", url: "/interactions", icon: MessageSquare, roles: ['admin', 'user'] },
   { title: "Email Builder", url: "/email-builder", icon: Mail, roles: ['admin', 'user'] },
   { title: "Chat", url: "/chat", icon: MessagesSquare, roles: ['admin', 'user', 'viewer'] },
