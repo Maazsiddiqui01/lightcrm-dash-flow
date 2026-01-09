@@ -41,18 +41,18 @@ export function ComboboxMulti({
   // Ensure values is always an array to prevent runtime errors
   const safeValues = Array.isArray(values) ? values : [];
   
-  const selectedOptions = options.filter(option => safeValues.includes(option.value));
+  const selectedOptions = options.filter(option => option?.value && safeValues.includes(option.value));
   const filteredOptions = search 
     ? options.filter(option => 
-        option.label.toLowerCase().includes(search.toLowerCase()) ||
-        option.value.toLowerCase().includes(search.toLowerCase())
+        option?.label?.toLowerCase().includes(search.toLowerCase()) ||
+        option?.value?.toLowerCase().includes(search.toLowerCase())
       )
-    : options;
+    : options.filter(option => option?.value != null);
 
   // Add "All", optional special option, and "Clear All" options at the top, plus "HC: (All)" if there are HC options
   const allOption = { value: "ALL", label: "All" };
   const clearAllOption = { value: "CLEAR_ALL", label: "Clear All" };
-  const hasHcOptions = options.some(opt => opt.value.startsWith("HC:") && opt.value !== "HC: (All)");
+  const hasHcOptions = options.some(opt => opt?.value?.startsWith?.("HC:") && opt.value !== "HC: (All)");
   const hcAllOption = hasHcOptions ? { value: "HC: (All)", label: "HC: (All)" } : null;
   
   // Build control options: All -> specialOption (if provided) -> Clear All -> HC: (All)
