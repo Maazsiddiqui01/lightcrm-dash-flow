@@ -265,12 +265,21 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       {
         key: 'process_status',
         label: 'Process Status',
-        width: 120,
+        width: 140,
         visible: columnVisibility.columnVisibility['process_status'] !== false,
         enableHiding: true,
         render: (value: any) => {
           if (!value) return null;
-          return <Badge variant="outline">{value}</Badge>;
+          const statusLower = String(value).toLowerCase();
+          let colorClass = "bg-muted/50 text-muted-foreground border-muted";
+          if (statusLower.includes('failed')) {
+            colorClass = "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800";
+          } else if (statusLower.includes('expected') || statusLower.includes('monitoring')) {
+            colorClass = "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800";
+          } else if (statusLower.includes('no known')) {
+            colorClass = "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-900/30 dark:text-slate-400 dark:border-slate-700";
+          }
+          return <Badge variant="outline" className={colorClass}>{value}</Badge>;
         },
       },
       // Parent GP
