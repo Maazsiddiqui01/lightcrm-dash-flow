@@ -109,13 +109,17 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
     { key: 'priority', label: 'Priority' },
     { key: 'company_name', label: 'Company' },
     { key: 'sector', label: 'Sector' },
+    { key: 'subsector', label: 'Subsector' },
     { key: 'ebitda_numeric', label: 'EBITDA' },
     { key: 'revenue_numeric', label: 'Revenue' },
     { key: 'process_status', label: 'Process Status' },
+    { key: 'ownership', label: 'Ownership' },
     { key: 'parent_gp_name', label: 'Parent GP' },
     { key: 'gp_aum_numeric', label: 'GP AUM' },
     { key: 'lg_relationship', label: 'LG Relationship' },
+    { key: 'company_hq_city', label: 'Company City' },
     { key: 'company_hq_state', label: 'Company State' },
+    { key: 'source', label: 'Source' },
   ], []);
 
   // Format cell value for display
