@@ -26,10 +26,21 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
       try {
         setStats(prev => ({ ...prev, loading: true }));
 
-        // Build query with filters
+        // Fetch companies with GP data for client-side GP filtering
         let query = supabase
           .from('lg_horizons_companies')
-          .select('id, priority, ebitda_numeric, parent_gp_id, gp_aum_numeric')
+          .select(`
+            id, priority, ebitda_numeric, parent_gp_id, gp_aum_numeric,
+            gp_data:lg_horizons_gps!parent_gp_id (
+              id,
+              aum_numeric,
+              fund_hq_city,
+              fund_hq_state,
+              active_funds,
+              active_holdings,
+              industry_sector_focus
+            )
+          `)
           .limit(10000);
 
         // Apply common filters
@@ -104,25 +115,79 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
           return;
         }
 
-        const companies = data || [];
+        // Transform gp_data from array to single object
+        let companies = (data || []).map((row: any) => ({
+          ...row,
+          gp_data: Array.isArray(row.gp_data) ? row.gp_data[0] || null : row.gp_data,
+        }));
+
+        // Apply GP-specific filters client-side
+        if (filters?.industrySector && filters.industrySector.length > 0) {
+          companies = companies.filter((c: any) => 
+            c.gp_data && filters.industrySector.some(sector => 
+              c.gp_data?.industry_sector_focus?.toLowerCase().includes(sector.toLowerCase())
+            )
+          );
+        }
+        if (filters?.gpState && filters.gpState.length > 0) {
+          companies = companies.filter((c: any) => 
+            c.gp_data && filters.gpState.includes(c.gp_data.fund_hq_state || '')
+          );
+        }
+        if (filters?.gpCity && filters.gpCity.length > 0) {
+          companies = companies.filter((c: any) => 
+            c.gp_data && filters.gpCity.includes(c.gp_data.fund_hq_city || '')
+          );
+        }
+        if (filters?.aumMin != null) {
+          companies = companies.filter((c: any) => 
+            c.gp_data && (c.gp_data.aum_numeric || 0) >= filters.aumMin! * 1_000_000_000
+          );
+        }
+        if (filters?.aumMax != null) {
+          companies = companies.filter((c: any) => 
+            c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax! * 1_000_000_000
+          );
+        }
+        if (filters?.activeFundsMin != null) {
+          companies = companies.filter((c: any) => 
+            c.gp_data && (c.gp_data.active_funds || 0) >= filters.activeFundsMin!
+          );
+        }
+        if (filters?.activeFundsMax != null) {
+          companies = companies.filter((c: any) => 
+            c.gp_data && (c.gp_data.active_funds || 0) <= filters.activeFundsMax!
+          );
+        }
+        if (filters?.activeHoldingsMin != null) {
+          companies = companies.filter((c: any) => 
+            c.gp_data && (c.gp_data.active_holdings || 0) >= filters.activeHoldingsMin!
+          );
+        }
+        if (filters?.activeHoldingsMax != null) {
+          companies = companies.filter((c: any) => 
+            c.gp_data && (c.gp_data.active_holdings || 0) <= filters.activeHoldingsMax!
+          );
+        }
+
         const totalCompanies = companies.length;
-        const linkedGpIds = new Set(companies.filter(c => c.parent_gp_id).map(c => c.parent_gp_id));
+        const linkedGpIds = new Set(companies.filter((c: any) => c.parent_gp_id).map((c: any) => c.parent_gp_id));
         const linkedGps = linkedGpIds.size;
-        const priority1Count = companies.filter(c => c.priority === 1).length;
+        const priority1Count = companies.filter((c: any) => c.priority === 1).length;
 
         // Calculate average EBITDA
-        const ebitdaValues = companies.filter(c => c.ebitda_numeric != null).map(c => c.ebitda_numeric!);
+        const ebitdaValues = companies.filter((c: any) => c.ebitda_numeric != null).map((c: any) => c.ebitda_numeric!);
         const avgEbitda = ebitdaValues.length > 0
-          ? ebitdaValues.reduce((sum, val) => sum + val, 0) / ebitdaValues.length / 1_000_000
+          ? ebitdaValues.reduce((sum: number, val: number) => sum + val, 0) / ebitdaValues.length / 1_000_000
           : 0;
         const avgEbitdaFormatted = avgEbitda >= 1000
           ? `$${(avgEbitda / 1000).toFixed(1)}B`
           : `$${avgEbitda.toFixed(0)}M`;
 
         // Calculate average GP AUM
-        const aumValues = companies.filter(c => c.gp_aum_numeric != null).map(c => c.gp_aum_numeric!);
+        const aumValues = companies.filter((c: any) => c.gp_aum_numeric != null).map((c: any) => c.gp_aum_numeric!);
         const avgAum = aumValues.length > 0
-          ? aumValues.reduce((sum, val) => sum + val, 0) / aumValues.length / 1_000_000_000
+          ? aumValues.reduce((sum: number, val: number) => sum + val, 0) / aumValues.length / 1_000_000_000
           : 0;
         const avgAumFormatted = `$${avgAum.toFixed(1)}B`;
 
