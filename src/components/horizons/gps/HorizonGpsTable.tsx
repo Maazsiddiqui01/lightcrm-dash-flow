@@ -68,10 +68,6 @@ export interface HorizonGpFilters {
   city: string[];
   industrySector: string[];
   priority: string[];
-  activeFundsMin?: number;
-  activeFundsMax?: number;
-  activeHoldingsMin?: number;
-  activeHoldingsMax?: number;
 }
 
 interface HorizonGpsTableProps {
@@ -280,10 +276,6 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
       }
       if (filters.aumMin != null) query = query.gte('aum_numeric', filters.aumMin * 1_000_000_000);
       if (filters.aumMax != null) query = query.lte('aum_numeric', filters.aumMax * 1_000_000_000);
-      if (filters.activeFundsMin != null) query = query.gte('active_funds', filters.activeFundsMin);
-      if (filters.activeFundsMax != null) query = query.lte('active_funds', filters.activeFundsMax);
-      if (filters.activeHoldingsMin != null) query = query.gte('active_holdings', filters.activeHoldingsMin);
-      if (filters.activeHoldingsMax != null) query = query.lte('active_holdings', filters.activeHoldingsMax);
       
       // LG Relationship filter with special "No Known Relationship" handling
       if (filters.lgRelationship.length > 0) {
