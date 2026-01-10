@@ -551,26 +551,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax! * 1_000_000_000
         );
       }
-      if (filters.activeFundsMin != null) {
-        filteredData = filteredData.filter(c => 
-          c.gp_data && (c.gp_data.active_funds || 0) >= filters.activeFundsMin!
-        );
-      }
-      if (filters.activeFundsMax != null) {
-        filteredData = filteredData.filter(c => 
-          c.gp_data && (c.gp_data.active_funds || 0) <= filters.activeFundsMax!
-        );
-      }
-      if (filters.activeHoldingsMin != null) {
-        filteredData = filteredData.filter(c => 
-          c.gp_data && (c.gp_data.active_holdings || 0) >= filters.activeHoldingsMin!
-        );
-      }
-      if (filters.activeHoldingsMax != null) {
-        filteredData = filteredData.filter(c => 
-          c.gp_data && (c.gp_data.active_holdings || 0) <= filters.activeHoldingsMax!
-        );
-      }
+      // Active Funds and Active Holdings filters removed as requested
 
       const sortedData = applyClientSort(filteredData, sortLevels);
       setCompanies(sortedData as CombinedCompany[]);

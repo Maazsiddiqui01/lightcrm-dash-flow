@@ -23,7 +23,6 @@ export const horizonCompaniesEditable: EditableTableConfig = {
       'Failed Process',
       'Active Process',
       'Completed',
-      'No Known Process',
       'Prior Auction'
     ]
   },
@@ -43,7 +42,6 @@ export const horizonGpsEditable: EditableTableConfig = {
     type: 'select',
     options: ['1', '2', '3', '4', '5']
   },
-  index_number: { type: 'number' },
   gp_name: { type: 'text', required: true },
   gp_url: { type: 'text' },
   lg_relationship: { type: 'text' },

@@ -4316,7 +4316,7 @@ export type Database = {
           tier12_active_count: number | null
           tier12_active_list: string | null
           to_contact_id: string | null
-          to_email: string | null
+          to_emails: string | null
         }
         Relationships: []
       }

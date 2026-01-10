@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
 import { ComboboxMulti } from '@/components/shared/ComboboxMulti';
 import { RangeInput } from '@/components/shared/RangeInput';
+import { DateRangeInput } from '@/components/shared/DateRangeInput';
 import {
   useHorizonCompanySectors,
   useHorizonCompanySubsectors,
@@ -31,6 +32,8 @@ interface HorizonCompanyFilters {
   city: string[];
   source: string[];
   parentGp: string[];
+  dateOfAcquisitionStart?: string;
+  dateOfAcquisitionEnd?: string;
 }
 
 interface HorizonCompanyFilterBarProps {
@@ -46,13 +49,18 @@ export function HorizonCompanyFilterBar({
 }: HorizonCompanyFilterBarProps) {
   const { data: sectors = [], isLoading: sectorsLoading } = useHorizonCompanySectors();
   const { data: subsectors = [], isLoading: subsectorsLoading } = useHorizonCompanySubsectors();
-  const { data: processStatuses = [], isLoading: statusesLoading } = useHorizonProcessStatuses();
+  const { data: rawProcessStatuses = [], isLoading: statusesLoading } = useHorizonProcessStatuses();
   const { data: ownerships = [], isLoading: ownershipsLoading } = useHorizonCompanyOwnerships();
   const { data: states = [], isLoading: statesLoading } = useHorizonCompanyStates();
   const { data: cities = [], isLoading: citiesLoading } = useHorizonCompanyCities();
   const { data: sources = [], isLoading: sourcesLoading } = useHorizonCompanySources();
   const { data: parentGps = [], isLoading: parentGpsLoading } = useHorizonParentGps();
   const { data: lgRelationships = [], isLoading: lgRelLoading } = useHorizonLgRelationships();
+
+  // Filter out "No Known Process" from process statuses
+  const processStatuses = rawProcessStatuses.filter(
+    status => status.value?.toLowerCase() !== 'no known process'
+  );
 
   const priorityOptions = [
     { value: '1', label: 'Priority 1' },
@@ -68,7 +76,7 @@ export function HorizonCompanyFilterBar({
   };
 
   const hasActiveFilters = Object.values(filters).some(value => 
-    Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null
+    Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null && value !== ''
   );
 
   return (
@@ -88,9 +96,52 @@ export function HorizonCompanyFilterBar({
         )}
       </div>
 
+      {/* Reordered filters as requested:
+          1. Priority
+          2. Date of Acquisition
+          3. GP AUM
+          4. Company Sector
+          5. Company Subsector
+          6. LG Relationship
+          7. Process Status
+          8. Ownership
+          9. Parent/GP
+          10. EBITDA
+          11. Revenue
+          12. City
+          13. State
+          14. Source of Data
+      */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         <ComboboxMulti
-          label="Sector"
+          label="Priority"
+          options={priorityOptions}
+          values={filters.priority}
+          onChange={(values) => updateFilter('priority', values)}
+          searchPlaceholder="Select Priority"
+        />
+
+        <DateRangeInput
+          label="Date of Acquisition"
+          startDate={filters.dateOfAcquisitionStart ? new Date(filters.dateOfAcquisitionStart) : undefined}
+          endDate={filters.dateOfAcquisitionEnd ? new Date(filters.dateOfAcquisitionEnd) : undefined}
+          onStartDateChange={(date) => updateFilter('dateOfAcquisitionStart', date?.toISOString().split('T')[0])}
+          onEndDateChange={(date) => updateFilter('dateOfAcquisitionEnd', date?.toISOString().split('T')[0])}
+        />
+
+        <RangeInput
+          label="GP AUM ($B)"
+          minValue={filters.gpAumMin}
+          maxValue={filters.gpAumMax}
+          onMinChange={(value) => updateFilter('gpAumMin', value)}
+          onMaxChange={(value) => updateFilter('gpAumMax', value)}
+          minPlaceholder="Min"
+          maxPlaceholder="Max"
+          step={0.1}
+        />
+
+        <ComboboxMulti
+          label="Company Sector"
           options={sectors}
           values={filters.sector}
           onChange={(values) => updateFilter('sector', values)}
@@ -99,7 +150,7 @@ export function HorizonCompanyFilterBar({
         />
 
         <ComboboxMulti
-          label="Subsector"
+          label="Company Subsector"
           options={subsectors}
           values={filters.subsector}
           onChange={(values) => updateFilter('subsector', values)}
@@ -108,11 +159,13 @@ export function HorizonCompanyFilterBar({
         />
 
         <ComboboxMulti
-          label="Priority"
-          options={priorityOptions}
-          values={filters.priority}
-          onChange={(values) => updateFilter('priority', values)}
-          searchPlaceholder="Select Priority"
+          label="LG Relationship"
+          options={lgRelationships}
+          values={filters.lgRelationship}
+          onChange={(values) => updateFilter('lgRelationship', values)}
+          searchPlaceholder="Search LG Team"
+          loading={lgRelLoading}
+          specialOption={{ value: "NO_KNOWN_RELATIONSHIP", label: "No Known Relationship" }}
         />
 
         <ComboboxMulti
@@ -131,16 +184,6 @@ export function HorizonCompanyFilterBar({
           onChange={(values) => updateFilter('ownership', values)}
           searchPlaceholder="Search Ownership"
           loading={ownershipsLoading}
-        />
-
-        <ComboboxMulti
-          label="LG Relationship"
-          options={lgRelationships}
-          values={filters.lgRelationship}
-          onChange={(values) => updateFilter('lgRelationship', values)}
-          searchPlaceholder="Search LG Team"
-          loading={lgRelLoading}
-          specialOption={{ value: "NO_KNOWN_RELATIONSHIP", label: "No Known Relationship" }}
         />
 
         <ComboboxMulti
@@ -174,15 +217,13 @@ export function HorizonCompanyFilterBar({
           step={1}
         />
 
-        <RangeInput
-          label="GP AUM ($B)"
-          minValue={filters.gpAumMin}
-          maxValue={filters.gpAumMax}
-          onMinChange={(value) => updateFilter('gpAumMin', value)}
-          onMaxChange={(value) => updateFilter('gpAumMax', value)}
-          minPlaceholder="Min"
-          maxPlaceholder="Max"
-          step={0.1}
+        <ComboboxMulti
+          label="City"
+          options={cities}
+          values={filters.city}
+          onChange={(values) => updateFilter('city', values)}
+          searchPlaceholder="Search Cities"
+          loading={citiesLoading}
         />
 
         <ComboboxMulti
@@ -195,16 +236,7 @@ export function HorizonCompanyFilterBar({
         />
 
         <ComboboxMulti
-          label="City"
-          options={cities}
-          values={filters.city}
-          onChange={(values) => updateFilter('city', values)}
-          searchPlaceholder="Search Cities"
-          loading={citiesLoading}
-        />
-
-        <ComboboxMulti
-          label="Source"
+          label="Source of Data"
           options={sources}
           values={filters.source}
           onChange={(values) => updateFilter('source', values)}

@@ -17,10 +17,6 @@ interface HorizonGpFilters {
   city: string[];
   industrySector: string[];
   priority: string[];
-  activeFundsMin?: number;
-  activeFundsMax?: number;
-  activeHoldingsMin?: number;
-  activeHoldingsMax?: number;
 }
 
 interface HorizonGpFilterBarProps {
@@ -73,7 +69,8 @@ export function HorizonGpFilterBar({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+      {/* Reordered: Priority, LG Relationship, Industry/Sector Focus, AUM, City, State */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         <ComboboxMulti
           label="Priority"
           options={priorityOptions}
@@ -112,26 +109,13 @@ export function HorizonGpFilterBar({
           step={0.1}
         />
 
-        <RangeInput
-          label="Active Funds"
-          minValue={filters.activeFundsMin}
-          maxValue={filters.activeFundsMax}
-          onMinChange={(value) => updateFilter('activeFundsMin', value)}
-          onMaxChange={(value) => updateFilter('activeFundsMax', value)}
-          minPlaceholder="Min"
-          maxPlaceholder="Max"
-          step={1}
-        />
-
-        <RangeInput
-          label="Active Holdings"
-          minValue={filters.activeHoldingsMin}
-          maxValue={filters.activeHoldingsMax}
-          onMinChange={(value) => updateFilter('activeHoldingsMin', value)}
-          onMaxChange={(value) => updateFilter('activeHoldingsMax', value)}
-          minPlaceholder="Min"
-          maxPlaceholder="Max"
-          step={1}
+        <ComboboxMulti
+          label="City"
+          options={cities}
+          values={filters.city}
+          onChange={(values) => updateFilter('city', values)}
+          searchPlaceholder="Search Cities"
+          loading={citiesLoading}
         />
 
         <ComboboxMulti
@@ -141,15 +125,6 @@ export function HorizonGpFilterBar({
           onChange={(values) => updateFilter('state', values)}
           searchPlaceholder="Search States"
           loading={statesLoading}
-        />
-
-        <ComboboxMulti
-          label="City"
-          options={cities}
-          values={filters.city}
-          onChange={(values) => updateFilter('city', values)}
-          searchPlaceholder="Search Cities"
-          loading={citiesLoading}
         />
       </div>
     </div>
