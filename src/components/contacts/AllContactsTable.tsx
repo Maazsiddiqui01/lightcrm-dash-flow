@@ -3,7 +3,7 @@ import { useAllContactsView, AllContactView } from "@/hooks/useAllContactsView";
 import { ResponsiveAdvancedTable, ColumnDef } from "@/components/shared/ResponsiveAdvancedTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Mail, User, Users, Calendar, Loader2 } from "lucide-react";
+import { Eye, Mail, User, Users, Calendar, Loader2, ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { ContactDrawer } from "./ContactDrawer";
 import { GroupContactDrawer } from "./GroupContactDrawer";
@@ -13,6 +13,9 @@ import { sendGroupEmail } from "@/features/contacts/sendGroupEmail";
 import { supabase } from "@/integrations/supabase/client";
 import type { GroupContactView } from "@/types/contact";
 import { useQueryClient } from "@tanstack/react-query";
+import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
+import { SortChips } from "@/components/shared/SortChips";
+import { loadSortState, saveSortState, clearSortState, applyClientSort } from "@/lib/sort/customSort";
 
 function parseFlexibleDate(dateInput: any): Date | null {
   if (!dateInput) return null;
@@ -34,9 +37,19 @@ export function AllContactsTable() {
   const [selectedGroup, setSelectedGroup] = useState<GroupContactView | null>(null);
   const [loadingContact, setLoadingContact] = useState(false);
   const [loadingGroup, setLoadingGroup] = useState(false);
+  const [sortLevels, setSortLevels] = useState<SortLevel[]>([]);
+  const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
   
   // Use unified draft generator
   const { generateDraft, isGenerating: isDraftGenerating } = useContactDraftGenerator();
+
+  // Load persisted sort state on mount
+  useEffect(() => {
+    const savedSort = loadSortState('all_contacts_view');
+    if (savedSort.length > 0) {
+      setSortLevels(savedSort);
+    }
+  }, []);
 
   // Fetch individual contact when selected
   useEffect(() => {
@@ -113,21 +126,27 @@ export function AllContactsTable() {
     fetchGroup();
   }, [selectedGroupId]);
 
-  // Filter contacts based on search
+  // Filter and sort contacts
   const filteredContacts = useMemo(() => {
     if (!contacts) return [];
-    if (!searchTerm) return contacts;
-
-    const term = searchTerm.toLowerCase();
-    return contacts.filter(contact => 
-      contact.name?.toLowerCase().includes(term) ||
-      contact.organization?.toLowerCase().includes(term) ||
-      contact.member_names?.toLowerCase().includes(term) ||
-      contact.opportunities?.toLowerCase().includes(term) ||
-      contact.focus_area?.toLowerCase().includes(term) ||
-      contact.sector?.toLowerCase().includes(term)
-    );
-  }, [contacts, searchTerm]);
+    
+    let result = contacts;
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(contact => 
+        contact.name?.toLowerCase().includes(term) ||
+        contact.organization?.toLowerCase().includes(term) ||
+        contact.member_names?.toLowerCase().includes(term) ||
+        contact.opportunities?.toLowerCase().includes(term) ||
+        contact.focus_area?.toLowerCase().includes(term) ||
+        contact.sector?.toLowerCase().includes(term)
+      );
+    }
+    
+    // Apply client-side sorting
+    return applyClientSort(result, sortLevels);
+  }, [contacts, searchTerm, sortLevels]);
 
   const handleRowClick = (row: AllContactView) => {
     if (row.contact_type === 'individual') {
@@ -349,6 +368,28 @@ export function AllContactsTable() {
     },
   ];
 
+  // Create column options for sort dialog
+  const columnOptions: ColumnOption[] = useMemo(() => {
+    return columns
+      .filter(col => col.sortable)
+      .map(col => ({
+        key: col.key,
+        label: col.label,
+      }));
+  }, []);
+
+  // Handle multi-sort changes
+  const handleSortChange = (newSortLevels: SortLevel[]) => {
+    setSortLevels(newSortLevels);
+    saveSortState('all_contacts_view', newSortLevels);
+  };
+
+  // Clear sort
+  const handleClearSort = () => {
+    setSortLevels([]);
+    clearSortState('all_contacts_view');
+  };
+
   if (error) {
     return (
       <div className="p-8 text-center">
@@ -358,7 +399,30 @@ export function AllContactsTable() {
   }
 
   return (
-    <>
+    <div className="space-y-4">
+      {/* Sort Chips */}
+      <SortChips
+        sortLevels={sortLevels}
+        columns={columnOptions}
+        onClear={handleClearSort}
+        className="mb-2"
+      />
+
+      {/* Header with Sort Button */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">
+          {filteredContacts.length} Contact{filteredContacts.length !== 1 ? 's' : ''} & Group{filteredContacts.length !== 1 ? 's' : ''}
+        </h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsSortDialogOpen(true)}
+        >
+          <ArrowUpDown className="h-4 w-4 mr-2" />
+          Sort
+        </Button>
+      </div>
+
       <ResponsiveAdvancedTable
         data={filteredContacts || []}
         columns={columns}
@@ -414,6 +478,15 @@ export function AllContactsTable() {
           }}
         />
       )}
-    </>
+
+      {/* Multi-Sort Dialog */}
+      <MultiSortDialog
+        open={isSortDialogOpen}
+        onOpenChange={setIsSortDialogOpen}
+        columns={columnOptions}
+        sortLevels={sortLevels}
+        onApply={handleSortChange}
+      />
+    </div>
   );
 }
