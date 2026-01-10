@@ -2507,7 +2507,6 @@ export type Database = {
           gp_name_normalized: string | null
           gp_url: string | null
           id: string
-          index_number: number | null
           industry_sector_focus: string | null
           lg_relationship: string | null
           next_steps: string | null
@@ -2531,7 +2530,6 @@ export type Database = {
           gp_name_normalized?: string | null
           gp_url?: string | null
           id?: string
-          index_number?: number | null
           industry_sector_focus?: string | null
           lg_relationship?: string | null
           next_steps?: string | null
@@ -2555,7 +2553,6 @@ export type Database = {
           gp_name_normalized?: string | null
           gp_url?: string | null
           id?: string
-          index_number?: number | null
           industry_sector_focus?: string | null
           lg_relationship?: string | null
           next_steps?: string | null

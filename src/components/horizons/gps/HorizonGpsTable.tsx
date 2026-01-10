@@ -43,7 +43,6 @@ import {
 interface HorizonGp {
   id: string;
   priority: number | null;
-  index_number: number | null;
   gp_name: string;
   gp_url: string | null;
   lg_relationship: string | null;
