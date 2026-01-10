@@ -73,6 +73,8 @@ export function LgHorizons() {
     city: [],
     source: [],
     parentGp: [],
+    dateOfAcquisitionStart: undefined,
+    dateOfAcquisitionEnd: undefined,
   });
 
   // GP filters
@@ -84,10 +86,6 @@ export function LgHorizons() {
     city: [],
     industrySector: [],
     priority: [],
-    activeFundsMin: undefined,
-    activeFundsMax: undefined,
-    activeHoldingsMin: undefined,
-    activeHoldingsMax: undefined,
   });
 
   // Combined filters for "Show Both" mode
@@ -163,6 +161,8 @@ export function LgHorizons() {
     city: (companyRawFilters.city as string[]) || [],
     source: (companyRawFilters.source as string[]) || [],
     parentGp: (companyRawFilters.parentGp as string[]) || [],
+    dateOfAcquisitionStart: typeof companyRawFilters.dateOfAcquisitionStart === 'string' ? companyRawFilters.dateOfAcquisitionStart : undefined,
+    dateOfAcquisitionEnd: typeof companyRawFilters.dateOfAcquisitionEnd === 'string' ? companyRawFilters.dateOfAcquisitionEnd : undefined,
   };
 
   // Type-safe filter conversion for GPs
@@ -174,10 +174,6 @@ export function LgHorizons() {
     city: (gpRawFilters.city as string[]) || [],
     industrySector: (gpRawFilters.industrySector as string[]) || [],
     priority: (gpRawFilters.priority as string[]) || [],
-    activeFundsMin: typeof gpRawFilters.activeFundsMin === 'number' ? gpRawFilters.activeFundsMin : undefined,
-    activeFundsMax: typeof gpRawFilters.activeFundsMax === 'number' ? gpRawFilters.activeFundsMax : undefined,
-    activeHoldingsMin: typeof gpRawFilters.activeHoldingsMin === 'number' ? gpRawFilters.activeHoldingsMin : undefined,
-    activeHoldingsMax: typeof gpRawFilters.activeHoldingsMax === 'number' ? gpRawFilters.activeHoldingsMax : undefined,
   };
 
   const companyStats = useHorizonCompanyStats(companyFilters);

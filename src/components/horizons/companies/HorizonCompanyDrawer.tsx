@@ -195,7 +195,7 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
                 </div>
                 <div className="space-y-2">
                   <Label>Process Status</Label>
-                  <Select
+                <Select
                     value={editedCompany.process_status || ''}
                     onValueChange={(v) => handleFieldChange('process_status', v)}
                   >
@@ -206,7 +206,6 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
                         'Failed Process', 
                         'Active Process',
                         'Completed',
-                        'No Known Process',
                         'Prior Auction'
                       ].map(s => (
                         <SelectItem key={s} value={s}>{s}</SelectItem>
