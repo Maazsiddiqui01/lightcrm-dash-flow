@@ -2114,6 +2114,39 @@ export type Database = {
         }
         Relationships: []
       }
+      horizon_note_events: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          field: string
+          id: string
+          record_id: string
+          record_type: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          field: string
+          id?: string
+          record_id: string
+          record_type: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          field?: string
+          id?: string
+          record_id?: string
+          record_type?: string
+        }
+        Relationships: []
+      }
       inquiry_library: {
         Row: {
           category: string
@@ -2332,6 +2365,7 @@ export type Database = {
           latest_process_date: string | null
           lg_relationship: string | null
           next_steps: string | null
+          next_steps_due_date: string | null
           notes: string | null
           original_date: string | null
           ownership: string | null
@@ -2368,6 +2402,7 @@ export type Database = {
           latest_process_date?: string | null
           lg_relationship?: string | null
           next_steps?: string | null
+          next_steps_due_date?: string | null
           notes?: string | null
           original_date?: string | null
           ownership?: string | null
@@ -2404,6 +2439,7 @@ export type Database = {
           latest_process_date?: string | null
           lg_relationship?: string | null
           next_steps?: string | null
+          next_steps_due_date?: string | null
           notes?: string | null
           original_date?: string | null
           ownership?: string | null
@@ -2475,6 +2511,7 @@ export type Database = {
           industry_sector_focus: string | null
           lg_relationship: string | null
           next_steps: string | null
+          next_steps_due_date: string | null
           notes: string | null
           priority: number | null
           total_funds: number | null
@@ -2498,6 +2535,7 @@ export type Database = {
           industry_sector_focus?: string | null
           lg_relationship?: string | null
           next_steps?: string | null
+          next_steps_due_date?: string | null
           notes?: string | null
           priority?: number | null
           total_funds?: number | null
@@ -2521,6 +2559,7 @@ export type Database = {
           industry_sector_focus?: string | null
           lg_relationship?: string | null
           next_steps?: string | null
+          next_steps_due_date?: string | null
           notes?: string | null
           priority?: number | null
           total_funds?: number | null
@@ -4363,6 +4402,39 @@ export type Database = {
         }
         Relationships: []
       }
+      horizon_notes_timeline: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          due_date: string | null
+          field: string | null
+          id: string | null
+          record_id: string | null
+          record_type: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string | null
+          field?: string | null
+          id?: string | null
+          record_id?: string | null
+          record_type?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string | null
+          field?: string | null
+          id?: string | null
+          record_id?: string | null
+          record_type?: string | null
+        }
+        Relationships: []
+      }
       interactions_ai: {
         Row: {
           email: string | null
@@ -5463,6 +5535,16 @@ export type Database = {
       }
       add_group_note: {
         Args: { p_content: string; p_field: string; p_group_id: string }
+        Returns: undefined
+      }
+      add_horizon_note: {
+        Args: {
+          p_content: string
+          p_due_date?: string
+          p_field: string
+          p_record_id: string
+          p_record_type: string
+        }
         Returns: undefined
       }
       add_opportunity_note:
