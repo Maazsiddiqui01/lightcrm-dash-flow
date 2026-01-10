@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { parseFlexibleDate } from "@/utils/dateUtils";
 
 interface HorizonCompanyStats {
   totalCompanies: number;
-  priority1Count: number;
-  expectedMonitoringCount: number;
-  averageEbitda: string;
+  filteredPriorityCount: number;
+  gpAumRange: string;
+  acquisitionDateRange: string;
   loading: boolean;
 }
 
@@ -26,14 +28,16 @@ interface HorizonCompanyFilters {
   city?: string[];
   source?: string[];
   parentGp?: string[];
+  dateOfAcquisitionStart?: string;
+  dateOfAcquisitionEnd?: string;
 }
 
 export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): HorizonCompanyStats {
   const [stats, setStats] = useState<HorizonCompanyStats>({
     totalCompanies: 0,
-    priority1Count: 0,
-    expectedMonitoringCount: 0,
-    averageEbitda: "$0M",
+    filteredPriorityCount: 0,
+    gpAumRange: "N/A",
+    acquisitionDateRange: "N/A",
     loading: true,
   });
 
@@ -117,6 +121,13 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
       query = query.in('parent_gp_name', filters.parentGp);
     }
 
+    if (filters.dateOfAcquisitionStart) {
+      query = query.gte('date_of_acquisition', filters.dateOfAcquisitionStart);
+    }
+    if (filters.dateOfAcquisitionEnd) {
+      query = query.lte('date_of_acquisition', filters.dateOfAcquisitionEnd);
+    }
+
     return query;
   };
 
@@ -124,7 +135,7 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
     try {
       let query = supabase
         .from("lg_horizons_companies")
-        .select("priority, process_status, ebitda_numeric")
+        .select("priority, gp_aum_numeric, date_of_acquisition")
         .limit(10000);
       query = applyFilters(query);
       const { data: companies, error } = await query;
@@ -133,30 +144,41 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
 
       const totalCompanies = companies?.length || 0;
       
-      const priority1Count = companies?.filter(c => c.priority === 1).length || 0;
+      // Count all records that have a priority set
+      const filteredPriorityCount = companies?.filter(c => c.priority != null).length || 0;
 
-      const expectedMonitoringCount = companies?.filter(c => 
-        c.process_status?.toLowerCase().includes('expected') || 
-        c.process_status?.toLowerCase().includes('monitoring')
-      ).length || 0;
+      // Calculate GP AUM Range
+      const aumValues = companies?.filter(c => c.gp_aum_numeric != null).map(c => c.gp_aum_numeric!) || [];
+      let gpAumRange = "N/A";
+      if (aumValues.length > 0) {
+        const minAum = Math.min(...aumValues) / 1_000_000_000;
+        const maxAum = Math.max(...aumValues) / 1_000_000_000;
+        gpAumRange = minAum === maxAum 
+          ? `$${minAum.toFixed(1)}B`
+          : `$${minAum.toFixed(1)}B - $${maxAum.toFixed(1)}B`;
+      }
 
-      const companiesWithEbitda = companies?.filter(c => c.ebitda_numeric != null) || [];
-      const totalEbitda = companiesWithEbitda.reduce((sum, c) => sum + (c.ebitda_numeric || 0), 0);
-      const averageEbitdaNum = companiesWithEbitda.length > 0 
-        ? totalEbitda / companiesWithEbitda.length 
-        : 0;
-      
-      // Convert from raw value to millions for display
-      const averageEbitdaInMillions = averageEbitdaNum / 1_000_000;
-      const averageEbitda = averageEbitdaInMillions > 0 
-        ? `$${averageEbitdaInMillions.toFixed(1)}M`
-        : "$0M";
+      // Calculate Acquisition Date Range
+      const acquisitionDates = companies
+        ?.filter(c => c.date_of_acquisition)
+        .map(c => parseFlexibleDate(c.date_of_acquisition!))
+        .filter((d): d is Date => d !== null) || [];
+
+      let acquisitionDateRange = "N/A";
+      if (acquisitionDates.length > 0) {
+        const sortedDates = acquisitionDates.sort((a, b) => a.getTime() - b.getTime());
+        const minDate = sortedDates[0];
+        const maxDate = sortedDates[sortedDates.length - 1];
+        acquisitionDateRange = minDate.getTime() === maxDate.getTime()
+          ? format(minDate, 'MMM yyyy')
+          : `${format(minDate, 'MMM yyyy')} - ${format(maxDate, 'MMM yyyy')}`;
+      }
 
       setStats({
         totalCompanies,
-        priority1Count,
-        expectedMonitoringCount,
-        averageEbitda,
+        filteredPriorityCount,
+        gpAumRange,
+        acquisitionDateRange,
         loading: false,
       });
     } catch (error) {

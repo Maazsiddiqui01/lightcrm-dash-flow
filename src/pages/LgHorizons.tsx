@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { Plus, Building2, Users2, TrendingUp, DollarSign, Trash2, UserPlus, Link2 } from "lucide-react";
+import { Plus, Building2, Users2, TrendingUp, DollarSign, Trash2, UserPlus, Calendar } from "lucide-react";
 import { ResponsiveContainer } from "@/components/layout/ResponsiveContainer";
 import { MobileStatsGrid } from "@/components/shared/MobileStatsGrid";
 import { FloatingActionButton } from "@/components/shared/FloatingActionButton";
@@ -367,24 +367,25 @@ export function LgHorizons() {
             {/* Combined KPI Cards */}
             <MobileStatsGrid>
               <StatsCard
-                title="Total Companies"
-                value={combinedStats.loading ? "..." : combinedStats.totalCompanies}
+                title="Total Universe"
+                value={combinedStats.loading ? "..." : combinedStats.totalUniverse}
+                subtitle={combinedStats.loading ? undefined : `${combinedStats.totalCompanies} Companies, ${combinedStats.totalGps} GPs`}
                 icon={Building2}
               />
               <StatsCard
-                title="Linked to GPs"
-                value={combinedStats.loading ? "..." : combinedStats.linkedGps}
-                icon={Link2}
-              />
-              <StatsCard
-                title="Priority 1"
-                value={combinedStats.loading ? "..." : combinedStats.priority1Count}
+                title="Priorities"
+                value={combinedStats.loading ? "..." : combinedStats.filteredPriorityCount}
                 icon={TrendingUp}
               />
               <StatsCard
-                title="Avg EBITDA"
-                value={combinedStats.loading ? "..." : combinedStats.averageEbitda}
+                title="GP AUM Range"
+                value={combinedStats.loading ? "..." : combinedStats.gpAumRange}
                 icon={DollarSign}
+              />
+              <StatsCard
+                title="Acquisition Date Range"
+                value={combinedStats.loading ? "..." : combinedStats.acquisitionDateRange}
+                icon={Calendar}
               />
             </MobileStatsGrid>
 
@@ -420,19 +421,19 @@ export function LgHorizons() {
                 icon={Building2}
               />
               <StatsCard
-                title="Priority 1"
-                value={companyStats.loading ? "..." : companyStats.priority1Count}
+                title="Priorities"
+                value={companyStats.loading ? "..." : companyStats.filteredPriorityCount}
                 icon={TrendingUp}
               />
               <StatsCard
-                title="Expected/Monitoring"
-                value={companyStats.loading ? "..." : companyStats.expectedMonitoringCount}
-                icon={Users2}
+                title="GP AUM Range"
+                value={companyStats.loading ? "..." : companyStats.gpAumRange}
+                icon={DollarSign}
               />
               <StatsCard
-                title="Avg EBITDA"
-                value={companyStats.loading ? "..." : companyStats.averageEbitda}
-                icon={DollarSign}
+                title="Acquisition Date Range"
+                value={companyStats.loading ? "..." : companyStats.acquisitionDateRange}
+                icon={Calendar}
               />
             </MobileStatsGrid>
 
@@ -468,8 +469,8 @@ export function LgHorizons() {
                 icon={Users2}
               />
               <StatsCard
-                title="Priority 1"
-                value={gpStats.loading ? "..." : gpStats.priority1Count}
+                title="Priorities"
+                value={gpStats.loading ? "..." : gpStats.filteredPriorityCount}
                 icon={TrendingUp}
               />
               <StatsCard
@@ -478,9 +479,9 @@ export function LgHorizons() {
                 icon={DollarSign}
               />
               <StatsCard
-                title="Avg Active Holdings"
-                value={gpStats.loading ? "..." : gpStats.avgActiveHoldings}
-                icon={Building2}
+                title="AUM Range"
+                value={gpStats.loading ? "..." : gpStats.aumRange}
+                icon={DollarSign}
               />
             </MobileStatsGrid>
 

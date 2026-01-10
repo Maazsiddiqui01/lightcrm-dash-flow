@@ -8,7 +8,7 @@ import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { HorizonCompanyExportDropdown } from "./HorizonCompanyExportDropdown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowUpDown, ChevronDown, Trash2 } from "lucide-react";
+import { Plus, ArrowUpDown, ChevronDown, Trash2, FileText, ListTodo } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import {
@@ -27,6 +27,7 @@ import { ColumnsMenu } from "@/components/shared/ColumnsMenu";
 import { EditToolbar } from "@/components/shared/EditToolbar";
 import { horizonCompaniesEditable } from "@/config/horizonEditableColumns";
 import { EditableCell } from "@/components/shared/EditableCell";
+import { NotesNextStepsDialog } from "@/components/horizons/shared/NotesNextStepsDialog";
 
 // Multi-sort imports
 import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
@@ -107,6 +108,9 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<HorizonCompany | null>(null);
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [notesDialogTab, setNotesDialogTab] = useState<"notes" | "next_steps">("notes");
+  const [notesDialogCompany, setNotesDialogCompany] = useState<HorizonCompany | null>(null);
   const { toast } = useToast();
   
   const requestIdRef = useRef<string | null>(null);
@@ -242,6 +246,28 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
               }}
             >
               View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setNotesDialogCompany(row);
+                setNotesDialogTab("notes");
+                setNotesDialogOpen(true);
+              }}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Add Notes
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setNotesDialogCompany(row);
+                setNotesDialogTab("next_steps");
+                setNotesDialogOpen(true);
+              }}
+            >
+              <ListTodo className="h-4 w-4 mr-2" />
+              Add Next Steps
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
@@ -516,6 +542,19 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
         confirmText="Delete"
         cancelText="Cancel"
         variant="destructive"
+      />
+
+      <NotesNextStepsDialog
+        open={notesDialogOpen}
+        onClose={() => {
+          setNotesDialogOpen(false);
+          setNotesDialogCompany(null);
+        }}
+        recordId={notesDialogCompany?.id || ""}
+        tableName="lg_horizons_companies"
+        recordName={notesDialogCompany?.company_name || ""}
+        initialTab={notesDialogTab}
+        onSaved={fetchCompanies}
       />
     </div>
   );

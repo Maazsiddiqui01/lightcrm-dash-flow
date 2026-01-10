@@ -35,6 +35,8 @@ export const horizonCompaniesEditable: EditableTableConfig = {
   additional_size_info: { type: 'textarea' },
   additional_information: { type: 'textarea' },
   source: { type: 'text' },
+  notes: { type: 'textarea' },
+  next_steps: { type: 'textarea' },
 };
 
 export const horizonGpsEditable: EditableTableConfig = {
@@ -53,4 +55,6 @@ export const horizonGpsEditable: EditableTableConfig = {
   total_funds: { type: 'number' },
   active_holdings: { type: 'number' },
   industry_sector_focus: { type: 'textarea' },
+  notes: { type: 'textarea' },
+  next_steps: { type: 'textarea' },
 };
