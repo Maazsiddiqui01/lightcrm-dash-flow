@@ -52,3 +52,28 @@ export const addOpportunityNote = async (params: AddOpportunityNoteParams) => {
     p_due_date: params.dueDate ?? null, // ALWAYS pass to avoid overload ambiguity
   });
 };
+
+interface AddHorizonNoteParams {
+  recordId: string;
+  recordType: 'company' | 'gp';
+  field: 'notes' | 'next_steps';
+  content: string;
+  dueDate?: string | null;
+}
+
+/**
+ * Type-safe wrapper for add_horizon_note RPC function.
+ * Adds notes/next steps to horizon companies or GPs with timeline tracking.
+ * 
+ * @param params - Horizon note parameters
+ * @returns Supabase RPC result
+ */
+export const addHorizonNote = async (params: AddHorizonNoteParams) => {
+  return await supabase.rpc('add_horizon_note', {
+    p_record_id: params.recordId,
+    p_record_type: params.recordType,
+    p_field: params.field,
+    p_content: params.content,
+    p_due_date: params.dueDate ?? null,
+  });
+};

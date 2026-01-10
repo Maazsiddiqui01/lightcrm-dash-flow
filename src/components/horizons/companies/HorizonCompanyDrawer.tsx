@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Trash2, ExternalLink } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { HorizonNotesSection } from "../shared/HorizonNotesSection";
+import { useHorizonNotes } from "@/hooks/useHorizonNotes";
 
 interface HorizonCompany {
   id: string;
@@ -50,6 +52,19 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const {
+    currentNotes,
+    timeline,
+    isLoadingCurrent,
+    isLoadingTimeline,
+    saveNotes,
+    saveNextSteps,
+    isSavingNotes,
+    isSavingNextSteps,
+    deleteNote,
+    isDeletingNote,
+  } = useHorizonNotes(company?.id, 'company', company?.company_name);
 
   useEffect(() => {
     if (company) {
@@ -97,6 +112,10 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
     }
   };
 
+  // Filter timeline by field
+  const notesTimeline = timeline.filter(entry => entry.field === 'notes');
+  const nextStepsTimeline = timeline.filter(entry => entry.field === 'next_steps');
+
   if (!company) return null;
 
   return (
@@ -122,11 +141,12 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
           </SheetHeader>
 
           <Tabs defaultValue="overview" className="mt-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="gp">GP Info</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="activity">Activity</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4 mt-4">
@@ -318,6 +338,34 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
                   rows={4}
                 />
               </div>
+            </TabsContent>
+
+            <TabsContent value="activity" className="space-y-4 mt-4">
+              <HorizonNotesSection
+                title="Notes"
+                field="notes"
+                currentValue={currentNotes?.notes || null}
+                timeline={notesTimeline}
+                onSave={(content) => saveNotes(content)}
+                onDelete={deleteNote}
+                isSaving={isSavingNotes}
+                isDeleting={isDeletingNote}
+                isLoadingCurrent={isLoadingCurrent}
+                isLoadingTimeline={isLoadingTimeline}
+              />
+              <HorizonNotesSection
+                title="Next Steps"
+                field="next_steps"
+                currentValue={currentNotes?.next_steps || null}
+                currentDueDate={currentNotes?.next_steps_due_date}
+                timeline={nextStepsTimeline}
+                onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
+                onDelete={deleteNote}
+                isSaving={isSavingNextSteps}
+                isDeleting={isDeletingNote}
+                isLoadingCurrent={isLoadingCurrent}
+                isLoadingTimeline={isLoadingTimeline}
+              />
             </TabsContent>
           </Tabs>
 
