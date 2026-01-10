@@ -2331,6 +2331,8 @@ export type Database = {
           id: string
           latest_process_date: string | null
           lg_relationship: string | null
+          next_steps: string | null
+          notes: string | null
           original_date: string | null
           ownership: string | null
           parent_gp_id: string | null
@@ -2365,6 +2367,8 @@ export type Database = {
           id?: string
           latest_process_date?: string | null
           lg_relationship?: string | null
+          next_steps?: string | null
+          notes?: string | null
           original_date?: string | null
           ownership?: string | null
           parent_gp_id?: string | null
@@ -2399,6 +2403,8 @@ export type Database = {
           id?: string
           latest_process_date?: string | null
           lg_relationship?: string | null
+          next_steps?: string | null
+          notes?: string | null
           original_date?: string | null
           ownership?: string | null
           parent_gp_id?: string | null
@@ -2468,6 +2474,8 @@ export type Database = {
           index_number: number | null
           industry_sector_focus: string | null
           lg_relationship: string | null
+          next_steps: string | null
+          notes: string | null
           priority: number | null
           total_funds: number | null
           updated_at: string | null
@@ -2489,6 +2497,8 @@ export type Database = {
           index_number?: number | null
           industry_sector_focus?: string | null
           lg_relationship?: string | null
+          next_steps?: string | null
+          notes?: string | null
           priority?: number | null
           total_funds?: number | null
           updated_at?: string | null
@@ -2510,6 +2520,8 @@ export type Database = {
           index_number?: number | null
           industry_sector_focus?: string | null
           lg_relationship?: string | null
+          next_steps?: string | null
+          notes?: string | null
           priority?: number | null
           total_funds?: number | null
           updated_at?: string | null

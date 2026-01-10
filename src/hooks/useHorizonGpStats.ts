@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface HorizonGpStats {
   totalGps: number;
-  priority1Count: number;
+  filteredPriorityCount: number;
   totalAum: string;
-  avgActiveHoldings: string;
+  aumRange: string;
   loading: boolean;
 }
 
@@ -26,9 +26,9 @@ interface HorizonGpFilters {
 export function useHorizonGpStats(filters?: HorizonGpFilters): HorizonGpStats {
   const [stats, setStats] = useState<HorizonGpStats>({
     totalGps: 0,
-    priority1Count: 0,
+    filteredPriorityCount: 0,
     totalAum: "$0B",
-    avgActiveHoldings: "0",
+    aumRange: "N/A",
     loading: true,
   });
 
@@ -102,7 +102,7 @@ export function useHorizonGpStats(filters?: HorizonGpFilters): HorizonGpStats {
     try {
       let query = supabase
         .from("lg_horizons_gps")
-        .select("priority, aum_numeric, active_holdings")
+        .select("priority, aum_numeric")
         .limit(10000);
       query = applyFilters(query);
       const { data: gps, error } = await query;
@@ -111,7 +111,8 @@ export function useHorizonGpStats(filters?: HorizonGpFilters): HorizonGpStats {
 
       const totalGps = gps?.length || 0;
       
-      const priority1Count = gps?.filter(g => g.priority === 1).length || 0;
+      // Count all records that have a priority set
+      const filteredPriorityCount = gps?.filter(g => g.priority != null).length || 0;
 
       // Total AUM in billions
       const totalAumNum = gps?.reduce((sum, g) => sum + (g.aum_numeric || 0), 0) || 0;
@@ -120,19 +121,22 @@ export function useHorizonGpStats(filters?: HorizonGpFilters): HorizonGpStats {
         ? `$${totalAumInBillions.toFixed(1)}B`
         : "$0B";
 
-      // Average active holdings
-      const gpsWithHoldings = gps?.filter(g => g.active_holdings != null) || [];
-      const totalHoldings = gpsWithHoldings.reduce((sum, g) => sum + (g.active_holdings || 0), 0);
-      const avgHoldings = gpsWithHoldings.length > 0 
-        ? totalHoldings / gpsWithHoldings.length 
-        : 0;
-      const avgActiveHoldings = avgHoldings.toFixed(1);
+      // AUM Range
+      const aumValues = gps?.filter(g => g.aum_numeric != null).map(g => g.aum_numeric!) || [];
+      let aumRange = "N/A";
+      if (aumValues.length > 0) {
+        const minAum = Math.min(...aumValues) / 1_000_000_000;
+        const maxAum = Math.max(...aumValues) / 1_000_000_000;
+        aumRange = minAum === maxAum
+          ? `$${minAum.toFixed(1)}B`
+          : `$${minAum.toFixed(1)}B - $${maxAum.toFixed(1)}B`;
+      }
 
       setStats({
         totalGps,
-        priority1Count,
+        filteredPriorityCount,
         totalAum,
-        avgActiveHoldings,
+        aumRange,
         loading: false,
       });
     } catch (error) {

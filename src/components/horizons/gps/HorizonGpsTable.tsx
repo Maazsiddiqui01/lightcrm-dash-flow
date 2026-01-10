@@ -8,7 +8,7 @@ import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { HorizonGpExportDropdown } from "./HorizonGpExportDropdown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowUpDown, ChevronDown, Trash2 } from "lucide-react";
+import { Plus, ArrowUpDown, ChevronDown, Trash2, FileText, ListTodo } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import {
@@ -27,6 +27,7 @@ import { ColumnsMenu } from "@/components/shared/ColumnsMenu";
 import { EditToolbar } from "@/components/shared/EditToolbar";
 import { horizonGpsEditable } from "@/config/horizonEditableColumns";
 import { EditableCell } from "@/components/shared/EditableCell";
+import { NotesNextStepsDialog } from "@/components/horizons/shared/NotesNextStepsDialog";
 
 // Multi-sort imports
 import { MultiSortDialog, SortLevel, ColumnOption } from "@/components/shared/MultiSortDialog";
@@ -89,6 +90,9 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [gpToDelete, setGpToDelete] = useState<HorizonGp | null>(null);
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [notesDialogTab, setNotesDialogTab] = useState<"notes" | "next_steps">("notes");
+  const [notesDialogGp, setNotesDialogGp] = useState<HorizonGp | null>(null);
   const { toast } = useToast();
   
   const requestIdRef = useRef<string | null>(null);
@@ -211,6 +215,28 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
               }}
             >
               View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setNotesDialogGp(row);
+                setNotesDialogTab("notes");
+                setNotesDialogOpen(true);
+              }}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Add Notes
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setNotesDialogGp(row);
+                setNotesDialogTab("next_steps");
+                setNotesDialogOpen(true);
+              }}
+            >
+              <ListTodo className="h-4 w-4 mr-2" />
+              Add Next Steps
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
@@ -481,6 +507,19 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
         confirmText="Delete"
         cancelText="Cancel"
         variant="destructive"
+      />
+
+      <NotesNextStepsDialog
+        open={notesDialogOpen}
+        onClose={() => {
+          setNotesDialogOpen(false);
+          setNotesDialogGp(null);
+        }}
+        recordId={notesDialogGp?.id || ""}
+        tableName="lg_horizons_gps"
+        recordName={notesDialogGp?.gp_name || ""}
+        initialTab={notesDialogTab}
+        onSaved={fetchGps}
       />
     </div>
   );

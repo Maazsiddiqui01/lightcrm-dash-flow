@@ -5,7 +5,7 @@ import { ColumnDef } from "@/components/shared/AdvancedTable";
 import { HorizonCompanyDrawer } from "../companies/HorizonCompanyDrawer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpDown, ChevronDown, Trash2, Link2, Link2Off } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Trash2, Link2, Link2Off, FileText, ListTodo } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -34,6 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { NotesNextStepsDialog } from "@/components/horizons/shared/NotesNextStepsDialog";
 
 interface CombinedCompany {
   id: string;
@@ -88,6 +89,9 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<CombinedCompany | null>(null);
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [notesDialogTab, setNotesDialogTab] = useState<"notes" | "next_steps">("notes");
+  const [notesDialogRecord, setNotesDialogRecord] = useState<CombinedCompany | null>(null);
   const { toast } = useToast();
   
   const requestIdRef = useRef<string | null>(null);
@@ -149,28 +153,50 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
                 <ChevronDown className="h-3 w-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedCompany(row);
-                  setIsDrawerOpen(true);
-                }}
-              >
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCompanyToDelete(row);
-                  setDeleteConfirmOpen(true);
-                }}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedCompany(row);
+                setIsDrawerOpen(true);
+              }}
+            >
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setNotesDialogRecord(row);
+                setNotesDialogTab("notes");
+                setNotesDialogOpen(true);
+              }}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Add Notes
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setNotesDialogRecord(row);
+                setNotesDialogTab("next_steps");
+                setNotesDialogOpen(true);
+              }}
+            >
+              <ListTodo className="h-4 w-4 mr-2" />
+              Add Next Steps
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setCompanyToDelete(row);
+                setDeleteConfirmOpen(true);
+              }}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
           </DropdownMenu>
         ),
       },
