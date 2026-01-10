@@ -667,6 +667,9 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
         onRowClick={handleRowClick}
+        enableResizing={true}
+        persistKey="horizon-combined"
+        enableColumnReordering={true}
       />
 
       <MultiSortDialog
