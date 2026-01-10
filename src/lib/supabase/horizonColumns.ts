@@ -35,7 +35,6 @@ export const LG_HORIZONS_COMPANIES_COLUMNS: TableColumn[] = [
 // Hardcoded column metadata for LG Horizon GPs
 export const LG_HORIZONS_GPS_COLUMNS: TableColumn[] = [
   { name: 'priority', type: 'integer', nullable: true, displayName: 'Priority' },
-  { name: 'index_number', type: 'integer', nullable: true, displayName: 'Index' },
   { name: 'gp_name', type: 'text', nullable: false, displayName: 'GP Name' },
   { name: 'gp_url', type: 'text', nullable: true, displayName: 'URL' },
   { name: 'lg_relationship', type: 'text', nullable: true, displayName: 'LG Relationship' },

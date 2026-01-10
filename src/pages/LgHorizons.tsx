@@ -113,10 +113,6 @@ export function LgHorizons() {
     aumMax: undefined,
     gpState: [],
     gpCity: [],
-    activeFundsMin: undefined,
-    activeFundsMax: undefined,
-    activeHoldingsMin: undefined,
-    activeHoldingsMax: undefined,
   });
 
   const handleCombinedFiltersChange = (newFilters: Partial<HorizonCombinedFilters>) => {
@@ -146,10 +142,6 @@ export function LgHorizons() {
       aumMax: undefined,
       gpState: [],
       gpCity: [],
-      activeFundsMin: undefined,
-      activeFundsMax: undefined,
-      activeHoldingsMin: undefined,
-      activeHoldingsMax: undefined,
     });
   };
 

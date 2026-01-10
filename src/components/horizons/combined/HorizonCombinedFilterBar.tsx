@@ -51,10 +51,6 @@ export interface HorizonCombinedFilters {
   aumMax?: number;
   gpState: string[];
   gpCity: string[];
-  activeFundsMin?: number;
-  activeFundsMax?: number;
-  activeHoldingsMin?: number;
-  activeHoldingsMax?: number;
 }
 
 interface HorizonCombinedFilterBarProps {
@@ -68,13 +64,13 @@ export function HorizonCombinedFilterBar({
   onFiltersChange, 
   onClearFilters 
 }: HorizonCombinedFilterBarProps) {
-  const [companyFiltersOpen, setCompanyFiltersOpen] = useState(true);
-  const [gpFiltersOpen, setGpFiltersOpen] = useState(false);
+  const [gpFiltersOpen, setGpFiltersOpen] = useState(true);
+  const [companyFiltersOpen, setCompanyFiltersOpen] = useState(false);
 
   // Company filter options
   const { data: sectors = [], isLoading: sectorsLoading } = useHorizonCompanySectors();
   const { data: subsectors = [], isLoading: subsectorsLoading } = useHorizonCompanySubsectors();
-  const { data: processStatuses = [], isLoading: statusesLoading } = useHorizonProcessStatuses();
+  const { data: rawProcessStatuses = [], isLoading: statusesLoading } = useHorizonProcessStatuses();
   const { data: ownerships = [], isLoading: ownershipsLoading } = useHorizonCompanyOwnerships();
   const { data: companyStates = [], isLoading: companyStatesLoading } = useHorizonCompanyStates();
   const { data: companyCities = [], isLoading: companyCitiesLoading } = useHorizonCompanyCities();
@@ -86,6 +82,11 @@ export function HorizonCombinedFilterBar({
   const { data: gpStates = [], isLoading: gpStatesLoading } = useHorizonGpStates();
   const { data: gpCities = [], isLoading: gpCitiesLoading } = useHorizonGpCities();
   const { data: industrySectors = [], isLoading: industrySectorsLoading } = useHorizonGpIndustrySectors();
+
+  // Filter out "No Known Process" from process statuses
+  const processStatuses = rawProcessStatuses.filter(
+    status => status.value?.toLowerCase() !== 'no known process'
+  );
 
   const priorityOptions = [
     { value: '1', label: 'Priority 1' },
@@ -119,15 +120,13 @@ export function HorizonCombinedFilterBar({
     (filters.revenueMin != null || filters.revenueMax != null ? 1 : 0) +
     (filters.gpAumMin != null || filters.gpAumMax != null ? 1 : 0);
 
-  // Count active GP-specific filters
+  // Count active GP-specific filters (removed Active Funds and Active Holdings)
   const gpFilterCount = [
     filters.industrySector,
     filters.gpState,
     filters.gpCity,
   ].filter(arr => arr.length > 0).length +
-    (filters.aumMin != null || filters.aumMax != null ? 1 : 0) +
-    (filters.activeFundsMin != null || filters.activeFundsMax != null ? 1 : 0) +
-    (filters.activeHoldingsMin != null || filters.activeHoldingsMax != null ? 1 : 0);
+    (filters.aumMin != null || filters.aumMax != null ? 1 : 0);
 
   return (
     <div className="space-y-4 p-4 bg-card rounded-lg border">
@@ -167,6 +166,82 @@ export function HorizonCombinedFilterBar({
         />
       </div>
 
+      {/* GP-Specific Filters - Collapsible (MOVED ABOVE Company Filters) */}
+      <Collapsible open={gpFiltersOpen} onOpenChange={setGpFiltersOpen}>
+        <CollapsibleTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn(
+              "w-full justify-between h-8 px-2",
+              gpFilterCount > 0 && "text-primary"
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <Users2 className="h-4 w-4" />
+              GP Filters
+              {gpFilterCount > 0 && (
+                <span className="bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded">
+                  {gpFilterCount}
+                </span>
+              )}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[280px]">
+                    <p>GP filters only show companies that are linked to GPs matching these criteria. Companies without GP links will be hidden.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </span>
+            {gpFiltersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <ComboboxMulti
+              label="GP Industry/Sector Focus"
+              options={industrySectors}
+              values={filters.industrySector}
+              onChange={(values) => updateFilter('industrySector', values)}
+              searchPlaceholder="Search Sectors"
+              loading={industrySectorsLoading}
+            />
+
+            <RangeInput
+              label="GP AUM ($B)"
+              minValue={filters.aumMin}
+              maxValue={filters.aumMax}
+              onMinChange={(value) => updateFilter('aumMin', value)}
+              onMaxChange={(value) => updateFilter('aumMax', value)}
+              minPlaceholder="Min"
+              maxPlaceholder="Max"
+              step={0.1}
+            />
+
+            <ComboboxMulti
+              label="GP City"
+              options={gpCities}
+              values={filters.gpCity}
+              onChange={(values) => updateFilter('gpCity', values)}
+              searchPlaceholder="Search Cities"
+              loading={gpCitiesLoading}
+            />
+
+            <ComboboxMulti
+              label="GP State"
+              options={gpStates}
+              values={filters.gpState}
+              onChange={(values) => updateFilter('gpState', values)}
+              searchPlaceholder="Search States"
+              loading={gpStatesLoading}
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
       {/* Company-Specific Filters - Collapsible */}
       <Collapsible open={companyFiltersOpen} onOpenChange={setCompanyFiltersOpen}>
         <CollapsibleTrigger asChild>
@@ -193,7 +268,7 @@ export function HorizonCombinedFilterBar({
         <CollapsibleContent className="pt-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             <ComboboxMulti
-              label="Sector"
+              label="Company Sector"
               options={sectors}
               values={filters.sector}
               onChange={(values) => updateFilter('sector', values)}
@@ -202,7 +277,7 @@ export function HorizonCombinedFilterBar({
             />
 
             <ComboboxMulti
-              label="Subsector"
+              label="Company Subsector"
               options={subsectors}
               values={filters.subsector}
               onChange={(values) => updateFilter('subsector', values)}
@@ -271,15 +346,6 @@ export function HorizonCombinedFilterBar({
             />
 
             <ComboboxMulti
-              label="Company State"
-              options={companyStates}
-              values={filters.companyState}
-              onChange={(values) => updateFilter('companyState', values)}
-              searchPlaceholder="Search States"
-              loading={companyStatesLoading}
-            />
-
-            <ComboboxMulti
               label="Company City"
               options={companyCities}
               values={filters.companyCity}
@@ -289,110 +355,21 @@ export function HorizonCombinedFilterBar({
             />
 
             <ComboboxMulti
-              label="Source"
+              label="Company State"
+              options={companyStates}
+              values={filters.companyState}
+              onChange={(values) => updateFilter('companyState', values)}
+              searchPlaceholder="Search States"
+              loading={companyStatesLoading}
+            />
+
+            <ComboboxMulti
+              label="Source of Data"
               options={sources}
               values={filters.source}
               onChange={(values) => updateFilter('source', values)}
               searchPlaceholder="Search Sources"
               loading={sourcesLoading}
-            />
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-
-      {/* GP-Specific Filters - Collapsible */}
-      <Collapsible open={gpFiltersOpen} onOpenChange={setGpFiltersOpen}>
-        <CollapsibleTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={cn(
-              "w-full justify-between h-8 px-2",
-              gpFilterCount > 0 && "text-primary"
-            )}
-          >
-            <span className="flex items-center gap-2">
-              <Users2 className="h-4 w-4" />
-              GP Filters
-              {gpFilterCount > 0 && (
-                <span className="bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded">
-                  {gpFilterCount}
-                </span>
-              )}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-[280px]">
-                    <p>GP filters only show companies that are linked to GPs matching these criteria. Companies without GP links will be hidden.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </span>
-            {gpFiltersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="pt-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            <ComboboxMulti
-              label="Industry/Sector Focus"
-              options={industrySectors}
-              values={filters.industrySector}
-              onChange={(values) => updateFilter('industrySector', values)}
-              searchPlaceholder="Search Sectors"
-              loading={industrySectorsLoading}
-            />
-
-            <RangeInput
-              label="GP AUM ($B)"
-              minValue={filters.aumMin}
-              maxValue={filters.aumMax}
-              onMinChange={(value) => updateFilter('aumMin', value)}
-              onMaxChange={(value) => updateFilter('aumMax', value)}
-              minPlaceholder="Min"
-              maxPlaceholder="Max"
-              step={0.1}
-            />
-
-            <RangeInput
-              label="Active Funds"
-              minValue={filters.activeFundsMin}
-              maxValue={filters.activeFundsMax}
-              onMinChange={(value) => updateFilter('activeFundsMin', value)}
-              onMaxChange={(value) => updateFilter('activeFundsMax', value)}
-              minPlaceholder="Min"
-              maxPlaceholder="Max"
-              step={1}
-            />
-
-            <RangeInput
-              label="Active Holdings"
-              minValue={filters.activeHoldingsMin}
-              maxValue={filters.activeHoldingsMax}
-              onMinChange={(value) => updateFilter('activeHoldingsMin', value)}
-              onMaxChange={(value) => updateFilter('activeHoldingsMax', value)}
-              minPlaceholder="Min"
-              maxPlaceholder="Max"
-              step={1}
-            />
-
-            <ComboboxMulti
-              label="GP State"
-              options={gpStates}
-              values={filters.gpState}
-              onChange={(values) => updateFilter('gpState', values)}
-              searchPlaceholder="Search States"
-              loading={gpStatesLoading}
-            />
-
-            <ComboboxMulti
-              label="GP City"
-              options={gpCities}
-              values={filters.gpCity}
-              onChange={(values) => updateFilter('gpCity', values)}
-              searchPlaceholder="Search Cities"
-              loading={gpCitiesLoading}
             />
           </div>
         </CollapsibleContent>

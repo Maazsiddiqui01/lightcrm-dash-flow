@@ -149,26 +149,7 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
             c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax! * 1_000_000_000
           );
         }
-        if (filters?.activeFundsMin != null) {
-          companies = companies.filter((c: any) => 
-            c.gp_data && (c.gp_data.active_funds || 0) >= filters.activeFundsMin!
-          );
-        }
-        if (filters?.activeFundsMax != null) {
-          companies = companies.filter((c: any) => 
-            c.gp_data && (c.gp_data.active_funds || 0) <= filters.activeFundsMax!
-          );
-        }
-        if (filters?.activeHoldingsMin != null) {
-          companies = companies.filter((c: any) => 
-            c.gp_data && (c.gp_data.active_holdings || 0) >= filters.activeHoldingsMin!
-          );
-        }
-        if (filters?.activeHoldingsMax != null) {
-          companies = companies.filter((c: any) => 
-            c.gp_data && (c.gp_data.active_holdings || 0) <= filters.activeHoldingsMax!
-          );
-        }
+        // Active Funds and Active Holdings filters removed as requested
 
         const totalCompanies = companies.length;
         const linkedGpIds = new Set(companies.filter((c: any) => c.parent_gp_id).map((c: any) => c.parent_gp_id));
