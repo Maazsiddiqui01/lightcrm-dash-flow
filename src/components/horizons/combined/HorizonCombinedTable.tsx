@@ -704,6 +704,21 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         }}
         variant="destructive"
       />
+
+      {notesDialogRecord && (
+        <NotesNextStepsDialog
+          open={notesDialogOpen}
+          onClose={() => {
+            setNotesDialogOpen(false);
+            setNotesDialogRecord(null);
+          }}
+          recordId={notesDialogRecord.id}
+          tableName="lg_horizons_companies"
+          recordName={notesDialogRecord.company_name}
+          initialTab={notesDialogTab}
+          onSaved={fetchCompanies}
+        />
+      )}
     </div>
   );
 }
