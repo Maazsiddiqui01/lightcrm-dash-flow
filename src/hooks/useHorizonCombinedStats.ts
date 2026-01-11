@@ -107,12 +107,6 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
           if (filters?.revenueMax != null) {
             query = query.lte('revenue_numeric', filters.revenueMax);
           }
-          if (filters?.gpAumMin != null) {
-            query = query.gte('gp_aum_numeric', filters.gpAumMin);
-          }
-          if (filters?.gpAumMax != null) {
-            query = query.lte('gp_aum_numeric', filters.gpAumMax);
-          }
 
           return query;
         };

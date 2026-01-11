@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllPaged } from "@/utils/supabaseFetchAll";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
@@ -92,6 +92,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
   const [companies, setCompanies] = useState<CombinedCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<CombinedCompany | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -112,6 +113,14 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
     const savedSort = loadSortState('lg_horizons_combined');
     setSortLevels(savedSort);
   }, []);
+  
+  // Debounce search term to prevent table resets on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
   
   const columnVisibility = useColumnVisibility('columns:lg_horizons_combined');
   
@@ -485,7 +494,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
   
   useEffect(() => {
     fetchCompanies();
-  }, [sortLevels, filtersKey, searchTerm]);
+  }, [sortLevels, filtersKey, debouncedSearchTerm]);
 
   const fetchCompanies = async () => {
     const requestId = Date.now().toString();
@@ -575,13 +584,11 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax);
         if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin);
         if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
-        if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin);
-        if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax);
         // Note: date_of_acquisition filtering is done client-side because it's stored as text in various formats
 
         // Search
-        if (searchTerm.trim()) {
-          query = query.or(`company_name.ilike.%${searchTerm}%,sector.ilike.%${searchTerm}%,parent_gp_name.ilike.%${searchTerm}%`);
+        if (debouncedSearchTerm.trim()) {
+          query = query.or(`company_name.ilike.%${debouncedSearchTerm}%,sector.ilike.%${debouncedSearchTerm}%,parent_gp_name.ilike.%${debouncedSearchTerm}%`);
         }
 
         // Apply multi-sort with stable tie-breaker
