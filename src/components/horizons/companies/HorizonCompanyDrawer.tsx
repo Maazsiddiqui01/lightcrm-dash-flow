@@ -141,204 +141,202 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
           </SheetHeader>
 
           <Tabs defaultValue="overview" className="mt-4">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="gp">GP Info</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
-              <TabsTrigger value="activity">Activity</TabsTrigger>
+              <TabsTrigger value="notes-activity">Notes & Activity</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Company Name</Label>
-                  <Input
-                    value={editedCompany.company_name || ''}
-                    onChange={(e) => handleFieldChange('company_name', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>URL</Label>
-                  <Input
-                    value={editedCompany.company_url || ''}
-                    onChange={(e) => handleFieldChange('company_url', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Priority</Label>
-                  <Select
-                    value={String(editedCompany.priority || '')}
-                    onValueChange={(v) => handleFieldChange('priority', v ? parseInt(v) : null)}
-                  >
-                    <SelectTrigger><SelectValue placeholder="Select priority" /></SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5].map(p => (
-                        <SelectItem key={p} value={String(p)}>{p}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Sector</Label>
-                  <Input
-                    value={editedCompany.sector || ''}
-                    onChange={(e) => handleFieldChange('sector', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Subsector</Label>
-                  <Input
-                    value={editedCompany.subsector || ''}
-                    onChange={(e) => handleFieldChange('subsector', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Process Status</Label>
-                <Select
-                    value={editedCompany.process_status || ''}
-                    onValueChange={(v) => handleFieldChange('process_status', v)}
-                  >
-                    <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
-                    <SelectContent>
-                      {[
-                        'Expected / Monitoring',
-                        'Active Process',
-                        'Failed Process', 
-                        'No Known Process'
-                      ].map(s => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <TabsContent value="overview" className="space-y-6 mt-4">
+              {/* GP Info Section - First */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                  GP Info
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>General Partner</Label>
+                    <Input
+                      value={editedCompany.parent_gp_name || ''}
+                      onChange={(e) => handleFieldChange('parent_gp_name', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>GP AUM</Label>
+                    <Input
+                      value={editedCompany.gp_aum || ''}
+                      onChange={(e) => handleFieldChange('gp_aum', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>GP Contact</Label>
+                    <Input
+                      value={editedCompany.gp_contact || ''}
+                      onChange={(e) => handleFieldChange('gp_contact', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>LG Relationship</Label>
+                    <Input
+                      value={editedCompany.lg_relationship || ''}
+                      onChange={(e) => handleFieldChange('lg_relationship', e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={editedCompany.description || ''}
-                  onChange={(e) => handleFieldChange('description', e.target.value)}
-                  rows={4}
-                />
+
+              {/* Company Info Section - Second */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                  Company Info
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Company Name</Label>
+                    <Input
+                      value={editedCompany.company_name || ''}
+                      onChange={(e) => handleFieldChange('company_name', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>URL</Label>
+                    <Input
+                      value={editedCompany.company_url || ''}
+                      onChange={(e) => handleFieldChange('company_url', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Priority</Label>
+                    <Select
+                      value={String(editedCompany.priority || '')}
+                      onValueChange={(v) => handleFieldChange('priority', v ? parseInt(v) : null)}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select priority" /></SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5].map(p => (
+                          <SelectItem key={p} value={String(p)}>{p}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Sector</Label>
+                    <Input
+                      value={editedCompany.sector || ''}
+                      onChange={(e) => handleFieldChange('sector', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Subsector</Label>
+                    <Input
+                      value={editedCompany.subsector || ''}
+                      onChange={(e) => handleFieldChange('subsector', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Process Status</Label>
+                    <Select
+                      value={editedCompany.process_status || ''}
+                      onValueChange={(v) => handleFieldChange('process_status', v)}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                      <SelectContent>
+                        {[
+                          'Expected / Monitoring',
+                          'Active Process',
+                          'Failed Process', 
+                          'No Known Process'
+                        ].map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Date of Acquisition</Label>
+                    <Input
+                      type="date"
+                      value={editedCompany.date_of_acquisition || ''}
+                      onChange={(e) => handleFieldChange('date_of_acquisition', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>EBITDA</Label>
+                    <Input
+                      value={editedCompany.ebitda || ''}
+                      onChange={(e) => handleFieldChange('ebitda', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Revenue</Label>
+                    <Input
+                      value={editedCompany.revenue || ''}
+                      onChange={(e) => handleFieldChange('revenue', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Ownership</Label>
+                    <Input
+                      value={editedCompany.ownership || ''}
+                      onChange={(e) => handleFieldChange('ownership', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Source</Label>
+                    <Input
+                      value={editedCompany.source || ''}
+                      onChange={(e) => handleFieldChange('source', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Company HQ City</Label>
+                    <Input
+                      value={editedCompany.company_hq_city || ''}
+                      onChange={(e) => handleFieldChange('company_hq_city', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Company HQ State</Label>
+                    <Input
+                      value={editedCompany.company_hq_state || ''}
+                      onChange={(e) => handleFieldChange('company_hq_state', e.target.value)}
+                    />
+                  </div>
+                  {/* Only show Original Date if there's data */}
+                  {editedCompany.original_date && (
+                    <div className="space-y-2">
+                      <Label>Original Date</Label>
+                      <Input
+                        type="date"
+                        value={editedCompany.original_date || ''}
+                        onChange={(e) => handleFieldChange('original_date', e.target.value)}
+                      />
+                    </div>
+                  )}
+                  {/* Only show Latest Process Date if there's data */}
+                  {editedCompany.latest_process_date && (
+                    <div className="space-y-2">
+                      <Label>Latest Process Date</Label>
+                      <Input
+                        type="date"
+                        value={editedCompany.latest_process_date || ''}
+                        onChange={(e) => handleFieldChange('latest_process_date', e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Company Description</Label>
+                  <Textarea
+                    value={editedCompany.description || ''}
+                    onChange={(e) => handleFieldChange('description', e.target.value)}
+                    rows={4}
+                  />
+                </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="details" className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>EBITDA</Label>
-                  <Input
-                    value={editedCompany.ebitda || ''}
-                    onChange={(e) => handleFieldChange('ebitda', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Revenue</Label>
-                  <Input
-                    value={editedCompany.revenue || ''}
-                    onChange={(e) => handleFieldChange('revenue', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Ownership</Label>
-                  <Input
-                    value={editedCompany.ownership || ''}
-                    onChange={(e) => handleFieldChange('ownership', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Source</Label>
-                  <Input
-                    value={editedCompany.source || ''}
-                    onChange={(e) => handleFieldChange('source', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>HQ City</Label>
-                  <Input
-                    value={editedCompany.company_hq_city || ''}
-                    onChange={(e) => handleFieldChange('company_hq_city', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>HQ State</Label>
-                  <Input
-                    value={editedCompany.company_hq_state || ''}
-                    onChange={(e) => handleFieldChange('company_hq_state', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Original Date</Label>
-                  <Input
-                    type="date"
-                    value={editedCompany.original_date || ''}
-                    onChange={(e) => handleFieldChange('original_date', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Latest Process Date</Label>
-                  <Input
-                    type="date"
-                    value={editedCompany.latest_process_date || ''}
-                    onChange={(e) => handleFieldChange('latest_process_date', e.target.value)}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="gp" className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Parent/GP</Label>
-                  <Input
-                    value={editedCompany.parent_gp_name || ''}
-                    onChange={(e) => handleFieldChange('parent_gp_name', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>GP AUM</Label>
-                  <Input
-                    value={editedCompany.gp_aum || ''}
-                    onChange={(e) => handleFieldChange('gp_aum', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>GP Contact</Label>
-                  <Input
-                    value={editedCompany.gp_contact || ''}
-                    onChange={(e) => handleFieldChange('gp_contact', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>LG Relationship</Label>
-                  <Input
-                    value={editedCompany.lg_relationship || ''}
-                    onChange={(e) => handleFieldChange('lg_relationship', e.target.value)}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="notes" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Additional Size Info</Label>
-                <Textarea
-                  value={editedCompany.additional_size_info || ''}
-                  onChange={(e) => handleFieldChange('additional_size_info', e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Additional Information</Label>
-                <Textarea
-                  value={editedCompany.additional_information || ''}
-                  onChange={(e) => handleFieldChange('additional_information', e.target.value)}
-                  rows={4}
-                />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="activity" className="space-y-4 mt-4">
+            <TabsContent value="notes-activity" className="space-y-6 mt-4">
+              {/* Notes & Next Steps Timeline */}
               <HorizonNotesSection
                 title="Notes"
                 field="notes"
@@ -364,6 +362,31 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
                 isLoadingCurrent={isLoadingCurrent}
                 isLoadingTimeline={isLoadingTimeline}
               />
+
+              {/* Additional Info Section at Bottom */}
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Additional Information
+                </h3>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Additional Size Info</Label>
+                    <Textarea
+                      value={editedCompany.additional_size_info || ''}
+                      onChange={(e) => handleFieldChange('additional_size_info', e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Additional Information</Label>
+                    <Textarea
+                      value={editedCompany.additional_information || ''}
+                      onChange={(e) => handleFieldChange('additional_information', e.target.value)}
+                      rows={4}
+                    />
+                  </div>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
 
