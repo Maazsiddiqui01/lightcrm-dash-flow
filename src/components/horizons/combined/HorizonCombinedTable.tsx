@@ -36,6 +36,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { NotesNextStepsDialog } from "@/components/horizons/shared/NotesNextStepsDialog";
+import { HorizonCombinedExportDropdown } from "./HorizonCombinedExportDropdown";
 
 interface CombinedCompany {
   id: string;
@@ -705,6 +706,8 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           </h3>
         </div>
         <div className="flex gap-2">
+          <HorizonCombinedExportDropdown data={companies} />
+          
           <ColumnsMenu
             columns={dynamicColumns}
             columnVisibility={columnVisibility.columnVisibility}
