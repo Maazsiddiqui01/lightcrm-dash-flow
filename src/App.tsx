@@ -66,7 +66,7 @@ function App() {
                       <Route path="/contacts" element={<Contacts />} />
                       <Route path="/missing-contacts" element={<MissingContacts />} />
                       <Route path="/opportunities" element={<Opportunities />} />
-                      <Route path="/lg-horizons" element={<LgHorizons />} />
+                      <Route path="/lg-horizon" element={<LgHorizons />} />
                       <Route path="/interactions" element={<Interactions />} />
                       <Route path="/articles" element={<Articles />} />
                       <Route path="/email-builder" element={<EmailBuilder />} />
