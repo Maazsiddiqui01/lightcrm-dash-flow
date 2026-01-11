@@ -61,6 +61,7 @@ interface CombinedCompany {
   company_hq_state: string | null;
   source: string | null;
   description: string | null;
+  date_of_acquisition: string | null;
   // Joined GP data
   gp_data?: {
     id: string;
@@ -562,8 +563,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
         if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin);
         if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax);
-        if (filters.dateOfAcquisitionStart) query = query.gte('date_of_acquisition', filters.dateOfAcquisitionStart);
-        if (filters.dateOfAcquisitionEnd) query = query.lte('date_of_acquisition', filters.dateOfAcquisitionEnd);
+        // Note: date_of_acquisition filtering is done client-side because it's stored as text in various formats
 
         // Search
         if (searchTerm.trim()) {
@@ -639,6 +639,28 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         filteredData = filteredData.filter(c => 
           c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax!
         );
+      }
+
+      // Date of acquisition filter - client-side because it's stored as text in various formats
+      if (filters.dateOfAcquisitionStart) {
+        const startDate = parseFlexibleDate(filters.dateOfAcquisitionStart);
+        if (startDate) {
+          filteredData = filteredData.filter(c => {
+            if (!c.date_of_acquisition) return false;
+            const acqDate = parseFlexibleDate(c.date_of_acquisition);
+            return acqDate && acqDate >= startDate;
+          });
+        }
+      }
+      if (filters.dateOfAcquisitionEnd) {
+        const endDate = parseFlexibleDate(filters.dateOfAcquisitionEnd);
+        if (endDate) {
+          filteredData = filteredData.filter(c => {
+            if (!c.date_of_acquisition) return false;
+            const acqDate = parseFlexibleDate(c.date_of_acquisition);
+            return acqDate && acqDate <= endDate;
+          });
+        }
       }
 
       const sortedData = applyClientSort(filteredData, sortLevels);

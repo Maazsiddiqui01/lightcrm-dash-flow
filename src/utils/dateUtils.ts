@@ -12,6 +12,13 @@ export function parseFlexibleDate(value: any): Date | null {
   if (!stringValue) return null;
   
   try {
+    // Handle US date format: "M/D/YYYY" or "MM/DD/YYYY" (e.g., "6/1/2020", "12/15/2018")
+    if (stringValue.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+      const [month, day, year] = stringValue.split('/').map(Number);
+      const date = new Date(year, month - 1, day);
+      if (isValid(date)) return date;
+    }
+    
     // Try standard ISO parsing first (handles 2025-10-15T11:00:00Z)
     let date = parseISO(stringValue);
     if (isValid(date)) return date;

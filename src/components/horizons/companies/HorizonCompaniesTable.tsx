@@ -347,9 +347,7 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
         if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin);
         if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax);
         
-        // Date of Acquisition filter
-        if (filters.dateOfAcquisitionStart) query = query.gte('date_of_acquisition', filters.dateOfAcquisitionStart);
-        if (filters.dateOfAcquisitionEnd) query = query.lte('date_of_acquisition', filters.dateOfAcquisitionEnd);
+        // Note: date_of_acquisition filtering is done client-side because it's stored as text in various formats
         
         // LG Relationship filter with special "No Known Relationship" handling
         if (filters.lgRelationship.length > 0) {
@@ -386,9 +384,31 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
         return query;
       };
 
-      const data = await fetchAllPaged<HorizonCompany>(makeQuery);
+      let data = await fetchAllPaged<HorizonCompany>(makeQuery);
 
       if (requestIdRef.current !== requestId) return;
+
+      // Apply date of acquisition filter client-side (stored as text in various formats)
+      if (filters.dateOfAcquisitionStart) {
+        const startDate = parseFlexibleDate(filters.dateOfAcquisitionStart);
+        if (startDate) {
+          data = data.filter(c => {
+            if (!c.date_of_acquisition) return false;
+            const acqDate = parseFlexibleDate(c.date_of_acquisition);
+            return acqDate && acqDate >= startDate;
+          });
+        }
+      }
+      if (filters.dateOfAcquisitionEnd) {
+        const endDate = parseFlexibleDate(filters.dateOfAcquisitionEnd);
+        if (endDate) {
+          data = data.filter(c => {
+            if (!c.date_of_acquisition) return false;
+            const acqDate = parseFlexibleDate(c.date_of_acquisition);
+            return acqDate && acqDate <= endDate;
+          });
+        }
+      }
 
       const sortedData = applyClientSort(data, sortLevels);
       setCompanies(sortedData as HorizonCompany[]);

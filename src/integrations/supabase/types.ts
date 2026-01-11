@@ -5697,6 +5697,7 @@ export type Database = {
           sector_id: string
         }[]
       }
+      get_gp_active_holdings_count: { Args: { gp_id: string }; Returns: number }
       get_group_contacts_view: {
         Args: never
         Returns: {
