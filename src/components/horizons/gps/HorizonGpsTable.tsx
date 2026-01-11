@@ -57,6 +57,8 @@ interface HorizonGp {
   industry_sector_focus: string | null;
   created_at: string | null;
   updated_at: string | null;
+  // Dynamic count of companies linked to this GP in our database
+  db_holdings_count?: number;
 }
 
 export interface HorizonGpFilters {
@@ -267,7 +269,19 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
       ),
     };
 
-    return [actionsColumn, ...baseColumns];
+    // Add DB Holdings column (dynamic count from our database)
+    const dbHoldingsColumn: ColumnDef<HorizonGp> = {
+      key: 'db_holdings_count',
+      label: 'DB Holdings',
+      width: 100,
+      visible: columnVisibility.columnVisibility['db_holdings_count'] !== false,
+      enableHiding: true,
+      render: (value: any, row: HorizonGp) => {
+        return row.db_holdings_count ?? '-';
+      },
+    };
+
+    return [actionsColumn, ...baseColumns, dbHoldingsColumn];
   }, [editMode.editState, columnVisibility.columnVisibility]);
   
   const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
@@ -282,6 +296,8 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
     
     try {
       setLoading(true);
+      
+      // Fetch GPs
       let query = supabase.from("lg_horizons_gps").select("*").limit(10000);
 
       // Apply filters
@@ -330,17 +346,45 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
                      .order('gp_name', { ascending: true });
       }
 
-      const { data, error } = await query;
+      const { data: gpData, error: gpError } = await query;
 
       if (requestIdRef.current !== requestId) return;
 
-      if (error) {
-        console.error("Error fetching GPs:", error);
+      if (gpError) {
+        console.error("Error fetching GPs:", gpError);
         toast({ title: "Error", description: "Failed to fetch GPs.", variant: "destructive" });
         return;
       }
 
-      const sortedData = applyClientSort(data || [], sortLevels);
+      // Fetch company counts per GP for dynamic DB Holdings
+      const { data: companyCounts, error: countError } = await supabase
+        .from('lg_horizons_companies')
+        .select('parent_gp_id');
+
+      if (countError) {
+        console.error("Error fetching company counts:", countError);
+      }
+
+      // Build a map of GP ID to company count
+      const gpCompanyCounts = new Map<string, number>();
+      if (companyCounts) {
+        companyCounts.forEach(company => {
+          if (company.parent_gp_id) {
+            gpCompanyCounts.set(
+              company.parent_gp_id,
+              (gpCompanyCounts.get(company.parent_gp_id) || 0) + 1
+            );
+          }
+        });
+      }
+
+      // Inject DB holdings count into each GP
+      const gpsWithCounts = (gpData || []).map(gp => ({
+        ...gp,
+        db_holdings_count: gpCompanyCounts.get(gp.id) || 0
+      }));
+
+      const sortedData = applyClientSort(gpsWithCounts, sortLevels);
       setGps(sortedData as HorizonGp[]);
     } catch (error) {
       console.error("Unexpected error:", error);
