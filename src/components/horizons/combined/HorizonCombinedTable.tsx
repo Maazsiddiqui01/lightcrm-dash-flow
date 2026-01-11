@@ -62,6 +62,8 @@ interface CombinedCompany {
   source: string | null;
   description: string | null;
   date_of_acquisition: string | null;
+  // Dynamic count of companies linked to this GP in our database
+  db_holdings_count?: number;
   // Joined GP data
   gp_data?: {
     id: string;
@@ -406,7 +408,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return parts.length > 0 ? parts.join(', ') : null;
         },
       },
-      // GP Active Holdings
+      // GP Active Holdings (static from external data)
       {
         key: 'active_holdings',
         label: 'Active Holdings',
@@ -415,6 +417,17 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         enableHiding: true,
         render: (value: any, row: CombinedCompany) => {
           return row.gp_data?.active_holdings ?? null;
+        },
+      },
+      // DB Holdings (dynamic count from our database)
+      {
+        key: 'db_holdings_count',
+        label: 'DB Holdings',
+        width: 100,
+        visible: columnVisibility.columnVisibility['db_holdings_count'] !== false,
+        enableHiding: true,
+        render: (value: any, row: CombinedCompany) => {
+          return row.db_holdings_count ?? '-';
         },
       },
       // Ownership
@@ -504,6 +517,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         company_hq_state,
         source,
         description,
+        date_of_acquisition,
         gp_data:lg_horizons_gps!parent_gp_id (
           id,
           gp_name,
@@ -596,8 +610,27 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         gp_data: Array.isArray(row.gp_data) ? row.gp_data[0] || null : row.gp_data,
       })) as CombinedCompany[];
 
+      // Compute dynamic DB holdings count per GP (how many companies in our DB are linked to each GP)
+      const gpCompanyCounts = new Map<string, number>();
+      transformedData.forEach(company => {
+        if (company.parent_gp_id) {
+          gpCompanyCounts.set(
+            company.parent_gp_id,
+            (gpCompanyCounts.get(company.parent_gp_id) || 0) + 1
+          );
+        }
+      });
+
+      // Inject the dynamic count into each company
+      const dataWithCounts = transformedData.map(company => ({
+        ...company,
+        db_holdings_count: company.parent_gp_id
+          ? gpCompanyCounts.get(company.parent_gp_id) || 0
+          : 0
+      }));
+
       // Apply GP-specific filters client-side (since they're on joined data)
-      let filteredData = transformedData;
+      let filteredData = dataWithCounts;
       
       // Combined location filters - match if EITHER company OR GP location matches
       if (filters.combinedCity && filters.combinedCity.length > 0) {
