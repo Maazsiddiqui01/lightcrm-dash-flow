@@ -26,7 +26,9 @@ export function getComparableValue(value: any, columnKey: string): any {
   }
   
   // Handle numeric columns - more comprehensive detection
-  if (columnKey.includes('ebitda') || columnKey.includes('delta') || 
+  // CRITICAL: Columns ending in _numeric are always numeric (e.g., gp_aum_numeric, aum_numeric)
+  if (columnKey.endsWith('_numeric') ||
+      columnKey.includes('ebitda') || columnKey.includes('delta') || 
       columnKey.includes('count') || columnKey.includes('number') ||
       columnKey.includes('days_') || columnKey.includes('of_') ||
       columnKey.includes('no_') || columnKey.includes('all_') ||
@@ -34,7 +36,8 @@ export function getComparableValue(value: any, columnKey: string): any {
       columnKey === 'est_deal_size' || columnKey === 'est_lg_equity_invest' ||
       columnKey === 'minutes' || columnKey.endsWith('_count') ||
       columnKey.endsWith('_size') || columnKey.endsWith('_amount') ||
-      columnKey === 'days_over_under_max_lag') {
+      columnKey === 'days_over_under_max_lag' ||
+      columnKey === 'aum' || columnKey === 'gp_aum') {
     return parseNumber(value);
   }
   
