@@ -237,6 +237,15 @@ export const SAFE_UPDATE_FIELDS = {
  * }));
  * ```
  */
+// Fields that are integer type and should convert empty string to null
+const INTEGER_FIELDS: Record<string, string[]> = {
+  contacts_raw: ['delta', 'follow_up_days', 'follow_up_recency_threshold'],
+  opportunities_raw: ['priority'],
+  lg_horizons_companies: ['priority', 'ebitda_numeric', 'revenue_numeric', 'gp_aum_numeric'],
+  lg_horizons_gps: ['priority', 'aum_numeric', 'active_funds', 'total_funds', 'active_holdings'],
+  groups: ['max_lag_days'],
+};
+
 export function getSafeUpdate<T extends keyof typeof SAFE_UPDATE_FIELDS>(
   tableName: T,
   data: Record<string, any>,
@@ -247,10 +256,19 @@ export function getSafeUpdate<T extends keyof typeof SAFE_UPDATE_FIELDS>(
     ...preserveFields
   ];
   
+  const integerFields = INTEGER_FIELDS[tableName] || [];
+  
   const safeData: Record<string, any> = {};
   for (const field of allowedFields) {
     if (field in data) {
-      safeData[field] = data[field];
+      let value = data[field];
+      
+      // Convert empty strings to null for integer fields
+      if (integerFields.includes(field) && value === '') {
+        value = null;
+      }
+      
+      safeData[field] = value;
     }
   }
   
