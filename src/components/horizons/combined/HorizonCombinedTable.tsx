@@ -141,6 +141,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
     { key: 'company_hq_state', label: 'Company State' },
     { key: 'source', label: 'Source' },
     { key: 'description', label: 'Company Description' },
+    { key: 'date_of_acquisition', label: 'Acquisition Date' },
   ], []);
 
   // Format cell value for display
@@ -454,6 +455,20 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         width: 120,
         visible: columnVisibility.columnVisibility['source'] !== false,
         enableHiding: true,
+      },
+      // Date of Acquisition
+      {
+        key: 'date_of_acquisition',
+        label: 'Acquisition Date',
+        width: 130,
+        visible: columnVisibility.columnVisibility['date_of_acquisition'] !== false,
+        enableHiding: true,
+        render: (value: any) => {
+          if (!value) return null;
+          const date = parseFlexibleDate(value);
+          if (date) return format(date, 'MMM dd, yyyy');
+          return String(value);
+        },
       },
       // Company Description
       {
