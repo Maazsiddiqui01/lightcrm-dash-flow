@@ -68,7 +68,7 @@ export function HorizonCombinedFilterBar({
   onClearFilters 
 }: HorizonCombinedFilterBarProps) {
   const [gpFiltersOpen, setGpFiltersOpen] = useState(true);
-  const [companyFiltersOpen, setCompanyFiltersOpen] = useState(false);
+  const [companyFiltersOpen, setCompanyFiltersOpen] = useState(true);
 
   // Company filter options
   const { data: sectors = [], isLoading: sectorsLoading } = useHorizonCompanySectors();

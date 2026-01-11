@@ -12,7 +12,7 @@ const navItems = [
   { title: "Dashboard", url: "/dashboard", roles: ['admin', 'user', 'viewer'] },
   { title: "Contacts", url: "/contacts", roles: ['admin', 'user', 'viewer'] },
   { title: "Opportunities", url: "/opportunities", roles: ['admin', 'user', 'viewer'] },
-  { title: "LG Horizon", url: "/lg-horizons", roles: ['admin', 'user', 'viewer'] },
+  { title: "LG Horizon", url: "/lg-horizon", roles: ['admin', 'user', 'viewer'] },
   { title: "Email Builder", url: "/email-builder", roles: ['admin', 'user', 'viewer'] },
   { title: "Pending Contacts", url: "/missing-contacts", roles: ['admin'] },
   { title: "Chat", url: "/chat", roles: ['admin', 'user', 'viewer'] },

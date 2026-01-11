@@ -58,10 +58,12 @@ interface CombinedCompany {
   company_hq_city: string | null;
   company_hq_state: string | null;
   source: string | null;
+  description: string | null;
   // Joined GP data
   gp_data?: {
     id: string;
     gp_name: string;
+    gp_url: string | null;
     aum: string | null;
     aum_numeric: number | null;
     lg_relationship: string | null;
@@ -118,12 +120,13 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
     { key: 'revenue_numeric', label: 'Revenue' },
     { key: 'process_status', label: 'Process Status' },
     { key: 'ownership', label: 'Ownership' },
-    { key: 'parent_gp_name', label: 'Parent GP' },
+    { key: 'parent_gp_name', label: 'General Partner' },
     { key: 'gp_aum_numeric', label: 'GP AUM' },
     { key: 'lg_relationship', label: 'LG Relationship' },
     { key: 'company_hq_city', label: 'Company City' },
     { key: 'company_hq_state', label: 'Company State' },
     { key: 'source', label: 'Source' },
+    { key: 'description', label: 'Company Description' },
   ], []);
 
   // Format cell value for display
@@ -217,30 +220,6 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return <Badge className={variants[value] || ""}>{value}</Badge>;
         },
       },
-      // GP Link indicator
-      {
-        key: 'gp_linked',
-        label: 'GP Link',
-        width: 70,
-        visible: columnVisibility.columnVisibility['gp_linked'] !== false,
-        enableHiding: true,
-        render: (value: any, row: CombinedCompany) => (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                {row.parent_gp_id ? (
-                  <Link2 className="h-4 w-4 text-green-600" />
-                ) : (
-                  <Link2Off className="h-4 w-4 text-muted-foreground/50" />
-                )}
-              </TooltipTrigger>
-              <TooltipContent>
-                {row.parent_gp_id ? 'Linked to GP' : 'No GP match'}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ),
-      },
       // Company Name
       {
         key: 'company_name',
@@ -312,17 +291,32 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return <Badge variant="outline" className={colorClass}>{value}</Badge>;
         },
       },
-      // Parent GP
+      // General Partner (hyperlinked to GP URL)
       {
         key: 'parent_gp_name',
-        label: 'Parent GP',
+        label: 'General Partner',
         width: 180,
         visible: columnVisibility.columnVisibility['parent_gp_name'] !== false,
         enableHiding: true,
         resizable: true,
         render: (value: any, row: CombinedCompany) => {
           const gpName = row.gp_data?.gp_name || value;
+          const gpUrl = row.gp_data?.gp_url;
           if (!gpName) return null;
+          
+          if (gpUrl) {
+            return (
+              <a 
+                href={gpUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {gpName}
+              </a>
+            );
+          }
           return (
             <span className={row.parent_gp_id ? 'text-foreground' : 'text-muted-foreground'}>
               {gpName}
@@ -418,6 +412,35 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         visible: columnVisibility.columnVisibility['source'] !== false,
         enableHiding: true,
       },
+      // Company Description
+      {
+        key: 'description',
+        label: 'Company Description',
+        width: 200,
+        visible: columnVisibility.columnVisibility['description'] !== false,
+        enableHiding: true,
+        resizable: true,
+        render: (value: any) => {
+          if (!value) return null;
+          // Truncate long descriptions
+          const text = String(value);
+          if (text.length > 100) {
+            return (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-help">{text.slice(0, 100)}...</span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md">
+                    {text}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
+          return <span>{text}</span>;
+        },
+      },
     ];
 
     return columns;
@@ -462,9 +485,11 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           company_hq_city,
           company_hq_state,
           source,
+          description,
           gp_data:lg_horizons_gps!parent_gp_id (
             id,
             gp_name,
+            gp_url,
             aum,
             aum_numeric,
             lg_relationship,

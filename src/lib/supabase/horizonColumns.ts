@@ -23,7 +23,7 @@ export const LG_HORIZONS_COMPANIES_COLUMNS: TableColumn[] = [
   { name: 'company_hq_city', type: 'text', nullable: true, displayName: 'HQ City' },
   { name: 'company_hq_state', type: 'text', nullable: true, displayName: 'HQ State' },
   { name: 'date_of_acquisition', type: 'date', nullable: true, displayName: 'Acquisition Date' },
-  { name: 'description', type: 'text', nullable: true, displayName: 'Description' },
+  { name: 'description', type: 'text', nullable: true, displayName: 'Company Description' },
   { name: 'additional_size_info', type: 'text', nullable: true, displayName: 'Additional Size Info' },
   { name: 'additional_information', type: 'text', nullable: true, displayName: 'Additional Information' },
   { name: 'source', type: 'text', nullable: true, displayName: 'Source' },
