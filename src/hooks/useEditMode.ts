@@ -166,10 +166,20 @@ export function useEditMode<T extends { id: string }>(
         sampleFields: updates[0] ? Object.keys(updates[0]) : []
       });
 
-      // Batch update to Supabase
-      const { error } = await supabase
-        .from(tableName)
-        .upsert(updates, { onConflict: 'id' });
+      // Use individual update calls instead of upsert to only modify changed fields
+      // This prevents NOT NULL constraint violations for unedited fields
+      const updatePromises = updates.map(async (update) => {
+        const { id, ...fieldsToUpdate } = update;
+        const { error } = await supabase
+          .from(tableName)
+          .update(fieldsToUpdate)
+          .eq('id', id);
+        return { id, error };
+      });
+      
+      const results = await Promise.all(updatePromises);
+      const failedUpdate = results.find(r => r.error);
+      const error = failedUpdate?.error;
 
       if (error) {
         // Enhanced error logging
