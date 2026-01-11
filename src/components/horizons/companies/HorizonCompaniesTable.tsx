@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllPaged } from "@/utils/supabaseFetchAll";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
@@ -105,6 +105,7 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
   const [companies, setCompanies] = useState<HorizonCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<HorizonCompany | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -122,6 +123,14 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
   const [sortLevels, setSortLevels] = useState<SortLevel[]>([]);
   const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
   
+  // Debounce search term to prevent table resets on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Load sort state on mount
   useEffect(() => {
     const savedSort = loadSortState('lg_horizons_companies');
@@ -314,7 +323,7 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
   
   useEffect(() => {
     fetchCompanies();
-  }, [sortLevels, filtersKey, searchTerm]);
+  }, [sortLevels, filtersKey, debouncedSearchTerm]);
 
   const fetchCompanies = async () => {
     const requestId = Date.now().toString();
@@ -364,8 +373,8 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
         }
 
         // Search
-        if (searchTerm.trim()) {
-          query = query.or(`company_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,sector.ilike.%${searchTerm}%`);
+        if (debouncedSearchTerm.trim()) {
+          query = query.or(`company_name.ilike.%${debouncedSearchTerm}%,description.ilike.%${debouncedSearchTerm}%,sector.ilike.%${debouncedSearchTerm}%`);
         }
 
         // Apply multi-sort with stable tie-breaker
