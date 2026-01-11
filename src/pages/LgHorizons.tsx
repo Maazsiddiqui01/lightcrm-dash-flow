@@ -92,6 +92,8 @@ export function LgHorizons() {
   const [combinedFilters, setCombinedFilters] = useState<HorizonCombinedFilters>({
     priority: [],
     lgRelationship: [],
+    combinedCity: [],
+    combinedState: [],
     sector: [],
     subsector: [],
     processStatus: [],
@@ -123,6 +125,8 @@ export function LgHorizons() {
     setCombinedFilters({
       priority: [],
       lgRelationship: [],
+      combinedCity: [],
+      combinedState: [],
       sector: [],
       subsector: [],
       processStatus: [],

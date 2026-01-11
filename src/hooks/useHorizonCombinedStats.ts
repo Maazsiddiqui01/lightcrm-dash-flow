@@ -123,6 +123,20 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
           gp_data: Array.isArray(row.gp_data) ? row.gp_data[0] || null : row.gp_data,
         }));
 
+        // Combined location filters - match if EITHER company OR GP location matches
+        if (filters?.combinedCity && filters.combinedCity.length > 0) {
+          companies = companies.filter((c: any) => 
+            filters.combinedCity.includes(c.company_hq_city || '') ||
+            (c.gp_data && filters.combinedCity.includes(c.gp_data.fund_hq_city || ''))
+          );
+        }
+        if (filters?.combinedState && filters.combinedState.length > 0) {
+          companies = companies.filter((c: any) => 
+            filters.combinedState.includes(c.company_hq_state || '') ||
+            (c.gp_data && filters.combinedState.includes(c.gp_data.fund_hq_state || ''))
+          );
+        }
+
         // Apply GP-specific filters client-side
         if (filters?.industrySector && filters.industrySector.length > 0) {
           companies = companies.filter((c: any) => 
