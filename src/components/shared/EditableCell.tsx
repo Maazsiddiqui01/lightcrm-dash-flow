@@ -403,7 +403,7 @@ export function EditableCell({
             <SelectItem value="__none__">
               <span className="text-muted-foreground">None</span>
             </SelectItem>
-            {config.options?.map((option) => (
+            {config.options?.filter(option => option !== '').map((option) => (
               <SelectItem key={option} value={option}>
                 {option}
               </SelectItem>
