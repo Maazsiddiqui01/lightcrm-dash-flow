@@ -3,7 +3,7 @@ import { EditableFieldConfig, EditableTableConfig } from './editableColumns';
 export const horizonCompaniesEditable: EditableTableConfig = {
   priority: { 
     type: 'select',
-    options: ['1', '2', '3', '4', '5']
+    options: ['', '1', '2', '3', '4', '5']
   },
   company_name: { type: 'text', required: true },
   company_url: { type: 'text' },
@@ -42,7 +42,7 @@ export const horizonCompaniesEditable: EditableTableConfig = {
 export const horizonGpsEditable: EditableTableConfig = {
   priority: { 
     type: 'select',
-    options: ['1', '2', '3', '4', '5']
+    options: ['', '1', '2', '3', '4', '5']
   },
   gp_name: { type: 'text', required: true },
   gp_url: { type: 'text' },
