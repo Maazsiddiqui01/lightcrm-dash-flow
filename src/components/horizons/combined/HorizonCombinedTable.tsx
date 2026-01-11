@@ -6,7 +6,7 @@ import { ColumnDef } from "@/components/shared/AdvancedTable";
 import { HorizonCompanyDrawer } from "../companies/HorizonCompanyDrawer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpDown, ChevronDown, Trash2, Link2, Link2Off, FileText, ListTodo } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Trash2, Link2, Link2Off, FileText, ListTodo, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -158,6 +158,24 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
               </Button>
             </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={async (e) => {
+                e.stopPropagation();
+                const { error } = await supabase
+                  .from('lg_horizons_companies')
+                  .update({ priority: 1 })
+                  .eq('id', row.id);
+                if (error) {
+                  toast({ title: "Error", description: "Failed to set priority", variant: "destructive" });
+                } else {
+                  toast({ title: "Success", description: "Priority set to 1" });
+                  fetchCompanies();
+                }
+              }}
+            >
+              <Star className="h-4 w-4 mr-2" />
+              Set Priority 1
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
