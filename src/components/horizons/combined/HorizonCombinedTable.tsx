@@ -514,6 +514,8 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax * 1_000_000);
       if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin * 1_000_000_000);
       if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax * 1_000_000_000);
+      if (filters.dateOfAcquisitionStart) query = query.gte('date_of_acquisition', filters.dateOfAcquisitionStart);
+      if (filters.dateOfAcquisitionEnd) query = query.lte('date_of_acquisition', filters.dateOfAcquisitionEnd);
 
       // Search
       if (searchTerm.trim()) {
