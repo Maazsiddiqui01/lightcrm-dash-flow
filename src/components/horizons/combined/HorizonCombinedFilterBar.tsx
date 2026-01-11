@@ -25,12 +25,17 @@ import {
   useHorizonGpStates,
   useHorizonGpCities,
   useHorizonGpIndustrySectors,
+  useHorizonCombinedCities,
+  useHorizonCombinedStates,
 } from '@/hooks/useHorizonDistinctOptions';
 
 export interface HorizonCombinedFilters {
   // Common filters
   priority: string[];
   lgRelationship: string[];
+  // Combined location filters (filters both GP and Company)
+  combinedCity: string[];
+  combinedState: string[];
   // Company-specific
   sector: string[];
   subsector: string[];
@@ -86,6 +91,10 @@ export function HorizonCombinedFilterBar({
   const { data: gpCities = [], isLoading: gpCitiesLoading } = useHorizonGpCities();
   const { data: industrySectors = [], isLoading: industrySectorsLoading } = useHorizonGpIndustrySectors();
 
+  // Combined location options (merges GP and Company values)
+  const { data: combinedCities = [], isLoading: combinedCitiesLoading } = useHorizonCombinedCities();
+  const { data: combinedStates = [], isLoading: combinedStatesLoading } = useHorizonCombinedStates();
+
   // Filter out "No Known Process" from process statuses
   const processStatuses = rawProcessStatuses.filter(
     status => status.value?.toLowerCase() !== 'no known process'
@@ -107,6 +116,12 @@ export function HorizonCombinedFilterBar({
   const hasActiveFilters = Object.values(filters).some(value => 
     Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null
   );
+
+  // Count active combined location filters
+  const combinedLocationFilterCount = [
+    filters.combinedCity,
+    filters.combinedState,
+  ].filter(arr => arr.length > 0).length;
 
   // Count active company-specific filters
   const companyFilterCount = [
@@ -167,6 +182,24 @@ export function HorizonCombinedFilterBar({
           searchPlaceholder="Search LG Team"
           loading={lgRelLoading}
           specialOption={{ value: "NO_KNOWN_RELATIONSHIP", label: "No Known Relationship" }}
+        />
+
+        <ComboboxMulti
+          label="City (GP & Company)"
+          options={combinedCities}
+          values={filters.combinedCity}
+          onChange={(values) => updateFilter('combinedCity', values)}
+          searchPlaceholder="Search Cities"
+          loading={combinedCitiesLoading}
+        />
+
+        <ComboboxMulti
+          label="State (GP & Company)"
+          options={combinedStates}
+          values={filters.combinedState}
+          onChange={(values) => updateFilter('combinedState', values)}
+          searchPlaceholder="Search States"
+          loading={combinedStatesLoading}
         />
       </div>
 

@@ -228,3 +228,62 @@ export const useHorizonGpNames = () => {
     staleTime: 2 * 60 * 1000,
   });
 };
+
+// Combined City/State options (merges both GP and Company values)
+export const useHorizonCombinedCities = () => {
+  return useQuery({
+    queryKey: ['horizon-combined-cities'],
+    queryFn: async () => {
+      // Fetch company cities
+      const { data: companyData } = await supabase
+        .from('lg_horizons_companies')
+        .select('company_hq_city')
+        .not('company_hq_city', 'is', null)
+        .neq('company_hq_city', '');
+      
+      // Fetch GP cities
+      const { data: gpData } = await supabase
+        .from('lg_horizons_gps')
+        .select('fund_hq_city')
+        .not('fund_hq_city', 'is', null)
+        .neq('fund_hq_city', '');
+      
+      // Merge and dedupe
+      const allCities = [
+        ...(companyData?.map(r => r.company_hq_city) ?? []),
+        ...(gpData?.map(r => r.fund_hq_city) ?? []),
+      ];
+      return uniqCasefoldAsOptions(allCities);
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const useHorizonCombinedStates = () => {
+  return useQuery({
+    queryKey: ['horizon-combined-states'],
+    queryFn: async () => {
+      // Fetch company states
+      const { data: companyData } = await supabase
+        .from('lg_horizons_companies')
+        .select('company_hq_state')
+        .not('company_hq_state', 'is', null)
+        .neq('company_hq_state', '');
+      
+      // Fetch GP states
+      const { data: gpData } = await supabase
+        .from('lg_horizons_gps')
+        .select('fund_hq_state')
+        .not('fund_hq_state', 'is', null)
+        .neq('fund_hq_state', '');
+      
+      // Merge and dedupe
+      const allStates = [
+        ...(companyData?.map(r => r.company_hq_state) ?? []),
+        ...(gpData?.map(r => r.fund_hq_state) ?? []),
+      ];
+      return uniqCasefoldAsOptions(allStates);
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+};

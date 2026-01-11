@@ -577,6 +577,20 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       // Apply GP-specific filters client-side (since they're on joined data)
       let filteredData = transformedData;
       
+      // Combined location filters - match if EITHER company OR GP location matches
+      if (filters.combinedCity && filters.combinedCity.length > 0) {
+        filteredData = filteredData.filter(c => 
+          filters.combinedCity.includes(c.company_hq_city || '') ||
+          (c.gp_data && filters.combinedCity.includes(c.gp_data.fund_hq_city || ''))
+        );
+      }
+      if (filters.combinedState && filters.combinedState.length > 0) {
+        filteredData = filteredData.filter(c => 
+          filters.combinedState.includes(c.company_hq_state || '') ||
+          (c.gp_data && filters.combinedState.includes(c.gp_data.fund_hq_state || ''))
+        );
+      }
+      
       if (filters.industrySector.length > 0) {
         filteredData = filteredData.filter(c => 
           c.gp_data && filters.industrySector.some(sector => 
