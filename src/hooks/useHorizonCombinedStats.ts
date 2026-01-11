@@ -90,24 +90,24 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
           companyQuery = companyQuery.in('parent_gp_name', filters.parentGp);
         }
 
-        // Numeric filters
+        // Numeric filters - values are now raw numbers, no conversion needed
         if (filters?.ebitdaMin != null) {
-          companyQuery = companyQuery.gte('ebitda_numeric', filters.ebitdaMin * 1_000_000);
+          companyQuery = companyQuery.gte('ebitda_numeric', filters.ebitdaMin);
         }
         if (filters?.ebitdaMax != null) {
-          companyQuery = companyQuery.lte('ebitda_numeric', filters.ebitdaMax * 1_000_000);
+          companyQuery = companyQuery.lte('ebitda_numeric', filters.ebitdaMax);
         }
         if (filters?.revenueMin != null) {
-          companyQuery = companyQuery.gte('revenue_numeric', filters.revenueMin * 1_000_000);
+          companyQuery = companyQuery.gte('revenue_numeric', filters.revenueMin);
         }
         if (filters?.revenueMax != null) {
-          companyQuery = companyQuery.lte('revenue_numeric', filters.revenueMax * 1_000_000);
+          companyQuery = companyQuery.lte('revenue_numeric', filters.revenueMax);
         }
         if (filters?.gpAumMin != null) {
-          companyQuery = companyQuery.gte('gp_aum_numeric', filters.gpAumMin * 1_000_000_000);
+          companyQuery = companyQuery.gte('gp_aum_numeric', filters.gpAumMin);
         }
         if (filters?.gpAumMax != null) {
-          companyQuery = companyQuery.lte('gp_aum_numeric', filters.gpAumMax * 1_000_000_000);
+          companyQuery = companyQuery.lte('gp_aum_numeric', filters.gpAumMax);
         }
 
         const { data: companyData, error: companyError } = await companyQuery;
@@ -141,14 +141,15 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
             c.gp_data && filters.gpCity.includes(c.gp_data.fund_hq_city || '')
           );
         }
+        // GP AUM filters - values are now raw numbers
         if (filters?.aumMin != null) {
           companies = companies.filter((c: any) => 
-            c.gp_data && (c.gp_data.aum_numeric || 0) >= filters.aumMin! * 1_000_000_000
+            c.gp_data && (c.gp_data.aum_numeric || 0) >= filters.aumMin!
           );
         }
         if (filters?.aumMax != null) {
           companies = companies.filter((c: any) => 
-            c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax! * 1_000_000_000
+            c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax!
           );
         }
 
@@ -184,11 +185,12 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
         if (filters?.gpCity && filters.gpCity.length > 0) {
           gpQuery = gpQuery.in('fund_hq_city', filters.gpCity);
         }
+        // GP AUM filters - values are now raw numbers
         if (filters?.aumMin != null) {
-          gpQuery = gpQuery.gte('aum_numeric', filters.aumMin * 1_000_000_000);
+          gpQuery = gpQuery.gte('aum_numeric', filters.aumMin);
         }
         if (filters?.aumMax != null) {
-          gpQuery = gpQuery.lte('aum_numeric', filters.aumMax * 1_000_000_000);
+          gpQuery = gpQuery.lte('aum_numeric', filters.aumMax);
         }
 
         const { data: gpData, error: gpError } = await gpQuery;

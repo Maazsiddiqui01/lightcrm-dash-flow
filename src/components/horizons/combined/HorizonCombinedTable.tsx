@@ -533,12 +533,12 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       if (filters.companyCity.length > 0) query = query.in('company_hq_city', filters.companyCity);
       if (filters.source.length > 0) query = query.in('source', filters.source);
       if (filters.parentGp.length > 0) query = query.in('parent_gp_name', filters.parentGp);
-      if (filters.ebitdaMin != null) query = query.gte('ebitda_numeric', filters.ebitdaMin * 1_000_000);
-      if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax * 1_000_000);
-      if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin * 1_000_000);
-      if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax * 1_000_000);
-      if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin * 1_000_000_000);
-      if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax * 1_000_000_000);
+      if (filters.ebitdaMin != null) query = query.gte('ebitda_numeric', filters.ebitdaMin);
+      if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax);
+      if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin);
+      if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
+      if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin);
+      if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax);
       if (filters.dateOfAcquisitionStart) query = query.gte('date_of_acquisition', filters.dateOfAcquisitionStart);
       if (filters.dateOfAcquisitionEnd) query = query.lte('date_of_acquisition', filters.dateOfAcquisitionEnd);
 
@@ -596,12 +596,12 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       }
       if (filters.aumMin != null) {
         filteredData = filteredData.filter(c => 
-          c.gp_data && (c.gp_data.aum_numeric || 0) >= filters.aumMin! * 1_000_000_000
+          c.gp_data && (c.gp_data.aum_numeric || 0) >= filters.aumMin!
         );
       }
       if (filters.aumMax != null) {
         filteredData = filteredData.filter(c => 
-          c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax! * 1_000_000_000
+          c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax!
         );
       }
       // Active Funds and Active Holdings filters removed as requested
