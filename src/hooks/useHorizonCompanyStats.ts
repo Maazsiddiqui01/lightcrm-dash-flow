@@ -122,12 +122,7 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
       query = query.in('parent_gp_name', filters.parentGp);
     }
 
-    if (filters.dateOfAcquisitionStart) {
-      query = query.gte('date_of_acquisition', filters.dateOfAcquisitionStart);
-    }
-    if (filters.dateOfAcquisitionEnd) {
-      query = query.lte('date_of_acquisition', filters.dateOfAcquisitionEnd);
-    }
+    // Note: date_of_acquisition filtering is done client-side in fetchStats because it's stored as text
 
     return query;
   };
@@ -144,11 +139,33 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
         return applyFilters(query);
       };
 
-      const companies = await fetchAllPaged<{
+      let companies = await fetchAllPaged<{
         priority: number | null;
         gp_aum_numeric: number | null;
         date_of_acquisition: string | null;
       }>(makeQuery);
+
+      // Apply date of acquisition filter client-side (stored as text in various formats)
+      if (filters?.dateOfAcquisitionStart) {
+        const startDate = parseFlexibleDate(filters.dateOfAcquisitionStart);
+        if (startDate) {
+          companies = companies.filter(c => {
+            if (!c.date_of_acquisition) return false;
+            const acqDate = parseFlexibleDate(c.date_of_acquisition);
+            return acqDate && acqDate >= startDate;
+          });
+        }
+      }
+      if (filters?.dateOfAcquisitionEnd) {
+        const endDate = parseFlexibleDate(filters.dateOfAcquisitionEnd);
+        if (endDate) {
+          companies = companies.filter(c => {
+            if (!c.date_of_acquisition) return false;
+            const acqDate = parseFlexibleDate(c.date_of_acquisition);
+            return acqDate && acqDate <= endDate;
+          });
+        }
+      }
 
       const totalCompanies = companies.length;
       

@@ -170,6 +170,28 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
           );
         }
 
+        // Date of acquisition filter - client-side because it's stored as text in various formats
+        if (filters?.dateOfAcquisitionStart) {
+          const startDate = parseFlexibleDate(filters.dateOfAcquisitionStart);
+          if (startDate) {
+            companies = companies.filter((c: any) => {
+              if (!c.date_of_acquisition) return false;
+              const acqDate = parseFlexibleDate(c.date_of_acquisition);
+              return acqDate && acqDate >= startDate;
+            });
+          }
+        }
+        if (filters?.dateOfAcquisitionEnd) {
+          const endDate = parseFlexibleDate(filters.dateOfAcquisitionEnd);
+          if (endDate) {
+            companies = companies.filter((c: any) => {
+              if (!c.date_of_acquisition) return false;
+              const acqDate = parseFlexibleDate(c.date_of_acquisition);
+              return acqDate && acqDate <= endDate;
+            });
+          }
+        }
+
         // Create query factory for paged GP fetch
         const makeGpQuery = (from: number, to: number) => {
           let query = supabase
