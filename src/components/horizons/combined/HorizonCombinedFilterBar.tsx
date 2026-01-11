@@ -117,11 +117,11 @@ export function HorizonCombinedFilterBar({
     Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null
   );
 
-  // Count active combined location filters
+  // Count active combined location filters (with null safety)
   const combinedLocationFilterCount = [
     filters.combinedCity,
     filters.combinedState,
-  ].filter(arr => arr.length > 0).length;
+  ].filter(arr => arr && arr.length > 0).length;
 
   // Count active company-specific filters
   const companyFilterCount = [
