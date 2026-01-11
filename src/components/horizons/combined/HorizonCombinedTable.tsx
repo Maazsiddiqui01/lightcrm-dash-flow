@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaged } from "@/utils/supabaseFetchAll";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
 import { ColumnDef } from "@/components/shared/AdvancedTable";
 import { HorizonCompanyDrawer } from "../companies/HorizonCompanyDrawer";
@@ -460,116 +461,118 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
     try {
       setLoading(true);
       
-      // Fetch companies with GP join using parent_gp_id
-      let query = supabase
-        .from("lg_horizons_companies")
-        .select(`
+      const selectFields = `
+        id,
+        priority,
+        company_name,
+        company_url,
+        sector,
+        subsector,
+        ebitda,
+        ebitda_numeric,
+        revenue,
+        revenue_numeric,
+        ownership,
+        parent_gp_name,
+        parent_gp_id,
+        gp_aum,
+        gp_aum_numeric,
+        lg_relationship,
+        gp_contact,
+        process_status,
+        company_hq_city,
+        company_hq_state,
+        source,
+        description,
+        gp_data:lg_horizons_gps!parent_gp_id (
           id,
-          priority,
-          company_name,
-          company_url,
-          sector,
-          subsector,
-          ebitda,
-          ebitda_numeric,
-          revenue,
-          revenue_numeric,
-          ownership,
-          parent_gp_name,
-          parent_gp_id,
-          gp_aum,
-          gp_aum_numeric,
+          gp_name,
+          gp_url,
+          aum,
+          aum_numeric,
           lg_relationship,
           gp_contact,
-          process_status,
-          company_hq_city,
-          company_hq_state,
-          source,
-          description,
-          gp_data:lg_horizons_gps!parent_gp_id (
-            id,
-            gp_name,
-            gp_url,
-            aum,
-            aum_numeric,
-            lg_relationship,
-            gp_contact,
-            fund_hq_city,
-            fund_hq_state,
-            active_funds,
-            total_funds,
-            active_holdings,
-            industry_sector_focus
-          )
-        `)
-        .limit(10000);
+          fund_hq_city,
+          fund_hq_state,
+          active_funds,
+          total_funds,
+          active_holdings,
+          industry_sector_focus
+        )
+      `;
+      
+      // Create a query factory for paged fetching
+      const makeQuery = (from: number, to: number) => {
+        let query = supabase
+          .from("lg_horizons_companies")
+          .select(selectFields)
+          .range(from, to);
 
-      // Apply common filters
-      if (filters.priority.length > 0) {
-        const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
-        if (vals.length > 0) query = query.in('priority', vals);
-      }
-
-      // LG Relationship filter
-      if (filters.lgRelationship.length > 0) {
-        const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
-        const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
-        
-        if (hasNoKnownRelationship && regularValues.length > 0) {
-          query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
-        } else if (hasNoKnownRelationship) {
-          query = query.or('lg_relationship.is.null,lg_relationship.eq.');
-        } else if (regularValues.length > 0) {
-          query = query.in('lg_relationship', regularValues);
+        // Apply common filters
+        if (filters.priority.length > 0) {
+          const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
+          if (vals.length > 0) query = query.in('priority', vals);
         }
-      }
 
-      // Company-specific filters
-      if (filters.sector.length > 0) query = query.in('sector', filters.sector);
-      if (filters.subsector.length > 0) query = query.in('subsector', filters.subsector);
-      if (filters.processStatus.length > 0) query = query.in('process_status', filters.processStatus);
-      if (filters.ownership.length > 0) query = query.in('ownership', filters.ownership);
-      if (filters.companyState.length > 0) query = query.in('company_hq_state', filters.companyState);
-      if (filters.companyCity.length > 0) query = query.in('company_hq_city', filters.companyCity);
-      if (filters.source.length > 0) query = query.in('source', filters.source);
-      if (filters.parentGp.length > 0) query = query.in('parent_gp_name', filters.parentGp);
-      if (filters.ebitdaMin != null) query = query.gte('ebitda_numeric', filters.ebitdaMin);
-      if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax);
-      if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin);
-      if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
-      if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin);
-      if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax);
-      if (filters.dateOfAcquisitionStart) query = query.gte('date_of_acquisition', filters.dateOfAcquisitionStart);
-      if (filters.dateOfAcquisitionEnd) query = query.lte('date_of_acquisition', filters.dateOfAcquisitionEnd);
+        // LG Relationship filter
+        if (filters.lgRelationship.length > 0) {
+          const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+          const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+          
+          if (hasNoKnownRelationship && regularValues.length > 0) {
+            query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+          } else if (hasNoKnownRelationship) {
+            query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+          } else if (regularValues.length > 0) {
+            query = query.in('lg_relationship', regularValues);
+          }
+        }
 
-      // Search
-      if (searchTerm.trim()) {
-        query = query.or(`company_name.ilike.%${searchTerm}%,sector.ilike.%${searchTerm}%,parent_gp_name.ilike.%${searchTerm}%`);
-      }
+        // Company-specific filters
+        if (filters.sector.length > 0) query = query.in('sector', filters.sector);
+        if (filters.subsector.length > 0) query = query.in('subsector', filters.subsector);
+        if (filters.processStatus.length > 0) query = query.in('process_status', filters.processStatus);
+        if (filters.ownership.length > 0) query = query.in('ownership', filters.ownership);
+        if (filters.companyState.length > 0) query = query.in('company_hq_state', filters.companyState);
+        if (filters.companyCity.length > 0) query = query.in('company_hq_city', filters.companyCity);
+        if (filters.source.length > 0) query = query.in('source', filters.source);
+        if (filters.parentGp.length > 0) query = query.in('parent_gp_name', filters.parentGp);
+        if (filters.ebitdaMin != null) query = query.gte('ebitda_numeric', filters.ebitdaMin);
+        if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax);
+        if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin);
+        if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
+        if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin);
+        if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax);
+        if (filters.dateOfAcquisitionStart) query = query.gte('date_of_acquisition', filters.dateOfAcquisitionStart);
+        if (filters.dateOfAcquisitionEnd) query = query.lte('date_of_acquisition', filters.dateOfAcquisitionEnd);
 
-      // Apply multi-sort
-      const serverOrders = buildSupabaseOrder(sortLevels);
-      if (serverOrders.length > 0) {
-        serverOrders.forEach(order => {
-          query = query.order(order.column, { ascending: order.ascending, nullsFirst: false });
-        });
-      } else {
-        query = query.order('priority', { ascending: true, nullsFirst: false })
-                     .order('company_name', { ascending: true });
-      }
+        // Search
+        if (searchTerm.trim()) {
+          query = query.or(`company_name.ilike.%${searchTerm}%,sector.ilike.%${searchTerm}%,parent_gp_name.ilike.%${searchTerm}%`);
+        }
 
-      const { data, error } = await query;
+        // Apply multi-sort with stable tie-breaker
+        const serverOrders = buildSupabaseOrder(sortLevels);
+        if (serverOrders.length > 0) {
+          serverOrders.forEach(order => {
+            query = query.order(order.column, { ascending: order.ascending, nullsFirst: false });
+          });
+        } else {
+          query = query.order('priority', { ascending: true, nullsFirst: false })
+                       .order('company_name', { ascending: true });
+        }
+        // Always add id as final tie-breaker for stable pagination
+        query = query.order('id', { ascending: true });
+        
+        return query;
+      };
+
+      const data = await fetchAllPaged<any>(makeQuery);
 
       if (requestIdRef.current !== requestId) return;
 
-      if (error) {
-        console.error("Error fetching combined data:", error);
-        toast({ title: "Error", description: "Failed to fetch data.", variant: "destructive" });
-        return;
-      }
-
       // Transform data - gp_data comes as array from Supabase, take first element
-      const transformedData = (data || []).map(row => ({
+      const transformedData = data.map(row => ({
         ...row,
         gp_data: Array.isArray(row.gp_data) ? row.gp_data[0] || null : row.gp_data,
       })) as CombinedCompany[];
@@ -618,12 +621,12 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax!
         );
       }
-      // Active Funds and Active Holdings filters removed as requested
 
       const sortedData = applyClientSort(filteredData, sortLevels);
       setCompanies(sortedData as CombinedCompany[]);
     } catch (error) {
-      console.error("Unexpected error:", error);
+      console.error("Error fetching combined data:", error);
+      toast({ title: "Error", description: "Failed to fetch data.", variant: "destructive" });
     } finally {
       if (requestIdRef.current === requestId) {
         setLoading(false);
