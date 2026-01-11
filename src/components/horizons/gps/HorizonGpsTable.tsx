@@ -273,8 +273,8 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
         const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
         if (vals.length > 0) query = query.in('priority', vals);
       }
-      if (filters.aumMin != null) query = query.gte('aum_numeric', filters.aumMin * 1_000_000_000);
-      if (filters.aumMax != null) query = query.lte('aum_numeric', filters.aumMax * 1_000_000_000);
+      if (filters.aumMin != null) query = query.gte('aum_numeric', filters.aumMin);
+      if (filters.aumMax != null) query = query.lte('aum_numeric', filters.aumMax);
       
       // LG Relationship filter with special "No Known Relationship" handling
       if (filters.lgRelationship.length > 0) {

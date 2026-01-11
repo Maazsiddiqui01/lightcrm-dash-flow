@@ -49,10 +49,10 @@ export function useHorizonGpStats(filters?: HorizonGpFilters): HorizonGpStats {
     }
 
     if (filters.aumMin !== null && filters.aumMin !== undefined) {
-      query = query.gte('aum_numeric', filters.aumMin * 1_000_000_000);
+      query = query.gte('aum_numeric', filters.aumMin);
     }
     if (filters.aumMax !== null && filters.aumMax !== undefined) {
-      query = query.lte('aum_numeric', filters.aumMax * 1_000_000_000);
+      query = query.lte('aum_numeric', filters.aumMax);
     }
 
     if (filters.state && filters.state.length > 0) {

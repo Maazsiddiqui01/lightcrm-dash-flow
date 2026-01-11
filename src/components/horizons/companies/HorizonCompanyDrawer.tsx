@@ -203,10 +203,9 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
                     <SelectContent>
                       {[
                         'Expected / Monitoring',
-                        'Failed Process', 
                         'Active Process',
-                        'Completed',
-                        'Prior Auction'
+                        'Failed Process', 
+                        'No Known Process'
                       ].map(s => (
                         <SelectItem key={s} value={s}>{s}</SelectItem>
                       ))}

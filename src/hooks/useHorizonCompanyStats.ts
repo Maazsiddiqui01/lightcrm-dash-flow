@@ -85,24 +85,24 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
     }
 
     if (filters.ebitdaMin !== null && filters.ebitdaMin !== undefined) {
-      query = query.gte('ebitda_numeric', filters.ebitdaMin * 1_000_000);
+      query = query.gte('ebitda_numeric', filters.ebitdaMin);
     }
     if (filters.ebitdaMax !== null && filters.ebitdaMax !== undefined) {
-      query = query.lte('ebitda_numeric', filters.ebitdaMax * 1_000_000);
+      query = query.lte('ebitda_numeric', filters.ebitdaMax);
     }
 
     if (filters.revenueMin !== null && filters.revenueMin !== undefined) {
-      query = query.gte('revenue_numeric', filters.revenueMin * 1_000_000);
+      query = query.gte('revenue_numeric', filters.revenueMin);
     }
     if (filters.revenueMax !== null && filters.revenueMax !== undefined) {
-      query = query.lte('revenue_numeric', filters.revenueMax * 1_000_000);
+      query = query.lte('revenue_numeric', filters.revenueMax);
     }
 
     if (filters.gpAumMin !== null && filters.gpAumMin !== undefined) {
-      query = query.gte('gp_aum_numeric', filters.gpAumMin * 1_000_000_000);
+      query = query.gte('gp_aum_numeric', filters.gpAumMin);
     }
     if (filters.gpAumMax !== null && filters.gpAumMax !== undefined) {
-      query = query.lte('gp_aum_numeric', filters.gpAumMax * 1_000_000_000);
+      query = query.lte('gp_aum_numeric', filters.gpAumMax);
     }
 
     if (filters.state && filters.state.length > 0) {

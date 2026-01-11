@@ -215,14 +215,14 @@ export function HorizonCombinedFilterBar({
             />
 
             <RangeInput
-              label="GP AUM ($B)"
+              label="GP AUM"
               minValue={filters.aumMin}
               maxValue={filters.aumMax}
               onMinChange={(value) => updateFilter('aumMin', value)}
               onMaxChange={(value) => updateFilter('aumMax', value)}
               minPlaceholder="Min"
               maxPlaceholder="Max"
-              step={0.1}
+              step={1000000}
             />
 
             <ComboboxMulti
@@ -317,36 +317,36 @@ export function HorizonCombinedFilterBar({
             />
 
             <RangeInput
-              label="EBITDA ($M)"
+              label="EBITDA"
               minValue={filters.ebitdaMin}
               maxValue={filters.ebitdaMax}
               onMinChange={(value) => updateFilter('ebitdaMin', value)}
               onMaxChange={(value) => updateFilter('ebitdaMax', value)}
               minPlaceholder="Min"
               maxPlaceholder="Max"
-              step={1}
+              step={1000000}
             />
 
             <RangeInput
-              label="Revenue ($M)"
+              label="Revenue"
               minValue={filters.revenueMin}
               maxValue={filters.revenueMax}
               onMinChange={(value) => updateFilter('revenueMin', value)}
               onMaxChange={(value) => updateFilter('revenueMax', value)}
               minPlaceholder="Min"
               maxPlaceholder="Max"
-              step={1}
+              step={1000000}
             />
 
             <RangeInput
-              label="GP AUM ($B)"
+              label="Company GP AUM"
               minValue={filters.gpAumMin}
               maxValue={filters.gpAumMax}
               onMinChange={(value) => updateFilter('gpAumMin', value)}
               onMaxChange={(value) => updateFilter('gpAumMax', value)}
               minPlaceholder="Min"
               maxPlaceholder="Max"
-              step={0.1}
+              step={1000000}
             />
 
             <ComboboxMulti

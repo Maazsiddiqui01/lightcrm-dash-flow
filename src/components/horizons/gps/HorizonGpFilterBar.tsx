@@ -99,14 +99,14 @@ export function HorizonGpFilterBar({
         />
 
         <RangeInput
-          label="AUM ($B)"
+          label="AUM"
           minValue={filters.aumMin}
           maxValue={filters.aumMax}
           onMinChange={(value) => updateFilter('aumMin', value)}
           onMaxChange={(value) => updateFilter('aumMax', value)}
           minPlaceholder="Min"
           maxPlaceholder="Max"
-          step={0.1}
+          step={1000000}
         />
 
         <ComboboxMulti
