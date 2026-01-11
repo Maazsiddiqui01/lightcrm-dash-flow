@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { parseFlexibleDate } from "@/utils/dateUtils";
+import { fetchAllPaged } from "@/utils/supabaseFetchAll";
 
 interface HorizonCompanyStats {
   totalCompanies: number;
@@ -133,22 +134,29 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
 
   const fetchStats = async () => {
     try {
-      let query = supabase
-        .from("lg_horizons_companies")
-        .select("priority, gp_aum_numeric, date_of_acquisition")
-        .limit(10000);
-      query = applyFilters(query);
-      const { data: companies, error } = await query;
+      // Use paged fetching to get all companies (bypasses 1000 row limit)
+      const makeQuery = (from: number, to: number) => {
+        let query = supabase
+          .from("lg_horizons_companies")
+          .select("priority, gp_aum_numeric, date_of_acquisition")
+          .range(from, to)
+          .order('id', { ascending: true });
+        return applyFilters(query);
+      };
 
-      if (error) throw error;
+      const companies = await fetchAllPaged<{
+        priority: number | null;
+        gp_aum_numeric: number | null;
+        date_of_acquisition: string | null;
+      }>(makeQuery);
 
-      const totalCompanies = companies?.length || 0;
+      const totalCompanies = companies.length;
       
       // Count all records that have a priority set
-      const filteredPriorityCount = companies?.filter(c => c.priority != null).length || 0;
+      const filteredPriorityCount = companies.filter(c => c.priority != null).length;
 
       // Calculate GP AUM Range
-      const aumValues = companies?.filter(c => c.gp_aum_numeric != null).map(c => c.gp_aum_numeric!) || [];
+      const aumValues = companies.filter(c => c.gp_aum_numeric != null).map(c => c.gp_aum_numeric!);
       let gpAumRange = "N/A";
       if (aumValues.length > 0) {
         const minAum = Math.min(...aumValues) / 1_000_000_000;
@@ -160,9 +168,9 @@ export function useHorizonCompanyStats(filters?: HorizonCompanyFilters): Horizon
 
       // Calculate Acquisition Date Range
       const acquisitionDates = companies
-        ?.filter(c => c.date_of_acquisition)
+        .filter(c => c.date_of_acquisition)
         .map(c => parseFlexibleDate(c.date_of_acquisition!))
-        .filter((d): d is Date => d !== null) || [];
+        .filter((d): d is Date => d !== null);
 
       let acquisitionDateRange = "N/A";
       if (acquisitionDates.length > 0) {

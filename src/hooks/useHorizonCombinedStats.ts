@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { HorizonCombinedFilters } from '@/components/horizons/combined/HorizonCombinedFilterBar';
 import { format } from 'date-fns';
 import { parseFlexibleDate } from '@/utils/dateUtils';
+import { fetchAllPaged } from '@/utils/supabaseFetchAll';
 
 interface HorizonCombinedStats {
   totalUniverse: number;
@@ -30,95 +31,97 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
       try {
         setStats(prev => ({ ...prev, loading: true }));
 
-        // Fetch companies with GP data for client-side GP filtering
-        let companyQuery = supabase
-          .from('lg_horizons_companies')
-          .select(`
-            id, priority, ebitda_numeric, parent_gp_id, gp_aum_numeric, date_of_acquisition,
-            gp_data:lg_horizons_gps!parent_gp_id (
-              id,
-              aum_numeric,
-              fund_hq_city,
-              fund_hq_state,
-              industry_sector_focus
-            )
-          `)
-          .limit(10000);
+        // Create query factory for paged company fetch
+        const makeCompanyQuery = (from: number, to: number) => {
+          let query = supabase
+            .from('lg_horizons_companies')
+            .select(`
+              id, priority, ebitda_numeric, parent_gp_id, gp_aum_numeric, date_of_acquisition,
+              company_hq_city, company_hq_state,
+              gp_data:lg_horizons_gps!parent_gp_id (
+                id,
+                aum_numeric,
+                fund_hq_city,
+                fund_hq_state,
+                industry_sector_focus
+              )
+            `)
+            .range(from, to)
+            .order('id', { ascending: true });
 
-        // Apply common filters
-        if (filters?.priority && filters.priority.length > 0) {
-          const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
-          if (vals.length > 0) companyQuery = companyQuery.in('priority', vals);
-        }
-
-        if (filters?.lgRelationship && filters.lgRelationship.length > 0) {
-          const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
-          const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
-          
-          if (hasNoKnownRelationship && regularValues.length > 0) {
-            companyQuery = companyQuery.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
-          } else if (hasNoKnownRelationship) {
-            companyQuery = companyQuery.or('lg_relationship.is.null,lg_relationship.eq.');
-          } else if (regularValues.length > 0) {
-            companyQuery = companyQuery.in('lg_relationship', regularValues);
+          // Apply common filters
+          if (filters?.priority && filters.priority.length > 0) {
+            const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
+            if (vals.length > 0) query = query.in('priority', vals);
           }
-        }
 
-        // Company-specific filters
-        if (filters?.sector && filters.sector.length > 0) {
-          companyQuery = companyQuery.in('sector', filters.sector);
-        }
-        if (filters?.subsector && filters.subsector.length > 0) {
-          companyQuery = companyQuery.in('subsector', filters.subsector);
-        }
-        if (filters?.processStatus && filters.processStatus.length > 0) {
-          companyQuery = companyQuery.in('process_status', filters.processStatus);
-        }
-        if (filters?.ownership && filters.ownership.length > 0) {
-          companyQuery = companyQuery.in('ownership', filters.ownership);
-        }
-        if (filters?.companyState && filters.companyState.length > 0) {
-          companyQuery = companyQuery.in('company_hq_state', filters.companyState);
-        }
-        if (filters?.companyCity && filters.companyCity.length > 0) {
-          companyQuery = companyQuery.in('company_hq_city', filters.companyCity);
-        }
-        if (filters?.source && filters.source.length > 0) {
-          companyQuery = companyQuery.in('source', filters.source);
-        }
-        if (filters?.parentGp && filters.parentGp.length > 0) {
-          companyQuery = companyQuery.in('parent_gp_name', filters.parentGp);
-        }
+          if (filters?.lgRelationship && filters.lgRelationship.length > 0) {
+            const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+            const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+            
+            if (hasNoKnownRelationship && regularValues.length > 0) {
+              query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+            } else if (hasNoKnownRelationship) {
+              query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+            } else if (regularValues.length > 0) {
+              query = query.in('lg_relationship', regularValues);
+            }
+          }
 
-        // Numeric filters - values are now raw numbers, no conversion needed
-        if (filters?.ebitdaMin != null) {
-          companyQuery = companyQuery.gte('ebitda_numeric', filters.ebitdaMin);
-        }
-        if (filters?.ebitdaMax != null) {
-          companyQuery = companyQuery.lte('ebitda_numeric', filters.ebitdaMax);
-        }
-        if (filters?.revenueMin != null) {
-          companyQuery = companyQuery.gte('revenue_numeric', filters.revenueMin);
-        }
-        if (filters?.revenueMax != null) {
-          companyQuery = companyQuery.lte('revenue_numeric', filters.revenueMax);
-        }
-        if (filters?.gpAumMin != null) {
-          companyQuery = companyQuery.gte('gp_aum_numeric', filters.gpAumMin);
-        }
-        if (filters?.gpAumMax != null) {
-          companyQuery = companyQuery.lte('gp_aum_numeric', filters.gpAumMax);
-        }
+          // Company-specific filters
+          if (filters?.sector && filters.sector.length > 0) {
+            query = query.in('sector', filters.sector);
+          }
+          if (filters?.subsector && filters.subsector.length > 0) {
+            query = query.in('subsector', filters.subsector);
+          }
+          if (filters?.processStatus && filters.processStatus.length > 0) {
+            query = query.in('process_status', filters.processStatus);
+          }
+          if (filters?.ownership && filters.ownership.length > 0) {
+            query = query.in('ownership', filters.ownership);
+          }
+          if (filters?.companyState && filters.companyState.length > 0) {
+            query = query.in('company_hq_state', filters.companyState);
+          }
+          if (filters?.companyCity && filters.companyCity.length > 0) {
+            query = query.in('company_hq_city', filters.companyCity);
+          }
+          if (filters?.source && filters.source.length > 0) {
+            query = query.in('source', filters.source);
+          }
+          if (filters?.parentGp && filters.parentGp.length > 0) {
+            query = query.in('parent_gp_name', filters.parentGp);
+          }
 
-        const { data: companyData, error: companyError } = await companyQuery;
+          // Numeric filters
+          if (filters?.ebitdaMin != null) {
+            query = query.gte('ebitda_numeric', filters.ebitdaMin);
+          }
+          if (filters?.ebitdaMax != null) {
+            query = query.lte('ebitda_numeric', filters.ebitdaMax);
+          }
+          if (filters?.revenueMin != null) {
+            query = query.gte('revenue_numeric', filters.revenueMin);
+          }
+          if (filters?.revenueMax != null) {
+            query = query.lte('revenue_numeric', filters.revenueMax);
+          }
+          if (filters?.gpAumMin != null) {
+            query = query.gte('gp_aum_numeric', filters.gpAumMin);
+          }
+          if (filters?.gpAumMax != null) {
+            query = query.lte('gp_aum_numeric', filters.gpAumMax);
+          }
 
-        if (companyError) {
-          console.error('Error fetching combined stats:', companyError);
-          return;
-        }
+          return query;
+        };
+
+        // Fetch all companies using paged approach
+        const companyData = await fetchAllPaged<any>(makeCompanyQuery);
 
         // Transform gp_data from array to single object
-        let companies = (companyData || []).map((row: any) => ({
+        let companies = companyData.map((row: any) => ({
           ...row,
           gp_data: Array.isArray(row.gp_data) ? row.gp_data[0] || null : row.gp_data,
         }));
@@ -155,7 +158,7 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
             c.gp_data && filters.gpCity.includes(c.gp_data.fund_hq_city || '')
           );
         }
-        // GP AUM filters - values are now raw numbers
+        // GP AUM filters
         if (filters?.aumMin != null) {
           companies = companies.filter((c: any) => 
             c.gp_data && (c.gp_data.aum_numeric || 0) >= filters.aumMin!
@@ -167,64 +170,71 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
           );
         }
 
-        // Fetch GP count separately
-        let gpQuery = supabase
-          .from('lg_horizons_gps')
-          .select('id, priority, aum_numeric')
-          .limit(10000);
+        // Create query factory for paged GP fetch
+        const makeGpQuery = (from: number, to: number) => {
+          let query = supabase
+            .from('lg_horizons_gps')
+            .select('id, priority, aum_numeric')
+            .range(from, to)
+            .order('id', { ascending: true });
 
-        // Apply GP filters
-        if (filters?.priority && filters.priority.length > 0) {
-          const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
-          if (vals.length > 0) gpQuery = gpQuery.in('priority', vals);
-        }
-        if (filters?.lgRelationship && filters.lgRelationship.length > 0) {
-          const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
-          const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
-          if (hasNoKnownRelationship && regularValues.length > 0) {
-            gpQuery = gpQuery.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
-          } else if (hasNoKnownRelationship) {
-            gpQuery = gpQuery.or('lg_relationship.is.null,lg_relationship.eq.');
-          } else if (regularValues.length > 0) {
-            gpQuery = gpQuery.in('lg_relationship', regularValues);
+          // Apply GP filters
+          if (filters?.priority && filters.priority.length > 0) {
+            const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
+            if (vals.length > 0) query = query.in('priority', vals);
           }
-        }
-        if (filters?.industrySector && filters.industrySector.length > 0) {
-          const conditions = filters.industrySector.map(sector => `industry_sector_focus.ilike.%${sector}%`).join(',');
-          gpQuery = gpQuery.or(conditions);
-        }
-        if (filters?.gpState && filters.gpState.length > 0) {
-          gpQuery = gpQuery.in('fund_hq_state', filters.gpState);
-        }
-        if (filters?.gpCity && filters.gpCity.length > 0) {
-          gpQuery = gpQuery.in('fund_hq_city', filters.gpCity);
-        }
-        // GP AUM filters - values are now raw numbers
-        if (filters?.aumMin != null) {
-          gpQuery = gpQuery.gte('aum_numeric', filters.aumMin);
-        }
-        if (filters?.aumMax != null) {
-          gpQuery = gpQuery.lte('aum_numeric', filters.aumMax);
-        }
+          if (filters?.lgRelationship && filters.lgRelationship.length > 0) {
+            const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+            const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+            if (hasNoKnownRelationship && regularValues.length > 0) {
+              query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+            } else if (hasNoKnownRelationship) {
+              query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+            } else if (regularValues.length > 0) {
+              query = query.in('lg_relationship', regularValues);
+            }
+          }
+          if (filters?.industrySector && filters.industrySector.length > 0) {
+            const conditions = filters.industrySector.map(sector => `industry_sector_focus.ilike.%${sector}%`).join(',');
+            query = query.or(conditions);
+          }
+          if (filters?.gpState && filters.gpState.length > 0) {
+            query = query.in('fund_hq_state', filters.gpState);
+          }
+          if (filters?.gpCity && filters.gpCity.length > 0) {
+            query = query.in('fund_hq_city', filters.gpCity);
+          }
+          // GP AUM filters
+          if (filters?.aumMin != null) {
+            query = query.gte('aum_numeric', filters.aumMin);
+          }
+          if (filters?.aumMax != null) {
+            query = query.lte('aum_numeric', filters.aumMax);
+          }
 
-        const { data: gpData, error: gpError } = await gpQuery;
-        if (gpError) {
-          console.error('Error fetching GP stats:', gpError);
-        }
+          return query;
+        };
+
+        // Fetch all GPs using paged approach
+        const gpData = await fetchAllPaged<{
+          id: string;
+          priority: number | null;
+          aum_numeric: number | null;
+        }>(makeGpQuery);
 
         const totalCompanies = companies.length;
-        const totalGps = gpData?.length || 0;
+        const totalGps = gpData.length;
         const totalUniverse = totalCompanies + totalGps;
         
         // Count ALL priorities in filtered data (not just priority 1)
         const companyPriorityCount = companies.filter((c: any) => c.priority != null).length;
-        const gpPriorityCount = gpData?.filter((g: any) => g.priority != null).length || 0;
+        const gpPriorityCount = gpData.filter((g: any) => g.priority != null).length;
         const filteredPriorityCount = companyPriorityCount + gpPriorityCount;
 
         // Calculate GP AUM Range
         const allAumValues = [
           ...companies.filter((c: any) => c.gp_aum_numeric != null).map((c: any) => c.gp_aum_numeric),
-          ...(gpData?.filter((g: any) => g.aum_numeric != null).map((g: any) => g.aum_numeric) || [])
+          ...gpData.filter((g: any) => g.aum_numeric != null).map((g: any) => g.aum_numeric)
         ];
         
         let gpAumRange = 'N/A';

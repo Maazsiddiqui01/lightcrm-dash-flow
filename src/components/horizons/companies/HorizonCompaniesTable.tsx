@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPaged } from "@/utils/supabaseFetchAll";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
 import { ColumnDef } from "@/components/shared/AdvancedTable";
 import { HorizonCompanyDrawer } from "./HorizonCompanyDrawer";
@@ -303,79 +304,79 @@ export function HorizonCompaniesTable({ filters, selectedRows = [], onSelectionC
     
     try {
       setLoading(true);
-      let query = supabase.from("lg_horizons_companies").select("*").limit(10000);
+      
+      // Create a query factory for paged fetching
+      const makeQuery = (from: number, to: number) => {
+        let query = supabase.from("lg_horizons_companies").select("*").range(from, to);
 
-      // Apply filters
-      if (filters.sector.length > 0) query = query.in('sector', filters.sector);
-      if (filters.subsector.length > 0) query = query.in('subsector', filters.subsector);
-      if (filters.processStatus.length > 0) query = query.in('process_status', filters.processStatus);
-      if (filters.ownership.length > 0) query = query.in('ownership', filters.ownership);
-      if (filters.priority.length > 0) {
-        const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
-        if (vals.length > 0) query = query.in('priority', vals);
-      }
-      if (filters.state.length > 0) query = query.in('company_hq_state', filters.state);
-      if (filters.city.length > 0) query = query.in('company_hq_city', filters.city);
-      if (filters.source.length > 0) query = query.in('source', filters.source);
-      if (filters.parentGp.length > 0) query = query.in('parent_gp_name', filters.parentGp);
-      if (filters.ebitdaMin != null) query = query.gte('ebitda_numeric', filters.ebitdaMin);
-      if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax);
-      if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin);
-      if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
-      if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin);
-      if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax);
-      
-      // Date of Acquisition filter
-      if (filters.dateOfAcquisitionStart) query = query.gte('date_of_acquisition', filters.dateOfAcquisitionStart);
-      if (filters.dateOfAcquisitionEnd) query = query.lte('date_of_acquisition', filters.dateOfAcquisitionEnd);
-      
-      // LG Relationship filter with special "No Known Relationship" handling
-      if (filters.lgRelationship.length > 0) {
-        const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
-        const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
-        
-        if (hasNoKnownRelationship && regularValues.length > 0) {
-          // Both null/empty AND specific values
-          query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
-        } else if (hasNoKnownRelationship) {
-          // Only null/empty
-          query = query.or('lg_relationship.is.null,lg_relationship.eq.');
-        } else {
-          // Only specific values
-          query = query.in('lg_relationship', regularValues);
+        // Apply filters
+        if (filters.sector.length > 0) query = query.in('sector', filters.sector);
+        if (filters.subsector.length > 0) query = query.in('subsector', filters.subsector);
+        if (filters.processStatus.length > 0) query = query.in('process_status', filters.processStatus);
+        if (filters.ownership.length > 0) query = query.in('ownership', filters.ownership);
+        if (filters.priority.length > 0) {
+          const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
+          if (vals.length > 0) query = query.in('priority', vals);
         }
-      }
+        if (filters.state.length > 0) query = query.in('company_hq_state', filters.state);
+        if (filters.city.length > 0) query = query.in('company_hq_city', filters.city);
+        if (filters.source.length > 0) query = query.in('source', filters.source);
+        if (filters.parentGp.length > 0) query = query.in('parent_gp_name', filters.parentGp);
+        if (filters.ebitdaMin != null) query = query.gte('ebitda_numeric', filters.ebitdaMin);
+        if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax);
+        if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin);
+        if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
+        if (filters.gpAumMin != null) query = query.gte('gp_aum_numeric', filters.gpAumMin);
+        if (filters.gpAumMax != null) query = query.lte('gp_aum_numeric', filters.gpAumMax);
+        
+        // Date of Acquisition filter
+        if (filters.dateOfAcquisitionStart) query = query.gte('date_of_acquisition', filters.dateOfAcquisitionStart);
+        if (filters.dateOfAcquisitionEnd) query = query.lte('date_of_acquisition', filters.dateOfAcquisitionEnd);
+        
+        // LG Relationship filter with special "No Known Relationship" handling
+        if (filters.lgRelationship.length > 0) {
+          const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+          const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+          
+          if (hasNoKnownRelationship && regularValues.length > 0) {
+            query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+          } else if (hasNoKnownRelationship) {
+            query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+          } else {
+            query = query.in('lg_relationship', regularValues);
+          }
+        }
 
-      // Search
-      if (searchTerm.trim()) {
-        query = query.or(`company_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,sector.ilike.%${searchTerm}%`);
-      }
+        // Search
+        if (searchTerm.trim()) {
+          query = query.or(`company_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,sector.ilike.%${searchTerm}%`);
+        }
 
-      // Apply multi-sort
-      const serverOrders = buildSupabaseOrder(sortLevels);
-      if (serverOrders.length > 0) {
-        serverOrders.forEach(order => {
-          query = query.order(order.column, { ascending: order.ascending, nullsFirst: false });
-        });
-      } else {
-        query = query.order('priority', { ascending: true, nullsFirst: false })
-                     .order('company_name', { ascending: true });
-      }
+        // Apply multi-sort with stable tie-breaker
+        const serverOrders = buildSupabaseOrder(sortLevels);
+        if (serverOrders.length > 0) {
+          serverOrders.forEach(order => {
+            query = query.order(order.column, { ascending: order.ascending, nullsFirst: false });
+          });
+        } else {
+          query = query.order('priority', { ascending: true, nullsFirst: false })
+                       .order('company_name', { ascending: true });
+        }
+        // Always add id as final tie-breaker for stable pagination
+        query = query.order('id', { ascending: true });
+        
+        return query;
+      };
 
-      const { data, error } = await query;
+      const data = await fetchAllPaged<HorizonCompany>(makeQuery);
 
       if (requestIdRef.current !== requestId) return;
 
-      if (error) {
-        console.error("Error fetching companies:", error);
-        toast({ title: "Error", description: "Failed to fetch companies.", variant: "destructive" });
-        return;
-      }
-
-      const sortedData = applyClientSort(data || [], sortLevels);
+      const sortedData = applyClientSort(data, sortLevels);
       setCompanies(sortedData as HorizonCompany[]);
     } catch (error) {
-      console.error("Unexpected error:", error);
+      console.error("Error fetching companies:", error);
+      toast({ title: "Error", description: "Failed to fetch companies.", variant: "destructive" });
     } finally {
       if (requestIdRef.current === requestId) {
         setLoading(false);
