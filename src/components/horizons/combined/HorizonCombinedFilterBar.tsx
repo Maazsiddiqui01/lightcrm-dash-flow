@@ -1,17 +1,11 @@
 import { Button } from '@/components/ui/button';
-import { RotateCcw, ChevronDown, ChevronUp, Building2, Users2, Info } from 'lucide-react';
+import { RotateCcw, ChevronDown, ChevronUp, Building2, Users2 } from 'lucide-react';
 import { ComboboxMulti } from '@/components/shared/ComboboxMulti';
 import { RangeInput } from '@/components/shared/RangeInput';
 import { DateRangeInput } from '@/components/shared/DateRangeInput';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   useHorizonCompanySectors,
   useHorizonCompanySubsectors,
@@ -222,16 +216,6 @@ export function HorizonCombinedFilterBar({
                   {gpFilterCount}
                 </span>
               )}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-[280px]">
-                    <p>GP filters only show companies that are linked to GPs matching these criteria. Companies without GP links will be hidden.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </span>
             {gpFiltersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>

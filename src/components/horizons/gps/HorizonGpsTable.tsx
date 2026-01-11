@@ -8,7 +8,7 @@ import { BulkImportModal } from "@/components/data-maintenance/BulkImportModal";
 import { HorizonGpExportDropdown } from "./HorizonGpExportDropdown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowUpDown, ChevronDown, Trash2, FileText, ListTodo } from "lucide-react";
+import { Plus, ArrowUpDown, ChevronDown, Trash2, FileText, ListTodo, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SplitButton } from "@/components/shared/SplitButton";
 import {
@@ -202,6 +202,24 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={async (e) => {
+                e.stopPropagation();
+                const { error } = await supabase
+                  .from('lg_horizons_gps')
+                  .update({ priority: 1 })
+                  .eq('id', row.id);
+                if (error) {
+                  toast({ title: "Error", description: "Failed to set priority", variant: "destructive" });
+                } else {
+                  toast({ title: "Success", description: "Priority set to 1" });
+                  fetchGps();
+                }
+              }}
+            >
+              <Star className="h-4 w-4 mr-2" />
+              Set Priority 1
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();

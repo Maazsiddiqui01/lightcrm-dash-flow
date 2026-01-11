@@ -26,7 +26,7 @@ export function RangeInput({
   maxPlaceholder = "Max",
   className,
   step = 1,
-  showMultipliers = true
+  showMultipliers = false
 }: RangeInputProps) {
   const [lastFocused, setLastFocused] = useState<'min' | 'max' | null>(null);
   const minInputRef = useRef<HTMLInputElement>(null);
