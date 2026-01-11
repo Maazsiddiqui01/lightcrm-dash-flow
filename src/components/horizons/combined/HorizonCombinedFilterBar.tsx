@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { RotateCcw, ChevronDown, ChevronUp, Building2, Users2, Info } from 'lucide-react';
 import { ComboboxMulti } from '@/components/shared/ComboboxMulti';
 import { RangeInput } from '@/components/shared/RangeInput';
+import { DateRangeInput } from '@/components/shared/DateRangeInput';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -45,6 +46,8 @@ export interface HorizonCombinedFilters {
   parentGp: string[];
   gpAumMin?: number;
   gpAumMax?: number;
+  dateOfAcquisitionStart?: string;
+  dateOfAcquisitionEnd?: string;
   // GP-specific
   industrySector: string[];
   aumMin?: number;
@@ -118,7 +121,8 @@ export function HorizonCombinedFilterBar({
   ].filter(arr => arr.length > 0).length + 
     (filters.ebitdaMin != null || filters.ebitdaMax != null ? 1 : 0) +
     (filters.revenueMin != null || filters.revenueMax != null ? 1 : 0) +
-    (filters.gpAumMin != null || filters.gpAumMax != null ? 1 : 0);
+    (filters.gpAumMin != null || filters.gpAumMax != null ? 1 : 0) +
+    (filters.dateOfAcquisitionStart != null || filters.dateOfAcquisitionEnd != null ? 1 : 0);
 
   // Count active GP-specific filters (removed Active Funds and Active Holdings)
   const gpFilterCount = [
@@ -370,6 +374,14 @@ export function HorizonCombinedFilterBar({
               onChange={(values) => updateFilter('source', values)}
               searchPlaceholder="Search Sources"
               loading={sourcesLoading}
+            />
+
+            <DateRangeInput
+              label="Date of Acquisition"
+              startDate={filters.dateOfAcquisitionStart ? new Date(filters.dateOfAcquisitionStart) : undefined}
+              endDate={filters.dateOfAcquisitionEnd ? new Date(filters.dateOfAcquisitionEnd) : undefined}
+              onStartDateChange={(date) => updateFilter('dateOfAcquisitionStart', date?.toISOString().split('T')[0])}
+              onEndDateChange={(date) => updateFilter('dateOfAcquisitionEnd', date?.toISOString().split('T')[0])}
             />
           </div>
         </CollapsibleContent>
