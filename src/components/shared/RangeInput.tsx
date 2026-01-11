@@ -14,7 +14,22 @@ interface RangeInputProps {
   className?: string;
   step?: number;
   showMultipliers?: boolean;
+  formatWithCommas?: boolean;
 }
+
+// Format number with commas for display
+const formatNumberWithCommas = (value: number | undefined): string => {
+  if (value === undefined || value === null) return '';
+  return value.toLocaleString('en-US');
+};
+
+// Parse comma-formatted string to number
+const parseFormattedNumber = (value: string): number | undefined => {
+  if (value === '') return undefined;
+  const cleanValue = value.replace(/,/g, '');
+  const parsed = Number(cleanValue);
+  return isNaN(parsed) ? undefined : parsed;
+};
 
 export function RangeInput({
   label,
@@ -26,20 +41,62 @@ export function RangeInput({
   maxPlaceholder = "Max",
   className,
   step = 1,
-  showMultipliers = false
+  showMultipliers = false,
+  formatWithCommas = false
 }: RangeInputProps) {
   const [lastFocused, setLastFocused] = useState<'min' | 'max' | null>(null);
+  const [minInputValue, setMinInputValue] = useState<string>(formatWithCommas ? formatNumberWithCommas(minValue) : (minValue?.toString() ?? ''));
+  const [maxInputValue, setMaxInputValue] = useState<string>(formatWithCommas ? formatNumberWithCommas(maxValue) : (maxValue?.toString() ?? ''));
   const minInputRef = useRef<HTMLInputElement>(null);
   const maxInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync input values when props change externally
+  const prevMinValue = useRef(minValue);
+  const prevMaxValue = useRef(maxValue);
+  if (minValue !== prevMinValue.current) {
+    prevMinValue.current = minValue;
+    setMinInputValue(formatWithCommas ? formatNumberWithCommas(minValue) : (minValue?.toString() ?? ''));
+  }
+  if (maxValue !== prevMaxValue.current) {
+    prevMaxValue.current = maxValue;
+    setMaxInputValue(formatWithCommas ? formatNumberWithCommas(maxValue) : (maxValue?.toString() ?? ''));
+  }
+
   const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    onMinChange(value === '' ? undefined : Number(value));
+    if (formatWithCommas) {
+      // Allow typing with commas
+      setMinInputValue(value);
+    } else {
+      setMinInputValue(value);
+      onMinChange(value === '' ? undefined : Number(value));
+    }
   };
 
   const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    onMaxChange(value === '' ? undefined : Number(value));
+    if (formatWithCommas) {
+      setMaxInputValue(value);
+    } else {
+      setMaxInputValue(value);
+      onMaxChange(value === '' ? undefined : Number(value));
+    }
+  };
+
+  const handleMinBlur = () => {
+    if (formatWithCommas) {
+      const parsed = parseFormattedNumber(minInputValue);
+      onMinChange(parsed);
+      setMinInputValue(formatNumberWithCommas(parsed));
+    }
+  };
+
+  const handleMaxBlur = () => {
+    if (formatWithCommas) {
+      const parsed = parseFormattedNumber(maxInputValue);
+      onMaxChange(parsed);
+      setMaxInputValue(formatNumberWithCommas(parsed));
+    }
   };
 
   const applyMultiplier = (multiplier: number) => {
@@ -47,16 +104,22 @@ export function RangeInput({
       const currentValue = minValue ?? 0;
       if (currentValue === 0) {
         onMinChange(multiplier);
+        setMinInputValue(formatWithCommas ? formatNumberWithCommas(multiplier) : multiplier.toString());
       } else {
-        onMinChange(currentValue * multiplier);
+        const newValue = currentValue * multiplier;
+        onMinChange(newValue);
+        setMinInputValue(formatWithCommas ? formatNumberWithCommas(newValue) : newValue.toString());
       }
       minInputRef.current?.focus();
     } else if (lastFocused === 'max') {
       const currentValue = maxValue ?? 0;
       if (currentValue === 0) {
         onMaxChange(multiplier);
+        setMaxInputValue(formatWithCommas ? formatNumberWithCommas(multiplier) : multiplier.toString());
       } else {
-        onMaxChange(currentValue * multiplier);
+        const newValue = currentValue * multiplier;
+        onMaxChange(newValue);
+        setMaxInputValue(formatWithCommas ? formatNumberWithCommas(newValue) : newValue.toString());
       }
       maxInputRef.current?.focus();
     }
@@ -96,22 +159,24 @@ export function RangeInput({
       <div className="flex items-center space-x-2">
         <Input
           ref={minInputRef}
-          type="number"
-          step={step}
+          type={formatWithCommas ? "text" : "number"}
+          step={formatWithCommas ? undefined : step}
           placeholder={minPlaceholder}
-          value={minValue ?? ''}
+          value={minInputValue}
           onChange={handleMinChange}
+          onBlur={handleMinBlur}
           onFocus={() => setLastFocused('min')}
           className="w-full"
         />
         <span className="text-muted-foreground">-</span>
         <Input
           ref={maxInputRef}
-          type="number"
-          step={step}
+          type={formatWithCommas ? "text" : "number"}
+          step={formatWithCommas ? undefined : step}
           placeholder={maxPlaceholder}
-          value={maxValue ?? ''}
+          value={maxInputValue}
           onChange={handleMaxChange}
+          onBlur={handleMaxBlur}
           onFocus={() => setLastFocused('max')}
           className="w-full"
         />

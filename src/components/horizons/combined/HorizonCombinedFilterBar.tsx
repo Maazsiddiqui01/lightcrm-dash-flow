@@ -43,8 +43,6 @@ export interface HorizonCombinedFilters {
   companyCity: string[];
   source: string[];
   parentGp: string[];
-  gpAumMin?: number;
-  gpAumMax?: number;
   dateOfAcquisitionStart?: string;
   dateOfAcquisitionEnd?: string;
   // GP-specific
@@ -130,7 +128,6 @@ export function HorizonCombinedFilterBar({
   ].filter(arr => arr.length > 0).length + 
     (filters.ebitdaMin != null || filters.ebitdaMax != null ? 1 : 0) +
     (filters.revenueMin != null || filters.revenueMax != null ? 1 : 0) +
-    (filters.gpAumMin != null || filters.gpAumMax != null ? 1 : 0) +
     (filters.dateOfAcquisitionStart != null || filters.dateOfAcquisitionEnd != null ? 1 : 0);
 
   // Count active GP-specific filters (removed Active Funds and Active Holdings)
@@ -240,6 +237,7 @@ export function HorizonCombinedFilterBar({
               minPlaceholder="Min"
               maxPlaceholder="Max"
               step={1000000}
+              formatWithCommas
             />
 
             <ComboboxMulti
@@ -342,6 +340,7 @@ export function HorizonCombinedFilterBar({
               minPlaceholder="Min"
               maxPlaceholder="Max"
               step={1000000}
+              formatWithCommas
             />
 
             <RangeInput
@@ -353,17 +352,7 @@ export function HorizonCombinedFilterBar({
               minPlaceholder="Min"
               maxPlaceholder="Max"
               step={1000000}
-            />
-
-            <RangeInput
-              label="Company GP AUM"
-              minValue={filters.gpAumMin}
-              maxValue={filters.gpAumMax}
-              onMinChange={(value) => updateFilter('gpAumMin', value)}
-              onMaxChange={(value) => updateFilter('gpAumMax', value)}
-              minPlaceholder="Min"
-              maxPlaceholder="Max"
-              step={1000000}
+              formatWithCommas
             />
 
             <ComboboxMulti
