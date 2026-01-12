@@ -778,7 +778,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       total_funds,
       active_holdings,
       industry_sector_focus,
-      description
+      notes
     `;
     
     const makeQuery = (from: number, to: number) => {
@@ -863,7 +863,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       parent_gp_url: null,
       date_of_acquisition: null,
       source: null,
-      description: g.description,
+      description: g.notes || null, // GPs use 'notes' field instead of 'description'
       active_funds: g.active_funds,
       active_holdings: g.active_holdings,
       total_funds: g.total_funds,
