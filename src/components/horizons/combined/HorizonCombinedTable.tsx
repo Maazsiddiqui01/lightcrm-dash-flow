@@ -278,15 +278,17 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return <Badge className={variants[value] || ""}>{value}</Badge>;
         },
       },
-      // Name (Company or GP name)
+      // HQ Name (Company name only - GPs show in General Partner column)
       {
         key: 'name',
-        label: 'Name',
+        label: 'HQ Name',
         width: 200,
         visible: columnVisibility.columnVisibility['name'] !== false,
         enableHiding: true,
         resizable: true,
         render: (value: any, row: CombinedRow) => {
+          // For GP rows, name shows in General Partner column, not here
+          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
           if (row.name_url) {
             return (
               <a 
@@ -303,14 +305,19 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return <span>{value}</span>;
         },
       },
-      // Sector
+      // Company Sector
       {
         key: 'sector',
-        label: 'Sector',
+        label: 'Company Sector',
         width: 140,
         visible: columnVisibility.columnVisibility['sector'] !== false,
         enableHiding: true,
         resizable: true,
+        render: (value: any, row: CombinedRow) => {
+          // For GP rows, show GP Industry/Sector Focus instead
+          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
+          return value || null;
+        },
       },
       // EBITDA (Company only)
       {
@@ -358,7 +365,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return <Badge variant="outline" className={colorClass}>{value}</Badge>;
         },
       },
-      // General Partner (Company only - shows linked GP)
+      // General Partner (shows linked GP for companies, GP name for GPs)
       {
         key: 'parent_gp_name',
         label: 'General Partner',
@@ -367,7 +374,24 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         enableHiding: true,
         resizable: true,
         render: (value: any, row: CombinedRow) => {
-          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
+          // For GP rows, show the GP name itself in this column
+          if (row.record_type === 'gp') {
+            if (row.name_url) {
+              return (
+                <a 
+                  href={row.name_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {row.name}
+                </a>
+              );
+            }
+            return <span>{row.name}</span>;
+          }
+          // For company rows, show the parent GP
           if (!value) return null;
           
           if (row.parent_gp_url) {
@@ -671,6 +695,9 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax);
       if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin);
       if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
+      // GP AUM filter also applies to companies (via their parent GP's AUM)
+      if (filters.aumMin != null) query = query.gte('gp_aum_numeric', filters.aumMin);
+      if (filters.aumMax != null) query = query.lte('gp_aum_numeric', filters.aumMax);
 
       // Search
       if (debouncedSearchTerm.trim()) {

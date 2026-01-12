@@ -87,10 +87,8 @@ export function HorizonCombinedFilterBar({
   const { data: combinedCities = [], isLoading: combinedCitiesLoading } = useHorizonCombinedCities();
   const { data: combinedStates = [], isLoading: combinedStatesLoading } = useHorizonCombinedStates();
 
-  // Filter out "No Known Process" from process statuses
-  const processStatuses = rawProcessStatuses.filter(
-    status => status.value?.toLowerCase() !== 'no known process'
-  );
+  // Use all process statuses including "No Known Process"
+  const processStatuses = rawProcessStatuses;
 
   const priorityOptions = [
     { value: '1', label: 'Priority 1' },
