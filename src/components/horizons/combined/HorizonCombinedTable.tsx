@@ -4,9 +4,10 @@ import { fetchAllPaged } from "@/utils/supabaseFetchAll";
 import { ResponsiveAdvancedTable } from "@/components/shared/ResponsiveAdvancedTable";
 import { ColumnDef } from "@/components/shared/AdvancedTable";
 import { HorizonCompanyDrawer } from "../companies/HorizonCompanyDrawer";
+import { HorizonGpDrawer } from "../gps/HorizonGpDrawer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpDown, ChevronDown, Trash2, Link2, Link2Off, FileText, ListTodo, Star } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Trash2, Link2, Link2Off, FileText, ListTodo, Star, Building2, Users2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -38,48 +39,41 @@ import {
 import { NotesNextStepsDialog } from "@/components/horizons/shared/NotesNextStepsDialog";
 import { HorizonCombinedExportDropdown } from "./HorizonCombinedExportDropdown";
 
-interface CombinedCompany {
+// Unified row type for combined display of both GPs and Companies
+interface CombinedRow {
   id: string;
+  record_type: 'company' | 'gp';
+  name: string;
+  name_url: string | null;
   priority: number | null;
-  company_name: string;
-  company_url: string | null;
   sector: string | null;
   subsector: string | null;
+  lg_relationship: string | null;
+  city: string | null;
+  state: string | null;
+  aum: string | null;
+  aum_numeric: number | null;
+  // Company-specific (null for GPs)
   ebitda: string | null;
   ebitda_numeric: number | null;
   revenue: string | null;
   revenue_numeric: number | null;
+  process_status: string | null;
   ownership: string | null;
   parent_gp_name: string | null;
   parent_gp_id: string | null;
-  gp_aum: string | null;
-  gp_aum_numeric: number | null;
-  lg_relationship: string | null;
-  gp_contact: string | null;
-  process_status: string | null;
-  company_hq_city: string | null;
-  company_hq_state: string | null;
+  parent_gp_url: string | null;
+  date_of_acquisition: string | null;
   source: string | null;
   description: string | null;
-  date_of_acquisition: string | null;
-  // Dynamic count of companies linked to this GP in our database
-  db_holdings_count?: number;
-  // Joined GP data
-  gp_data?: {
-    id: string;
-    gp_name: string;
-    gp_url: string | null;
-    aum: string | null;
-    aum_numeric: number | null;
-    lg_relationship: string | null;
-    gp_contact: string | null;
-    fund_hq_city: string | null;
-    fund_hq_state: string | null;
-    active_funds: number | null;
-    total_funds: number | null;
-    active_holdings: number | null;
-    industry_sector_focus: string | null;
-  } | null;
+  // GP-specific (null for companies)
+  active_funds: number | null;
+  active_holdings: number | null;
+  total_funds: number | null;
+  industry_sector_focus: string | null;
+  gp_contact: string | null;
+  // Original data reference for drawer
+  original_data: any;
 }
 
 interface HorizonCombinedTableProps {
@@ -89,17 +83,18 @@ interface HorizonCombinedTableProps {
 }
 
 export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionChange }: HorizonCombinedTableProps) {
-  const [companies, setCompanies] = useState<CombinedCompany[]>([]);
+  const [data, setData] = useState<CombinedRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [selectedCompany, setSelectedCompany] = useState<CombinedCompany | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<CombinedRow | null>(null);
+  const [isCompanyDrawerOpen, setIsCompanyDrawerOpen] = useState(false);
+  const [isGpDrawerOpen, setIsGpDrawerOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [companyToDelete, setCompanyToDelete] = useState<CombinedCompany | null>(null);
+  const [rowToDelete, setRowToDelete] = useState<CombinedRow | null>(null);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [notesDialogTab, setNotesDialogTab] = useState<"notes" | "next_steps">("notes");
-  const [notesDialogRecord, setNotesDialogRecord] = useState<CombinedCompany | null>(null);
+  const [notesDialogRecord, setNotesDialogRecord] = useState<CombinedRow | null>(null);
   const { toast } = useToast();
   
   const requestIdRef = useRef<string | null>(null);
@@ -126,8 +121,9 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
   
   // Column options for sort dialog
   const columnOptions: ColumnOption[] = useMemo(() => [
+    { key: 'record_type', label: 'Type' },
     { key: 'priority', label: 'Priority' },
-    { key: 'company_name', label: 'Company' },
+    { key: 'name', label: 'Name' },
     { key: 'sector', label: 'Sector' },
     { key: 'subsector', label: 'Subsector' },
     { key: 'ebitda_numeric', label: 'EBITDA' },
@@ -135,12 +131,12 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
     { key: 'process_status', label: 'Process Status' },
     { key: 'ownership', label: 'Ownership' },
     { key: 'parent_gp_name', label: 'General Partner' },
-    { key: 'gp_aum_numeric', label: 'GP AUM' },
+    { key: 'aum_numeric', label: 'AUM' },
     { key: 'lg_relationship', label: 'LG Relationship' },
-    { key: 'company_hq_city', label: 'Company City' },
-    { key: 'company_hq_state', label: 'Company State' },
+    { key: 'city', label: 'City' },
+    { key: 'state', label: 'State' },
     { key: 'source', label: 'Source' },
-    { key: 'description', label: 'Company Description' },
+    { key: 'description', label: 'Description' },
     { key: 'date_of_acquisition', label: 'Acquisition Date' },
   ], []);
 
@@ -156,14 +152,14 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
 
   // Dynamic columns
   const dynamicColumns = useMemo(() => {
-    const columns: ColumnDef<CombinedCompany>[] = [
+    const columns: ColumnDef<CombinedRow>[] = [
       // Actions column
       {
         key: 'actions',
         label: 'Actions',
         width: 100,
         enableHiding: false,
-        render: (value: any, row: CombinedCompany) => (
+        render: (value: any, row: CombinedRow) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="outline" className="h-8">
@@ -175,15 +171,16 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
             <DropdownMenuItem
               onClick={async (e) => {
                 e.stopPropagation();
+                const tableName = row.record_type === 'company' ? 'lg_horizons_companies' : 'lg_horizons_gps';
                 const { error } = await supabase
-                  .from('lg_horizons_companies')
+                  .from(tableName)
                   .update({ priority: 1 })
                   .eq('id', row.id);
                 if (error) {
                   toast({ title: "Error", description: "Failed to set priority", variant: "destructive" });
                 } else {
                   toast({ title: "Success", description: "Priority set to 1" });
-                  fetchCompanies();
+                  fetchData();
                 }
               }}
             >
@@ -193,8 +190,12 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                setSelectedCompany(row);
-                setIsDrawerOpen(true);
+                setSelectedRow(row);
+                if (row.record_type === 'company') {
+                  setIsCompanyDrawerOpen(true);
+                } else {
+                  setIsGpDrawerOpen(true);
+                }
               }}
             >
               View Details
@@ -224,7 +225,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                setCompanyToDelete(row);
+                setRowToDelete(row);
                 setDeleteConfirmOpen(true);
               }}
               className="text-destructive focus:text-destructive"
@@ -235,6 +236,30 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           </DropdownMenuContent>
           </DropdownMenu>
         ),
+      },
+      // Type indicator
+      {
+        key: 'record_type',
+        label: 'Type',
+        width: 90,
+        visible: columnVisibility.columnVisibility['record_type'] !== false,
+        enableHiding: true,
+        render: (value: any) => {
+          if (value === 'company') {
+            return (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800">
+                <Building2 className="h-3 w-3 mr-1" />
+                Company
+              </Badge>
+            );
+          }
+          return (
+            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800">
+              <Users2 className="h-3 w-3 mr-1" />
+              GP
+            </Badge>
+          );
+        },
       },
       // Priority
       {
@@ -253,19 +278,19 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return <Badge className={variants[value] || ""}>{value}</Badge>;
         },
       },
-      // Company Name
+      // Name (Company or GP name)
       {
-        key: 'company_name',
-        label: 'Company',
+        key: 'name',
+        label: 'Name',
         width: 200,
-        visible: columnVisibility.columnVisibility['company_name'] !== false,
+        visible: columnVisibility.columnVisibility['name'] !== false,
         enableHiding: true,
         resizable: true,
-        render: (value: any, row: CombinedCompany) => {
-          if (row.company_url) {
+        render: (value: any, row: CombinedRow) => {
+          if (row.name_url) {
             return (
               <a 
-                href={row.company_url} 
+                href={row.name_url} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
@@ -287,30 +312,39 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         enableHiding: true,
         resizable: true,
       },
-      // EBITDA
+      // EBITDA (Company only)
       {
         key: 'ebitda',
         label: 'EBITDA',
         width: 100,
         visible: columnVisibility.columnVisibility['ebitda'] !== false,
         enableHiding: true,
+        render: (value: any, row: CombinedRow) => {
+          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
+          return value || null;
+        },
       },
-      // Revenue
+      // Revenue (Company only)
       {
         key: 'revenue',
         label: 'Revenue',
         width: 100,
         visible: columnVisibility.columnVisibility['revenue'] !== false,
         enableHiding: true,
+        render: (value: any, row: CombinedRow) => {
+          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
+          return value || null;
+        },
       },
-      // Process Status
+      // Process Status (Company only)
       {
         key: 'process_status',
         label: 'Process Status',
         width: 140,
         visible: columnVisibility.columnVisibility['process_status'] !== false,
         enableHiding: true,
-        render: (value: any) => {
+        render: (value: any, row: CombinedRow) => {
+          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
           if (!value) return null;
           const statusLower = String(value).toLowerCase();
           let colorClass = "bg-muted/50 text-muted-foreground border-muted";
@@ -324,7 +358,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return <Badge variant="outline" className={colorClass}>{value}</Badge>;
         },
       },
-      // General Partner (hyperlinked to GP URL)
+      // General Partner (Company only - shows linked GP)
       {
         key: 'parent_gp_name',
         label: 'General Partner',
@@ -332,155 +366,143 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         visible: columnVisibility.columnVisibility['parent_gp_name'] !== false,
         enableHiding: true,
         resizable: true,
-        render: (value: any, row: CombinedCompany) => {
-          const gpName = row.gp_data?.gp_name || value;
-          const gpUrl = row.gp_data?.gp_url;
-          if (!gpName) return null;
+        render: (value: any, row: CombinedRow) => {
+          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
+          if (!value) return null;
           
-          if (gpUrl) {
+          if (row.parent_gp_url) {
             return (
               <a 
-                href={gpUrl} 
+                href={row.parent_gp_url} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
                 onClick={(e) => e.stopPropagation()}
               >
-                {gpName}
+                {value}
               </a>
             );
           }
           return (
             <span className={row.parent_gp_id ? 'text-foreground' : 'text-muted-foreground'}>
-              {gpName}
+              {value}
             </span>
           );
         },
       },
-      // GP AUM (from joined GP data if available)
+      // AUM
       {
-        key: 'gp_aum',
-        label: 'GP AUM',
+        key: 'aum',
+        label: 'AUM',
         width: 100,
-        visible: columnVisibility.columnVisibility['gp_aum'] !== false,
+        visible: columnVisibility.columnVisibility['aum'] !== false,
         enableHiding: true,
-        render: (value: any, row: CombinedCompany) => {
-          const aum = row.gp_data?.aum || value;
-          return aum || null;
-        },
       },
-      // LG Relationship (prefer GP's if linked)
+      // LG Relationship
       {
         key: 'lg_relationship',
         label: 'LG Relationship',
         width: 140,
         visible: columnVisibility.columnVisibility['lg_relationship'] !== false,
         enableHiding: true,
-        render: (value: any, row: CombinedCompany) => {
-          const relationship = row.gp_data?.lg_relationship || value;
-          return relationship || null;
-        },
       },
-      // GP Contact
+      // GP Contact (GP only)
       {
         key: 'gp_contact',
         label: 'GP Contact',
         width: 140,
         visible: columnVisibility.columnVisibility['gp_contact'] !== false,
         enableHiding: true,
-        render: (value: any, row: CombinedCompany) => {
-          const contact = row.gp_data?.gp_contact || value;
-          return contact || null;
+        render: (value: any, row: CombinedRow) => {
+          if (row.record_type === 'company') return <span className="text-muted-foreground">—</span>;
+          return value || null;
         },
       },
-      // Company HQ
+      // HQ Location (unified city, state)
       {
-        key: 'company_hq',
-        label: 'Company HQ',
+        key: 'location',
+        label: 'HQ Location',
         width: 140,
-        visible: columnVisibility.columnVisibility['company_hq'] !== false,
+        visible: columnVisibility.columnVisibility['location'] !== false,
         enableHiding: true,
-        render: (value: any, row: CombinedCompany) => {
-          const parts = [row.company_hq_city, row.company_hq_state].filter(Boolean);
+        render: (value: any, row: CombinedRow) => {
+          const parts = [row.city, row.state].filter(Boolean);
           return parts.length > 0 ? parts.join(', ') : null;
         },
       },
-      // GP HQ (from joined GP data)
-      {
-        key: 'gp_hq',
-        label: 'GP HQ',
-        width: 140,
-        visible: columnVisibility.columnVisibility['gp_hq'] !== false,
-        enableHiding: true,
-        render: (value: any, row: CombinedCompany) => {
-          if (!row.gp_data) return null;
-          const parts = [row.gp_data.fund_hq_city, row.gp_data.fund_hq_state].filter(Boolean);
-          return parts.length > 0 ? parts.join(', ') : null;
-        },
-      },
-      // GP Active Holdings (static from external data)
+      // Active Holdings (GP only)
       {
         key: 'active_holdings',
         label: 'Active Holdings',
         width: 110,
         visible: columnVisibility.columnVisibility['active_holdings'] !== false,
         enableHiding: true,
-        render: (value: any, row: CombinedCompany) => {
-          return row.gp_data?.active_holdings ?? null;
+        render: (value: any, row: CombinedRow) => {
+          if (row.record_type === 'company') return <span className="text-muted-foreground">—</span>;
+          return value ?? null;
         },
       },
-      // DB Holdings (dynamic count from our database)
+      // Active Funds (GP only)
       {
-        key: 'db_holdings_count',
-        label: 'DB Holdings',
+        key: 'active_funds',
+        label: 'Active Funds',
         width: 100,
-        visible: columnVisibility.columnVisibility['db_holdings_count'] !== false,
+        visible: columnVisibility.columnVisibility['active_funds'] !== false,
         enableHiding: true,
-        render: (value: any, row: CombinedCompany) => {
-          return row.db_holdings_count ?? '-';
+        render: (value: any, row: CombinedRow) => {
+          if (row.record_type === 'company') return <span className="text-muted-foreground">—</span>;
+          return value ?? null;
         },
       },
-      // Ownership
+      // Ownership (Company only)
       {
         key: 'ownership',
         label: 'Ownership',
         width: 120,
         visible: columnVisibility.columnVisibility['ownership'] !== false,
         enableHiding: true,
+        render: (value: any, row: CombinedRow) => {
+          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
+          return value || null;
+        },
       },
-      // Source
+      // Source (Company only)
       {
         key: 'source',
         label: 'Source',
         width: 120,
         visible: columnVisibility.columnVisibility['source'] !== false,
         enableHiding: true,
+        render: (value: any, row: CombinedRow) => {
+          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
+          return value || null;
+        },
       },
-      // Date of Acquisition
+      // Date of Acquisition (Company only)
       {
         key: 'date_of_acquisition',
         label: 'Acquisition Date',
         width: 130,
         visible: columnVisibility.columnVisibility['date_of_acquisition'] !== false,
         enableHiding: true,
-        render: (value: any) => {
+        render: (value: any, row: CombinedRow) => {
+          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
           if (!value) return null;
           const date = parseFlexibleDate(value);
           if (date) return format(date, 'MMM dd, yyyy');
           return String(value);
         },
       },
-      // Company Description
+      // Description
       {
         key: 'description',
-        label: 'Company Description',
+        label: 'Description',
         width: 200,
         visible: columnVisibility.columnVisibility['description'] !== false,
         enableHiding: true,
         resizable: true,
         render: (value: any) => {
           if (!value) return null;
-          // Truncate long descriptions
           const text = String(value);
           if (text.length > 100) {
             return (
@@ -508,218 +530,61 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
   const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
   
   useEffect(() => {
-    fetchCompanies();
+    fetchData();
   }, [sortLevels, filtersKey, debouncedSearchTerm]);
 
-  const fetchCompanies = async () => {
+  // Check if any GP-specific filters are active
+  const hasGpFilters = useMemo(() => {
+    return (
+      (filters.industrySector && filters.industrySector.length > 0) ||
+      (filters.gpState && filters.gpState.length > 0) ||
+      (filters.gpCity && filters.gpCity.length > 0) ||
+      filters.aumMin != null ||
+      filters.aumMax != null
+    );
+  }, [filters]);
+
+  // Check if any Company-specific filters are active
+  const hasCompanyFilters = useMemo(() => {
+    return (
+      (filters.sector && filters.sector.length > 0) ||
+      (filters.subsector && filters.subsector.length > 0) ||
+      (filters.processStatus && filters.processStatus.length > 0) ||
+      (filters.ownership && filters.ownership.length > 0) ||
+      (filters.companyState && filters.companyState.length > 0) ||
+      (filters.companyCity && filters.companyCity.length > 0) ||
+      (filters.source && filters.source.length > 0) ||
+      (filters.parentGp && filters.parentGp.length > 0) ||
+      filters.ebitdaMin != null ||
+      filters.ebitdaMax != null ||
+      filters.revenueMin != null ||
+      filters.revenueMax != null ||
+      filters.dateOfAcquisitionStart != null ||
+      filters.dateOfAcquisitionEnd != null
+    );
+  }, [filters]);
+
+  const fetchData = async () => {
     const requestId = Date.now().toString();
     requestIdRef.current = requestId;
     
     try {
       setLoading(true);
       
-      const selectFields = `
-        id,
-        priority,
-        company_name,
-        company_url,
-        sector,
-        subsector,
-        ebitda,
-        ebitda_numeric,
-        revenue,
-        revenue_numeric,
-        ownership,
-        parent_gp_name,
-        parent_gp_id,
-        gp_aum,
-        gp_aum_numeric,
-        lg_relationship,
-        gp_contact,
-        process_status,
-        company_hq_city,
-        company_hq_state,
-        source,
-        description,
-        date_of_acquisition,
-        gp_data:lg_horizons_gps!parent_gp_id (
-          id,
-          gp_name,
-          gp_url,
-          aum,
-          aum_numeric,
-          lg_relationship,
-          gp_contact,
-          fund_hq_city,
-          fund_hq_state,
-          active_funds,
-          total_funds,
-          active_holdings,
-          industry_sector_focus
-        )
-      `;
-      
-      // Create a query factory for paged fetching
-      const makeQuery = (from: number, to: number) => {
-        let query = supabase
-          .from("lg_horizons_companies")
-          .select(selectFields)
-          .range(from, to);
-
-        // Apply common filters
-        if (filters.priority.length > 0) {
-          const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
-          if (vals.length > 0) query = query.in('priority', vals);
-        }
-
-        // LG Relationship filter
-        if (filters.lgRelationship.length > 0) {
-          const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
-          const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
-          
-          if (hasNoKnownRelationship && regularValues.length > 0) {
-            query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
-          } else if (hasNoKnownRelationship) {
-            query = query.or('lg_relationship.is.null,lg_relationship.eq.');
-          } else if (regularValues.length > 0) {
-            query = query.in('lg_relationship', regularValues);
-          }
-        }
-
-        // Company-specific filters
-        if (filters.sector.length > 0) query = query.in('sector', filters.sector);
-        if (filters.subsector.length > 0) query = query.in('subsector', filters.subsector);
-        if (filters.processStatus.length > 0) query = query.in('process_status', filters.processStatus);
-        if (filters.ownership.length > 0) query = query.in('ownership', filters.ownership);
-        if (filters.companyState.length > 0) query = query.in('company_hq_state', filters.companyState);
-        if (filters.companyCity.length > 0) query = query.in('company_hq_city', filters.companyCity);
-        if (filters.source.length > 0) query = query.in('source', filters.source);
-        if (filters.parentGp.length > 0) query = query.in('parent_gp_name', filters.parentGp);
-        if (filters.ebitdaMin != null) query = query.gte('ebitda_numeric', filters.ebitdaMin);
-        if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax);
-        if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin);
-        if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
-        // Note: date_of_acquisition filtering is done client-side because it's stored as text in various formats
-
-        // Search
-        if (debouncedSearchTerm.trim()) {
-          query = query.or(`company_name.ilike.%${debouncedSearchTerm}%,sector.ilike.%${debouncedSearchTerm}%,parent_gp_name.ilike.%${debouncedSearchTerm}%`);
-        }
-
-        // Apply multi-sort with stable tie-breaker
-        const serverOrders = buildSupabaseOrder(sortLevels);
-        if (serverOrders.length > 0) {
-          serverOrders.forEach(order => {
-            query = query.order(order.column, { ascending: order.ascending, nullsFirst: false });
-          });
-        } else {
-          query = query.order('priority', { ascending: true, nullsFirst: false })
-                       .order('company_name', { ascending: true });
-        }
-        // Always add id as final tie-breaker for stable pagination
-        query = query.order('id', { ascending: true });
-        
-        return query;
-      };
-
-      const data = await fetchAllPaged<any>(makeQuery);
+      // Fetch Companies and GPs independently, then combine as UNION
+      const [companyRows, gpRows] = await Promise.all([
+        fetchCompanies(),
+        fetchGps()
+      ]);
 
       if (requestIdRef.current !== requestId) return;
 
-      // Transform data - gp_data comes as array from Supabase, take first element
-      const transformedData = data.map(row => ({
-        ...row,
-        gp_data: Array.isArray(row.gp_data) ? row.gp_data[0] || null : row.gp_data,
-      })) as CombinedCompany[];
-
-      // Compute dynamic DB holdings count per GP (how many companies in our DB are linked to each GP)
-      const gpCompanyCounts = new Map<string, number>();
-      transformedData.forEach(company => {
-        if (company.parent_gp_id) {
-          gpCompanyCounts.set(
-            company.parent_gp_id,
-            (gpCompanyCounts.get(company.parent_gp_id) || 0) + 1
-          );
-        }
-      });
-
-      // Inject the dynamic count into each company
-      const dataWithCounts = transformedData.map(company => ({
-        ...company,
-        db_holdings_count: company.parent_gp_id
-          ? gpCompanyCounts.get(company.parent_gp_id) || 0
-          : 0
-      }));
-
-      // Apply GP-specific filters client-side (since they're on joined data)
-      let filteredData = dataWithCounts;
+      // Combine both into unified format (UNION)
+      const combined = [...companyRows, ...gpRows];
       
-      // Combined location filters - match if EITHER company OR GP location matches
-      if (filters.combinedCity && filters.combinedCity.length > 0) {
-        filteredData = filteredData.filter(c => 
-          filters.combinedCity.includes(c.company_hq_city || '') ||
-          (c.gp_data && filters.combinedCity.includes(c.gp_data.fund_hq_city || ''))
-        );
-      }
-      if (filters.combinedState && filters.combinedState.length > 0) {
-        filteredData = filteredData.filter(c => 
-          filters.combinedState.includes(c.company_hq_state || '') ||
-          (c.gp_data && filters.combinedState.includes(c.gp_data.fund_hq_state || ''))
-        );
-      }
-      
-      if (filters.industrySector.length > 0) {
-        filteredData = filteredData.filter(c => 
-          c.gp_data && filters.industrySector.some(sector => 
-            c.gp_data?.industry_sector_focus?.toLowerCase().includes(sector.toLowerCase())
-          )
-        );
-      }
-      if (filters.gpState.length > 0) {
-        filteredData = filteredData.filter(c => 
-          c.gp_data && filters.gpState.includes(c.gp_data.fund_hq_state || '')
-        );
-      }
-      if (filters.gpCity.length > 0) {
-        filteredData = filteredData.filter(c => 
-          c.gp_data && filters.gpCity.includes(c.gp_data.fund_hq_city || '')
-        );
-      }
-      if (filters.aumMin != null) {
-        filteredData = filteredData.filter(c => 
-          c.gp_data && (c.gp_data.aum_numeric || 0) >= filters.aumMin!
-        );
-      }
-      if (filters.aumMax != null) {
-        filteredData = filteredData.filter(c => 
-          c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax!
-        );
-      }
-
-      // Date of acquisition filter - client-side because it's stored as text in various formats
-      if (filters.dateOfAcquisitionStart) {
-        const startDate = parseFlexibleDate(filters.dateOfAcquisitionStart);
-        if (startDate) {
-          filteredData = filteredData.filter(c => {
-            if (!c.date_of_acquisition) return false;
-            const acqDate = parseFlexibleDate(c.date_of_acquisition);
-            return acqDate && acqDate >= startDate;
-          });
-        }
-      }
-      if (filters.dateOfAcquisitionEnd) {
-        const endDate = parseFlexibleDate(filters.dateOfAcquisitionEnd);
-        if (endDate) {
-          filteredData = filteredData.filter(c => {
-            if (!c.date_of_acquisition) return false;
-            const acqDate = parseFlexibleDate(c.date_of_acquisition);
-            return acqDate && acqDate <= endDate;
-          });
-        }
-      }
-
-      const sortedData = applyClientSort(filteredData, sortLevels);
-      setCompanies(sortedData as CombinedCompany[]);
+      // Apply sorting
+      const sortedData = applyClientSort(combined, sortLevels);
+      setData(sortedData as CombinedRow[]);
     } catch (error) {
       console.error("Error fetching combined data:", error);
       toast({ title: "Error", description: "Failed to fetch data.", variant: "destructive" });
@@ -731,9 +596,290 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
     }
   };
 
-  const handleRowClick = (company: CombinedCompany) => {
-    setSelectedCompany(company);
-    setIsDrawerOpen(true);
+  // Fetch Companies - applies ONLY company-specific + common filters
+  const fetchCompanies = async (): Promise<CombinedRow[]> => {
+    const selectFields = `
+      id,
+      priority,
+      company_name,
+      company_url,
+      sector,
+      subsector,
+      ebitda,
+      ebitda_numeric,
+      revenue,
+      revenue_numeric,
+      ownership,
+      parent_gp_name,
+      parent_gp_id,
+      gp_aum,
+      gp_aum_numeric,
+      lg_relationship,
+      gp_contact,
+      process_status,
+      company_hq_city,
+      company_hq_state,
+      source,
+      description,
+      date_of_acquisition,
+      gp_data:lg_horizons_gps!parent_gp_id (
+        id,
+        gp_name,
+        gp_url,
+        aum,
+        aum_numeric,
+        lg_relationship,
+        gp_contact
+      )
+    `;
+    
+    const makeQuery = (from: number, to: number) => {
+      let query = supabase
+        .from("lg_horizons_companies")
+        .select(selectFields)
+        .range(from, to);
+
+      // Common filters
+      if (filters.priority.length > 0) {
+        const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
+        if (vals.length > 0) query = query.in('priority', vals);
+      }
+
+      if (filters.lgRelationship.length > 0) {
+        const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+        const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+        
+        if (hasNoKnownRelationship && regularValues.length > 0) {
+          query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+        } else if (hasNoKnownRelationship) {
+          query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+        } else if (regularValues.length > 0) {
+          query = query.in('lg_relationship', regularValues);
+        }
+      }
+
+      // Company-specific filters
+      if (filters.sector.length > 0) query = query.in('sector', filters.sector);
+      if (filters.subsector.length > 0) query = query.in('subsector', filters.subsector);
+      if (filters.processStatus.length > 0) query = query.in('process_status', filters.processStatus);
+      if (filters.ownership.length > 0) query = query.in('ownership', filters.ownership);
+      if (filters.companyState.length > 0) query = query.in('company_hq_state', filters.companyState);
+      if (filters.companyCity.length > 0) query = query.in('company_hq_city', filters.companyCity);
+      if (filters.source.length > 0) query = query.in('source', filters.source);
+      if (filters.parentGp.length > 0) query = query.in('parent_gp_name', filters.parentGp);
+      if (filters.ebitdaMin != null) query = query.gte('ebitda_numeric', filters.ebitdaMin);
+      if (filters.ebitdaMax != null) query = query.lte('ebitda_numeric', filters.ebitdaMax);
+      if (filters.revenueMin != null) query = query.gte('revenue_numeric', filters.revenueMin);
+      if (filters.revenueMax != null) query = query.lte('revenue_numeric', filters.revenueMax);
+
+      // Search
+      if (debouncedSearchTerm.trim()) {
+        query = query.or(`company_name.ilike.%${debouncedSearchTerm}%,sector.ilike.%${debouncedSearchTerm}%,parent_gp_name.ilike.%${debouncedSearchTerm}%`);
+      }
+
+      query = query.order('id', { ascending: true });
+      
+      return query;
+    };
+
+    const rawData = await fetchAllPaged<any>(makeQuery);
+
+    // Transform and apply client-side filters
+    let companies = rawData.map(row => ({
+      ...row,
+      gp_data: Array.isArray(row.gp_data) ? row.gp_data[0] || null : row.gp_data,
+    }));
+
+    // Combined location filters - match if EITHER company OR GP location matches
+    if (filters.combinedCity && filters.combinedCity.length > 0) {
+      companies = companies.filter(c => 
+        filters.combinedCity.includes(c.company_hq_city || '') ||
+        (c.gp_data && filters.combinedCity.includes(c.gp_data.fund_hq_city || ''))
+      );
+    }
+    if (filters.combinedState && filters.combinedState.length > 0) {
+      companies = companies.filter(c => 
+        filters.combinedState.includes(c.company_hq_state || '') ||
+        (c.gp_data && filters.combinedState.includes(c.gp_data.fund_hq_state || ''))
+      );
+    }
+
+    // Date of acquisition filter - client-side because it's stored as text
+    if (filters.dateOfAcquisitionStart) {
+      const startDate = parseFlexibleDate(filters.dateOfAcquisitionStart);
+      if (startDate) {
+        companies = companies.filter(c => {
+          if (!c.date_of_acquisition) return false;
+          const acqDate = parseFlexibleDate(c.date_of_acquisition);
+          return acqDate && acqDate >= startDate;
+        });
+      }
+    }
+    if (filters.dateOfAcquisitionEnd) {
+      const endDate = parseFlexibleDate(filters.dateOfAcquisitionEnd);
+      if (endDate) {
+        companies = companies.filter(c => {
+          if (!c.date_of_acquisition) return false;
+          const acqDate = parseFlexibleDate(c.date_of_acquisition);
+          return acqDate && acqDate <= endDate;
+        });
+      }
+    }
+
+    // Transform to unified CombinedRow format
+    return companies.map((c): CombinedRow => ({
+      id: c.id,
+      record_type: 'company',
+      name: c.company_name,
+      name_url: c.company_url,
+      priority: c.priority,
+      sector: c.sector,
+      subsector: c.subsector,
+      lg_relationship: c.gp_data?.lg_relationship || c.lg_relationship,
+      city: c.company_hq_city,
+      state: c.company_hq_state,
+      aum: c.gp_data?.aum || c.gp_aum,
+      aum_numeric: c.gp_data?.aum_numeric || c.gp_aum_numeric,
+      ebitda: c.ebitda,
+      ebitda_numeric: c.ebitda_numeric,
+      revenue: c.revenue,
+      revenue_numeric: c.revenue_numeric,
+      process_status: c.process_status,
+      ownership: c.ownership,
+      parent_gp_name: c.gp_data?.gp_name || c.parent_gp_name,
+      parent_gp_id: c.parent_gp_id,
+      parent_gp_url: c.gp_data?.gp_url || null,
+      date_of_acquisition: c.date_of_acquisition,
+      source: c.source,
+      description: c.description,
+      active_funds: null,
+      active_holdings: null,
+      total_funds: null,
+      industry_sector_focus: null,
+      gp_contact: c.gp_data?.gp_contact || c.gp_contact,
+      original_data: c,
+    }));
+  };
+
+  // Fetch GPs - applies ONLY GP-specific + common filters
+  const fetchGps = async (): Promise<CombinedRow[]> => {
+    const selectFields = `
+      id,
+      priority,
+      gp_name,
+      gp_url,
+      aum,
+      aum_numeric,
+      lg_relationship,
+      gp_contact,
+      fund_hq_city,
+      fund_hq_state,
+      active_funds,
+      total_funds,
+      active_holdings,
+      industry_sector_focus,
+      description
+    `;
+    
+    const makeQuery = (from: number, to: number) => {
+      let query = supabase
+        .from("lg_horizons_gps")
+        .select(selectFields)
+        .range(from, to);
+
+      // Common filters
+      if (filters.priority.length > 0) {
+        const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
+        if (vals.length > 0) query = query.in('priority', vals);
+      }
+
+      if (filters.lgRelationship.length > 0) {
+        const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+        const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+        
+        if (hasNoKnownRelationship && regularValues.length > 0) {
+          query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+        } else if (hasNoKnownRelationship) {
+          query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+        } else if (regularValues.length > 0) {
+          query = query.in('lg_relationship', regularValues);
+        }
+      }
+
+      // GP-specific filters
+      if (filters.industrySector && filters.industrySector.length > 0) {
+        const conditions = filters.industrySector.map(sector => `industry_sector_focus.ilike.%${sector}%`).join(',');
+        query = query.or(conditions);
+      }
+      if (filters.gpState && filters.gpState.length > 0) query = query.in('fund_hq_state', filters.gpState);
+      if (filters.gpCity && filters.gpCity.length > 0) query = query.in('fund_hq_city', filters.gpCity);
+      if (filters.aumMin != null) query = query.gte('aum_numeric', filters.aumMin);
+      if (filters.aumMax != null) query = query.lte('aum_numeric', filters.aumMax);
+
+      // Search
+      if (debouncedSearchTerm.trim()) {
+        query = query.or(`gp_name.ilike.%${debouncedSearchTerm}%,industry_sector_focus.ilike.%${debouncedSearchTerm}%`);
+      }
+
+      query = query.order('id', { ascending: true });
+      
+      return query;
+    };
+
+    const rawData = await fetchAllPaged<any>(makeQuery);
+
+    // Apply combined location filters client-side
+    let gps = rawData;
+    
+    if (filters.combinedCity && filters.combinedCity.length > 0) {
+      gps = gps.filter(g => filters.combinedCity.includes(g.fund_hq_city || ''));
+    }
+    if (filters.combinedState && filters.combinedState.length > 0) {
+      gps = gps.filter(g => filters.combinedState.includes(g.fund_hq_state || ''));
+    }
+
+    // Transform to unified CombinedRow format
+    return gps.map((g): CombinedRow => ({
+      id: g.id,
+      record_type: 'gp',
+      name: g.gp_name,
+      name_url: g.gp_url,
+      priority: g.priority,
+      sector: g.industry_sector_focus, // Use industry sector as the sector display
+      subsector: null,
+      lg_relationship: g.lg_relationship,
+      city: g.fund_hq_city,
+      state: g.fund_hq_state,
+      aum: g.aum,
+      aum_numeric: g.aum_numeric,
+      ebitda: null,
+      ebitda_numeric: null,
+      revenue: null,
+      revenue_numeric: null,
+      process_status: null,
+      ownership: null,
+      parent_gp_name: null,
+      parent_gp_id: null,
+      parent_gp_url: null,
+      date_of_acquisition: null,
+      source: null,
+      description: g.description,
+      active_funds: g.active_funds,
+      active_holdings: g.active_holdings,
+      total_funds: g.total_funds,
+      industry_sector_focus: g.industry_sector_focus,
+      gp_contact: g.gp_contact,
+      original_data: g,
+    }));
+  };
+
+  const handleRowClick = (row: CombinedRow) => {
+    setSelectedRow(row);
+    if (row.record_type === 'company') {
+      setIsCompanyDrawerOpen(true);
+    } else {
+      setIsGpDrawerOpen(true);
+    }
   };
 
   const handleSortChange = (newSortLevels: SortLevel[]) => {
@@ -746,23 +892,25 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
     clearSortState('lg_horizons_combined');
   };
 
-  const handleDeleteCompany = async (companyId: string) => {
+  const handleDeleteRow = async (row: CombinedRow) => {
     try {
-      const { error } = await supabase.from('lg_horizons_companies').delete().eq('id', companyId);
+      const tableName = row.record_type === 'company' ? 'lg_horizons_companies' : 'lg_horizons_gps';
+      const { error } = await supabase.from(tableName).delete().eq('id', row.id);
       if (error) throw error;
-      toast({ title: "Success", description: "Company deleted successfully" });
-      if (selectedRows.includes(companyId)) {
-        onSelectionChange?.(selectedRows.filter(id => id !== companyId));
+      toast({ title: "Success", description: `${row.record_type === 'company' ? 'Company' : 'GP'} deleted successfully` });
+      if (selectedRows.includes(row.id)) {
+        onSelectionChange?.(selectedRows.filter(id => id !== row.id));
       }
-      await fetchCompanies();
+      await fetchData();
     } catch (error) {
-      console.error('Error deleting company:', error);
-      toast({ title: "Error", description: "Failed to delete company.", variant: "destructive" });
+      console.error('Error deleting row:', error);
+      toast({ title: "Error", description: "Failed to delete record.", variant: "destructive" });
     }
   };
 
-  // Count linked vs unlinked
-  const linkedCount = companies.filter(c => c.parent_gp_id).length;
+  // Count companies and GPs
+  const companyCount = data.filter(r => r.record_type === 'company').length;
+  const gpCount = data.filter(r => r.record_type === 'gp').length;
 
   return (
     <div className="space-y-4">
@@ -776,14 +924,14 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">
-            {companies.length} Compan{companies.length !== 1 ? 'ies' : 'y'}
+            {data.length} Record{data.length !== 1 ? 's' : ''}
             <span className="text-sm font-normal text-muted-foreground ml-2">
-              ({linkedCount} linked to GPs)
+              ({companyCount} Companies, {gpCount} GPs)
             </span>
           </h3>
         </div>
         <div className="flex gap-2">
-          <HorizonCombinedExportDropdown data={companies} />
+          <HorizonCombinedExportDropdown data={data as any} />
           
           <ColumnsMenu
             columns={dynamicColumns}
@@ -802,7 +950,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
 
       <ResponsiveAdvancedTable
         tableId="horizon-combined-table"
-        data={companies}
+        data={data}
         hideExportButton={true}
         columns={dynamicColumns}
         loading={loading}
@@ -822,30 +970,42 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         onApply={handleSortChange}
       />
 
-      {selectedCompany && (
+      {selectedRow && selectedRow.record_type === 'company' && (
         <HorizonCompanyDrawer
-          company={selectedCompany as any}
-          open={isDrawerOpen}
+          company={selectedRow.original_data as any}
+          open={isCompanyDrawerOpen}
           onClose={() => {
-            setIsDrawerOpen(false);
-            setSelectedCompany(null);
+            setIsCompanyDrawerOpen(false);
+            setSelectedRow(null);
           }}
-          onCompanyUpdated={fetchCompanies}
+          onCompanyUpdated={fetchData}
+        />
+      )}
+
+      {selectedRow && selectedRow.record_type === 'gp' && (
+        <HorizonGpDrawer
+          gp={selectedRow.original_data as any}
+          open={isGpDrawerOpen}
+          onClose={() => {
+            setIsGpDrawerOpen(false);
+            setSelectedRow(null);
+          }}
+          onGpUpdated={fetchData}
         />
       )}
 
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
-        title="Delete Company"
-        description={`Are you sure you want to delete "${companyToDelete?.company_name}"? This action cannot be undone.`}
+        title={`Delete ${rowToDelete?.record_type === 'company' ? 'Company' : 'GP'}`}
+        description={`Are you sure you want to delete "${rowToDelete?.name}"? This action cannot be undone.`}
         confirmText="Delete"
         onConfirm={() => {
-          if (companyToDelete) {
-            handleDeleteCompany(companyToDelete.id);
+          if (rowToDelete) {
+            handleDeleteRow(rowToDelete);
           }
           setDeleteConfirmOpen(false);
-          setCompanyToDelete(null);
+          setRowToDelete(null);
         }}
         variant="destructive"
       />
@@ -858,10 +1018,10 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
             setNotesDialogRecord(null);
           }}
           recordId={notesDialogRecord.id}
-          tableName="lg_horizons_companies"
-          recordName={notesDialogRecord.company_name}
+          tableName={notesDialogRecord.record_type === 'company' ? 'lg_horizons_companies' : 'lg_horizons_gps'}
+          recordName={notesDialogRecord.name}
           initialTab={notesDialogTab}
-          onSaved={fetchCompanies}
+          onSaved={fetchData}
         />
       )}
     </div>

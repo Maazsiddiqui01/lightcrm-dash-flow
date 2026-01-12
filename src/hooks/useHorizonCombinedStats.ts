@@ -31,212 +31,11 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
       try {
         setStats(prev => ({ ...prev, loading: true }));
 
-        // Create query factory for paged company fetch
-        const makeCompanyQuery = (from: number, to: number) => {
-          let query = supabase
-            .from('lg_horizons_companies')
-            .select(`
-              id, priority, ebitda_numeric, parent_gp_id, gp_aum_numeric, date_of_acquisition,
-              company_hq_city, company_hq_state,
-              gp_data:lg_horizons_gps!parent_gp_id (
-                id,
-                aum_numeric,
-                fund_hq_city,
-                fund_hq_state,
-                industry_sector_focus
-              )
-            `)
-            .range(from, to)
-            .order('id', { ascending: true });
-
-          // Apply common filters
-          if (filters?.priority && filters.priority.length > 0) {
-            const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
-            if (vals.length > 0) query = query.in('priority', vals);
-          }
-
-          if (filters?.lgRelationship && filters.lgRelationship.length > 0) {
-            const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
-            const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
-            
-            if (hasNoKnownRelationship && regularValues.length > 0) {
-              query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
-            } else if (hasNoKnownRelationship) {
-              query = query.or('lg_relationship.is.null,lg_relationship.eq.');
-            } else if (regularValues.length > 0) {
-              query = query.in('lg_relationship', regularValues);
-            }
-          }
-
-          // Company-specific filters
-          if (filters?.sector && filters.sector.length > 0) {
-            query = query.in('sector', filters.sector);
-          }
-          if (filters?.subsector && filters.subsector.length > 0) {
-            query = query.in('subsector', filters.subsector);
-          }
-          if (filters?.processStatus && filters.processStatus.length > 0) {
-            query = query.in('process_status', filters.processStatus);
-          }
-          if (filters?.ownership && filters.ownership.length > 0) {
-            query = query.in('ownership', filters.ownership);
-          }
-          if (filters?.companyState && filters.companyState.length > 0) {
-            query = query.in('company_hq_state', filters.companyState);
-          }
-          if (filters?.companyCity && filters.companyCity.length > 0) {
-            query = query.in('company_hq_city', filters.companyCity);
-          }
-          if (filters?.source && filters.source.length > 0) {
-            query = query.in('source', filters.source);
-          }
-          if (filters?.parentGp && filters.parentGp.length > 0) {
-            query = query.in('parent_gp_name', filters.parentGp);
-          }
-
-          // Numeric filters
-          if (filters?.ebitdaMin != null) {
-            query = query.gte('ebitda_numeric', filters.ebitdaMin);
-          }
-          if (filters?.ebitdaMax != null) {
-            query = query.lte('ebitda_numeric', filters.ebitdaMax);
-          }
-          if (filters?.revenueMin != null) {
-            query = query.gte('revenue_numeric', filters.revenueMin);
-          }
-          if (filters?.revenueMax != null) {
-            query = query.lte('revenue_numeric', filters.revenueMax);
-          }
-
-          return query;
-        };
-
-        // Fetch all companies using paged approach
-        const companyData = await fetchAllPaged<any>(makeCompanyQuery);
-
-        // Transform gp_data from array to single object
-        let companies = companyData.map((row: any) => ({
-          ...row,
-          gp_data: Array.isArray(row.gp_data) ? row.gp_data[0] || null : row.gp_data,
-        }));
-
-        // Combined location filters - match if EITHER company OR GP location matches
-        if (filters?.combinedCity && filters.combinedCity.length > 0) {
-          companies = companies.filter((c: any) => 
-            filters.combinedCity.includes(c.company_hq_city || '') ||
-            (c.gp_data && filters.combinedCity.includes(c.gp_data.fund_hq_city || ''))
-          );
-        }
-        if (filters?.combinedState && filters.combinedState.length > 0) {
-          companies = companies.filter((c: any) => 
-            filters.combinedState.includes(c.company_hq_state || '') ||
-            (c.gp_data && filters.combinedState.includes(c.gp_data.fund_hq_state || ''))
-          );
-        }
-
-        // Apply GP-specific filters client-side
-        if (filters?.industrySector && filters.industrySector.length > 0) {
-          companies = companies.filter((c: any) => 
-            c.gp_data && filters.industrySector.some(sector => 
-              c.gp_data?.industry_sector_focus?.toLowerCase().includes(sector.toLowerCase())
-            )
-          );
-        }
-        if (filters?.gpState && filters.gpState.length > 0) {
-          companies = companies.filter((c: any) => 
-            c.gp_data && filters.gpState.includes(c.gp_data.fund_hq_state || '')
-          );
-        }
-        if (filters?.gpCity && filters.gpCity.length > 0) {
-          companies = companies.filter((c: any) => 
-            c.gp_data && filters.gpCity.includes(c.gp_data.fund_hq_city || '')
-          );
-        }
-        // GP AUM filters
-        if (filters?.aumMin != null) {
-          companies = companies.filter((c: any) => 
-            c.gp_data && (c.gp_data.aum_numeric || 0) >= filters.aumMin!
-          );
-        }
-        if (filters?.aumMax != null) {
-          companies = companies.filter((c: any) => 
-            c.gp_data && (c.gp_data.aum_numeric || 0) <= filters.aumMax!
-          );
-        }
-
-        // Date of acquisition filter - client-side because it's stored as text in various formats
-        if (filters?.dateOfAcquisitionStart) {
-          const startDate = parseFlexibleDate(filters.dateOfAcquisitionStart);
-          if (startDate) {
-            companies = companies.filter((c: any) => {
-              if (!c.date_of_acquisition) return false;
-              const acqDate = parseFlexibleDate(c.date_of_acquisition);
-              return acqDate && acqDate >= startDate;
-            });
-          }
-        }
-        if (filters?.dateOfAcquisitionEnd) {
-          const endDate = parseFlexibleDate(filters.dateOfAcquisitionEnd);
-          if (endDate) {
-            companies = companies.filter((c: any) => {
-              if (!c.date_of_acquisition) return false;
-              const acqDate = parseFlexibleDate(c.date_of_acquisition);
-              return acqDate && acqDate <= endDate;
-            });
-          }
-        }
-
-        // Create query factory for paged GP fetch
-        const makeGpQuery = (from: number, to: number) => {
-          let query = supabase
-            .from('lg_horizons_gps')
-            .select('id, priority, aum_numeric')
-            .range(from, to)
-            .order('id', { ascending: true });
-
-          // Apply GP filters
-          if (filters?.priority && filters.priority.length > 0) {
-            const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
-            if (vals.length > 0) query = query.in('priority', vals);
-          }
-          if (filters?.lgRelationship && filters.lgRelationship.length > 0) {
-            const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
-            const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
-            if (hasNoKnownRelationship && regularValues.length > 0) {
-              query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
-            } else if (hasNoKnownRelationship) {
-              query = query.or('lg_relationship.is.null,lg_relationship.eq.');
-            } else if (regularValues.length > 0) {
-              query = query.in('lg_relationship', regularValues);
-            }
-          }
-          if (filters?.industrySector && filters.industrySector.length > 0) {
-            const conditions = filters.industrySector.map(sector => `industry_sector_focus.ilike.%${sector}%`).join(',');
-            query = query.or(conditions);
-          }
-          if (filters?.gpState && filters.gpState.length > 0) {
-            query = query.in('fund_hq_state', filters.gpState);
-          }
-          if (filters?.gpCity && filters.gpCity.length > 0) {
-            query = query.in('fund_hq_city', filters.gpCity);
-          }
-          // GP AUM filters
-          if (filters?.aumMin != null) {
-            query = query.gte('aum_numeric', filters.aumMin);
-          }
-          if (filters?.aumMax != null) {
-            query = query.lte('aum_numeric', filters.aumMax);
-          }
-
-          return query;
-        };
-
-        // Fetch all GPs using paged approach
-        const gpData = await fetchAllPaged<{
-          id: string;
-          priority: number | null;
-          aum_numeric: number | null;
-        }>(makeGpQuery);
+        // Fetch Companies and GPs INDEPENDENTLY (UNION logic, not intersection)
+        const [companies, gpData] = await Promise.all([
+          fetchCompaniesForStats(filters),
+          fetchGpsForStats(filters)
+        ]);
 
         const totalCompanies = companies.length;
         const totalGps = gpData.length;
@@ -247,7 +46,7 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
         const gpPriorityCount = gpData.filter((g: any) => g.priority != null).length;
         const filteredPriorityCount = companyPriorityCount + gpPriorityCount;
 
-        // Calculate GP AUM Range
+        // Calculate GP AUM Range from both companies (via linked GP) and GPs
         const allAumValues = [
           ...companies.filter((c: any) => c.gp_aum_numeric != null).map((c: any) => c.gp_aum_numeric),
           ...gpData.filter((g: any) => g.aum_numeric != null).map((g: any) => g.aum_numeric)
@@ -262,7 +61,7 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
             : `$${minAum.toFixed(1)}B - $${maxAum.toFixed(1)}B`;
         }
 
-        // Calculate Acquisition Date Range
+        // Calculate Acquisition Date Range (from companies only)
         const acquisitionDates = companies
           .filter((c: any) => c.date_of_acquisition)
           .map((c: any) => parseFlexibleDate(c.date_of_acquisition))
@@ -297,4 +96,175 @@ export function useHorizonCombinedStats(filters?: HorizonCombinedFilters): Horiz
   }, [JSON.stringify(filters)]);
 
   return stats;
+}
+
+// Fetch Companies - applies ONLY company-specific + common filters (NO GP filters)
+async function fetchCompaniesForStats(filters?: HorizonCombinedFilters): Promise<any[]> {
+  const makeCompanyQuery = (from: number, to: number) => {
+    let query = supabase
+      .from('lg_horizons_companies')
+      .select(`
+        id, priority, gp_aum_numeric, date_of_acquisition,
+        company_hq_city, company_hq_state
+      `)
+      .range(from, to)
+      .order('id', { ascending: true });
+
+    // Common filters
+    if (filters?.priority && filters.priority.length > 0) {
+      const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
+      if (vals.length > 0) query = query.in('priority', vals);
+    }
+
+    if (filters?.lgRelationship && filters.lgRelationship.length > 0) {
+      const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+      const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+      
+      if (hasNoKnownRelationship && regularValues.length > 0) {
+        query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+      } else if (hasNoKnownRelationship) {
+        query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+      } else if (regularValues.length > 0) {
+        query = query.in('lg_relationship', regularValues);
+      }
+    }
+
+    // Company-specific filters ONLY (NO GP filters here)
+    if (filters?.sector && filters.sector.length > 0) {
+      query = query.in('sector', filters.sector);
+    }
+    if (filters?.subsector && filters.subsector.length > 0) {
+      query = query.in('subsector', filters.subsector);
+    }
+    if (filters?.processStatus && filters.processStatus.length > 0) {
+      query = query.in('process_status', filters.processStatus);
+    }
+    if (filters?.ownership && filters.ownership.length > 0) {
+      query = query.in('ownership', filters.ownership);
+    }
+    if (filters?.companyState && filters.companyState.length > 0) {
+      query = query.in('company_hq_state', filters.companyState);
+    }
+    if (filters?.companyCity && filters.companyCity.length > 0) {
+      query = query.in('company_hq_city', filters.companyCity);
+    }
+    if (filters?.source && filters.source.length > 0) {
+      query = query.in('source', filters.source);
+    }
+    if (filters?.parentGp && filters.parentGp.length > 0) {
+      query = query.in('parent_gp_name', filters.parentGp);
+    }
+    if (filters?.ebitdaMin != null) {
+      query = query.gte('ebitda_numeric', filters.ebitdaMin);
+    }
+    if (filters?.ebitdaMax != null) {
+      query = query.lte('ebitda_numeric', filters.ebitdaMax);
+    }
+    if (filters?.revenueMin != null) {
+      query = query.gte('revenue_numeric', filters.revenueMin);
+    }
+    if (filters?.revenueMax != null) {
+      query = query.lte('revenue_numeric', filters.revenueMax);
+    }
+
+    return query;
+  };
+
+  let companies = await fetchAllPaged<any>(makeCompanyQuery);
+
+  // Combined location filters - match company location
+  if (filters?.combinedCity && filters.combinedCity.length > 0) {
+    companies = companies.filter((c: any) => 
+      filters.combinedCity.includes(c.company_hq_city || '')
+    );
+  }
+  if (filters?.combinedState && filters.combinedState.length > 0) {
+    companies = companies.filter((c: any) => 
+      filters.combinedState.includes(c.company_hq_state || '')
+    );
+  }
+
+  // Date of acquisition filter - client-side because it's stored as text
+  if (filters?.dateOfAcquisitionStart) {
+    const startDate = parseFlexibleDate(filters.dateOfAcquisitionStart);
+    if (startDate) {
+      companies = companies.filter((c: any) => {
+        if (!c.date_of_acquisition) return false;
+        const acqDate = parseFlexibleDate(c.date_of_acquisition);
+        return acqDate && acqDate >= startDate;
+      });
+    }
+  }
+  if (filters?.dateOfAcquisitionEnd) {
+    const endDate = parseFlexibleDate(filters.dateOfAcquisitionEnd);
+    if (endDate) {
+      companies = companies.filter((c: any) => {
+        if (!c.date_of_acquisition) return false;
+        const acqDate = parseFlexibleDate(c.date_of_acquisition);
+        return acqDate && acqDate <= endDate;
+      });
+    }
+  }
+
+  return companies;
+}
+
+// Fetch GPs - applies ONLY GP-specific + common filters (NO company filters)
+async function fetchGpsForStats(filters?: HorizonCombinedFilters): Promise<any[]> {
+  const makeGpQuery = (from: number, to: number) => {
+    let query = supabase
+      .from('lg_horizons_gps')
+      .select('id, priority, aum_numeric, fund_hq_city, fund_hq_state')
+      .range(from, to)
+      .order('id', { ascending: true });
+
+    // Common filters
+    if (filters?.priority && filters.priority.length > 0) {
+      const vals = filters.priority.map(p => parseInt(p, 10)).filter(p => !isNaN(p));
+      if (vals.length > 0) query = query.in('priority', vals);
+    }
+    if (filters?.lgRelationship && filters.lgRelationship.length > 0) {
+      const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
+      const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
+      if (hasNoKnownRelationship && regularValues.length > 0) {
+        query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+      } else if (hasNoKnownRelationship) {
+        query = query.or('lg_relationship.is.null,lg_relationship.eq.');
+      } else if (regularValues.length > 0) {
+        query = query.in('lg_relationship', regularValues);
+      }
+    }
+
+    // GP-specific filters ONLY (NO company filters here)
+    if (filters?.industrySector && filters.industrySector.length > 0) {
+      const conditions = filters.industrySector.map(sector => `industry_sector_focus.ilike.%${sector}%`).join(',');
+      query = query.or(conditions);
+    }
+    if (filters?.gpState && filters.gpState.length > 0) {
+      query = query.in('fund_hq_state', filters.gpState);
+    }
+    if (filters?.gpCity && filters.gpCity.length > 0) {
+      query = query.in('fund_hq_city', filters.gpCity);
+    }
+    if (filters?.aumMin != null) {
+      query = query.gte('aum_numeric', filters.aumMin);
+    }
+    if (filters?.aumMax != null) {
+      query = query.lte('aum_numeric', filters.aumMax);
+    }
+
+    return query;
+  };
+
+  let gps = await fetchAllPaged<any>(makeGpQuery);
+
+  // Combined location filters - match GP location
+  if (filters?.combinedCity && filters.combinedCity.length > 0) {
+    gps = gps.filter((g: any) => filters.combinedCity.includes(g.fund_hq_city || ''));
+  }
+  if (filters?.combinedState && filters.combinedState.length > 0) {
+    gps = gps.filter((g: any) => filters.combinedState.includes(g.fund_hq_state || ''));
+  }
+
+  return gps;
 }
