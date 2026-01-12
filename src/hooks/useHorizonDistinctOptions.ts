@@ -8,16 +8,22 @@ interface Option {
 
 // Helper to get unique non-null values as Option[]
 const uniqCasefoldAsOptions = (arr: (string | null | undefined)[]): Option[] => {
-  const seen = new Set<string>();
-  return arr
-    .filter((v): v is string => v != null && v.trim() !== '')
-    .filter(v => {
-      const lower = v.toLowerCase();
-      if (seen.has(lower)) return false;
-      seen.add(lower);
-      return true;
-    })
-    .sort((a, b) => a.localeCompare(b))
+  const seen = new Map<string, string>(); // lowercase -> original (first occurrence)
+  
+  arr.forEach(v => {
+    if (v == null) return;
+    const trimmed = v.trim();
+    if (trimmed === '') return;
+    const lower = trimmed.toLowerCase();
+    // Keep first occurrence of each unique value
+    if (!seen.has(lower)) {
+      seen.set(lower, trimmed);
+    }
+  });
+  
+  // Get unique values, sort, and convert to options
+  return Array.from(seen.values())
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
     .map(v => ({ value: v, label: v }));
 };
 
