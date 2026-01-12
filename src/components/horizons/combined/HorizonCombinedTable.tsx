@@ -69,6 +69,7 @@ interface CombinedRow {
   // GP-specific (null for companies)
   active_funds: number | null;
   active_holdings: number | null;
+  dynamic_holdings_count: number | null; // Dynamically calculated based on filtered companies
   total_funds: number | null;
   industry_sector_focus: string | null;
   gp_contact: string | null;
@@ -454,7 +455,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return parts.length > 0 ? parts.join(', ') : null;
         },
       },
-      // Active Holdings (GP only)
+      // Active Holdings (GP only - dynamic count based on filtered companies)
       {
         key: 'active_holdings',
         label: 'Active Holdings',
@@ -463,7 +464,8 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         enableHiding: true,
         render: (value: any, row: CombinedRow) => {
           if (row.record_type === 'company') return <span className="text-muted-foreground">—</span>;
-          return value ?? null;
+          // Show dynamic count based on current filters
+          return row.dynamic_holdings_count ?? 0;
         },
       },
       // Active Funds (GP only)
@@ -603,8 +605,25 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
 
       if (requestIdRef.current !== requestId) return;
 
+      // Build a map of GP ID -> count of filtered companies
+      const gpCompanyCounts = new Map<string, number>();
+      companyRows.forEach(company => {
+        if (company.parent_gp_id) {
+          gpCompanyCounts.set(
+            company.parent_gp_id,
+            (gpCompanyCounts.get(company.parent_gp_id) || 0) + 1
+          );
+        }
+      });
+
+      // Inject dynamic holdings count into GP rows
+      const gpRowsWithDynamicCount = gpRows.map(gp => ({
+        ...gp,
+        dynamic_holdings_count: gpCompanyCounts.get(gp.id) || 0
+      }));
+
       // Combine both into unified format (UNION)
-      const combined = [...companyRows, ...gpRows];
+      const combined = [...companyRows, ...gpRowsWithDynamicCount];
       
       // Apply sorting
       const sortedData = applyClientSort(combined, sortLevels);
@@ -781,6 +800,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       description: c.description,
       active_funds: null,
       active_holdings: null,
+      dynamic_holdings_count: null,
       total_funds: null,
       industry_sector_focus: null,
       gp_contact: c.gp_data?.gp_contact || c.gp_contact,
@@ -893,6 +913,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
       description: g.notes || null, // GPs use 'notes' field instead of 'description'
       active_funds: g.active_funds,
       active_holdings: g.active_holdings,
+      dynamic_holdings_count: 0, // Will be updated after combining with filtered companies
       total_funds: g.total_funds,
       industry_sector_focus: g.industry_sector_focus,
       gp_contact: g.gp_contact,
