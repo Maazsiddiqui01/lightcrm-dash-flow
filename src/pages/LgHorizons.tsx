@@ -194,12 +194,31 @@ export function LgHorizons() {
 
     setIsAssigning(true);
     try {
-      const { error } = await supabase
-        .from(tableName)
-        .update({ created_by: userId })
-        .in('id', selectedRows);
+      if (recordType === "both") {
+        // In combined mode, query both tables since IDs could be from either
+        const [companyResult, gpResult] = await Promise.all([
+          supabase
+            .from('lg_horizons_companies')
+            .update({ created_by: userId })
+            .in('id', selectedRows),
+          supabase
+            .from('lg_horizons_gps')
+            .update({ created_by: userId })
+            .in('id', selectedRows)
+        ]);
+        
+        // Only throw if both failed
+        if (companyResult.error && gpResult.error) {
+          throw companyResult.error;
+        }
+      } else {
+        const { error } = await supabase
+          .from(tableName)
+          .update({ created_by: userId })
+          .in('id', selectedRows);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
       toast({
         title: "Success",
@@ -208,6 +227,7 @@ export function LgHorizons() {
       setSelectedRows([]);
       queryClient.invalidateQueries({ queryKey: ['horizon-companies'] });
       queryClient.invalidateQueries({ queryKey: ['horizon-gps'] });
+      queryClient.invalidateQueries({ queryKey: ['horizon-combined'] });
     } catch (error) {
       console.error('Error in bulk assignment:', error);
       toast({
@@ -225,12 +245,31 @@ export function LgHorizons() {
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .in('id', selectedRows);
+      if (recordType === "both") {
+        // In combined mode, query both tables since IDs could be from either
+        const [companyResult, gpResult] = await Promise.all([
+          supabase
+            .from('lg_horizons_companies')
+            .delete()
+            .in('id', selectedRows),
+          supabase
+            .from('lg_horizons_gps')
+            .delete()
+            .in('id', selectedRows)
+        ]);
+        
+        // Only throw if both failed
+        if (companyResult.error && gpResult.error) {
+          throw companyResult.error;
+        }
+      } else {
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .in('id', selectedRows);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
       toast({
         title: "Success",
@@ -240,6 +279,7 @@ export function LgHorizons() {
       setSelectedRows([]);
       queryClient.invalidateQueries({ queryKey: ['horizon-companies'] });
       queryClient.invalidateQueries({ queryKey: ['horizon-gps'] });
+      queryClient.invalidateQueries({ queryKey: ['horizon-combined'] });
     } catch (error) {
       console.error('Error in bulk delete:', error);
       toast({
