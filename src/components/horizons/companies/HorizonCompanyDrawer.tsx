@@ -13,7 +13,18 @@ import { Save, Trash2, ExternalLink } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { HorizonNotesSection } from "../shared/HorizonNotesSection";
 import { useHorizonNotes } from "@/hooks/useHorizonNotes";
+import { parseFlexibleDate } from "@/utils/dateUtils";
+import { format } from "date-fns";
 
+/**
+ * Converts various date formats to YYYY-MM-DD for HTML date input
+ */
+const toDateInputValue = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return '';
+  const parsed = parseFlexibleDate(dateStr);
+  if (!parsed) return '';
+  return format(parsed, 'yyyy-MM-dd');
+};
 interface HorizonCompany {
   id: string;
   priority: number | null;
@@ -255,7 +266,7 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
                     <Label>Date of Acquisition</Label>
                     <Input
                       type="date"
-                      value={editedCompany.date_of_acquisition || ''}
+                      value={toDateInputValue(editedCompany.date_of_acquisition)}
                       onChange={(e) => handleFieldChange('date_of_acquisition', e.target.value)}
                     />
                   </div>
@@ -307,7 +318,7 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
                       <Label>Original Date</Label>
                       <Input
                         type="date"
-                        value={editedCompany.original_date || ''}
+                        value={toDateInputValue(editedCompany.original_date)}
                         onChange={(e) => handleFieldChange('original_date', e.target.value)}
                       />
                     </div>
@@ -318,7 +329,7 @@ export function HorizonCompanyDrawer({ company, open, onClose, onCompanyUpdated 
                       <Label>Latest Process Date</Label>
                       <Input
                         type="date"
-                        value={editedCompany.latest_process_date || ''}
+                        value={toDateInputValue(editedCompany.latest_process_date)}
                         onChange={(e) => handleFieldChange('latest_process_date', e.target.value)}
                       />
                     </div>
