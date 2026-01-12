@@ -166,6 +166,13 @@ async function fetchCompaniesForStats(filters?: HorizonCombinedFilters): Promise
     if (filters?.revenueMax != null) {
       query = query.lte('revenue_numeric', filters.revenueMax);
     }
+    // Apply GP AUM filter to companies (via their linked GP's AUM)
+    if (filters?.aumMin != null) {
+      query = query.gte('gp_aum_numeric', filters.aumMin);
+    }
+    if (filters?.aumMax != null) {
+      query = query.lte('gp_aum_numeric', filters.aumMax);
+    }
 
     return query;
   };
