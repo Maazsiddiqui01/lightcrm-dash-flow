@@ -19,6 +19,7 @@ export const horizonCompaniesEditable: EditableTableConfig = {
   process_status: { 
     type: 'select',
     options: [
+      'No Known Process',
       'Expected / Monitoring',
       'Failed Process',
       'Active Process',
