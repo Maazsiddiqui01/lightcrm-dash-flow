@@ -279,10 +279,10 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return <Badge className={variants[value] || ""}>{value}</Badge>;
         },
       },
-      // HQ Name (Company name only - GPs show in General Partner column)
+      // Company Name (GPs show in General Partner column)
       {
         key: 'name',
-        label: 'HQ Name',
+        label: 'Company Name',
         width: 200,
         visible: columnVisibility.columnVisibility['name'] !== false,
         enableHiding: true,
@@ -306,17 +306,20 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return <span>{value}</span>;
         },
       },
-      // Company Sector
+      // Sector (consolidated for both Company and GP)
       {
         key: 'sector',
-        label: 'Company Sector',
-        width: 140,
+        label: 'Sector',
+        width: 160,
         visible: columnVisibility.columnVisibility['sector'] !== false,
         enableHiding: true,
         resizable: true,
         render: (value: any, row: CombinedRow) => {
-          // For GP rows, show GP Industry/Sector Focus instead
-          if (row.record_type === 'gp') return <span className="text-muted-foreground">—</span>;
+          // For GP rows, show their industry sector focus
+          if (row.record_type === 'gp') {
+            return row.industry_sector_focus || <span className="text-muted-foreground">—</span>;
+          }
+          // For company rows, show sector
           return value || null;
         },
       },
@@ -455,7 +458,7 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
           return parts.length > 0 ? parts.join(', ') : null;
         },
       },
-      // Active Holdings (GP only - dynamic count based on filtered companies)
+      // Active Holdings (dynamic count based on filtered companies - shown for both GP and Company rows with a GP)
       {
         key: 'active_holdings',
         label: 'Active Holdings',
@@ -463,8 +466,11 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         visible: columnVisibility.columnVisibility['active_holdings'] !== false,
         enableHiding: true,
         render: (value: any, row: CombinedRow) => {
-          if (row.record_type === 'company') return <span className="text-muted-foreground">—</span>;
-          // Show dynamic count based on current filters
+          // For companies without a GP, show "—"
+          if (row.record_type === 'company' && !row.parent_gp_id) {
+            return <span className="text-muted-foreground">—</span>;
+          }
+          // Show dynamic count for both companies (with GP) and GPs
           return row.dynamic_holdings_count ?? 0;
         },
       },
@@ -622,8 +628,16 @@ export function HorizonCombinedTable({ filters, selectedRows = [], onSelectionCh
         dynamic_holdings_count: gpCompanyCounts.get(gp.id) || 0
       }));
 
+      // Inject dynamic holdings count into company rows (based on their parent GP)
+      const companyRowsWithDynamicCount = companyRows.map(company => ({
+        ...company,
+        dynamic_holdings_count: company.parent_gp_id 
+          ? gpCompanyCounts.get(company.parent_gp_id) || 0 
+          : null
+      }));
+
       // Combine both into unified format (UNION)
-      const combined = [...companyRows, ...gpRowsWithDynamicCount];
+      const combined = [...companyRowsWithDynamicCount, ...gpRowsWithDynamicCount];
       
       // Apply sorting
       const sortedData = applyClientSort(combined, sortLevels);
