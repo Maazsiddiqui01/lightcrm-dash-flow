@@ -81,6 +81,7 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
   const [gps, setGps] = useState<HorizonGp[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedGp, setSelectedGp] = useState<HorizonGp | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -102,6 +103,14 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
     const savedSort = loadSortState('lg_horizons_gps');
     setSortLevels(savedSort);
   }, []);
+
+  // Debounce search term to avoid excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
   
   // Edit mode for horizon GPs
   const editMode = useEditMode('lg_horizons_gps', gps, setGps);
@@ -288,7 +297,7 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
   
   useEffect(() => {
     fetchGps();
-  }, [sortLevels, filtersKey, searchTerm]);
+  }, [sortLevels, filtersKey, debouncedSearchTerm]);
 
   const fetchGps = async () => {
     const requestId = Date.now().toString();
@@ -330,9 +339,9 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
         query = query.or(conditions);
       }
 
-      // Search
-      if (searchTerm.trim()) {
-        query = query.or(`gp_name.ilike.%${searchTerm}%,industry_sector_focus.ilike.%${searchTerm}%`);
+      // Search (using debounced value)
+      if (debouncedSearchTerm.trim()) {
+        query = query.or(`gp_name.ilike.%${debouncedSearchTerm}%,industry_sector_focus.ilike.%${debouncedSearchTerm}%`);
       }
 
       // Apply multi-sort
