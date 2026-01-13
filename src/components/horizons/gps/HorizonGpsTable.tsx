@@ -320,16 +320,19 @@ export function HorizonGpsTable({ filters, selectedRows = [], onSelectionChange 
       if (filters.aumMax != null) query = query.lte('aum_numeric', filters.aumMax);
       
       // LG Relationship filter with special "No Known Relationship" handling
+      // Using ilike for partial matching since lg_relationship can contain comma-separated names
       if (filters.lgRelationship.length > 0) {
         const hasNoKnownRelationship = filters.lgRelationship.includes('NO_KNOWN_RELATIONSHIP');
         const regularValues = filters.lgRelationship.filter(v => v !== 'NO_KNOWN_RELATIONSHIP');
         
         if (hasNoKnownRelationship && regularValues.length > 0) {
-          query = query.or(`lg_relationship.is.null,lg_relationship.eq.,lg_relationship.in.(${regularValues.join(',')})`);
+          const likeConditions = regularValues.map(name => `lg_relationship.ilike.%${name}%`).join(',');
+          query = query.or(`lg_relationship.is.null,lg_relationship.eq.,${likeConditions}`);
         } else if (hasNoKnownRelationship) {
           query = query.or('lg_relationship.is.null,lg_relationship.eq.');
-        } else {
-          query = query.in('lg_relationship', regularValues);
+        } else if (regularValues.length > 0) {
+          const likeConditions = regularValues.map(name => `lg_relationship.ilike.%${name}%`).join(',');
+          query = query.or(likeConditions);
         }
       }
       
