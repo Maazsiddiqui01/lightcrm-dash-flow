@@ -744,6 +744,22 @@ export async function buildEnhancedDraftPayload(
     self.indexOf(email) === index
   );
 
+  // Phase 9: E2E Payload Testing - Console logging for debugging
+  console.log('📧 Enhanced Email Payload Generated:', {
+    contactId: contact.contact_id,
+    contactName: contact.full_name,
+    subject: interpolatedSubject,
+    greeting: interpolatedGreeting,
+    moduleCount: interpolatedModules.length,
+    modules: interpolatedModules.map(m => ({
+      label: m.label,
+      content: m.content.substring(0, 100) + '...',
+    })),
+    cc: finalCcList,
+    qualityPass: generation.qualityCheck.pass,
+    trackingPhraseIds: phraseIds,
+  });
+
   return {
     contact: {
       id: contact.contact_id,
@@ -779,98 +795,6 @@ export async function buildEnhancedDraftPayload(
         status: opp.status,
         updatedAt: opp.updatedAt,
       })),
-      // Legacy field: first 3 for backward compatibility
-      top_opportunities_legacy: metadata.topOpportunities.slice(0, 3).map(opp => ({
-        id: opp.id,
-        dealName: opp.dealName,
-        ebitda: opp.ebitda,
-        tier: opp.tier,
-      })),
-    },
-    articles: {
-      selected: selectedArticle || null,
-      available: contact.articles.map(article => ({
-        focusArea: article.focus_area || null,
-        link: article.article_link,
-        lastDate: article.last_date_to_use || null,
-      })),
-    },
-    routing: {
-      masterKey: masterTemplate.master_key,
-      tone: effectiveTone,
-      subjectStyle: masterTemplate.subject_style || 'mixed',
-      daysSinceContact,
-      deltaType: deltaType || 'Email',
-    },
-    content: {
-      subject,
-      greeting,
-      phrases: resolvedPhrases,
-      inquiry: inquiryData,
-      signature: generation.signature,
-      assistantClause: generation.assistantClause,
-    },
-    contentInterpolated: {
-      subject: interpolatedSubject,
-      greeting: interpolatedGreeting,
-      modules: interpolatedModules,
-      signature: interpolatedSignature,
-      ccList: finalCcList,
-    },
-    modules: generation.modules,
-    flow,
-    moduleSequence,
-    modulesV2,
-    cc: {
-      leads: leadEmails,
-      assistants: assistantEmails,
-      final: finalCcList,
-    },
-    qualityCheck: generation.qualityCheck,
-    tracking: {
-      phraseIds,
-      inquiryId,
-    },
-  };
-
-  // Phase 9: E2E Payload Testing - Console logging for debugging
-  console.log('📧 Enhanced Email Payload Generated:', {
-    contactId: contact.contact_id,
-    contactName: contact.full_name,
-    subject: interpolatedSubject,
-    greeting: interpolatedGreeting,
-    moduleCount: interpolatedModules.length,
-    modules: interpolatedModules.map(m => ({
-      label: m.label,
-      content: m.content.substring(0, 100) + '...',
-    })),
-    cc: finalCcList,
-    qualityPass: generation.qualityCheck.pass,
-    trackingPhraseIds: phraseIds,
-  });
-
-  return {
-    contact: {
-      id: contact.contact_id,
-      email: contact.email,
-      fullName: contact.full_name,
-      firstName: contact.first_name,
-      organization: contact.organization || '',
-      groupContact: (contact as any).group_contact || null,
-      groupEmailRole: (contact as any).group_email_role || null,
-    },
-    groupMembers,
-    teamCuration,
-    focusAreas: {
-      list: contact.focus_areas,
-      descriptions: metadata.focusAreaDescriptions,
-      platforms: [], // TODO: Extract from focus area descriptions
-      addons: [], // TODO: Extract from focus area descriptions
-      hasInsuranceServices: hasInsuranceServicesFocusArea(contact.focus_areas),
-    },
-    opportunities: {
-      hasOpps: contact.focus_areas.length > 0 && metadata.topOpportunities.length > 0,
-      active_tier1: metadata.topOpportunities,
       // Legacy field: first 3 for backward compatibility
       top_opportunities_legacy: metadata.topOpportunities.slice(0, 3).map(opp => ({
         id: opp.id,
