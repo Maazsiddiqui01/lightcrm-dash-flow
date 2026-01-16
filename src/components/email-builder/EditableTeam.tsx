@@ -15,10 +15,11 @@ interface EditableTeamProps {
   members: TeamMember[];
   onMembersChange: (members: TeamMember[]) => void;
   onQuickAddToCC?: (member: TeamMember) => void;
+  onRemoveFromCC?: (email: string) => void;
   contactEmail?: string;
 }
 
-export function EditableTeam({ members, onMembersChange, onQuickAddToCC, contactEmail }: EditableTeamProps) {
+export function EditableTeam({ members, onMembersChange, onQuickAddToCC, onRemoveFromCC, contactEmail }: EditableTeamProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,14 +34,25 @@ export function EditableTeam({ members, onMembersChange, onQuickAddToCC, contact
     const newMembers = members.filter(m => m.id !== member.id);
     onMembersChange(newMembers);
     
+    // Auto-remove from CC
+    if (onRemoveFromCC && member.email) {
+      onRemoveFromCC(member.email);
+    }
+    
     toast({
-      title: "Removed from team",
-      description: `${member.name} removed from team`,
+      title: "Removed from team & CC",
+      description: `${member.name} removed`,
       action: (
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onMembersChange([...newMembers, member])}
+          onClick={() => {
+            onMembersChange([...newMembers, member]);
+            // Re-add to CC on undo
+            if (onQuickAddToCC) {
+              onQuickAddToCC(member);
+            }
+          }}
         >
           Undo
         </Button>
@@ -53,18 +65,14 @@ export function EditableTeam({ members, onMembersChange, onQuickAddToCC, contact
     setOpen(false);
     setSearchQuery("");
     
+    // Auto-add to CC
+    if (onQuickAddToCC) {
+      onQuickAddToCC(member);
+    }
+    
     toast({
-      title: "Added to team",
-      description: `${member.name} added to team`,
-      action: onQuickAddToCC ? (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onQuickAddToCC(member)}
-        >
-          Add to CC
-        </Button>
-      ) : undefined,
+      title: "Added to team & CC",
+      description: `${member.name} added to team and CC list`,
     });
   };
 
