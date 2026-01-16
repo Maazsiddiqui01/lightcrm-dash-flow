@@ -1,69 +1,76 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { AllContactView } from '@/hooks/useAllContactsView';
 
-export interface UrgencyContact extends AllContactView {
+export interface PipelineContact {
+  to_contact_id: string;
+  entity_key: string;
+  full_name: string;
+  first_name: string;
+  organization: string | null;
+  to_emails: string;
+  cc_emails: string | null;
+  is_group: boolean;
+  is_overdue: boolean;
+  overdue_days: number;
+  days_until_due: number;
   urgencyDays: number;
 }
 
 export interface UrgencyCategory {
   label: string;
-  contacts: UrgencyContact[];
+  contacts: PipelineContact[];
   color: 'destructive' | 'warning' | 'secondary';
 }
 
 /**
- * Hook to fetch contacts categorized by urgency:
- * - Overdue (days_over_under_max_lag < 0)
- * - Due in 7 days (0 <= days <= 7)
- * - Due in 14 days (7 < days <= 14)
+ * Hook to fetch contacts from Email_Pipeline_Contacts_V categorized by urgency:
+ * - Overdue (is_overdue = true)
+ * - Due in 7 days (days_until_due <= 7)
+ * - Due in 14 days (days_until_due <= 14)
  */
 export function useOverdueContacts() {
   return useQuery({
-    queryKey: ['overdue-contacts-urgency'],
+    queryKey: ['email-pipeline-urgency'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_all_contacts_view');
+      const { data, error } = await supabase
+        .from('email_pipeline_contacts_v')
+        .select('to_contact_id, entity_key, full_name, first_name, organization, to_emails, cc_emails, is_group, is_overdue, overdue_days, days_until_due')
+        .order('overdue_days', { ascending: false });
       
       if (error) throw error;
       
-      const contacts = (data || []) as AllContactView[];
+      const contacts = (data || []) as Array<{
+        to_contact_id: string;
+        entity_key: string;
+        full_name: string;
+        first_name: string;
+        organization: string | null;
+        to_emails: string;
+        cc_emails: string | null;
+        is_group: boolean;
+        is_overdue: boolean;
+        overdue_days: number;
+        days_until_due: number;
+      }>;
       
-      // Categorize by urgency
-      const overdue: UrgencyContact[] = [];
-      const dueIn7Days: UrgencyContact[] = [];
-      const dueIn14Days: UrgencyContact[] = [];
+      const overdue: PipelineContact[] = [];
+      const dueIn7Days: PipelineContact[] = [];
+      const dueIn14Days: PipelineContact[] = [];
       
       contacts.forEach(contact => {
-        const daysRemaining = contact.days_over_under_max_lag;
-        
-        // Skip contacts without urgency data
-        if (daysRemaining === null || daysRemaining === undefined) return;
-        
-        if (daysRemaining < 0) {
-          // Overdue - negative days means past due
-          overdue.push({ 
-            ...contact, 
-            urgencyDays: Math.abs(daysRemaining) 
-          });
-        } else if (daysRemaining <= 7) {
-          // Due within next 7 days
-          dueIn7Days.push({ 
-            ...contact, 
-            urgencyDays: daysRemaining 
-          });
-        } else if (daysRemaining <= 14) {
-          // Due within next 14 days
-          dueIn14Days.push({ 
-            ...contact, 
-            urgencyDays: daysRemaining 
-          });
+        if (contact.is_overdue) {
+          overdue.push({ ...contact, urgencyDays: contact.overdue_days });
+        } else if (contact.days_until_due <= 7) {
+          dueIn7Days.push({ ...contact, urgencyDays: contact.days_until_due });
+        } else if (contact.days_until_due <= 14) {
+          dueIn14Days.push({ ...contact, urgencyDays: contact.days_until_due });
         }
       });
       
-      // Sort each category by urgency (most urgent first)
-      overdue.sort((a, b) => b.urgencyDays - a.urgencyDays); // Most overdue first
-      dueIn7Days.sort((a, b) => a.urgencyDays - b.urgencyDays); // Soonest due first
-      dueIn14Days.sort((a, b) => a.urgencyDays - b.urgencyDays); // Soonest due first
+      // Sort: overdue by most days overdue first, due soon by soonest first
+      overdue.sort((a, b) => b.urgencyDays - a.urgencyDays);
+      dueIn7Days.sort((a, b) => a.urgencyDays - b.urgencyDays);
+      dueIn14Days.sort((a, b) => a.urgencyDays - b.urgencyDays);
       
       const categories: UrgencyCategory[] = [
         { label: 'Overdue', contacts: overdue, color: 'destructive' },

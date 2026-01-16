@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useOverdueContacts, type UrgencyContact, type UrgencyCategory } from '@/hooks/useOverdueContacts';
+import { useOverdueContacts, type PipelineContact, type UrgencyCategory } from '@/hooks/useOverdueContacts';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -39,12 +39,14 @@ export function QuickSelectPanel({ onContactSelect }: QuickSelectPanelProps) {
     });
   };
   
-  const handleContactClick = (contact: UrgencyContact) => {
-    // Create minimal contact for selection - full data loaded after selection
+  const handleContactClick = (contact: PipelineContact) => {
+    // Extract first email from to_emails (may be semicolon-separated)
+    const primaryEmail = contact.to_emails?.split(';')[0]?.trim() || '';
+    
     const quickContact: QuickSelectContact = {
-      contact_id: contact.id,
-      full_name: contact.name,
-      email: '', // Will be loaded from v_contact_email_composer
+      contact_id: contact.to_contact_id,
+      full_name: contact.full_name,
+      email: primaryEmail,
       organization: contact.organization || undefined,
     };
     onContactSelect(quickContact);
@@ -143,7 +145,7 @@ export function QuickSelectPanel({ onContactSelect }: QuickSelectPanelProps) {
               <div className="mt-2 space-y-1 pl-2">
                 {category.contacts.map(contact => (
                   <button
-                    key={contact.id}
+                    key={contact.to_contact_id}
                     onClick={() => handleContactClick(contact)}
                     className={cn(
                       "w-full text-left p-2.5 rounded-md transition-all",
@@ -154,13 +156,13 @@ export function QuickSelectPanel({ onContactSelect }: QuickSelectPanelProps) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          {contact.contact_type === 'group' ? (
+                          {contact.is_group ? (
                             <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           ) : (
                             <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           )}
                           <span className="font-medium text-sm truncate">
-                            {contact.name}
+                            {contact.full_name}
                           </span>
                         </div>
                         {contact.organization && (
