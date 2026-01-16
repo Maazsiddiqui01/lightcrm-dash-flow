@@ -48,19 +48,31 @@ export function useSearchContacts(term: string) {
   });
 }
 
-export function useComposerRow(email: string | null) {
+/**
+ * Fetch contact data by email or contact_id
+ * @param identifier - email address or contact_id
+ * @param isContactId - if true, lookup by contact_id instead of email
+ */
+export function useComposerRow(identifier: string | null, isContactId = false) {
   const { toast } = useToast();
 
   return useQuery({
-    queryKey: ['composer-row', email],
+    queryKey: ['composer-row', identifier, isContactId],
     queryFn: async (): Promise<ContactEmailComposer | null> => {
-      if (!email) return null;
+      if (!identifier) return null;
 
-      const { data, error } = await supabase
+      const query = supabase
         .from('v_contact_email_composer')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
+        .select('*');
+      
+      // Lookup by contact_id or email based on flag
+      if (isContactId) {
+        query.eq('contact_id', identifier);
+      } else {
+        query.eq('email', identifier);
+      }
+      
+      const { data, error } = await query.maybeSingle();
 
       if (error) {
         logger.error('Get composer row error:', error);
@@ -87,7 +99,7 @@ export function useComposerRow(email: string | null) {
         latest_contact_meeting: (data as any).latest_contact_meeting || null,
       };
     },
-    enabled: !!email,
+    enabled: !!identifier,
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 }

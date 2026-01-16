@@ -190,7 +190,11 @@ function EmailBuilderContent() {
   const [autoTeam, setAutoTeam] = useState<TeamMember[]>([]);
   
   // Get contact data from new composer view
-  const { data: contactData } = useComposerRow(selectedContact?.email || null);
+  // Use contact_id for reliable lookup (especially for group contacts where email may be complex)
+  const { data: contactData } = useComposerRow(
+    selectedContact?.contact_id || selectedContact?.email || null,
+    !!selectedContact?.contact_id // Use contact_id lookup if available
+  );
   
   // Get group contact info from contacts_raw
   const { data: groupInfo } = useContactGroupInfo(selectedContact?.contact_id || null);
@@ -1743,6 +1747,7 @@ ${draftResult.signature}`;
               emailCc={contactData?.email_cc || null}
               meetingCc={contactData?.meeting_cc || null}
               deltaType={contactData?.delta_type || null}
+              excludedEmails={excludedEmails}
             />
 
             {/* Save Controls with Dual Scope */}

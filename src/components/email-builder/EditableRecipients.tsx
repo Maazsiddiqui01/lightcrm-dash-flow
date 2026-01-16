@@ -19,6 +19,7 @@ interface EditableRecipientsProps {
   emailCc?: string | null;
   meetingCc?: string | null;
   deltaType?: 'Email' | 'Meeting' | null;
+  excludedEmails?: Set<string>; // Emails with 'exclude' role that should be warned about
 }
 
 export function EditableRecipients({
@@ -31,6 +32,7 @@ export function EditableRecipients({
   emailCc,
   meetingCc,
   deltaType,
+  excludedEmails,
 }: EditableRecipientsProps) {
   const [ccInput, setCcInput] = useState("");
   const [invalidEmails, setInvalidEmails] = useState<Set<string>>(new Set());
@@ -79,6 +81,7 @@ export function EditableRecipients({
 
     const validEmails: string[] = [];
     const invalid = new Set(invalidEmails);
+    const excludedWarnings: string[] = [];
 
     emails.forEach(email => {
       if (!validateEmail(email)) {
@@ -90,12 +93,28 @@ export function EditableRecipients({
             return next;
           });
         }, 3000);
+      } else if (excludedEmails?.has(email)) {
+        // Warn about excluded emails but still add them
+        excludedWarnings.push(email);
+        if (!cc.includes(email) && email !== normalizeEmail(to)) {
+          validEmails.push(email);
+        }
       } else if (!cc.includes(email) && email !== normalizeEmail(to)) {
         validEmails.push(email);
       }
     });
 
     setInvalidEmails(invalid);
+
+    // Show warning toast for excluded emails
+    if (excludedWarnings.length > 0) {
+      toast({
+        title: "Excluded Contact Added",
+        description: `${excludedWarnings.join(', ')} is marked as 'Exclude' in group settings. Consider removing.`,
+        variant: "destructive",
+        duration: 6000,
+      });
+    }
 
     if (validEmails.length > 0) {
       onCcChange([...cc, ...validEmails]);
