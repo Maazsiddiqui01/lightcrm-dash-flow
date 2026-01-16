@@ -28,6 +28,7 @@ interface ContactInfoPanelProps {
   team: TeamMember[];
   onTeamChange: (members: TeamMember[]) => void;
   onQuickAddToCC?: (member: TeamMember) => void;
+  onRemoveFromCC?: (email: string) => void;
   deltaType: 'Email' | 'Meeting';
   onDeltaTypeChange: (type: 'Email' | 'Meeting') => void;
   contactEmail?: string;
@@ -38,6 +39,7 @@ export function ContactInfoPanel({
   team, 
   onTeamChange, 
   onQuickAddToCC,
+  onRemoveFromCC,
   deltaType,
   onDeltaTypeChange,
   contactEmail 
@@ -227,6 +229,7 @@ export function ContactInfoPanel({
             members={team}
             onMembersChange={onTeamChange}
             onQuickAddToCC={onQuickAddToCC}
+            onRemoveFromCC={onRemoveFromCC}
             contactEmail={contact.email || ''}
           />
         </div>

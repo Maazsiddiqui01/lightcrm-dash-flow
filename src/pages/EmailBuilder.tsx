@@ -86,6 +86,7 @@ import {
   useSaveContactModuleDefaults,
   useSaveTemplateModuleDefaults,
 } from "@/hooks/useDefaultsPersistence";
+import { useExcludedEmails } from "@/hooks/useExcludedEmails";
 
 function EmailBuilderContent() {
   // Enable real-time synchronization with Global Libraries
@@ -193,6 +194,9 @@ function EmailBuilderContent() {
   
   // Get group contact info from contacts_raw
   const { data: groupInfo } = useContactGroupInfo(selectedContact?.contact_id || null);
+  
+  // Get excluded emails for this contact's groups
+  const { data: excludedEmails = new Set<string>() } = useExcludedEmails(selectedContact?.contact_id || null);
   
   // Organization context for alerts
   const emailDomain = selectedContact?.email 
@@ -770,26 +774,37 @@ function EmailBuilderContent() {
         email: selectedContact.email,
         focus_areas: contactData.focus_areas,
         has_saved_settings: !!contactSettings?.curated_recipients,
-        saved_team_length: contactSettings?.curated_recipients?.team?.length || 0
+        saved_team_length: contactSettings?.curated_recipients?.team?.length || 0,
+        excluded_emails_count: excludedEmails.size
       });
+      
+      // Helper to filter out excluded emails
+      const filterExcluded = (emails: string[]): string[] => {
+        return emails.filter(e => !excludedEmails.has(e.toLowerCase().trim()));
+      };
       
       // If we have saved curated recipients with a non-empty team, use those
       if (contactSettings?.curated_recipients && contactSettings.curated_recipients.team?.length > 0) {
         console.log('✅ Using saved curated recipients');
         const saved = contactSettings.curated_recipients;
-        setCuratedTeam(saved.team);
+        
+        // Filter team members who are excluded
+        const filteredTeam = saved.team.filter(m => !excludedEmails.has(m.email?.toLowerCase().trim() || ''));
+        setCuratedTeam(filteredTeam);
+        
         const to = saved.to || selectedContact.email || '';
         setCuratedTo(to);
         
         // If saved CC exists and is not empty, use it; otherwise compute from team
         if (saved.cc && saved.cc.length > 0) {
-          setCuratedCc(saved.cc);
+          // Filter out excluded emails from saved CC
+          setCuratedCc(filterExcluded(saved.cc));
         } else {
-          // Compute CC from team members, excluding the TO address
+          // Compute CC from team members, excluding the TO address and excluded members
           const teamCc = Array.from(
-            new Set((saved.team || []).map(m => m.email?.trim().toLowerCase()).filter(Boolean))
+            new Set((filteredTeam || []).map(m => m.email?.trim().toLowerCase()).filter(Boolean))
           ).filter(e => e !== to?.trim().toLowerCase());
-          setCuratedCc(teamCc);
+          setCuratedCc(filterExcluded(teamCc));
         }
         return;
       }
@@ -815,8 +830,8 @@ function EmailBuilderContent() {
         if (teamData) {
           console.log(`✅ Found team data for ${focusArea}:`, teamData);
           
-          // Add lead 1
-          if (teamData.lead1_name && teamData.lead1_email) {
+          // Add lead 1 (if not excluded)
+          if (teamData.lead1_name && teamData.lead1_email && !excludedEmails.has(teamData.lead1_email.toLowerCase().trim())) {
             const id = `lead1_${focusArea}`;
             if (!teamMembers.some(m => m.id === id)) {
               teamMembers.push({
@@ -831,8 +846,8 @@ function EmailBuilderContent() {
             }
           }
           
-          // Add lead 2
-          if (teamData.lead2_name && teamData.lead2_email) {
+          // Add lead 2 (if not excluded)
+          if (teamData.lead2_name && teamData.lead2_email && !excludedEmails.has(teamData.lead2_email.toLowerCase().trim())) {
             const id = `lead2_${focusArea}`;
             if (!teamMembers.some(m => m.id === id)) {
               teamMembers.push({
@@ -847,8 +862,8 @@ function EmailBuilderContent() {
             }
           }
           
-          // Add assistant
-          if (teamData.assistant_name && teamData.assistant_email) {
+          // Add assistant (if not excluded)
+          if (teamData.assistant_name && teamData.assistant_email && !excludedEmails.has(teamData.assistant_email.toLowerCase().trim())) {
             const id = `assistant_${focusArea}`;
             if (!teamMembers.some(m => m.id === id)) {
               teamMembers.push({
@@ -869,7 +884,8 @@ function EmailBuilderContent() {
       
       console.log('✅ Team initialization complete:', {
         team_members: teamMembers.length,
-        cc_emails: ccEmails.length
+        cc_emails: ccEmails.length,
+        excluded_emails: excludedEmails.size
       });
       
       setAutoTeam(teamMembers);
@@ -878,7 +894,7 @@ function EmailBuilderContent() {
     };
     
     initializeTeamAndRecipients();
-  }, [contactData, selectedContact, contactSettings?.curated_recipients]);
+  }, [contactData, selectedContact, contactSettings?.curated_recipients, excludedEmails]);
 
   // Auto-select first phrase for all single-select modules (runs once per contact)
   useAutoSelectPhrases({
@@ -1697,6 +1713,9 @@ ${draftResult.signature}`;
                   if (!curatedCc.includes(member.email)) {
                     setCuratedCc([...curatedCc, member.email]);
                   }
+                }}
+                onRemoveFromCC={(email) => {
+                  setCuratedCc(prev => prev.filter(e => e.toLowerCase() !== email.toLowerCase()));
                 }}
                 deltaType={deltaType}
                 onDeltaTypeChange={setDeltaType}
