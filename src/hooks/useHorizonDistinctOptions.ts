@@ -205,18 +205,45 @@ export const useHorizonGpIndustrySectors = () => {
   });
 };
 
-// LG Relationship - reuse from opportunities
+// LG Relationship - dynamically fetch from actual data (GP + Company tables)
 export const useHorizonLgRelationships = () => {
   return useQuery({
-    queryKey: ['lg-leads'],
+    queryKey: ['horizon-lg-relationships-dynamic'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('lg_leads_directory')
-        .select('lead_name')
-        .order('lead_name');
-      return data?.map(r => ({ value: r.lead_name, label: r.lead_name })) ?? [];
+      // Fetch from GP table
+      const { data: gpData } = await supabase
+        .from('lg_horizons_gps')
+        .select('lg_relationship')
+        .not('lg_relationship', 'is', null)
+        .neq('lg_relationship', '');
+      
+      // Fetch from Company table
+      const { data: companyData } = await supabase
+        .from('lg_horizons_companies')
+        .select('lg_relationship')
+        .not('lg_relationship', 'is', null)
+        .neq('lg_relationship', '');
+      
+      // Extract all individual names from comma-separated values
+      const allNames: string[] = [];
+      
+      [...(gpData ?? []), ...(companyData ?? [])].forEach(r => {
+        if (r.lg_relationship) {
+          // Split by comma and trim each name
+          r.lg_relationship.split(',').forEach(name => {
+            const trimmed = name.trim();
+            // Filter out weird entries like "Good Healthcare GP (Kozin)"
+            if (trimmed && !trimmed.includes('(')) {
+              allNames.push(trimmed);
+            }
+          });
+        }
+      });
+      
+      // Return unique, sorted options
+      return uniqCasefoldAsOptions(allNames);
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 };
 
