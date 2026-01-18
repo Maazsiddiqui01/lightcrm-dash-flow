@@ -291,6 +291,13 @@ export type Database = {
             foreignKeyName: "contact_email_addresses_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
+          {
+            foreignKeyName: "contact_email_addresses_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "contacts_ai"
             referencedColumns: ["contact_id"]
           },
@@ -440,6 +447,13 @@ export type Database = {
             foreignKeyName: "contact_email_builder_settings_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: true
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
+          {
+            foreignKeyName: "contact_email_builder_settings_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
             referencedRelation: "contacts_ai"
             referencedColumns: ["contact_id"]
           },
@@ -552,6 +566,13 @@ export type Database = {
           id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contact_group_memberships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
           {
             foreignKeyName: "contact_group_memberships_contact_id_fkey"
             columns: ["contact_id"]
@@ -685,6 +706,13 @@ export type Database = {
             foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
+          {
+            foreignKeyName: "contact_intentional_no_outreach_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "contacts_ai"
             referencedColumns: ["contact_id"]
           },
@@ -809,6 +837,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contact_module_defaults_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
           {
             foreignKeyName: "contact_module_defaults_contact_id_fkey"
             columns: ["contact_id"]
@@ -949,6 +984,13 @@ export type Database = {
             foreignKeyName: "contact_note_events_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
             referencedRelation: "contacts_ai"
             referencedColumns: ["contact_id"]
           },
@@ -1076,6 +1118,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contact_notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
           {
             foreignKeyName: "contact_notifications_contact_id_fkey"
             columns: ["contact_id"]
@@ -1212,6 +1261,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
           {
             foreignKeyName: "contact_phrase_preferences_contact_id_fkey"
             columns: ["contact_id"]
@@ -2926,6 +2982,13 @@ export type Database = {
             foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
             columns: ["deal_source_contact_1_id"]
             isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
             referencedRelation: "contacts_ai"
             referencedColumns: ["contact_id"]
           },
@@ -3012,6 +3075,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_contact_top_opps"
             referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
           },
           {
             foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
@@ -3266,6 +3336,13 @@ export type Database = {
           used_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "phrase_rotation_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
           {
             foreignKeyName: "phrase_rotation_log_contact_id_fkey"
             columns: ["contact_id"]
@@ -3606,6 +3683,51 @@ export type Database = {
       }
     }
     Views: {
+      automated_outreach_queue_v: {
+        Row: {
+          addons: string[] | null
+          articles_json: Json | null
+          assistant_emails: string[] | null
+          assistant_names: string[] | null
+          bcc_emails: string | null
+          cc_emails: string | null
+          days_until_due: number | null
+          delta_days: number | null
+          delta_type: string | null
+          effective_last_contact_date: string | null
+          entity_key: string | null
+          first_name: string | null
+          focus_area_blocks: Json | null
+          focus_area_descriptions: Json | null
+          focus_areas_ordered: string[] | null
+          full_name: string | null
+          group_contact: string | null
+          group_email_role: string | null
+          has_insurance_services: boolean | null
+          has_tier12_active_opps: boolean | null
+          is_group: boolean | null
+          is_overdue: boolean | null
+          lead_names: string[] | null
+          lead1_emails: string[] | null
+          lead2_emails: string[] | null
+          next_due_date: string | null
+          opportunities_json: Json | null
+          organization: string | null
+          overdue_days: number | null
+          platforms: string[] | null
+          primary_email: string | null
+          queue_position: number | null
+          scheduled_date: string | null
+          slot_number: number | null
+          tier12_active_count: number | null
+          tier12_active_list: string | null
+          to_contact_id: string | null
+          to_emails: string | null
+          urgency_label: string | null
+          urgency_tier: number | null
+        }
+        Relationships: []
+      }
       contact_duplicates_detailed: {
         Row: {
           contacts: Json | null
@@ -3663,6 +3785,13 @@ export type Database = {
           id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
           {
             foreignKeyName: "contact_note_events_contact_id_fkey"
             columns: ["contact_id"]
@@ -3782,6 +3911,13 @@ export type Database = {
           id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contact_note_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
           {
             foreignKeyName: "contact_note_events_contact_id_fkey"
             columns: ["contact_id"]
@@ -5108,6 +5244,13 @@ export type Database = {
             foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
             columns: ["deal_source_contact_1_id"]
             isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_1_id_fkey"
+            columns: ["deal_source_contact_1_id"]
+            isOneToOne: false
             referencedRelation: "contacts_ai"
             referencedColumns: ["contact_id"]
           },
@@ -5194,6 +5337,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_contact_top_opps"
             referencedColumns: ["contact_id"]
+          },
+          {
+            foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
+            columns: ["deal_source_contact_2_id"]
+            isOneToOne: false
+            referencedRelation: "automated_outreach_queue_v"
+            referencedColumns: ["to_contact_id"]
           },
           {
             foreignKeyName: "opportunities_raw_deal_source_contact_2_id_fkey"
@@ -5508,6 +5658,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_business_days: {
+        Args: { num_days: number; start_date: string }
+        Returns: string
+      }
       add_contact_note:
         | {
             Args: { p_contact_id: string; p_content: string; p_field: string }
