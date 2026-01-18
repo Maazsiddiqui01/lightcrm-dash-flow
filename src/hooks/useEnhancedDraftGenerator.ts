@@ -115,9 +115,24 @@ export function useEnhancedDraftGenerator() {
       // FIX ISSUE #3: Throw proper error instead of silent failure
       let n8nResult;
       try {
-        // Handle array response format [{ output: {...} }]
+        // Handle multiple array response formats:
+        // Format 1: [{ output: {...} }] (legacy)
+        // Format 2: [{ to, cc, subject, body, send, skip_reason }] (current n8n)
+        // Format 3: { subject, body, ... } (direct object)
         const parsed = JSON.parse(accumulated);
-        n8nResult = Array.isArray(parsed) && parsed.length > 0 ? parsed[0].output : parsed;
+        
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Check if it's the legacy format with .output wrapper
+          if (parsed[0].output && typeof parsed[0].output === 'object') {
+            n8nResult = parsed[0].output;
+          } else {
+            // Direct array format - take first element
+            n8nResult = parsed[0];
+          }
+        } else {
+          // Direct object format
+          n8nResult = parsed;
+        }
         
         // Validate response has required fields
         if (!n8nResult || typeof n8nResult !== 'object') {
