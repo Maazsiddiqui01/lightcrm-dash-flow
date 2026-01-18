@@ -5698,6 +5698,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      add_mwf_days: {
+        Args: { num_slots: number; start_date: string }
+        Returns: string
+      }
       add_opportunity_note:
         | {
             Args: {
@@ -6061,6 +6065,7 @@ export type Database = {
         Returns: Json
       }
       map_lg_lead_name: { Args: { input: string }; Returns: string }
+      next_mwf_date: { Args: { start_date: string }; Returns: string }
       normalize_focus_area: { Args: { input_text: string }; Returns: string }
       normalize_gp_name: { Args: { name: string }; Returns: string }
       normalize_name: { Args: { t: string }; Returns: string }
