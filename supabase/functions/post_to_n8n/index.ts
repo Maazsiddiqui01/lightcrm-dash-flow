@@ -30,6 +30,108 @@ async function verifyAuth(req: Request) {
 const N8N_WEBHOOK_URL = 'https://inverisllc.app.n8n.cloud/webhook/Email-Builder';
 
 /**
+ * Build the unified 2026 payload block
+ * This is additive - does not modify any existing payload structure
+ */
+function buildUnified2026Block(enhanced: any, contact: any): any {
+  const focusAreasObj = enhanced.focusAreas || {};
+  const focusAreas = focusAreasObj.list || [];
+  const faDescriptions = focusAreasObj.descriptions || [];
+  const opportunities = enhanced.opportunities?.active_tier1 || enhanced.opportunities?.top || [];
+  const cc = enhanced.cc || {};
+  
+  // Build entity_key
+  const isGroup = !!contact.groupContact;
+  const entityKey = isGroup 
+    ? `G:${contact.groupContact}` 
+    : `I:${contact.id || enhanced.contact?.id || ''}`;
+  
+  // Build focus_area_blocks with display name rules
+  const focusAreaBlocks = faDescriptions
+    .filter((fa: any) => {
+      const faName = fa.focusArea || fa.focus_area || '';
+      return faName !== 'Facility Services'; // Exclude Facility Services
+    })
+    .map((fa: any) => {
+      const faName = fa.focusArea || fa.focus_area || '';
+      const isAddon = fa.platformType?.toLowerCase().includes('add-on') || 
+                      fa.platform_type?.toLowerCase().includes('add-on') || false;
+      return {
+        focus_area: faName,
+        has_addons: isAddon,
+        add_on_platforms: '', // Would need addon platform data
+        add_on_description: '',
+        focus_area_display: faName === 'Food Manufacturing' ? 'F&B' : faName,
+        new_platform_description: fa.description || '',
+      };
+    });
+  
+  // Compute cadence fields with fallbacks
+  const daysSince = enhanced.routing?.daysSinceContact || 0;
+  const deltaDays = 90; // Default cadence
+  const effectiveLastContactDate = daysSince > 0 
+    ? new Date(Date.now() - daysSince * 86400000).toISOString().split('T')[0] 
+    : null;
+  const nextDueDate = effectiveLastContactDate 
+    ? new Date(new Date(effectiveLastContactDate).getTime() + deltaDays * 86400000).toISOString().split('T')[0]
+    : null;
+  const daysUntilDue = nextDueDate 
+    ? Math.floor((new Date(nextDueDate).getTime() - Date.now()) / 86400000)
+    : null;
+  const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
+  const overdueDays = isOverdue ? Math.abs(daysUntilDue!) : 0;
+  
+  // Build opportunities - tier 1/2 active
+  const hasTier12Active = opportunities.length > 0;
+  const tier12ActiveList = opportunities
+    .map((o: any) => o.dealName || o.deal_name)
+    .filter(Boolean)
+    .join(', ');
+  
+  // Build CC/BCC strings
+  const ccFinal = cc.final || [];
+  const ccEmails = Array.isArray(ccFinal) ? ccFinal.join('; ') : (ccFinal || '');
+  
+  // Determine primary contact email
+  const groupMembers = enhanced.groupMembers;
+  const primaryToEmail = groupMembers?.to?.length 
+    ? groupMembers.to[0].email 
+    : (contact.email || enhanced.contact?.email || '');
+  
+  return {
+    entity_key: entityKey,
+    is_group: isGroup,
+    group_contact: contact.groupContact || contact.group_contact || null,
+    to_contact_id: contact.id || enhanced.contact?.id || '',
+    first_name: contact.firstName || contact.first_name || '',
+    full_name: contact.fullName || contact.full_name || '',
+    to_emails: primaryToEmail,
+    organization: contact.organization || '',
+    cc_emails: ccEmails,
+    bcc_emails: null,
+    focus_areas_ordered: focusAreas.filter((fa: string) => fa !== 'Facility Services'),
+    opening_focus_phrase: '', // Could be computed based on focus areas
+    focus_area_blocks: focusAreaBlocks,
+    delta_days: deltaDays,
+    effective_last_contact_date: effectiveLastContactDate,
+    next_due_date: nextDueDate,
+    days_until_due: daysUntilDue,
+    is_overdue: isOverdue,
+    overdue_days: overdueDays,
+    tier12_active_count: String(opportunities.length),
+    has_tier12_active_opps: hasTier12Active,
+    tier12_active_list: tier12ActiveList,
+    max_group_contact_date: null, // Would need group-level data
+    max_individual_contact_date: effectiveLastContactDate,
+    meta: {
+      source: 'lovable_email_builder',
+      draft_mode: '2026_unified',
+      output_format: 'html',
+    },
+  };
+}
+
+/**
  * Transform EnhancedDraftPayload to n8n DraftPayload format
  */
 function transformToN8NPayload(enhanced: any): any {
@@ -253,6 +355,9 @@ function transformToN8NPayload(enhanced: any): any {
       caseHuman: caseLabels['case_7'] || 'case_7',
       sectorsUnique,
     },
+    
+    // NEW: 2026 unified payload block (additive, does not modify existing structure)
+    unified_2026: buildUnified2026Block(enhanced, contact),
   };
 }
 
