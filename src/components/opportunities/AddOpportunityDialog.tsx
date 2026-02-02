@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, ChevronDown } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
 import { SingleSelectDropdown } from "./SingleSelectDropdown";
@@ -65,6 +66,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     next_steps: "",
     most_recent_notes: "",
     url: "",
+    priority: false,
   });
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -138,7 +140,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     ];
 
     for (const { field, name } of requiredFields) {
-      if (!formData[field as keyof typeof formData].trim()) {
+      const value = formData[field as keyof typeof formData];
+      if (typeof value === 'string' && !value.trim()) {
         toast({
           title: "Error",
           description: `${name} is required`,
@@ -194,6 +197,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
           ? `${formatDatePrefix()}${formData.next_steps.trim()}` 
           : null,
         most_recent_notes: opt(formData.most_recent_notes),
+        priority: formData.priority,
       };
 
       const { data, error } = await supabase
@@ -232,6 +236,7 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
         next_steps: "",
         most_recent_notes: "",
         url: "",
+        priority: false,
       });
       setSelectedFocusAreas([]);
       setSelectedSourceContact1(null);
@@ -270,11 +275,12 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       investment_professional_point_person_2: "",
       investment_professional_point_person_3: "",
       investment_professional_point_person_4: "",
-      next_steps: "",
-      most_recent_notes: "",
-      url: "",
-    });
-    setSelectedFocusAreas([]);
+        next_steps: "",
+        most_recent_notes: "",
+        url: "",
+        priority: false,
+      });
+      setSelectedFocusAreas([]);
     setSelectedSourceContact1(null);
     setSelectedSourceContact2(null);
     setShowMoreLeads(false);
@@ -326,6 +332,23 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
 
         <div className="overflow-y-auto max-h-[calc(80vh-8rem)] pr-2">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Priority Checkbox - Above Deal Name */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="priority"
+                checked={formData.priority}
+                onCheckedChange={(checked) => 
+                  setFormData(prev => ({ ...prev, priority: checked === true }))
+                }
+              />
+              <Label 
+                htmlFor="priority" 
+                className="text-sm font-medium cursor-pointer"
+              >
+                Priority
+              </Label>
+            </div>
+
             {/* Deal Name - Top */}
             <div className="space-y-2">
               <Label htmlFor="deal_name">Deal Name *</Label>
