@@ -34,6 +34,7 @@ import {
   platformAddonDisplayOptions,
   getPlatformAddonDisplayValue,
   getPlatformAddonDatabaseValue,
+  defaultOwnershipTypes,
 } from "@/lib/export/opportunityUtils";
 import { useSectors, useFocusAreasBySector } from "@/hooks/useLookups";
 import { calculateLgTeam } from "@/utils/opportunityHelpers";
@@ -396,8 +397,8 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
             <div className="flex space-x-2">
               <Button 
                 size="sm"
-                variant="outline"
-                className="bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+                variant="default"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={async () => {
                   try {
                     toast({ 
@@ -591,6 +592,15 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 />
 
                 <SingleSelectDropdown
+                  label="Ownership Type"
+                  options={defaultOwnershipTypes}
+                  value={editedFields.ownership_type || ""}
+                  onChange={(value) => handleFieldChange("ownership_type", value)}
+                  placeholder="Select ownership type"
+                  disabled={isLoading}
+                />
+
+                <SingleSelectDropdown
                   label="Process Timeline"
                   options={['1-90 days', '91-180 days', '181-270 days', '271-365 days', '365+ days']}
                   value={editedFields.process_timeline || ""}
@@ -615,6 +625,15 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                   placeholder="Select funds"
                   disabled={isLoading}
                 />
+
+                <div className="space-y-2">
+                  <Label>Ownership</Label>
+                  <Input
+                    value={editedFields.ownership || ""}
+                    onChange={(e) => handleFieldChange("ownership", e.target.value)}
+                    placeholder="Enter ownership"
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label>EBITDA ($M)</Label>
@@ -666,6 +685,17 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                     </PopoverContent>
                   </Popover>
                 </div>
+              </div>
+
+              {/* EBITDA Notes - Full width */}
+              <div className="space-y-2">
+                <Label>EBITDA Notes</Label>
+                <Textarea
+                  value={editedFields.ebitda_notes || ""}
+                  onChange={(e) => handleFieldChange("ebitda_notes", e.target.value)}
+                  placeholder="Additional EBITDA notes..."
+                  className="min-h-[60px] resize-none"
+                />
               </div>
             </div>
 
