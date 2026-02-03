@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, ChevronDown } from "lucide-react";
+import { Plus, ChevronDown, CalendarIcon, Info } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
@@ -37,6 +37,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface AddOpportunityDialogProps {
   open: boolean;
@@ -75,6 +79,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
   const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
   const [pendingContactField, setPendingContactField] = useState<'contact1' | 'contact2' | null>(null);
   const [showMoreLeads, setShowMoreLeads] = useState(false);
+  const [nextStepsDueDate, setNextStepsDueDate] = useState<Date | undefined>();
+  const [addInToDo, setAddInToDo] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -242,6 +248,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
       setSelectedSourceContact1(null);
       setSelectedSourceContact2(null);
       setShowMoreLeads(false);
+      setNextStepsDueDate(undefined);
+      setAddInToDo(true);
 
       onOpportunityAdded();
     } catch (error: any) {
@@ -284,6 +292,8 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
     setSelectedSourceContact1(null);
     setSelectedSourceContact2(null);
     setShowMoreLeads(false);
+    setNextStepsDueDate(undefined);
+    setAddInToDo(true);
     onClose();
   };
 
@@ -362,15 +372,57 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
             </div>
 
             {/* Next Steps - Right below Deal Name */}
-            <div className="space-y-2">
-              <Label htmlFor="next_steps">Next Steps</Label>
-              <Textarea
-                id="next_steps"
-                value={formData.next_steps}
-                onChange={(e) => handleInputChange("next_steps", e.target.value)}
-                placeholder="Enter next steps..."
-                className="min-h-[60px] resize-none"
-              />
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="next_steps">Next Steps</Label>
+                <Textarea
+                  id="next_steps"
+                  value={formData.next_steps}
+                  onChange={(e) => handleInputChange("next_steps", e.target.value)}
+                  placeholder="Enter next steps..."
+                  className="min-h-[60px] resize-none"
+                />
+              </div>
+              
+              {/* Due Date and Add to Do */}
+              <div className="flex flex-wrap items-center gap-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "justify-start text-left font-normal",
+                        !nextStepsDueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {nextStepsDueDate ? format(nextStepsDueDate, "PPP") : "Due date (optional)"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={nextStepsDueDate}
+                      onSelect={setNextStepsDueDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="add-in-todo"
+                    checked={addInToDo}
+                    onCheckedChange={(checked) => setAddInToDo(checked === true)}
+                  />
+                  <Label htmlFor="add-in-todo" className="text-sm cursor-pointer">
+                    Add in To Do
+                  </Label>
+                </div>
+              </div>
             </div>
 
             {/* Description/Summary */}
@@ -574,17 +626,6 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="next_steps">Next Steps</Label>
-                <Textarea
-                  id="next_steps"
-                  value={formData.next_steps}
-                  onChange={(e) => handleInputChange("next_steps", e.target.value)}
-                  placeholder="Enter next steps..."
-                  className="min-h-[60px] resize-none"
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="most_recent_notes">Notes</Label>
                 <Textarea
                   id="most_recent_notes"
@@ -593,6 +634,14 @@ export function AddOpportunityDialog({ open, onClose, onOpportunityAdded }: AddO
                   placeholder="Latest notes or updates..."
                   className="min-h-[60px] resize-none"
                 />
+              </div>
+
+              {/* Attachments Info */}
+              <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg border">
+                <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-muted-foreground">
+                  Files can be attached after the opportunity is created. Open the opportunity details to upload files.
+                </p>
               </div>
             </div>
           </form>

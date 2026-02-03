@@ -16,10 +16,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, ExternalLink, Target, DollarSign, Calendar as CalendarIcon, Building, Mail, Loader2, Trash2, Paperclip, ChevronDown, ChevronUp, History } from "lucide-react";
+import { Save, ExternalLink, Target, Calendar as CalendarIcon, Mail, Loader2, Trash2, Paperclip, ChevronDown, ChevronUp, History } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useOpportunityNotes } from "@/hooks/useOpportunityNotes";
-import { OpportunityNotesSection } from "./OpportunityNotesSection";
+import { SimpleNotesInput } from "./SimpleNotesInput";
+import { OpportunityHistoryTab } from "./OpportunityHistoryTab";
 import { sendOpportunityEmail } from "@/features/opportunities/sendEmail";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
@@ -33,9 +34,8 @@ import {
   platformAddonDisplayOptions,
   getPlatformAddonDisplayValue,
   getPlatformAddonDatabaseValue,
-  defaultOwnershipTypes
 } from "@/lib/export/opportunityUtils";
-import { useSectors, useFocusAreasBySector, findMatchingOption } from "@/hooks/useLookups";
+import { useSectors, useFocusAreasBySector } from "@/hooks/useLookups";
 import { calculateLgTeam } from "@/utils/opportunityHelpers";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -110,8 +110,6 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
   const focusAreasQuery = useFocusAreasBySector(currentSector || undefined);
   
   const { 
-    platformAddonOptions,
-    ownershipTypeOptions,
     dealSourceCompanyOptions,
     lgLeadOptions,
     isLoading: isLoadingOptions
@@ -153,7 +151,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
         url: opportunity.url || "",
         ebitda_in_ms: opportunity.ebitda_in_ms || null,
         funds: opportunity.funds || "",
-        
+        date_of_origination: opportunity.date_of_origination || "",
         investment_professional_point_person_1: opportunity.investment_professional_point_person_1 || "",
         investment_professional_point_person_2: opportunity.investment_professional_point_person_2 || "",
         investment_professional_point_person_3: opportunity.investment_professional_point_person_3 || "",
@@ -188,7 +186,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     }
   }, [opportunity]);
 
-  const handleFieldChange = (field: keyof Opportunity, value: string | number | boolean) => {
+  const handleFieldChange = (field: keyof Opportunity, value: string | number | boolean | null) => {
     setEditedFields(prev => ({
       ...prev,
       [field]: value
@@ -349,23 +347,6 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
     }
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "—";
-    try {
-      const date = new Date(dateString);
-      // Check if date is valid
-      if (isNaN(date.getTime())) return "—";
-      return date.toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      });
-    } catch (error) {
-      console.error("Invalid date format:", dateString);
-      return "—";
-    }
-  };
-
   if (!opportunity) {
     return null;
   }
@@ -409,7 +390,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 disabled={isUpdating}
               >
                 <History className="h-4 w-4 mr-2" />
-                View Full History
+                Full History
               </Button>
             </div>
             <div className="flex space-x-2">
@@ -451,16 +432,14 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
 
         <>
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="activity">Activity</TabsTrigger>
-            <TabsTrigger value="source">Source</TabsTrigger>
-            <TabsTrigger value="files">Files</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
+          {/* Overview Tab - All fields consolidated */}
           <TabsContent value="overview" className="space-y-6">
+            {/* Status Badges */}
             <div className="flex items-center space-x-2">
               {editedFields.tier && (
                 <Badge className={getTierColor(editedFields.tier)}>
@@ -472,6 +451,24 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
               )}
             </div>
 
+            {/* Priority Checkbox */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="priority"
+                checked={editedFields.priority === true}
+                onCheckedChange={(checked) => 
+                  handleFieldChange('priority', checked === true)
+                }
+              />
+              <Label 
+                htmlFor="priority" 
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Priority
+              </Label>
+            </div>
+
+            {/* Key Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Key Information</h3>
               
@@ -515,27 +512,11 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                   disabled={isLoading}
                 />
               </div>
-
-              {/* Priority Checkbox */}
-              <div className="flex items-center space-x-2 pt-2">
-                <Checkbox
-                  id="priority"
-                  checked={editedFields.priority === true}
-                  onCheckedChange={(checked) => 
-                    handleFieldChange('priority', checked === true)
-                  }
-                />
-                <Label 
-                  htmlFor="priority" 
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Priority
-                </Label>
-              </div>
             </div>
 
             <Separator />
 
+            {/* Summary of Opportunity */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Summary of Opportunity</h3>
               <Textarea
@@ -548,6 +529,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
 
             <Separator />
 
+            {/* LG Leads */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">LG Leads</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -591,30 +573,7 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
 
             <Separator />
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">URL</h3>
-              <div className="flex space-x-2">
-                <Input
-                  value={editedFields.url || ""}
-                  onChange={(e) => handleFieldChange("url", e.target.value)}
-                  placeholder="Enter URL"
-                  className="flex-1"
-                />
-                {editedFields.url && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => window.open(editedFields.url, "_blank")}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Details Tab */}
-          <TabsContent value="details" className="space-y-6">
+            {/* Deal Details */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Deal Details</h3>
               
@@ -709,42 +668,34 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 </div>
               </div>
             </div>
-          </TabsContent>
-
-          {/* Activity Tab */}
-          <TabsContent value="activity" className="space-y-6">
-            <OpportunityNotesSection
-              title="Next Steps"
-              field="next_steps"
-              currentValue={currentNotes?.next_steps || null}
-              currentDueDate={currentNotes?.next_steps_due_date || null}
-              timeline={timeline}
-              onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
-              onDelete={deleteNote}
-              isSaving={isSavingNextSteps}
-              isDeleting={isDeletingNote}
-              isLoadingCurrent={isLoadingCurrent}
-              isLoadingTimeline={isLoadingTimeline}
-            />
 
             <Separator />
 
-            <OpportunityNotesSection
-              title="Notes"
-              field="most_recent_notes"
-              currentValue={currentNotes?.most_recent_notes || null}
-              timeline={timeline}
-              onSave={(content) => saveMostRecentNotes(content)}
-              onDelete={deleteNote}
-              isSaving={isSavingNotes}
-              isDeleting={isDeletingNote}
-              isLoadingCurrent={isLoadingCurrent}
-              isLoadingTimeline={isLoadingTimeline}
-            />
-          </TabsContent>
+            {/* URL */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">URL</h3>
+              <div className="flex space-x-2">
+                <Input
+                  value={editedFields.url || ""}
+                  onChange={(e) => handleFieldChange("url", e.target.value)}
+                  placeholder="Enter URL"
+                  className="flex-1"
+                />
+                {editedFields.url && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => window.open(editedFields.url, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
 
-          {/* Source Tab */}
-          <TabsContent value="source" className="space-y-6">
+            <Separator />
+
+            {/* Deal Source */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Deal Source</h3>
               
@@ -775,13 +726,43 @@ export function OpportunityDrawer({ opportunity, open, onClose, onOpportunityUpd
                 />
               </div>
             </div>
-          </TabsContent>
 
-          {/* Files Tab */}
-          <TabsContent value="files" className="space-y-6">
+            <Separator />
+
+            {/* Next Steps Input (without timeline) */}
+            <SimpleNotesInput
+              title="Next Steps"
+              field="next_steps"
+              placeholder="Enter next steps..."
+              onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
+              isSaving={isSavingNextSteps}
+            />
+
+            {/* Notes Input (without timeline) */}
+            <SimpleNotesInput
+              title="Notes"
+              field="most_recent_notes"
+              placeholder="Enter notes..."
+              onSave={(content) => saveMostRecentNotes(content)}
+              isSaving={isSavingNotes}
+            />
+
+            <Separator />
+
+            {/* Attachments */}
             {opportunity && (
               <OpportunityAttachmentsSection opportunityId={opportunity.id} />
             )}
+          </TabsContent>
+
+          {/* History Tab - Timeline view */}
+          <TabsContent value="history" className="space-y-6">
+            <OpportunityHistoryTab
+              timeline={timeline}
+              onDelete={deleteNote}
+              isLoading={isLoadingTimeline}
+              isDeleting={isDeletingNote}
+            />
           </TabsContent>
         </Tabs>
 
@@ -828,43 +809,40 @@ function OpportunityAttachmentsSection({ opportunityId }: { opportunityId: strin
     useEntityAttachments('opportunity', opportunityId);
 
   return (
-    <>
-      <Separator />
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Paperclip className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-semibold">Attachments</h3>
-            {attachments.length > 0 && (
-              <Badge variant="secondary">{attachments.length}</Badge>
-            )}
-          </div>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm">
-              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-        <CollapsibleContent className="space-y-4 pt-4">
-          <AttachmentUpload
-            onUpload={(file, description) => uploadFile({ file, description })}
-            isUploading={isUploading}
-          />
-          {isLoading ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <AttachmentList
-              attachments={attachments}
-              onDownload={downloadFile}
-              onDelete={deleteFile}
-              onGetFileUrl={getFileUrl}
-              isDeleting={isDeleting}
-            />
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Paperclip className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-lg font-semibold">Attachments</h3>
+          {attachments.length > 0 && (
+            <Badge variant="secondary">{attachments.length}</Badge>
           )}
-        </CollapsibleContent>
-      </Collapsible>
-    </>
+        </div>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm">
+            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </CollapsibleTrigger>
+      </div>
+      <CollapsibleContent className="space-y-4 pt-4">
+        <AttachmentUpload
+          onUpload={(file, description) => uploadFile({ file, description })}
+          isUploading={isUploading}
+        />
+        {isLoading ? (
+          <div className="flex justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <AttachmentList
+            attachments={attachments}
+            onDownload={downloadFile}
+            onDelete={deleteFile}
+            onGetFileUrl={getFileUrl}
+            isDeleting={isDeleting}
+          />
+        )}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
