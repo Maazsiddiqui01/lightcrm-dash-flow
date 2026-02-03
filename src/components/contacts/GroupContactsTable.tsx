@@ -26,7 +26,7 @@ export function GroupContactsTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [editedRows, setEditedRows] = useState<Record<string, { 
-    max_lag_days?: number;
+    max_lag_days?: number | null;
     group_focus_area?: string;
     group_sector?: string;
   }>>({});
@@ -206,7 +206,7 @@ export function GroupContactsTable() {
               onClick={() => setEditingCell({ groupId: row.group_id, field: 'max_lag_days' })}
               className="cursor-pointer hover:bg-accent p-1 rounded"
             >
-              {currentValue ? (
+              {currentValue !== null && currentValue !== undefined ? (
                 <Badge variant={currentValue > 90 ? "destructive" : "secondary"}>
                   {currentValue} days
                 </Badge>
@@ -221,15 +221,17 @@ export function GroupContactsTable() {
           return (
             <Input
               type="number"
-              value={currentValue || ''}
+              value={currentValue ?? ''}
               onChange={(e) => {
-                const newValue = parseInt(e.target.value);
-                if (!isNaN(newValue)) {
-                  setEditedRows(prev => ({
-                    ...prev,
-                    [row.group_id]: { ...prev[row.group_id], max_lag_days: newValue }
-                  }));
-                }
+                const val = e.target.value;
+                // Store null for empty string, otherwise parse as number
+                setEditedRows(prev => ({
+                  ...prev,
+                  [row.group_id]: { 
+                    ...prev[row.group_id], 
+                    max_lag_days: val === '' ? null : parseInt(val) 
+                  }
+                }));
               }}
               onBlur={() => setEditingCell(null)}
               onKeyDown={(e) => {
@@ -252,7 +254,7 @@ export function GroupContactsTable() {
         }
 
         const days = row.max_lag_days;
-        return days ? (
+        return days !== null && days !== undefined ? (
           <Badge variant={days > 90 ? "destructive" : "secondary"}>
             {days} days
           </Badge>

@@ -434,8 +434,12 @@ export function EditableCell({
         <Input
           ref={inputRef}
           type="number"
-          value={localValue || ''}
-          onChange={(e) => setLocalValue(e.target.value)}
+          value={localValue ?? ''}
+          onChange={(e) => {
+            const val = e.target.value;
+            // Store empty string as null, otherwise preserve the raw input for editing
+            setLocalValue(val === '' ? null : val);
+          }}
           {...commonProps}
           className={cn(commonProps.className, "text-right")}
         />
