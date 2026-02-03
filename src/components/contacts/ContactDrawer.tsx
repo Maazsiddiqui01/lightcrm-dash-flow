@@ -3,13 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useContactNotes } from "@/hooks/useContactNotes";
 import { useContactNextSteps } from "@/hooks/useContactNextSteps";
-import { useGroupNotes } from "@/hooks/useGroupNotes";
 import { useContactGroups } from "@/hooks/useContactGroups";
-import { useRemoveContactFromGroup } from "@/hooks/useRemoveContactFromGroup";
 import { useContactEmails } from "@/hooks/useContactEmails";
-import { ContactNotesSection } from "./ContactNotesSection";
-import { ContactNextStepsSection } from "./ContactNextStepsSection";
-import { GroupNotesSection } from "./GroupNotesSection";
 import { format } from 'date-fns';
 import { parseFlexibleDate } from '@/utils/dateUtils';
 import {
@@ -28,11 +23,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Mail, Building, Target, Calendar, Loader2, Clock, ExternalLink, Briefcase, UserX, Trash2, Users, Plus, ChevronDown, ChevronUp, Paperclip, History } from "lucide-react";
+import { Save, X, User, Mail, Building, Loader2, ExternalLink, Trash2, Plus, ChevronDown, ChevronUp, Paperclip, History, Linkedin } from "lucide-react";
 import { useContactOpps } from "@/hooks/useContactOpps";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FocusAreaSelect } from "@/components/shared/FocusAreaSelect";
-import { useSectors, useFocusAreasBySector, findMatchingOption } from "@/hooks/useLookups";
+import { useSectors, useFocusAreasBySector } from "@/hooks/useLookups";
 import { DuplicateWarningBanner } from "./DuplicateWarningBanner";
 import { ContactLockBanner } from "./ContactLockBanner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -44,6 +39,16 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { FullHistoryDialog, TimelineItem } from "@/components/shared/FullHistoryDialog";
 import { SingleSelectDropdown } from "@/components/opportunities/SingleSelectDropdown";
 import { useOpportunityOptions } from "@/hooks/useOpportunityOptions";
+import { ContactGroupsSection } from "./ContactGroupsSection";
+import { ContactOpportunitiesSection } from "./ContactOpportunitiesSection";
+import { ContactSimpleNotesInput } from "./ContactSimpleNotesInput";
+
+// X/Twitter icon component
+const XIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 interface ContactRaw {
   id: string;
@@ -106,16 +111,6 @@ interface ContactApp {
   group_contact: string | null;
 }
 
-interface Interaction {
-  id: string;
-  occurred_at: string;
-  subject: string;
-  source: string;
-  from_email: string;
-  to_emails: string;
-  cc_emails: string;
-}
-
 interface ContactDrawerProps {
   contact: ContactApp | null;
   open: boolean;
@@ -125,9 +120,7 @@ interface ContactDrawerProps {
 
 export function ContactDrawer({ contact, open, onClose, onContactUpdated }: ContactDrawerProps) {
   const [contactData, setContactData] = useState<ContactRaw | null>(null);
-  const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingInteractions, setLoadingInteractions] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -170,20 +163,8 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     isDeleting: isDeletingNextStep,
   } = useContactNextSteps(contact?.id, contact?.full_name || contact?.email_address || undefined);
 
-  // Fetch all groups this contact belongs to (new many-to-many schema)
+  // Fetch all groups this contact belongs to
   const { data: contactGroupMemberships = [], isLoading: isLoadingGroups } = useContactGroups(contact?.id || null);
-
-  // Group notes hook (only if contact is part of a group)
-  const firstGroupId = contactGroupMemberships[0]?.group_id || undefined;
-  const {
-    currentNotes: groupCurrentNotes,
-    timeline: groupTimeline,
-    isLoadingCurrent: isLoadingGroupCurrent,
-    isLoadingTimeline: isLoadingGroupTimeline,
-    saveNotes: saveGroupNotes,
-    isSavingNotes: isSavingGroupNotes,
-  } = useGroupNotes(firstGroupId);
-  const removeFromGroupMutation = useRemoveContactFromGroup();
   
   // Hook for managing contact email addresses
   const { 
@@ -224,13 +205,6 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
       setSelectedFocusAreas([]);
     }
   }, [contactData?.lg_focus_areas_comprehensive_list]);
-
-  // Load interactions when contact email changes
-  useEffect(() => {
-    if (contactData?.email_address && open) {
-      loadInteractions(contactData.email_address);
-    }
-  }, [contactData?.email_address, open]);
 
   const loadContactData = async (contactId: string) => {
     try {
@@ -273,30 +247,6 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     }
   };
 
-  const loadInteractions = async (email: string) => {
-    try {
-      setLoadingInteractions(true);
-      const { data, error } = await supabase
-        .from('interactions_app')
-        .select('id, occurred_at, subject, source, from_email, to_emails, cc_emails')
-        .or(`from_email.eq.${email.toLowerCase()},to_emails.ilike.%${email.toLowerCase()}%,cc_emails.ilike.%${email.toLowerCase()}%`)
-        .order('occurred_at', { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-      setInteractions(data || []);
-    } catch (error) {
-      console.error({ where: 'ContactDrawer', email, error });
-      toast({
-        title: "Error",
-        description: "Failed to load interaction history",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingInteractions(false);
-    }
-  };
-
   const handleSave = async () => {
     if (!contactData) return;
 
@@ -326,7 +276,6 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
         description: "Contact updated successfully",
       });
 
-      // Trigger refresh and wait for it to complete before closing
       await onContactUpdated();
       onClose();
     } catch (error) {
@@ -344,7 +293,6 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   const handleFocusAreaChange = (newFocusAreas: string[]) => {
     setSelectedFocusAreas(newFocusAreas);
     
-    // Auto-fill sector if first focus area is selected and sector is currently blank
     if (newFocusAreas.length === 1 && (!contactData?.lg_sector || contactData.lg_sector.trim() === '')) {
       const selectedOption = focusAreasQuery.data?.find(opt => opt.value === newFocusAreas[0]);
       if (selectedOption?.meta?.sector_id) {
@@ -359,7 +307,6 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
   const updateField = (field: keyof ContactRaw, value: string | number | boolean | null) => {
     if (!contactData) return;
     
-    // Handle delta field specifically since it's a number field
     if (field === "delta") {
       const numValue = value === null || value === "" ? null : Number(value);
       setContactData({ ...contactData, [field]: numValue });
@@ -394,9 +341,22 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
     setIsAddingEmail(false);
   };
 
+  const openExternalLink = (url: string | null) => {
+    if (!url) return;
+    let finalUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      finalUrl = 'https://' + url;
+    }
+    window.open(finalUrl, '_blank', 'noopener,noreferrer');
+  };
+
   if (!contact) {
     return null;
   }
+
+  // Calculate stats
+  const totalContacts = (contactData?.of_emails || 0) + (contactData?.of_meetings || 0);
+  const opportunityCount = contactOpps.length;
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -410,7 +370,7 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
           )}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="h-10 w-10 rounded-full bg-primary-light flex items-center justify-center">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <User className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -483,50 +443,34 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
         ) : contactData ? (
           <>
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-7 mb-6">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="groups">Groups</TabsTrigger>
-              <TabsTrigger value="activity">Activity</TabsTrigger>
-              <TabsTrigger value="tracking">Tracking</TabsTrigger>
-              <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-              <TabsTrigger value="files">Files</TabsTrigger>
             </TabsList>
 
-            {/* Overview Tab */}
+            {/* ========== OVERVIEW TAB ========== */}
             <TabsContent value="overview" className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Key Information</h3>
-                
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label htmlFor="full_name">Full Name</Label>
-                    <Input
-                      id="full_name"
-                      value={contactData.full_name || ""}
-                      onChange={(e) => updateField("full_name", e.target.value)}
-                    />
-                  </div>
+              {/* Priority */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="priority"
+                  checked={contactData.priority || false}
+                  onCheckedChange={(checked) => updateField("priority", checked)}
+                />
+                <Label htmlFor="priority" className="cursor-pointer font-medium">Priority Contact</Label>
+              </div>
 
-                  <div>
-                    <Label htmlFor="email_address">Email Address</Label>
-                    <Input
-                      id="email_address"
-                      type="email"
-                      value={contactData.email_address || ""}
-                      onChange={(e) => updateField("email_address", e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={contactData.phone || ""}
-                      onChange={(e) => updateField("phone", e.target.value)}
-                    />
-                  </div>
-
+              {/* Full Name, Organization, Title */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    value={contactData.full_name || ""}
+                    onChange={(e) => updateField("full_name", e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="organization">Organization</Label>
                     <Input
@@ -535,7 +479,6 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                       onChange={(e) => updateField("organization", e.target.value)}
                     />
                   </div>
-
                   <div>
                     <Label htmlFor="title">Title</Label>
                     <Input
@@ -544,126 +487,166 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                       onChange={(e) => updateField("title", e.target.value)}
                     />
                   </div>
-
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <Input
-                      id="category"
-                      value={contactData.category || ""}
-                      onChange={(e) => updateField("category", e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="lg_sector">LG Sector</Label>
-                    <Select 
-                      value={contactData.lg_sector || ""} 
-                      onValueChange={(value) => updateField("lg_sector", value)}
-                      disabled={sectorsQuery.isLoading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select sector" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(sectorsQuery.data || []).map((sector) => (
-                          <SelectItem key={sector.value} value={sector.value}>
-                            {sector.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="priority"
-                      checked={contactData.priority || false}
-                      onCheckedChange={(checked) => updateField("priority", checked)}
-                    />
-                    <Label htmlFor="priority" className="cursor-pointer">Priority Contact</Label>
-                  </div>
                 </div>
               </div>
 
               <Separator />
 
-              {/* Quick Stats */}
+              {/* Max Lag (Days) & Follow-Up Days */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="delta">Max Lag (Days)</Label>
+                  <Input
+                    id="delta"
+                    type="number"
+                    value={contactData.delta || ""}
+                    onChange={(e) => updateField("delta", e.target.value)}
+                    placeholder="e.g., 30"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="follow_up_days">Follow-Up Days</Label>
+                  <Input
+                    id="follow_up_days"
+                    type="number"
+                    min="0"
+                    value={contactData.follow_up_days ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseInt(e.target.value);
+                      updateField("follow_up_days", value);
+                    }}
+                    placeholder="e.g., 7"
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* LG Sector, Focus Areas, Specialization */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Quick Stats</h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-muted-foreground">Most Recent Contact</Label>
-                    <p className="text-sm font-medium mt-1">
+                <div>
+                  <Label htmlFor="lg_sector">LG Sector</Label>
+                  <Select 
+                    value={contactData.lg_sector || ""} 
+                    onValueChange={(value) => updateField("lg_sector", value)}
+                    disabled={sectorsQuery.isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select sector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(sectorsQuery.data || []).map((sector) => (
+                        <SelectItem key={sector.value} value={sector.value}>
+                          {sector.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <FocusAreaSelect
+                    value={selectedFocusAreas}
+                    onChange={handleFocusAreaChange}
+                    disabled={focusAreasQuery.isLoading}
+                    label="LG Focus Areas Comprehensive List"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="areas_of_specialization">Areas of Specialization</Label>
+                  <Textarea
+                    id="areas_of_specialization"
+                    value={contactData.areas_of_specialization || ""}
+                    onChange={(e) => updateField("areas_of_specialization", e.target.value)}
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Groups Section */}
+              <ContactGroupsSection
+                contactId={contactData.id}
+                contactFullName={contactData.full_name || ''}
+                contactEmail={contactData.email_address || ''}
+                groups={contactGroupMemberships}
+                isLoading={isLoadingGroups}
+              />
+
+              <Separator />
+
+              {/* Notes */}
+              <ContactSimpleNotesInput
+                title="Notes"
+                field="notes"
+                placeholder="Enter notes..."
+                currentValue={currentNotes?.notes}
+                onSave={(content) => saveNotes(content)}
+                isSaving={isSavingNotes}
+              />
+
+              {/* Next Steps */}
+              <ContactSimpleNotesInput
+                title="Next Steps"
+                field="next_steps"
+                placeholder="Enter next steps..."
+                currentValue={currentNextSteps?.next_steps}
+                onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
+                isSaving={isSavingNextSteps}
+              />
+
+              <Separator />
+
+              {/* Contact History at a Glance */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Contact History at a Glance</Label>
+                <div className="grid grid-cols-3 gap-4 p-4 border rounded-lg bg-muted/30">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">
                       {contactData.most_recent_contact 
-                        ? format(parseFlexibleDate(contactData.most_recent_contact) || new Date(), 'MMM dd, yyyy')
+                        ? format(parseFlexibleDate(contactData.most_recent_contact) || new Date(), 'MMM d')
                         : '—'
                       }
                     </p>
+                    <p className="text-xs text-muted-foreground">Most Recent</p>
                   </div>
-
-                  <div>
-                    <Label className="text-muted-foreground"># of Emails</Label>
-                    <p className="text-sm font-medium mt-1">{contactData.of_emails || 0}</p>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">{totalContacts}</p>
+                    <p className="text-xs text-muted-foreground"># of Contacts</p>
                   </div>
-
-                  <div>
-                    <Label className="text-muted-foreground"># of Meetings</Label>
-                    <p className="text-sm font-medium mt-1">{contactData.of_meetings || 0}</p>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">{opportunityCount}</p>
+                    <p className="text-xs text-muted-foreground"># of Opportunities</p>
                   </div>
-
-                  {contactData.follow_up_date && (
-                    <div>
-                      <Label className="text-muted-foreground">Follow-Up Date</Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <p className="text-sm font-medium">
-                          {format(parseFlexibleDate(contactData.follow_up_date)!, 'MMM d, yyyy')}
-                        </p>
-                        <Badge variant={
-                          new Date(contactData.follow_up_date) < new Date() ? 'destructive' : 
-                          new Date(contactData.follow_up_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'default' : 
-                          'secondary'
-                        }>
-                          {new Date(contactData.follow_up_date) < new Date() ? 'Past' :
-                           new Date(contactData.follow_up_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'This Week' :
-                           'Future'}
-                        </Badge>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </TabsContent>
 
-            {/* Details Tab */}
+            {/* ========== DETAILS TAB ========== */}
             <TabsContent value="details" className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Name Details</h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="first_name">First Name</Label>
-                    <Input
-                      id="first_name"
-                      value={contactData.first_name || ""}
-                      onChange={(e) => updateField("first_name", e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="last_name">Last Name</Label>
-                    <Input
-                      id="last_name"
-                      value={contactData.last_name || ""}
-                      onChange={(e) => updateField("last_name", e.target.value)}
-                    />
-                  </div>
+              {/* First Name, Last Name */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="first_name">First Name</Label>
+                  <Input
+                    id="first_name"
+                    value={contactData.first_name || ""}
+                    onChange={(e) => updateField("first_name", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="last_name">Last Name</Label>
+                  <Input
+                    id="last_name"
+                    value={contactData.last_name || ""}
+                    onChange={(e) => updateField("last_name", e.target.value)}
+                  />
                 </div>
               </div>
 
-              <Separator />
-
-              {/* All Email Addresses Section */}
+              {/* All Email Addresses */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-base">All Email Addresses ({emails.length})</Label>
@@ -708,9 +691,6 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                               <Badge variant="default" className="flex-shrink-0">Primary</Badge>
                             )}
                             <Badge variant="outline" className="flex-shrink-0 capitalize">{email.email_type}</Badge>
-                            {email.source === 'merge' && (
-                              <Badge variant="secondary" className="flex-shrink-0">From Merge</Badge>
-                            )}
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
                             {!email.is_primary && (
@@ -809,109 +789,125 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                 )}
               </div>
 
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Professional Details</h3>
-                
-                <div>
-                  <Label htmlFor="areas_of_specialization">Areas of Specialization</Label>
-                  <Textarea
-                    id="areas_of_specialization"
-                    value={contactData.areas_of_specialization || ""}
-                    onChange={(e) => updateField("areas_of_specialization", e.target.value)}
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <FocusAreaSelect
-                    value={selectedFocusAreas}
-                    onChange={handleFocusAreaChange}
-                    disabled={focusAreasQuery.isLoading}
-                    label="LG Focus Areas Comprehensive List"
-                  />
-                  {selectedFocusAreas.length > 0 && !contactData?.lg_sector && (
-                    <div className="mt-2">
-                      <p className="text-xs text-muted-foreground">
-                        💡 <button 
-                          type="button"
-                          className="text-primary hover:underline"
-                          onClick={() => {
-                            const firstOption = focusAreasQuery.data?.find(opt => opt.value === selectedFocusAreas[0]);
-                            if (firstOption?.meta?.sector_id) {
-                              const sector = sectorsQuery.data?.find(s => s.meta?.id === firstOption.meta?.sector_id);
-                              if (sector) {
-                                updateField("lg_sector", sector.value);
-                              }
-                            }
-                          }}
-                        >
-                          Auto-fill sector with "{(() => {
-                            const firstOption = focusAreasQuery.data?.find(opt => opt.value === selectedFocusAreas[0]);
-                            if (firstOption?.meta?.sector_id) {
-                              const sector = sectorsQuery.data?.find(s => s.meta?.id === firstOption.meta?.sector_id);
-                              return sector?.label;
-                            }
-                            return '';
-                          })()}"
-                        </button>
-                      </p>
-                    </div>
-                  )}
-                </div>
+              {/* Phone */}
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={contactData.phone || ""}
+                  onChange={(e) => updateField("phone", e.target.value)}
+                />
               </div>
 
               <Separator />
 
+              {/* Opportunities Section */}
+              <ContactOpportunitiesSection
+                contactId={contactData.id}
+                contactFullName={contactData.full_name || ''}
+                opportunities={contactOpps}
+                isLoading={isLoadingOpps}
+                error={oppsError}
+              />
+
+              <Separator />
+
+              {/* Files / Attachments */}
+              <AttachmentsSection contactId={contactData.id} />
+
+              <Separator />
+
+              {/* Social Profiles & Links */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Social Profiles & Links</h3>
+                <Label className="text-sm font-medium">Social Profiles & Links</Label>
                 
-                <div>
+                {/* Online Bio URL */}
+                <div className="space-y-2">
                   <Label htmlFor="url_to_online_bio">Online Bio URL</Label>
-                  <Input
-                    id="url_to_online_bio"
-                    value={contactData.url_to_online_bio || ""}
-                    onChange={(e) => updateField("url_to_online_bio", e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="url_to_online_bio"
+                      value={contactData.url_to_online_bio || ""}
+                      onChange={(e) => updateField("url_to_online_bio", e.target.value)}
+                      placeholder="https://example.com/bio"
+                      className="flex-1"
+                    />
+                    {contactData.url_to_online_bio && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openExternalLink(contactData.url_to_online_bio)}
+                        title="Open in new tab"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
-                <div>
+                {/* LinkedIn Profile */}
+                <div className="space-y-2">
                   <Label htmlFor="linkedin_url">LinkedIn Profile</Label>
-                  <Input
-                    id="linkedin_url"
-                    value={contactData.linkedin_url || ""}
-                    onChange={(e) => updateField("linkedin_url", e.target.value)}
-                    placeholder="https://linkedin.com/in/username"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="linkedin_url"
+                      value={contactData.linkedin_url || ""}
+                      onChange={(e) => updateField("linkedin_url", e.target.value)}
+                      placeholder="https://linkedin.com/in/username"
+                      className="flex-1"
+                    />
+                    {contactData.linkedin_url && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openExternalLink(contactData.linkedin_url)}
+                        title="Open LinkedIn profile"
+                        className="text-[#0A66C2]"
+                      >
+                        <Linkedin className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
-                <div>
+                {/* X / Twitter */}
+                <div className="space-y-2">
                   <Label htmlFor="x_twitter_url">X / Twitter</Label>
-                  <Input
-                    id="x_twitter_url"
-                    value={contactData.x_twitter_url || ""}
-                    onChange={(e) => updateField("x_twitter_url", e.target.value)}
-                    placeholder="https://x.com/username"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="x_twitter_url"
+                      value={contactData.x_twitter_url || ""}
+                      onChange={(e) => updateField("x_twitter_url", e.target.value)}
+                      placeholder="https://x.com/username"
+                      className="flex-1"
+                    />
+                    {contactData.x_twitter_url && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openExternalLink(contactData.x_twitter_url)}
+                        title="Open X profile"
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <Separator />
 
+              {/* Team Assignment */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Team Assignment</h3>
+                <Label className="text-sm font-medium">Team Assignment</Label>
                 
-                <div>
-                  <SingleSelectDropdown
-                    label="LG Lead"
-                    options={lgLeadOptions}
-                    value={contactData.lg_lead || ""}
-                    onChange={(value) => updateField("lg_lead", value)}
-                    placeholder="Select LG Lead"
-                    allowCustom={false}
-                  />
-                </div>
+                <SingleSelectDropdown
+                  label="LG Lead"
+                  value={contactData.lg_lead || ''}
+                  onChange={(value) => updateField('lg_lead', value)}
+                  options={lgLeadOptions}
+                  placeholder="Select LG Lead"
+                />
 
                 <div>
                   <Label htmlFor="lg_assistant">LG Assistant</Label>
@@ -922,479 +918,6 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                   />
                 </div>
               </div>
-
-              <Separator />
-
-              {/* LG Focus Areas (Individual) */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">LG Focus Areas (Individual Fields)</h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                    <div key={num}>
-                      <Label htmlFor={`lg_focus_area_${num}`}>LG Focus Area {num}</Label>
-                      <Input
-                        id={`lg_focus_area_${num}`}
-                        value={contactData[`lg_focus_area_${num}` as keyof ContactRaw] as string || ""}
-                        onChange={(e) => updateField(`lg_focus_area_${num}` as keyof ContactRaw, e.target.value)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Groups Tab */}
-            <TabsContent value="groups" className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Legacy Group Settings</h3>
-                
-                <div>
-                  <Label htmlFor="group_contact">Group Contact (Legacy)</Label>
-                  <Input
-                    id="group_contact"
-                    value={contactData.group_contact || ""}
-                    onChange={(e) => updateField("group_contact", e.target.value)}
-                    placeholder="Enter group name (optional)"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="group_email_role">Group Email Role</Label>
-                  <Select 
-                    value={contactData.group_email_role || undefined} 
-                    onValueChange={(value) => updateField("group_email_role", value || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="None - Select role if in a group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="to">To (Primary Recipient)</SelectItem>
-                      <SelectItem value="cc">CC (Carbon Copy)</SelectItem>
-                      <SelectItem value="bcc">BCC (Blind Carbon Copy)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {contactData.group_contact && (
-                  <div className="col-span-2 space-y-2">
-                    <Label htmlFor="group_delta">Group Max Lag (Days)</Label>
-                    <Input
-                      id="group_delta"
-                      type="number"
-                      value={contactData.group_delta || ""}
-                      disabled
-                      className="bg-muted cursor-not-allowed"
-                      title="Group Max Lag is inherited from the group and can only be edited in Group Contacts view"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Inherited from group (edit in Group Contacts view)
-                    </p>
-                  </div>
-                )}
-
-                {contactData.group_contact && (
-                  <div className="p-3 bg-muted/50 rounded-md">
-                    <p className="text-sm font-medium mb-2">Effective Values (Using Group)</p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-muted-foreground">Effective Most Recent:</span>
-                        <p className="font-medium">
-                          {contactData.most_recent_group_contact 
-                            ? format(parseFlexibleDate(contactData.most_recent_group_contact) || new Date(), 'MMM dd, yyyy')
-                            : '—'
-                          }
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Effective Max Lag:</span>
-                        <p className="font-medium">{contactData.group_delta || '—'} days</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Display all group memberships */}
-              {contactGroupMemberships.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="text-lg font-semibold">Group Memberships ({contactGroupMemberships.length})</h3>
-                  </div>
-                  <div className="space-y-2">
-                    {contactGroupMemberships.map((membership: any) => (
-                      <div key={membership.group_id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{membership.group_name}</span>
-                            {membership.email_role && (
-                              <Badge variant="outline" className="text-xs">
-                                {membership.email_role.toUpperCase()}
-                              </Badge>
-                            )}
-                          </div>
-                          {(membership.max_lag_days || membership.focus_area || membership.sector) && (
-                            <div className="flex gap-2 text-xs text-muted-foreground">
-                              {membership.max_lag_days && (
-                                <span>Max Lag: {membership.max_lag_days}d</span>
-                              )}
-                              {membership.focus_area && (
-                                <span>• {membership.focus_area}</span>
-                              )}
-                              {membership.sector && (
-                                <span>• {membership.sector}</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (contact?.id && membership.group_id) {
-                              removeFromGroupMutation.mutate({
-                                contactId: contact.id,
-                                groupId: membership.group_id,
-                              });
-                            }
-                          }}
-                          disabled={removeFromGroupMutation.isPending}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    This contact's group_delta is inherited from the first group listed above. 
-                    To change it, edit the group in the Group Contacts view.
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>Not a member of any groups</p>
-                </div>
-              )}
-
-              {/* If contact has group_delta but no memberships, show warning */}
-              {contactData.group_delta && contactGroupMemberships.length === 0 && (
-                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                    ⚠️ This contact has a group_delta value but is not assigned to any groups in the new system. 
-                    Legacy data detected.
-                  </p>
-                </div>
-              )}
-            </TabsContent>
-
-            {/* Activity Tab */}
-            <TabsContent value="activity" className="space-y-6">
-              {/* Next Steps Section */}
-              <ContactNextStepsSection
-                currentValue={currentNextSteps?.next_steps || null}
-                currentDueDate={currentNextSteps?.next_steps_due_date || null}
-                timeline={nextStepsTimeline}
-                onSave={saveNextSteps}
-                onDelete={deleteNextStep}
-                isSaving={isSavingNextSteps}
-                isDeleting={isDeletingNextStep}
-                isLoadingCurrent={isLoadingNextSteps}
-                isLoadingTimeline={isLoadingNextStepsTimeline}
-              />
-
-              <Separator />
-
-              {/* Notes Section */}
-              <ContactNotesSection
-                title="Notes"
-                field="notes"
-                currentValue={currentNotes?.notes || null}
-                timeline={timeline}
-                onSave={saveNotes}
-                onDelete={deleteNote}
-                isLoadingCurrent={isLoadingCurrent}
-                isLoadingTimeline={isLoadingTimeline}
-                isSaving={isSavingNotes}
-                isDeleting={isDeletingNote}
-              />
-
-              {/* Group Notes Section - Only show if contact is part of a group */}
-              {contactData.group_contact && (
-                <>
-                  <Separator />
-                  <GroupNotesSection
-                    title="Group Notes (Legacy)"
-                    field="group_notes"
-                    currentValue={groupCurrentNotes?.notes || null}
-                    timeline={groupTimeline}
-                    onSave={saveGroupNotes}
-                    isLoadingCurrent={isLoadingGroupCurrent}
-                    isLoadingTimeline={isLoadingGroupTimeline}
-                    isSaving={isSavingGroupNotes}
-                    showSharedIndicator={true}
-                  />
-                </>
-              )}
-
-              <Separator />
-
-              {/* Recent Interactions */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Recent Interactions</h3>
-                  {loadingInteractions && (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )}
-                </div>
-                
-                {interactions.length > 0 ? (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {interactions.map((interaction) => (
-                      <div key={interaction.id} className="p-3 border rounded-lg bg-muted/5">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            <Badge variant={interaction.source.includes('email') ? 'default' : 'secondary'} className="text-xs">
-                              {interaction.source}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(interaction.occurred_at).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit'
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <p className="font-medium text-sm mb-1">{interaction.subject}</p>
-                        
-                        <div className="text-xs text-muted-foreground space-y-1">
-                          <div>From: {interaction.from_email}</div>
-                          {interaction.to_emails && (
-                            <div>To: {interaction.to_emails}</div>
-                          )}
-                          {interaction.cc_emails && (
-                            <div>CC: {interaction.cc_emails}</div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">No recent interactions found</p>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* Tracking Tab */}
-            <TabsContent value="tracking" className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Outreach Configuration</h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="delta_type">Outreach Type</Label>
-                    <Input
-                      id="delta_type"
-                      value={contactData.delta_type || ""}
-                      onChange={(e) => updateField("delta_type", e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="delta">Max Lag (Days)</Label>
-                    <Input
-                      id="delta"
-                      type="number"
-                      value={contactData.delta || ""}
-                      onChange={(e) => updateField("delta", e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="intentional_no_outreach">Intentional No Outreach</Label>
-                    <Select
-                      value={contactData.intentional_no_outreach ? "true" : "false"}
-                      onValueChange={(value) => updateField("intentional_no_outreach", value === "true")}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="false">No</SelectItem>
-                        <SelectItem value="true">Yes</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Intentional No Outreach Status */}
-              {contactData.intentional_no_outreach && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <div className="flex items-start gap-2">
-                    <UserX className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-amber-800 dark:text-amber-200">Intentional No Outreach</span>
-                        <Badge variant="outline" className="text-xs text-amber-700 border-amber-300">
-                          {contactData.intentional_no_outreach_date 
-                            ? new Date(contactData.intentional_no_outreach_date).toLocaleDateString()
-                            : 'Date unknown'
-                          }
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-amber-700 dark:text-amber-300">
-                        This contact has been marked to skip outreach and will not count as overdue.
-                      </p>
-                      {contactData.intentional_no_outreach_note && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                          <strong>Reason:</strong> {contactData.intentional_no_outreach_note}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Follow-Up Configuration Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold">Follow-Up Settings</h3>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Follow-Up Days */}
-                  <div className="space-y-2">
-                    <Label htmlFor="follow_up_days">Follow-Up Days</Label>
-                    <Input
-                      id="follow_up_days"
-                      type="number"
-                      min="0"
-                      value={contactData.follow_up_days ?? ''}
-                      onChange={(e) => {
-                        const value = e.target.value === '' ? null : parseInt(e.target.value);
-                        updateField("follow_up_days", value);
-                      }}
-                      placeholder="7"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Days after last contact to schedule follow-up. Set to 0 to disable.
-                    </p>
-                  </div>
-                  
-                  {/* Follow-Up Date (Read-Only) */}
-                  <div className="space-y-2">
-                    <Label>Follow-Up Date (Auto-Calculated)</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={contactData.follow_up_date ? format(parseFlexibleDate(contactData.follow_up_date)!, 'MMM d, yyyy') : '—'}
-                        readOnly
-                        className="bg-muted cursor-not-allowed"
-                      />
-                      {contactData.follow_up_date && (
-                        <Badge variant={
-                          new Date(contactData.follow_up_date) < new Date() ? 'destructive' : 
-                          new Date(contactData.follow_up_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'default' : 
-                          'secondary'
-                        }>
-                          {new Date(contactData.follow_up_date) < new Date() ? 'Past' :
-                           new Date(contactData.follow_up_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'This Week' :
-                           'Future'}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {!contactData.follow_up_date && contactData.follow_up_days && contactData.follow_up_days > 0 ? (
-                        <span className="text-amber-600">⚠️ No follow-up date: contact may be too old or follow-up date is in the past</span>
-                      ) : (
-                        'Automatically calculated based on follow-up days'
-                      )}
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Advanced: Recency Threshold (Collapsible) */}
-                <details className="group">
-                  <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-                    <ChevronDown className="h-3 w-3 group-open:rotate-180 transition-transform" />
-                    Advanced: Recency Threshold
-                  </summary>
-                  <div className="mt-3 space-y-2">
-                    <Label htmlFor="follow_up_recency_threshold">Max Contact Age (Days)</Label>
-                    <Input
-                      id="follow_up_recency_threshold"
-                      type="number"
-                      min="1"
-                      max="365"
-                      value={contactData.follow_up_recency_threshold ?? 15}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value) || 15;
-                        updateField("follow_up_recency_threshold", value);
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Only schedule follow-ups if last contact was within this many days. Default: 15.
-                    </p>
-                  </div>
-                </details>
-                
-                {/* Explanation Box */}
-                <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-3 rounded border border-blue-200 dark:border-blue-800">
-                  <strong>How it works:</strong>
-                  <ul className="list-disc list-inside mt-1 space-y-1">
-                    <li>Follow-up date = Last contact + Follow-up days</li>
-                    <li>Only shows if last contact is within {contactData.follow_up_recency_threshold || 15} days</li>
-                    <li>Blanks out if calculated date is in the past</li>
-                    <li>Set days to 0 to disable follow-ups</li>
-                  </ul>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Opportunities Tab */}
-            <TabsContent value="opportunities" className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Opportunities (as Deal Source)</h3>
-                
-                {isLoadingOpps ? (
-                  <Skeleton className="h-6 w-full" />
-                ) : oppsError ? (
-                  <p className="text-sm text-destructive">Failed to load opportunities</p>
-                ) : contactOpps.length > 0 ? (
-                  <div className="space-y-2">
-                    {contactOpps.map((opp) => (
-                      <div key={opp.name} className="p-3 border rounded-lg flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{opp.name}</p>
-                          {opp.ownershipType && (
-                            <p className="text-sm text-muted-foreground">{opp.ownershipType}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Briefcase className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                    <p>No opportunities found as deal source</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* Files Tab */}
-            <TabsContent value="files" className="space-y-6">
-              <AttachmentsSection contactId={contactData.id} />
             </TabsContent>
           </Tabs>
 
@@ -1446,13 +969,12 @@ function AttachmentsSection({ contactId }: { contactId: string }) {
     useEntityAttachments('contact', contactId);
 
   return (
-    <>
-      <Separator />
+    <div className="space-y-2">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Paperclip className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-semibold">Attachments</h3>
+            <Paperclip className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-sm font-medium">Files / Attachments</Label>
             {attachments.length > 0 && (
               <Badge variant="secondary">{attachments.length}</Badge>
             )}
@@ -1483,6 +1005,6 @@ function AttachmentsSection({ contactId }: { contactId: string }) {
           )}
         </CollapsibleContent>
       </Collapsible>
-    </>
+    </div>
   );
 }
