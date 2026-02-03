@@ -311,13 +311,17 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
                   <Input
                     type="number"
                     value={editedMaxLag ?? group.max_lag_days ?? ''}
-                    onChange={(e) => setEditedMaxLag(parseInt(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Store null for empty string, otherwise parse as number
+                      setEditedMaxLag(val === '' ? null : parseInt(val));
+                    }}
                     className="w-32"
                     min="0"
                     max="365"
                   />
                 ) : (
-                  group.max_lag_days ? (
+                  group.max_lag_days !== null && group.max_lag_days !== undefined ? (
                     <Badge variant={group.max_lag_days > 90 ? "destructive" : "secondary"} className="text-base">
                       {group.max_lag_days} days
                     </Badge>

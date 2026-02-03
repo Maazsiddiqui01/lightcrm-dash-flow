@@ -29,13 +29,29 @@ export interface DynamicOptions {
   focusAreas?: Array<{ value: string; label: string }>;
 }
 
+// Columns that should display blank for zero (financial/count columns)
+const SHOW_BLANK_FOR_ZERO_COLUMNS = [
+  'ebitda_in_ms',
+  'revenue',
+  'est_deal_size',
+  'est_lg_equity_invest',
+  'of_emails',
+  'of_meetings',
+  'gp_aum'
+];
+
 // Format cell value for display
 export const formatCellValue = (value: any, column: TableColumn): string => {
   if (value === null || value === undefined) return '';
   
-  // Show blank for numeric columns when value is 0 or falsy
+  // Handle numeric columns with special logic for null vs 0
   if (column.type === 'numeric' || column.type.includes('integer')) {
-    if (value === 0 || value === '0' || !value) return '';
+    // For specific columns, show blank for zero (existing behavior for financial fields)
+    if (SHOW_BLANK_FOR_ZERO_COLUMNS.includes(column.name)) {
+      if (value === 0 || value === '0' || !value) return '';
+    }
+    // For all other numeric columns (like delta/max_lag_days), show 0 explicitly
+    if (value === '' || value === null || value === undefined) return '';
     return String(value);
   }
   

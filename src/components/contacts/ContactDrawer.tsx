@@ -499,8 +499,12 @@ export function ContactDrawer({ contact, open, onClose, onContactUpdated }: Cont
                   <Input
                     id="delta"
                     type="number"
-                    value={contactData.delta || ""}
-                    onChange={(e) => updateField("delta", e.target.value)}
+                    value={contactData.delta ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Store null for empty string, otherwise preserve value for editing
+                      updateField("delta", val === '' ? null : val);
+                    }}
                     placeholder="e.g., 30"
                   />
                 </div>
