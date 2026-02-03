@@ -1,125 +1,214 @@
 
-# Plan: Restructure Opportunities Drawer and Add Opportunity Dialog
+# Plan: Restructure Individual Contact Drawer (7 tabs → 2 tabs)
 
 ## Summary
 
-This plan restructures the Opportunities experience into a cleaner 2-tab layout and fixes the duplicate timeline entries issue. The changes will:
-1. Modify the **Add New Opportunity Dialog** to remove duplicate Next Steps field and add file attachments
-2. Consolidate the **Opportunity Drawer** from 5 tabs to 2 tabs (Overview + History)
-3. Fix the **duplicate timeline entries** issue in the database
+This plan consolidates the Individual Contact Drawer from 7 tabs to 2 tabs (Overview + Details), matching the client's requirements for a cleaner, more efficient UX. It also adds the ability to link contacts to opportunities and enhances social links with clickable icons.
 
 ---
 
-## Part 1: Fix Add New Opportunity Dialog
+## Part 1: New Tab Structure
 
-**File: `src/components/opportunities/AddOpportunityDialog.tsx`**
+### Tab 1: "Overview" - Primary working view
 
-### Changes:
-1. **Remove duplicate Next Steps field** (lines 576-585) - Currently "Next Steps" appears twice:
-   - Line 365-374: First occurrence (after Deal Name) - **KEEP**
-   - Line 576-585: Second occurrence (in Additional Information) - **REMOVE**
+All the fields the user needs for day-to-day contact management:
 
-2. **Add "Add to Do" checkbox and Due Date picker to the first Next Steps field** - To match the Activity tab behavior, add:
-   - Optional due date picker
-   - "Add in To Do" checkbox
-   - These will be displayed below the Next Steps textarea
-
-3. **Add File Attachments section at the bottom** - After Notes field, add:
-   - A collapsible attachments section
-   - Reuse the existing `AttachmentUpload` component
-   - Note: For new opportunities, files will be uploaded AFTER the opportunity is created (show info message)
-
----
-
-## Part 2: Restructure Opportunity Drawer
-
-**File: `src/components/opportunities/OpportunityDrawer.tsx`**
-
-### Current Tabs (5):
-- Overview: Key info, focus areas, sector, tier, LG leads, URL
-- Details: Platform/Add-on, process timeline, EBITDA, acquisition date
-- Activity: Next Steps with timeline, Notes with timeline
-- Source: Deal source company, individuals
-- Files: Attachments
-
-### New Tabs (2):
-
-#### Tab 1: "Overview"
-All editable fields in a single scrollable form (mirroring Add Opportunity):
-- Priority checkbox
-- LG Focus Area (multi-select)
-- LG Focus Area Consolidated (read-only)
-- Sector, Tier
-- Summary of Opportunity
-- LG Leads (1-4)
-- Deal Details (Platform/Add-on, Process Timeline, EBITDA, Funds, Acquisition Date)
-- URL
-- Deal Source (Company + Individuals)
-- Next Steps input (with Add to Do + Due Date) - **NO timeline**
-- Notes input - **NO timeline**
-- Attachments section (collapsible)
-
-#### Tab 2: "History"
-Timeline-focused view showing historical activity:
-- Next Steps Timeline (with delete capability)
-- Notes Timeline (with delete capability)
-- Combined chronological view
-
-### Implementation:
-- Merge content from current Overview, Details, Source tabs into new Overview tab
-- Move Activity content (timelines only) to new History tab
-- Add inline Next Steps/Notes input to Overview WITHOUT timeline display
-- Keep file attachments in Overview tab (at bottom)
-
----
-
-## Part 3: Fix Duplicate Timeline Entries
-
-**Investigation Results:**
-
-The database shows duplicate entries are being created. Looking at the `log_opportunity_note_changes` trigger in migration `20250924121642`:
-
-```sql
-if new.next_steps is distinct from old.next_steps and coalesce(new.next_steps,'') <> '' then
-  insert into opportunity_note_events(...)
+```text
+┌─────────────────────────────────────────────────────┐
+│  ☑ Priority Contact                                │
+├─────────────────────────────────────────────────────┤
+│  Full Name          │ Organization │ Title         │
+├─────────────────────────────────────────────────────┤
+│  Max Lag (Days)     │ Follow-Up Days              │
+├─────────────────────────────────────────────────────┤
+│  LG Sector          │ LG Focus Areas Comprehensive │
+│  Areas of Specialization                           │
+├─────────────────────────────────────────────────────┤
+│  GROUPS                                            │
+│  [Group 1 - TO] [x]  [Group 2 - CC] [x]           │
+│  [ + Add to Group ] [ + Create New Group ]         │
+├─────────────────────────────────────────────────────┤
+│  Notes        [Textarea] [Save]                    │
+│  Next Steps   [Textarea + Due Date + Add to Do]    │
+├─────────────────────────────────────────────────────┤
+│  CONTACT HISTORY AT A GLANCE                       │
+│  Most Recent Contact: Jan 15, 2026                 │
+│  # of Total Contacts: 12                           │
+│  # of Opportunities: 3                             │
+└─────────────────────────────────────────────────────┘
 ```
 
-The trigger fires on UPDATE, but entries are being inserted twice with identical timestamps. This suggests the trigger is firing correctly, but something is causing double-writes.
+### Tab 2: "Details" - Secondary info & relationships
 
-**Likely cause:** When the RPC `add_opportunity_note` is called, it updates the `opportunities_raw` table which triggers `log_opportunity_note_changes`. If the update is running in a transaction that retries or if there's a race condition with optimistic UI updates calling the mutation twice, duplicates occur.
+All supporting information:
 
-**Fix Options:**
-
-A. **Database-side deduplication** - Add a unique constraint or modify the trigger to check for recent duplicates:
-```sql
--- In trigger, check if identical entry exists within last 5 seconds
-IF NOT EXISTS (
-  SELECT 1 FROM opportunity_note_events 
-  WHERE opportunity_id = NEW.id 
-    AND field = 'next_steps' 
-    AND content = NEW.next_steps
-    AND created_at > (now() - interval '5 seconds')
-) THEN
-  INSERT INTO opportunity_note_events(...);
-END IF;
+```text
+┌─────────────────────────────────────────────────────┐
+│  First Name         │ Last Name                    │
+├─────────────────────────────────────────────────────┤
+│  All Email Addresses (expandable list)              │
+│  Phone                                             │
+├─────────────────────────────────────────────────────┤
+│  OPPORTUNITIES (AS DEAL SOURCE)                    │
+│  [Deal 1]  [Deal 2]                                │
+│  [ + Link to Opportunity ] [ + Create Opportunity ]│
+├─────────────────────────────────────────────────────┤
+│  FILES / ATTACHMENTS (collapsible)                 │
+├─────────────────────────────────────────────────────┤
+│  SOCIAL PROFILES & LINKS                           │
+│  Online Bio URL    [input] [🔗 icon]               │
+│  LinkedIn Profile  [input] [LinkedIn icon]         │
+│  X / Twitter       [input] [X icon]                │
+├─────────────────────────────────────────────────────┤
+│  TEAM ASSIGNMENT                                   │
+│  LG Lead (dropdown)                                │
+│  LG Assistant (input)                              │
+└─────────────────────────────────────────────────────┘
 ```
-
-B. **Frontend-side fix** - Ensure mutations are debounced and not called twice
-
-**Recommendation:** Implement database-side deduplication (Option A) as it's more robust.
 
 ---
 
-## Part 4: Create Simplified Notes Input Component
+## Part 2: Fields Being Removed/Hidden
 
-**New File: `src/components/opportunities/SimpleNotesInput.tsx`**
+The following fields from the current drawer will be **removed** (per client request):
 
-A lightweight input component for the Overview tab that:
-- Has textarea for content
-- Has optional due date picker (for Next Steps only)
-- Has "Add in To Do" checkbox (for Next Steps only)
-- Has "Save" button
-- Does NOT show timeline (that's in History tab)
+| Field | Current Location | Reason |
+|-------|-----------------|--------|
+| Email Address (primary) | Overview | Replaced by "All Email Addresses" in Details |
+| Category | Overview | Client didn't mention it |
+| Outreach Type | Tracking | Client: "get rid of Outreach Type email" |
+| Intentional No Outreach | Tracking | Client didn't mention (still saved but not shown) |
+| Follow-Up Recency Threshold | Tracking | Advanced setting, not needed |
+| LG Focus Areas 1-8 (individual fields) | Details | Replaced by comprehensive list |
+| Legacy Group Settings | Groups | Replace with new Groups UI |
+| Recent Interactions | Activity | Not requested in new layout |
+| Group Notes (Legacy) | Activity | Superseded by new groups system |
+
+**Important**: These fields remain in the database and are still saved - they're just not displayed in the new streamlined UI.
+
+---
+
+## Part 3: Opportunities Enhancement
+
+### Current State
+- Shows list of opportunities where contact is deal source
+- Name matching only (no ID linkage)
+- No ability to add/link
+
+### New Capabilities
+
+1. **Link to Existing Opportunity**
+   - Add dropdown/search to find opportunities
+   - Update `deal_source_contact_1_id` or `deal_source_contact_2_id` on selected opportunity
+   - Also update `deal_source_individual_1/2` with contact's full name for backward compatibility
+
+2. **Create New Opportunity**
+   - Button opens `AddOpportunityDialog`
+   - Pre-fill `deal_source_individual_1` with contact's full name
+   - Pre-fill `deal_source_contact_1_id` with contact's ID
+   - On success, refresh opportunities list
+
+### Database Considerations
+The columns already exist:
+- `deal_source_contact_1_id` (UUID FK to contacts_raw)
+- `deal_source_contact_2_id` (UUID FK to contacts_raw)
+
+No schema changes needed - just need to use these columns.
+
+---
+
+## Part 4: Groups Section Enhancement
+
+### Current State
+- Shows group memberships with remove button
+- Add member modal exists for group drawer (not contact drawer)
+
+### New Design for Overview Tab
+
+```text
+GROUPS
+├── [Group A - TO] [x remove]
+├── [Group B - CC] [x remove]
+│
+├── [ + Add to Group ▼ ]     ← Opens dropdown to select existing group
+│     ├─ Group C
+│     ├─ Group D
+│     └─ ...
+│
+└── [ + Create New Group ]   ← Opens create group modal with contact pre-added
+```
+
+Implementation:
+- Reuse `useContactGroups` hook (already in use)
+- Create `AddContactToGroupDropdown` component (similar to AddMemberToGroupModal but inline)
+- Reuse `useAddContactToGroup` hook
+- For "Create New Group", open `BulkGroupAssignmentModal` in "new" mode with this contact pre-selected
+
+---
+
+## Part 5: Social Links with Clickable Icons
+
+Add icon buttons next to each social link input:
+
+```typescript
+// LinkedIn
+<div className="flex gap-2 items-end">
+  <Input value={linkedin_url} onChange={...} />
+  {linkedin_url && (
+    <Button variant="ghost" size="icon" onClick={() => window.open(linkedin_url)}>
+      <LinkedInIcon className="h-4 w-4" />
+    </Button>
+  )}
+</div>
+```
+
+Icons to use:
+- LinkedIn: Custom SVG or Lucide's `Linkedin` icon (need to check availability)
+- X/Twitter: Custom SVG (Lucide has Twitter but need X logo)
+- Website: `ExternalLink` from Lucide
+
+---
+
+## Part 6: Quick Stats Rename & Simplification
+
+### Current
+- Quick Stats: Most Recent Contact, # of Emails, # of Meetings, Follow-Up Date
+
+### New (per client)
+- **Contact History at a Glance**:
+  - Most Recent Contact
+  - # of Total Contacts (`of_emails + of_meetings`)
+  - # of Opportunities (count from `useContactOpps`)
+
+---
+
+## Part 7: Notes & Next Steps in Overview
+
+Use the existing `SimpleNotesInput` component (from opportunity drawer refactor) for a clean, timeline-free input:
+
+For Notes:
+```typescript
+<SimpleNotesInput
+  title="Notes"
+  field="notes"
+  placeholder="Enter notes..."
+  onSave={(content) => saveNotes(content)}
+  isSaving={isSavingNotes}
+/>
+```
+
+For Next Steps (with due date + Add to Do):
+```typescript
+<SimpleNotesInput
+  title="Next Steps"
+  field="next_steps"
+  placeholder="Enter next steps..."
+  onSave={(content, dueDate, addInToDo) => saveNextSteps(content, dueDate, addInToDo)}
+  isSaving={isSavingNextSteps}
+/>
+```
+
+The timeline/history remains accessible via "View Full History" button in header.
 
 ---
 
@@ -127,135 +216,89 @@ A lightweight input component for the Overview tab that:
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/opportunities/AddOpportunityDialog.tsx` | Modify | Remove duplicate Next Steps, add due date + Add to Do, add attachments section |
-| `src/components/opportunities/OpportunityDrawer.tsx` | Major Modify | Consolidate 5 tabs → 2 tabs (Overview + History) |
-| `src/components/opportunities/SimpleNotesInput.tsx` | Create | New lightweight input without timeline |
-| `supabase/migrations/[timestamp]_fix_duplicate_timeline.sql` | Create | Add deduplication logic to trigger |
-| `src/integrations/supabase/types.ts` | Auto-update | Will be regenerated |
+| `src/components/contacts/ContactDrawer.tsx` | **Major Refactor** | Restructure from 7 tabs to 2 tabs |
+| `src/components/contacts/ContactSimpleNotesInput.tsx` | **Create** | Adapt SimpleNotesInput for contacts (or reuse opportunity one) |
+| `src/components/contacts/ContactGroupsSection.tsx` | **Create** | New groups UI with add/remove/create |
+| `src/components/contacts/ContactOpportunitiesSection.tsx` | **Create** | Opportunities with link/create functionality |
+| `src/components/contacts/AddContactToGroupDropdown.tsx` | **Create** | Dropdown to add contact to existing group |
+| `src/components/contacts/LinkContactToOpportunityModal.tsx` | **Create** | Search/select opportunity to link contact |
+| `src/hooks/useLinkContactToOpportunity.ts` | **Create** | Hook to update opportunity with contact ID |
+| `src/hooks/useAllOpportunitiesSearch.ts` | **Create** | Hook to search opportunities for linking |
 
 ---
 
-## Technical Details
+## Technical Implementation Details
 
-### AddOpportunityDialog Changes:
-1. Add state for `nextStepsDueDate` and `addInToDo`
-2. Remove the second Next Steps textarea (lines 576-585)
-3. Add DatePicker and Checkbox below the first Next Steps field
-4. Add AttachmentUpload at bottom with message "Files can be uploaded after the opportunity is created"
-5. On submit, if opportunity created successfully, navigate to drawer or show option to upload files
-
-### OpportunityDrawer Tab Restructure:
-1. Change TabsList from 5 columns to 2 columns
-2. Merge Overview + Details + Source content into "Overview" tab
-3. Keep Activity timeline content, move to "History" tab
-4. In Overview, replace OpportunityNotesSection with SimpleNotesInput (no timeline)
-5. Files section stays in Overview as collapsible
-
-### Timeline Deduplication Fix:
-```sql
-CREATE OR REPLACE FUNCTION public.log_opportunity_note_changes()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $function$
-begin
-  if tg_op = 'UPDATE' then
-    -- Check for next_steps changes
-    if new.next_steps is distinct from old.next_steps 
-       and coalesce(new.next_steps,'') <> '' then
-      -- Prevent duplicates within 5 second window
-      IF NOT EXISTS (
-        SELECT 1 FROM opportunity_note_events 
-        WHERE opportunity_id = NEW.id 
-          AND field = 'next_steps' 
-          AND content = NEW.next_steps
-          AND created_at > (now() - interval '5 seconds')
-      ) THEN
-        insert into opportunity_note_events(opportunity_id, field, content, due_date, created_by)
-        values (new.id, 'next_steps', new.next_steps, new.next_steps_due_date, auth.uid());
-      END IF;
-    end if;
-
-    -- Check for most_recent_notes changes
-    if new.most_recent_notes is distinct from old.most_recent_notes 
-       and coalesce(new.most_recent_notes,'') <> '' then
-      -- Prevent duplicates within 5 second window
-      IF NOT EXISTS (
-        SELECT 1 FROM opportunity_note_events 
-        WHERE opportunity_id = NEW.id 
-          AND field = 'most_recent_notes' 
-          AND content = NEW.most_recent_notes
-          AND created_at > (now() - interval '5 seconds')
-      ) THEN
-        insert into opportunity_note_events(opportunity_id, field, content, created_by)
-        values (new.id, 'most_recent_notes', new.most_recent_notes, auth.uid());
-      END IF;
-    end if;
-  end if;
-  return new;
-end
-$function$;
+### 1. Contact Simple Notes Input
+Can reuse `SimpleNotesInput` from opportunities with minor type adjustment:
+```typescript
+field: 'next_steps' | 'notes' // For contacts
 ```
 
----
-
-## Visual Reference
-
-### Current Drawer Layout:
-```
-[Overview] [Details] [Activity] [Source] [Files]
-```
-
-### New Drawer Layout:
-```
-[Overview] [History]
-```
-
-### Overview Tab Content Flow:
-```
-Priority Checkbox
-Focus Area | Sector
-Tier | (Priority badge display)
-Summary of Opportunity
-LG Leads 1-4
-─────────────────────
-Deal Details
-Platform/Add-on | Process Timeline
-EBITDA | Acquisition Date
-Funds | Date of Origination
-─────────────────────
-URL
-─────────────────────
-Deal Source
-Company | Individual 1 | Individual 2
-─────────────────────
-Next Steps (input + due date + add to do) [Save]
-Notes (input) [Save]
-─────────────────────
-▼ Attachments (collapsible)
+### 2. Link Contact to Opportunity
+```typescript
+// useLinkContactToOpportunity.ts
+async function linkContact(opportunityId: string, contactId: string, slot: 1 | 2) {
+  const field = slot === 1 ? 'deal_source_contact_1_id' : 'deal_source_contact_2_id';
+  const nameField = slot === 1 ? 'deal_source_individual_1' : 'deal_source_individual_2';
+  
+  // Get contact name for backward compatibility
+  const { data: contact } = await supabase
+    .from('contacts_raw')
+    .select('full_name')
+    .eq('id', contactId)
+    .single();
+  
+  await supabase
+    .from('opportunities_raw')
+    .update({ 
+      [field]: contactId,
+      [nameField]: contact?.full_name 
+    })
+    .eq('id', opportunityId);
+}
 ```
 
-### History Tab Content Flow:
+### 3. Search Opportunities for Linking
+```typescript
+// useAllOpportunitiesSearch.ts
+const { data } = await supabase
+  .from('opportunities_raw')
+  .select('id, deal_name, sector, status')
+  .ilike('deal_name', `%${searchTerm}%`)
+  .order('deal_name')
+  .limit(20);
 ```
-Combined Timeline (Next Steps + Notes)
-- Sorted by date descending
-- Each entry shows: timestamp, type badge, content, delete button
-- Optionally: filter by type (Next Steps / Notes)
-```
+
+### 4. Social Link Icons
+Use Lucide icons where possible, fall back to simple ExternalLink:
+- LinkedIn: Use custom SVG (Lucide's Linkedin icon exists)
+- X/Twitter: Use custom SVG for X logo
+- Website: Use ExternalLink icon
 
 ---
 
 ## Implementation Order
 
-1. **Fix duplicate timeline issue** (database migration) - Prevents new duplicates
-2. **Create SimpleNotesInput component** - Reusable for both Add dialog and drawer
-3. **Update AddOpportunityDialog** - Remove duplicate, add due date/todo/attachments
-4. **Restructure OpportunityDrawer** - Consolidate to 2 tabs
+1. **Create new hooks** (`useLinkContactToOpportunity`, `useAllOpportunitiesSearch`)
+2. **Create new components** (ContactGroupsSection, ContactOpportunitiesSection, LinkContactToOpportunityModal, AddContactToGroupDropdown)
+3. **Refactor ContactDrawer** - consolidate to 2 tabs using new components
+4. **Add social link icons** with clickable external links
+5. **Update Quick Stats** to "Contact History at a Glance"
+6. **Test thoroughly** - ensure all save functionality works
 
 ---
 
-## Notes
+## Visual Comparison
 
-- All existing functionality is preserved, just reorganized
-- The History tab provides a clean chronological view of all activity
-- Timeline deduplication is handled at database level for reliability
-- Files in Add dialog will prompt user that files upload after creation (can't upload to non-existent entity)
+### Current (7 Tabs)
+```
+[Overview] [Details] [Groups] [Activity] [Tracking] [Opportunities] [Files]
+```
+
+### New (2 Tabs)  
+```
+[Overview] [Details]
+```
+
+All functionality is preserved - just reorganized for efficiency!
