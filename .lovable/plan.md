@@ -1,57 +1,198 @@
 
 
-# Fix: Sync `email_pipeline_contacts_v` with Linked Email Dates
+# Plan: Focus Area Description Viewer & Editor in Email Builder
 
-## Problem
+## Summary
 
-The `email_pipeline_contacts_v` view (used by the Email Builder's "Select Contact" panel) does **not** account for linked email addresses via `contact_email_addresses`. We already fixed `contacts_with_display_fields` to use `GREATEST(c.most_recent_contact, linked_most_recent_contact)`, but the pipeline view still reads `most_recent_contact` directly from `contacts_raw`.
+Add a collapsible "Focus Area Language" panel above the Email Modules card (right column) in the Email Builder. This panel lets users browse, review, and inline-edit focus area descriptions from the `focus_area_description` table. Selected/edited descriptions are appended to the Focus Area Rationale module content in the webhook payload sent to n8n.
 
-**Result**: Ryan Lindquist shows as **-16d overdue** in the Email Builder (using Dec 11, 2025), but is actually **not overdue** (most recent linked contact is Feb 2, 2026, next due Mar 19, 2026).
+---
 
-## Root Cause
+## Part 1: UI Component - FocusAreaLanguagePanel
 
-In the `contact_enriched` CTE of the view (line 95):
-```sql
-c.most_recent_contact,   -- Only reads the individual record's date
-```
-
-This feeds into `entity_dates` which computes `effective_last_contact_date` without considering linked emails.
-
-## Fix
-
-Add a `linked_contact_dates` CTE (same pattern as `contacts_with_display_fields`) and incorporate it into `entity_dates`:
+A new component placed above the `ModulesCard` in the right column of the Email Builder.
 
 ```text
-linked_contact_dates CTE
-  -> Joins contact_email_addresses with contacts_raw
-  -> Gets MAX(most_recent_contact) across all records sharing emails
-  -> Returns one row per contact_id
-
-entity_dates CTE (modified)
-  -> Uses GREATEST(existing dates, linked_most_recent_contact)
++--------------------------------------------------+
+| Focus Area Language                   [Collapse]  |
+|--------------------------------------------------|
+| Focus Area:  [Electronic Components ▼]            |
+| Type:        [New Platform ▼] [Add-On ▼]          |
+|   (filtered by selected focus area)               |
+| Platform:    Summit Interconnect                   |
+|   (shown only when Add-On selected; read-only)    |
+|--------------------------------------------------|
+| Description:                                      |
+| [Editable textarea with current description]      |
+|                                                   |
+| [Save Changes]  [Use in Email ✓]                  |
++--------------------------------------------------+
 ```
 
-## Database Migration
+### Behavior
 
-A single `CREATE OR REPLACE VIEW` statement for `email_pipeline_contacts_v` that:
+1. **Focus Area dropdown**: Shows all distinct `LG Focus Area` values from `focus_area_description` table. If a contact is selected, their focus areas appear first/highlighted.
 
-1. Adds `linked_contact_dates` CTE between `eligible` and `contact_enriched`
-2. Updates `entity_dates` to include the linked date via `GREATEST`
+2. **Platform/Add-On dropdown**: Filtered by the selected focus area. Some focus areas have only "New Platform", some only "Add-On", some have both. Automatically selects if only one option exists.
 
-The dependent view `automated_outreach_queue_v` does **not** need changes since it reads from `email_pipeline_contacts_v` which will automatically reflect the corrected dates.
+3. **Existing Platform field**: Read-only display, shown only when "Add-On" is selected. Shows the `Existing Platform (for Add-Ons)` column value.
 
-## Expected Result After Fix
+4. **Description textarea**: Displays the matching description. Editable inline. On "Save Changes", updates the `focus_area_description` row via Supabase (UPDATE using `Unique_ID`).
 
-| Contact | Before | After |
-|---------|--------|-------|
-| Ryan Lindquist | Overdue -16d (using Dec 11) | Not overdue, due Mar 19 (using Feb 2) |
+5. **"Use in Email" toggle/checkbox**: When checked, the selected description text is appended to the Focus Area Rationale module payload. This is sent as a new field `focusAreaLanguageOverride` in the webhook payload.
 
-The overdue count in Email Builder should drop from 12 to 11, matching the contacts table.
+---
 
-## Files to Modify
+## Part 2: Data Flow
 
-| File | Action |
-|------|--------|
-| New migration SQL | Add `linked_contact_dates` CTE to `email_pipeline_contacts_v` view |
+### Reading
+- Fetch all rows from `focus_area_description` (small table, ~20 rows)
+- Use existing `useFocusAreaDescriptions` hook pattern but fetch ALL rows (no filter)
 
-No frontend code changes needed -- the hook `useOverdueContacts` already reads from this view correctly.
+### Writing (Inline Edit)
+- UPDATE `focus_area_description` SET `Description` = ? WHERE `Unique_ID` = ?
+- RLS: Admin update policy exists (`is_admin(auth.uid())`). If the current user is admin, updates work. If not, we need to add an authenticated user update policy.
+
+### Adding to Webhook Payload
+- New field in `EnhancedDraftPayload`:
+  ```typescript
+  focusAreaLanguage?: {
+    focusArea: string;
+    type: string;              // 'New Platform' or 'Add-On'
+    existingPlatform?: string; // Only for Add-Ons
+    description: string;       // The (possibly edited) text
+    useInEmail: boolean;       // Whether user toggled it on
+  };
+  ```
+- This gets included in the payload sent to n8n so the AI can incorporate it into the Focus Area Rationale section.
+
+---
+
+## Part 3: RLS Policy Update
+
+The current UPDATE policy requires `is_admin()`. We need to allow authenticated users to update descriptions:
+
+```sql
+CREATE POLICY "Authenticated users can update focus area descriptions"
+ON focus_area_description
+FOR UPDATE
+TO authenticated
+USING (auth.uid() IS NOT NULL)
+WITH CHECK (auth.uid() IS NOT NULL);
+```
+
+---
+
+## Part 4: Webhook Payload Integration
+
+In `src/lib/enhancedPayload.ts`, add the `focusAreaLanguage` field to the payload builder. The data flows from the Email Builder page state through `buildEnhancedDraftPayload` into the final webhook POST body.
+
+In `DraftGenerateButton.tsx`, pass the focus area language selection through the enhanced payload so n8n receives it alongside existing module data.
+
+---
+
+## Files to Create/Modify
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/components/email-builder/FocusAreaLanguagePanel.tsx` | **Create** | New panel component with dropdowns, textarea, save, and toggle |
+| `src/hooks/useAllFocusAreaDescriptions.ts` | **Create** | Hook to fetch all rows from `focus_area_description` + mutation for updates |
+| `src/pages/EmailBuilder.tsx` | **Modify** | Add state for focus area language selection; render `FocusAreaLanguagePanel` above `ModulesCard` in right column |
+| `src/lib/enhancedPayload.ts` | **Modify** | Add `focusAreaLanguage` field to `EnhancedDraftPayload` interface and builder |
+| `src/components/email-builder/DraftGenerateButton.tsx` | **Modify** | Pass focus area language data through to payload |
+| New migration SQL | **Create** | Add authenticated UPDATE policy to `focus_area_description` |
+
+---
+
+## Implementation Details
+
+### FocusAreaLanguagePanel Component
+
+```typescript
+interface FocusAreaLanguagePanelProps {
+  contactFocusAreas?: string[];  // To highlight relevant focus areas
+  value: FocusAreaLanguageSelection | null;
+  onChange: (selection: FocusAreaLanguageSelection | null) => void;
+}
+
+interface FocusAreaLanguageSelection {
+  uniqueId: number;
+  focusArea: string;
+  type: string;               // 'New Platform' | 'Add-On'
+  existingPlatform: string | null;
+  description: string;
+  useInEmail: boolean;
+}
+```
+
+**Dropdown filtering logic:**
+1. User selects Focus Area -> filter `Platform / Add-On` options to those available for that focus area
+2. User selects Platform/Add-On -> if "Add-On", show `Existing Platform (for Add-Ons)` read-only
+3. Load matching description into textarea
+4. User can edit and save, or toggle "Use in Email"
+
+### useAllFocusAreaDescriptions Hook
+
+```typescript
+// Fetch all rows
+const { data } = useQuery({
+  queryKey: ['all_focus_area_descriptions'],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from('focus_area_description')
+      .select('*')
+      .order('"LG Focus Area"');
+    return data;
+  }
+});
+
+// Update mutation
+const updateMutation = useMutation({
+  mutationFn: async ({ uniqueId, description }) => {
+    await supabase
+      .from('focus_area_description')
+      .update({ Description: description })
+      .eq('Unique_ID', uniqueId);
+  },
+  onSuccess: () => queryClient.invalidateQueries(['all_focus_area_descriptions'])
+});
+```
+
+### Payload Addition
+
+In `EnhancedDraftPayload`, add after `focusAreas`:
+
+```typescript
+focusAreaLanguage?: {
+  focusArea: string;
+  type: string;
+  existingPlatform?: string;
+  description: string;
+  useInEmail: boolean;
+};
+```
+
+This field is only populated when the user has selected a focus area in the panel and toggled "Use in Email" on.
+
+---
+
+## Placement in Layout
+
+The panel goes in the right column, above `ModulesCard`:
+
+```text
+Right Column (lg:col-span-6):
+  ┌─────────────────────────┐
+  │ Focus Area Language      │  <-- NEW
+  │ (collapsible panel)      │
+  └─────────────────────────┘
+  ┌─────────────────────────┐
+  │ Email Modules            │  <-- Existing
+  │ (ModulesCard)            │
+  └─────────────────────────┘
+  ┌─────────────────────────┐
+  │ Live Preview             │  <-- Existing
+  │ (ModuleContentPreview)   │
+  └─────────────────────────┘
+```
+
