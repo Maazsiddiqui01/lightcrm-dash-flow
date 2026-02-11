@@ -55,6 +55,7 @@ import { useEffectiveSettings } from "@/hooks/useEffectiveSettings";
 import { useSaveSettingsWithOCC } from "@/hooks/useSaveSettingsWithOCC";
 import { SplitSaveButton } from "@/components/email-builder/SplitSaveButton";
 import { SourceBadge } from "@/components/email-builder/SourceBadge";
+import { FocusAreaLanguagePanel, type FocusAreaLanguageSelection } from "@/components/email-builder/FocusAreaLanguagePanel";
 import { ConfirmSaveDialog, type SaveScope, type AffectedField } from "@/components/email-builder/ConfirmSaveDialog";
 import { ModuleContentPreview } from "@/components/email-builder/ModuleContentPreview";
 import { MASTER_TEMPLATES } from "@/lib/router";
@@ -178,6 +179,9 @@ function EmailBuilderContent() {
   
   // Manual save flag to prevent auto-save race conditions
   const [isManualSaving, setIsManualSaving] = useState(false);
+  
+  // Focus Area Language selection state
+  const [focusAreaLanguage, setFocusAreaLanguage] = useState<FocusAreaLanguageSelection | null>(null);
   
   // Defaults persistence hooks
   const saveContactModuleDefaults = useSaveContactModuleDefaults();
@@ -1198,7 +1202,8 @@ function EmailBuilderContent() {
         autoTeam.length > 0 ? autoTeam : undefined,
         deltaType as 'Email' | 'Meeting' || 'Email', // deltaType
         moduleStates, // Pass module states
-        moduleSelections // Pass module selections
+        moduleSelections, // Pass module selections
+        focusAreaLanguage && focusAreaLanguage.useInEmail ? focusAreaLanguage : undefined
       );
 
       // Generate draft
@@ -1799,8 +1804,17 @@ ${draftResult.signature}`;
             )}
           </div>
 
-          {/* Right Column - Configuration */}
+           {/* Right Column - Configuration */}
           <div className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
+            {/* Focus Area Language Panel */}
+            {selectedContact && (
+              <FocusAreaLanguagePanel
+                contactFocusAreas={contactData?.focus_areas}
+                value={focusAreaLanguage}
+                onChange={setFocusAreaLanguage}
+              />
+            )}
+
             {/* Email Modules Configuration */}
             <ModulesCard
               masterTemplate={masterTemplate}
