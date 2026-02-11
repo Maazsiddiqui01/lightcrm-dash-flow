@@ -21,6 +21,14 @@ import { interpolateContent } from './contentInterpolation';
 import { pickRandomPhrase, generateSeed } from './randomization';
 import { hasInsuranceServicesFocusArea } from '@/utils/focusAreaDetection';
 
+export interface FocusAreaLanguagePayload {
+  focusArea: string;
+  type: string;
+  existingPlatform?: string;
+  description: string;
+  useInEmail: boolean;
+}
+
 export interface EnhancedDraftPayload {
   // Core contact info
   contact: {
@@ -184,6 +192,9 @@ export interface EnhancedDraftPayload {
     reason?: string;
   };
   
+  // Focus area language override for Focus Area Rationale
+  focusAreaLanguage?: FocusAreaLanguagePayload;
+  
   // Tracking IDs for rotation logging
   tracking: {
     phraseIds: string[];
@@ -211,7 +222,8 @@ export async function buildEnhancedDraftPayload(
   autoTeam?: Array<{ id: string; name: string; email: string; role: string }>,
   deltaType?: 'Email' | 'Meeting',
   moduleStates?: Record<string, any>,
-  moduleSelections?: Record<string, any>
+  moduleSelections?: Record<string, any>,
+  focusAreaLanguage?: FocusAreaLanguagePayload | null
 ): Promise<EnhancedDraftPayload> {
   // Calculate effective tone
   const effectiveTone = toneOverride || masterTemplate.tone || 'hybrid';
@@ -843,6 +855,7 @@ export async function buildEnhancedDraftPayload(
       final: finalCcList,
     },
     qualityCheck: generation.qualityCheck,
+    focusAreaLanguage: focusAreaLanguage && focusAreaLanguage.useInEmail ? focusAreaLanguage : undefined,
     tracking: {
       phraseIds,
       inquiryId,
