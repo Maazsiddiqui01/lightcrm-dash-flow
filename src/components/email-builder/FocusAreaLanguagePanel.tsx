@@ -36,7 +36,7 @@ export function FocusAreaLanguagePanel({ contactFocusAreas, value, onChange }: F
 
   // Get distinct focus areas, with contact's focus areas first
   const focusAreaOptions = useMemo(() => {
-    const allAreas = [...new Set(allDescriptions.map(d => d['LG Focus Area']))].sort();
+    const allAreas = [...new Set(allDescriptions.map(d => d['LG Focus Area']).filter(Boolean))].sort();
     if (!contactFocusAreas || contactFocusAreas.length === 0) return allAreas;
 
     const contactSet = new Set(contactFocusAreas.map(fa => fa.toLowerCase()));
@@ -52,6 +52,7 @@ export function FocusAreaLanguagePanel({ contactFocusAreas, value, onChange }: F
       allDescriptions
         .filter(d => d['LG Focus Area'] === selectedFocusArea)
         .map(d => d['Platform / Add-On'])
+        .filter(Boolean)
     )];
   }, [allDescriptions, selectedFocusArea]);
 
