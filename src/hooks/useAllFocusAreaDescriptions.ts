@@ -31,6 +31,54 @@ export function useAllFocusAreaDescriptions() {
   });
 }
 
+export interface CreateFocusAreaDescriptionInput {
+  sector: string;
+  focusArea: string;
+  platformType: string;
+  existingPlatform: string | null;
+  description: string;
+}
+
+export function useCreateFocusAreaDescription() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (input: CreateFocusAreaDescriptionInput) => {
+      const { data, error } = await supabase
+        .from('focus_area_description')
+        .insert({
+          'LG Sector': input.sector,
+          'LG Focus Area': input.focusArea,
+          'Platform / Add-On': input.platformType,
+          'Existing Platform (for Add-Ons)': input.existingPlatform,
+          Description: input.description,
+        } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all_focus_area_descriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['focus_area_descriptions'] });
+      toast({
+        title: 'Entry Created',
+        description: 'New focus area description has been added.',
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to create focus area description:', error);
+      toast({
+        title: 'Creation Failed',
+        description: 'Could not add the entry. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
 export function useUpdateFocusAreaDescription() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
