@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight, Save } from 'lucide-react';
+import { ChevronDown, ChevronRight, Save, Plus } from 'lucide-react';
 import { useAllFocusAreaDescriptions, useUpdateFocusAreaDescription } from '@/hooks/useAllFocusAreaDescriptions';
+import { AddFocusAreaForm } from './AddFocusAreaForm';
 
 export interface FocusAreaLanguageSelection {
   uniqueId: number;
@@ -26,6 +27,7 @@ interface FocusAreaLanguagePanelProps {
 
 export function FocusAreaLanguagePanel({ contactFocusAreas, value, onChange }: FocusAreaLanguagePanelProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [isAddingNew, setIsAddingNew] = useState(false);
   const [selectedFocusArea, setSelectedFocusArea] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [editedDescription, setEditedDescription] = useState<string>('');
@@ -141,8 +143,23 @@ export function FocusAreaLanguagePanel({ contactFocusAreas, value, onChange }: F
           <CardContent className="space-y-4">
             {isLoading ? (
               <div className="h-20 bg-muted animate-pulse rounded" />
+            ) : isAddingNew ? (
+              <AddFocusAreaForm
+                allDescriptions={allDescriptions}
+                onDone={() => setIsAddingNew(false)}
+              />
             ) : (
               <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full mb-2"
+                  onClick={() => setIsAddingNew(true)}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  Add New Entry
+                </Button>
+
                 {/* Focus Area Dropdown */}
                 <div className="space-y-1.5">
                   <Label className="text-sm">Focus Area</Label>
