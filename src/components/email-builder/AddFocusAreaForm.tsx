@@ -30,6 +30,15 @@ export function AddFocusAreaForm({ allDescriptions, onDone }: AddFocusAreaFormPr
     return [...new Set(allDescriptions.map(d => d['LG Focus Area']).filter(Boolean))].sort();
   }, [allDescriptions]);
 
+  // Auto-fill sector when picking an existing focus area
+  const handleFocusAreaChange = (value: string) => {
+    setFocusArea(value);
+    const match = allDescriptions.find(d => d['LG Focus Area'] === value);
+    if (match && match['LG Sector']) {
+      setSector(match['LG Sector']);
+    }
+  };
+
   const isValid = focusArea.trim() &&
     sector &&
     description.trim() &&
@@ -70,7 +79,7 @@ export function AddFocusAreaForm({ allDescriptions, onDone }: AddFocusAreaFormPr
             onChange={e => setFocusArea(e.target.value)}
           />
         ) : (
-          <Select value={focusArea} onValueChange={setFocusArea}>
+          <Select value={focusArea} onValueChange={handleFocusAreaChange}>
             <SelectTrigger>
               <SelectValue placeholder="Select focus area..." />
             </SelectTrigger>
