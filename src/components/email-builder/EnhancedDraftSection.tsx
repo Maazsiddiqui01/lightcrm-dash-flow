@@ -7,12 +7,20 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { CopyButton } from "@/components/shared/CopyButton";
+import DOMPurify from "dompurify";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+interface Pipeline2026Result {
+  email_html: string;
+  to_email: string;
+  cc_emails: string | null;
+  bcc_emails: string | null;
+}
 
 interface EnhancedDraftSectionProps {
   isGenerating: boolean;
@@ -29,6 +37,7 @@ interface EnhancedDraftSectionProps {
   onGenerate2026?: () => void;
   is2026Generating?: boolean;
   pipeline2026Success?: boolean;
+  pipeline2026Result?: Pipeline2026Result | null;
   onCopyToClipboard: () => void;
   disabled?: boolean;
 }
@@ -42,6 +51,7 @@ export function EnhancedDraftSection({
   onGenerate2026,
   is2026Generating = false,
   pipeline2026Success = false,
+  pipeline2026Result = null,
   onCopyToClipboard,
   disabled = false,
 }: EnhancedDraftSectionProps) {
@@ -64,6 +74,13 @@ export function EnhancedDraftSection({
       // Still streaming, not valid JSON yet
     }
   }
+
+  // Extract plain text from HTML for clipboard copy
+  const getPlainTextFromHtml = (html: string) => {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent || div.innerText || '';
+  };
 
   return (
     <Card className="shadow-lg border-2">
@@ -132,24 +149,94 @@ export function EnhancedDraftSection({
           </div>
         )}
 
-        {/* 2026 Pipeline Success State */}
+        {/* 2026 Pipeline Success State with Draft Preview */}
         {pipeline2026Success && !isGenerating && !result && (
-          <div className="text-center py-12 space-y-4 animate-fade-in">
-            <div className="mb-4 flex justify-center">
-              <div className="p-4 rounded-full bg-primary/10">
-                <CheckCircle2 className="h-8 w-8 text-primary" />
+          <div className="space-y-6 animate-fade-in">
+            <div className="text-center space-y-2">
+              <div className="mb-2 flex justify-center">
+                <div className="p-3 rounded-full bg-primary/10">
+                  <CheckCircle2 className="h-6 w-6 text-primary" />
+                </div>
               </div>
+              <p className="font-semibold text-lg">Draft Created in Outlook</p>
+              <p className="text-sm text-muted-foreground">Check your Outlook drafts folder</p>
             </div>
-            <p className="font-semibold text-lg">Draft Created in Outlook</p>
-            <p className="text-sm text-muted-foreground">Check your Outlook drafts folder for the generated email</p>
-            <Button
-              onClick={onGenerate2026 || onGenerate}
-              variant="outline"
-              className="gap-2 mt-4"
-            >
-              <Sparkles className="h-4 w-4" />
-              Generate Another
-            </Button>
+
+            {/* Show the draft preview if we have it */}
+            {pipeline2026Result?.email_html && (
+              <>
+                <Separator />
+                
+                {/* To / CC / BCC fields */}
+                <div className="space-y-3">
+                  {pipeline2026Result.to_email && (
+                    <div className="flex items-start gap-2">
+                      <Badge variant="secondary" className="shrink-0 mt-0.5">To</Badge>
+                      <p className="text-sm text-foreground">{pipeline2026Result.to_email}</p>
+                    </div>
+                  )}
+                  {pipeline2026Result.cc_emails && (
+                    <div className="flex items-start gap-2">
+                      <Badge variant="secondary" className="shrink-0 mt-0.5">CC</Badge>
+                      <p className="text-sm text-foreground">{pipeline2026Result.cc_emails}</p>
+                    </div>
+                  )}
+                  {pipeline2026Result.bcc_emails && (
+                    <div className="flex items-start gap-2">
+                      <Badge variant="secondary" className="shrink-0 mt-0.5">BCC</Badge>
+                      <p className="text-sm text-foreground">{pipeline2026Result.bcc_emails}</p>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Email body rendered as HTML */}
+                <div className="space-y-2">
+                  <Badge variant="secondary">Email Body</Badge>
+                  <div 
+                    className="p-4 bg-muted/20 rounded-lg border-2 prose prose-sm max-w-none dark:prose-invert
+                      [&_p]:mb-3 [&_p]:leading-relaxed [&_p]:text-sm [&_p]:text-foreground"
+                    dangerouslySetInnerHTML={{ 
+                      __html: DOMPurify.sanitize(pipeline2026Result.email_html) 
+                    }} 
+                  />
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-3 pt-2">
+                  <CopyButton
+                    textToCopy={getPlainTextFromHtml(pipeline2026Result.email_html)}
+                    successMessage="Copied to clipboard!"
+                    onCopySuccess={onCopyToClipboard}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Copy to Clipboard
+                  </CopyButton>
+                  <Button 
+                    onClick={onGenerate2026 || onGenerate} 
+                    variant="outline" 
+                    className="gap-2 hover-scale"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Regenerate
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {/* Fallback if no draft content returned */}
+            {!pipeline2026Result?.email_html && (
+              <Button
+                onClick={onGenerate2026 || onGenerate}
+                variant="outline"
+                className="gap-2 mt-4 mx-auto block"
+              >
+                <Sparkles className="h-4 w-4" />
+                Generate Another
+              </Button>
+            )}
           </div>
         )}
 
@@ -164,7 +251,6 @@ export function EnhancedDraftSection({
               <Progress value={progress} className="w-full h-2" />
             </div>
 
-            {/* Live Stream Preview */}
             {parsedStream && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
                 {parsedStream.subject && (
@@ -228,7 +314,7 @@ export function EnhancedDraftSection({
           </div>
         )}
 
-        {/* Final Result */}
+        {/* Final Result (Legacy) */}
         {result && !isGenerating && (
           <div className="space-y-6">
             <div className="space-y-4">

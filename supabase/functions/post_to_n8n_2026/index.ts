@@ -209,12 +209,26 @@ serve(async (req) => {
       throw new Error(`n8n 2026 webhook failed: ${response.status} - ${errorText}`);
     }
 
-    // The 2026 Pipeline webhook responds immediately (async processing)
+    // Parse the n8n response and forward it to the client
     const responseText = await response.text();
     console.log('n8n 2026 response:', responseText);
 
+    // Try to parse and extract the email draft from the response
+    let draftData = null;
+    try {
+      const parsed = JSON.parse(responseText);
+      // Response is an array like [{ Email, to_email, cc_emails, bcc_emails }]
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        draftData = parsed[0];
+      } else if (parsed && typeof parsed === 'object') {
+        draftData = parsed;
+      }
+    } catch {
+      console.log('n8n response is not JSON, treating as plain text');
+    }
+
     return new Response(
-      JSON.stringify({ ok: true, message: 'Draft queued in Outlook' }),
+      JSON.stringify({ ok: true, message: 'Draft queued in Outlook', draft: draftData }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
