@@ -133,7 +133,7 @@ function EmailBuilderContent() {
     subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
-    article_recommendations: 'always',
+    article_recommendations: 'never',
     top_opportunities: 'always',
     platforms: 'always',
     suggested_talking_points: 'always',
