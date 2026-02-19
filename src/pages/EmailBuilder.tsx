@@ -1222,6 +1222,95 @@ function EmailBuilderContent() {
     }
   };
 
+  // 2026 Pipeline draft generation state
+  const [is2026Generating, setIs2026Generating] = useState(false);
+  const [pipeline2026Success, setPipeline2026Success] = useState(false);
+
+  // 2026 Pipeline draft generation handler
+  const handleGenerate2026Pipeline = async () => {
+    try {
+      if (!contactData || !masterTemplate) {
+        toast({
+          title: 'Missing Data',
+          description: 'Please select a contact first',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const fullMasterTemplate = masterTemplates?.find(
+        t => t.master_key === masterTemplate.master_key
+      );
+      if (!fullMasterTemplate) {
+        toast({
+          title: 'Template Not Found',
+          description: 'Master template not found in database',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setIs2026Generating(true);
+      setPipeline2026Success(false);
+
+      const payload = await buildEnhancedDraftPayload(
+        contactData,
+        fullMasterTemplate,
+        allPhrases,
+        allInquiries,
+        allSubjects,
+        daysSinceContact,
+        selectedArticleForContext?.article_link,
+        toneOverride || undefined,
+        subjectPoolOverride,
+        moduleOrder,
+        curatedTeam.length > 0 ? curatedTeam : undefined,
+        curatedTo,
+        curatedCc.length > 0 ? curatedCc : undefined,
+        autoTeam.length > 0 ? autoTeam : undefined,
+        deltaType as 'Email' | 'Meeting' || 'Email',
+        moduleStates,
+        moduleSelections,
+        focusAreaLanguage && focusAreaLanguage.useInEmail ? focusAreaLanguage : undefined
+      );
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Authentication required. Please log in again.');
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/post_to_n8n_2026`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ payload }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed with status ${response.status}`);
+      }
+
+      setPipeline2026Success(true);
+      toast({
+        title: 'Draft Created',
+        description: 'Check your Outlook drafts folder for the generated email',
+      });
+    } catch (error) {
+      console.error('2026 pipeline generation failed:', error);
+      toast({
+        title: '2026 Pipeline Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setIs2026Generating(false);
+    }
+  };
+
   // Copy to clipboard handler
   const handleCopyToClipboard = () => {
     if (!draftResult) return;
@@ -1794,6 +1883,9 @@ ${draftResult.signature}`;
                 streamedContent={streamedContent}
                 result={draftResult}
                 onGenerate={handleGenerateDraft}
+                onGenerate2026={handleGenerate2026Pipeline}
+                is2026Generating={is2026Generating}
+                pipeline2026Success={pipeline2026Success}
                 onCopyToClipboard={handleCopyToClipboard}
                 disabled={
                   !contactData || 
