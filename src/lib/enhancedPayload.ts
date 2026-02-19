@@ -70,6 +70,7 @@ export interface EnhancedDraftPayload {
       description: string;
       sector: string;
       platformAddon: string;
+      existingPlatform: string | null;
     }>;
     platforms: string[];
     addons: string[];
@@ -792,6 +793,7 @@ export async function buildEnhancedDraftPayload(
         description: desc.description,
         sector: desc.sector,
         platformAddon: desc.platformAddon,
+        existingPlatform: desc.existingPlatform,
       })),
       platforms,
       addons,
