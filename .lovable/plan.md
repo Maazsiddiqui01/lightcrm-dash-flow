@@ -1,206 +1,119 @@
 
 
-# Plan: Add 2026 Pipeline Draft Mode with New Webhook
+# Plan: Fix Edge Function Payload + Provide Complete n8n Prompts
 
-## Summary
+## Problem
 
-Add a new "Draft 2026 Pipeline" button as the primary draft generation action, which posts to the new `https://inverisllc.app.n8n.cloud/webhook/2026 Pipeline` webhook. The existing legacy draft flow is demoted to a secondary option in a dropdown. The new webhook receives a payload shaped to match what the `email_pipeline_contacts_v` view provides, which is what the Auto Email Builder n8n workflow already consumes.
+Two issues need fixing:
 
----
+1. **Edge function bug**: The `post_to_n8n_2026` edge function currently hardcodes `add_on_platforms: ''` and `add_on_description: ''` for every focus area block. The actual `email_pipeline_contacts_v` view has these populated. Without this fix, emails will never include add-on content (e.g., Aspire Bakeries, GSF descriptions).
 
-## Architecture Overview
-
-```text
-Current Flow:
-  Email Builder UI --> buildEnhancedDraftPayload() --> post_to_n8n edge function --> n8n "Email-Builder" webhook
-
-New Flow (primary):
-  Email Builder UI --> build2026PipelinePayload() --> post_to_n8n_2026 edge function --> n8n "2026 Pipeline" webhook
-
-Legacy Flow (dropdown option):
-  Same as current flow, unchanged
-```
+2. **n8n prompts**: The current system/user prompts reference `$json.*` (direct view fetching) but the webhook POST body arrives at `$json.body.*`. The prompts also hardcode "I hope you had a relaxing holiday" and "With the new year starting" which need to be dynamic based on the `module_content` fields.
 
 ---
 
-## Part 1: New Edge Function - `post_to_n8n_2026`
+## Part 1: Fix Edge Function -- Populate Add-On Data
 
-Create a new edge function that:
-1. Authenticates the user (same pattern as `post_to_n8n`)
-2. Receives the `EnhancedDraftPayload` from the client
-3. Transforms it into the `email_pipeline_contacts_v` format that the Auto Email Builder expects
-4. POSTs to `https://inverisllc.app.n8n.cloud/webhook/2026 Pipeline`
-5. Returns the n8n response (the webhook responds immediately with "Workflow got started", so we need to handle that -- the actual draft is created as an Outlook draft by n8n)
+The `build2026PipelinePayload` function in `supabase/functions/post_to_n8n_2026/index.ts` needs to properly group focus area descriptions by focus area and separate "New Platform" vs "Add-On" entries, matching the view's structure.
 
-**Key difference**: The "2026 Pipeline" webhook responds immediately (not with the draft content). So the UI will show a success confirmation rather than streaming the draft back.
-
-### Payload Shape (matching `email_pipeline_contacts_v`)
-
-The edge function transforms the `EnhancedDraftPayload` into:
-
+**Current (broken):**
 ```typescript
-{
-  entity_key: string,          // "I:contactId" or "G:groupContact"
-  is_group: boolean,
-  group_contact: string | null,
-  to_contact_id: string,
-  first_name: string,
-  full_name: string,
-  to_emails: string,           // semicolon-separated
-  organization: string,
-  cc_emails: string | null,
-  bcc_emails: string | null,
-  focus_areas_ordered: string[],
-  opening_focus_phrase: string,
-  focus_area_blocks: Array<{
-    focus_area: string,
-    focus_area_display: string,
-    has_addons: boolean,
-    add_on_platforms: string,
-    add_on_description: string,
-    new_platform_description: string,
-  }>,
-  delta_days: number,
-  effective_last_contact_date: string,
-  next_due_date: string,
-  days_until_due: number,
-  is_overdue: boolean,
-  overdue_days: number,
-  tier12_active_count: number,
-  has_tier12_active_opps: boolean,
-  tier12_active_list: string,
-}
+// Every block gets empty add-on fields
+add_on_platforms: '',
+add_on_description: '',
 ```
 
-This is essentially the same as `buildUnified2026Block()` in the existing `post_to_n8n`, but sent as the **root** payload (not nested under `unified_2026`).
+**Fixed approach:**
+- Group all `faDescriptions` entries by focus area name
+- For each focus area, find the "New Platform" entry and the "Add-On" entry separately
+- Populate `new_platform_description` from the New Platform entry
+- Populate `add_on_platforms` and `add_on_description` from the Add-On entry
+- The `existingPlatform` field from add-on entries maps to `add_on_platforms`
+
+Additionally, the `focusAreaLanguage` override should be applied: if the user toggled "Use in Email" for a specific focus area language entry, its description should replace (or supplement) the corresponding block's description.
+
+**File**: `supabase/functions/post_to_n8n_2026/index.ts`
 
 ---
 
-## Part 2: Updated UI - Split Generate Button
+## Part 2: Complete n8n System Prompt (Copy-Paste Ready)
 
-Replace the single "Generate Draft with AI" button with a split button:
+Key changes from the existing prompt:
+- All field references changed from `$json.field` to `$json.body.field` (webhook POST body)
+- "I hope you had a relaxing holiday" replaced with dynamic greeting from `module_content.greeting`, defaulting to "I hope you're doing well."
+- "With the new year starting" replaced with "Checking in" or a neutral opener
+- Focus area language override incorporated when `focus_area_language` is present and `useInEmail` is true
+- Module content (phrases, inquiry, signature) referenced for the AI to incorporate
+- Signature uses `module_content.signature` instead of hardcoded "Tom"
 
-```text
-+---------------------------------------------+
-| [Draft 2026 Pipeline]  [v]                   |
-|                        +---+                 |
-|                        | Legacy Draft (n8n)  |
-|                        +---+                 |
-+---------------------------------------------+
+The complete prompts will be provided in the implementation, ready to copy-paste into the n8n "Message a model1" node.
+
+---
+
+## Part 3: Complete n8n User Prompt (Copy-Paste Ready)
+
+Updated to reference `$json.body.*` fields:
+
+```
+first_name: {{$json.body.first_name}}
+full_name: {{$json.body.full_name}}
+organization: {{$json.body.organization}}
+to_emails: {{$json.body.to_emails}}
+cc_emails: {{$json.body.cc_emails}}
+has_tier12_active_opps: {{$json.body.has_tier12_active_opps}}
+tier12_active_list: {{$json.body.tier12_active_list}}
+tier12_active_list_english: {{ ... expression ... }}
+focus_area_blocks: {{$json.body.focus_area_blocks.toJsonString()}}
+focus_area_count: {{$json.body.focus_area_blocks.length}}
+module_greeting: {{$json.body.module_content.greeting ?? ""}}
+module_signature: {{$json.body.module_content.signature ?? "Tom"}}
+module_inquiry: {{$json.body.module_content.inquiry ?? ""}}
+focus_area_language: {{$json.body.focus_area_language ? $json.body.focus_area_language.toJsonString() : ""}}
 ```
 
-- **Primary action** (visible button): "Draft 2026 Pipeline" -- calls the new webhook
-- **Dropdown option**: "Legacy Draft" -- calls the existing `post_to_n8n` flow
-
-### Behavior Differences
-
-| | 2026 Pipeline | Legacy Draft |
-|---|---|---|
-| Webhook | `/webhook/2026 Pipeline` | `/webhook/Email-Builder` |
-| Response | Immediate confirmation | Streams draft content back |
-| Result UI | Success toast: "Draft created in Outlook" | Shows draft inline in UI |
-| Edge Function | `post_to_n8n_2026` | `post_to_n8n` |
-
-Since the 2026 Pipeline webhook responds immediately ("Workflow got started") and creates the draft directly in Outlook (via the n8n "Create a draft" node), the UI will:
-1. Show a loading state while posting
-2. On success, show a confirmation card: "Draft created in Outlook -- check your drafts folder"
-3. No inline preview (the draft is in Outlook)
-
 ---
 
-## Part 3: Include Email Module Content in Payload
+## Files to Modify
 
-The existing module selections (greetings, phrases, etc.) will be included in the payload as additional context that the n8n AI node can use. Specifically:
-
-- `content.greeting` -- the selected greeting phrase
-- `content.phrases` -- all resolved module phrases
-- `content.inquiry` -- selected inquiry text
-- `content.signature` -- selected signature
-- `focusAreaLanguage` -- if "Use in Email" is toggled on
-
-These are passed as supplementary fields in the payload so the Auto Email Builder's AI prompt can reference them.
-
----
-
-## Part 4: Update n8n Auto Email Builder Prompts
-
-Using the MCP connector, update the Auto Email Builder workflow's system and user prompts to:
-1. Accept the new payload fields (module content, focus area language)
-2. Use a modern greeting (replace "Happy New Year" / "I hope you had a relaxing holiday" with the greeting from the email modules, or a default like "Checking in" / "I hope you're doing well")
-3. Incorporate the focus area language descriptions when provided
-
-This will be done after the technical implementation is complete, as a separate step using the n8n MCP tools.
-
----
-
-## Files to Create/Modify
-
-| File | Action | Description |
-|------|--------|-------------|
-| `supabase/functions/post_to_n8n_2026/index.ts` | **Create** | New edge function that transforms payload and posts to 2026 Pipeline webhook |
-| `supabase/config.toml` | **Modify** | Add config for new edge function |
-| `src/pages/EmailBuilder.tsx` | **Modify** | Add `handleGenerate2026Pipeline` handler, wire up to UI |
-| `src/components/email-builder/EnhancedDraftSection.tsx` | **Modify** | Replace single button with split button (primary: 2026 Pipeline, dropdown: Legacy) |
-| `src/lib/build2026PipelinePayload.ts` | **Create** | Transform `EnhancedDraftPayload` to pipeline view format |
+| File | Change |
+|------|--------|
+| `supabase/functions/post_to_n8n_2026/index.ts` | Fix add-on data population, apply focus area language override |
 
 ---
 
 ## Technical Details
 
-### `build2026PipelinePayload` function
+### Add-On Grouping Logic
 
-Takes an `EnhancedDraftPayload` and produces the `email_pipeline_contacts_v`-shaped object. This reuses much of the logic from `buildUnified2026Block` in the existing edge function but also includes:
-
-- `focus_area_blocks` with proper add-on descriptions from the contact's focus area data
-- Module content as supplementary fields
-- Focus area language override if selected
-
-### Split Button Component
-
-The `EnhancedDraftSection` will use a `DropdownMenu` alongside the primary button:
-
-```typescript
-<div className="flex gap-1">
-  <Button onClick={onGenerate2026} disabled={disabled} size="lg" className="gap-2 flex-1">
-    <Sparkles className="h-4 w-4" />
-    Draft 2026 Pipeline
-  </Button>
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="outline" size="lg" className="px-2">
-        <ChevronDown className="h-4 w-4" />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent>
-      <DropdownMenuItem onClick={onGenerateLegacy}>
-        Legacy Draft (Email Builder)
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-</div>
+The enhanced payload's `focusAreas.descriptions` has entries like:
+```
+{ focusArea: "Food Manufacturing", platformAddon: "New Platform", description: "Within F&B..." }
+{ focusArea: "Food Manufacturing", platformAddon: "Add-On", description: "For Aspire...\nFor GSF..." }
 ```
 
-### Response Handling
+These need to be merged into a single `focus_area_block` per focus area:
+```json
+{
+  "focus_area": "Food Manufacturing",
+  "focus_area_display": "F&B",
+  "has_addons": true,
+  "add_on_platforms": "Aspire Bakeries, Golden State Foods",
+  "add_on_description": "For Aspire, the most attractive...\nFor GSF, we're interested...",
+  "new_platform_description": "Within F&B, we are particularly interested in..."
+}
+```
 
-The 2026 Pipeline webhook responds immediately with "Workflow got started" (not with draft content). The n8n workflow then processes asynchronously and creates an Outlook draft. So the UI flow is:
+The `add_on_platforms` field comes from the `existingPlatform` column in `focus_area_description` table (mapped as `Existing Platform (for Add-Ons)` in the data). Since the enhanced payload doesn't currently carry this field, we need to either:
+- (a) Look it up from the fa_descriptions data in the edge function, or
+- (b) Fetch it from the database in the edge function
 
-1. User clicks "Draft 2026 Pipeline"
-2. Payload is built and sent to edge function
-3. Edge function posts to webhook, gets immediate 200 response
-4. UI shows success: "Draft queued -- check Outlook drafts"
-5. User checks Outlook for the generated draft
+Option (a) is preferred. The `faDescriptions` from the enhanced payload has limited fields. We will need to also pass the `existingPlatform` data through the payload. This means a small update to the enhanced payload builder to include the existing platform name for add-on entries.
 
----
+### System Prompt Changes Summary
 
-## Implementation Phases
-
-**Phase 1** (this implementation):
-- Create edge function and payload builder
-- Update UI with split button
-- Wire up the new flow end-to-end
-
-**Phase 2** (follow-up):
-- Update n8n Auto Email Builder system/user prompts via MCP
-- Refine payload based on actual n8n requirements
-- Add example email patterns to the prompts
+1. Replace hardcoded "I hope you had a relaxing holiday" with: use `module_greeting` if provided, otherwise "I hope you're doing well."
+2. Replace "With the new year starting" with "Checking in" as the opener
+3. Add rule: if `focus_area_language` is provided and non-empty, use its description for the matching focus area block instead of the default `new_platform_description`
+4. Update signature to use `module_signature` field
+5. All `$json.field` references become `$json.body.field`
 
