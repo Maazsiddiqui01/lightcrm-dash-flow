@@ -36,6 +36,9 @@ verify_jwt = true
 [functions.post_to_n8n]
 verify_jwt = true
 
+[functions.post_to_n8n_2026]
+verify_jwt = true
+
 [functions.suggest_contact_groups]
 verify_jwt = true
 

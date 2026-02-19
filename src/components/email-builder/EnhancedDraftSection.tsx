@@ -2,11 +2,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Copy, CheckCircle2, Mail, Send, Users } from "lucide-react";
+import { Sparkles, Copy, CheckCircle2, Mail, Send, Users, ChevronDown } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { CopyButton } from "@/components/shared/CopyButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface EnhancedDraftSectionProps {
   isGenerating: boolean;
@@ -20,6 +26,9 @@ interface EnhancedDraftSectionProps {
     ccList: string[];
   } | null;
   onGenerate: () => void;
+  onGenerate2026?: () => void;
+  is2026Generating?: boolean;
+  pipeline2026Success?: boolean;
   onCopyToClipboard: () => void;
   disabled?: boolean;
 }
@@ -30,6 +39,9 @@ export function EnhancedDraftSection({
   streamedContent,
   result,
   onGenerate,
+  onGenerate2026,
+  is2026Generating = false,
+  pipeline2026Success = false,
   onCopyToClipboard,
   disabled = false,
 }: EnhancedDraftSectionProps) {
@@ -65,25 +77,83 @@ export function EnhancedDraftSection({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
-        {/* Generate Button */}
-        {!isGenerating && !result && (
+        {/* Generate Button - Split: Primary = 2026 Pipeline, Dropdown = Legacy */}
+        {!isGenerating && !is2026Generating && !result && !pipeline2026Success && (
           <div className="text-center py-12 animate-fade-in">
             <div className="mb-4 flex justify-center">
               <div className="p-4 rounded-full bg-primary/10 animate-pulse">
                 <Sparkles className="h-8 w-8 text-primary" />
               </div>
             </div>
-            <Button onClick={onGenerate} disabled={disabled} size="lg" className="gap-2 hover-scale">
-              <Sparkles className="h-4 w-4" />
-              Generate Draft with AI
-            </Button>
+            <div className="flex items-center justify-center gap-1">
+              <Button
+                onClick={onGenerate2026 || onGenerate}
+                disabled={disabled}
+                size="lg"
+                className="gap-2 hover-scale rounded-r-none"
+              >
+                <Sparkles className="h-4 w-4" />
+                Draft 2026 Pipeline
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    disabled={disabled}
+                    className="rounded-l-none px-2 border-l-0"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={onGenerate}>
+                    Legacy Draft (Email Builder)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <p className="text-sm text-muted-foreground mt-3">
-              Click to generate a personalized email using AI
+              Draft will be created in your Outlook drafts folder
             </p>
           </div>
         )}
 
-        {/* Loading State with Live Streaming */}
+        {/* 2026 Pipeline Loading State */}
+        {is2026Generating && (
+          <div className="text-center py-12 space-y-4">
+            <div className="mb-4 flex justify-center">
+              <div className="p-4 rounded-full bg-primary/10 animate-spin">
+                <Mail className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+            <p className="font-medium">Creating draft in Outlook...</p>
+            <p className="text-sm text-muted-foreground">This usually takes a few seconds</p>
+          </div>
+        )}
+
+        {/* 2026 Pipeline Success State */}
+        {pipeline2026Success && !isGenerating && !result && (
+          <div className="text-center py-12 space-y-4 animate-fade-in">
+            <div className="mb-4 flex justify-center">
+              <div className="p-4 rounded-full bg-primary/10">
+                <CheckCircle2 className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+            <p className="font-semibold text-lg">Draft Created in Outlook</p>
+            <p className="text-sm text-muted-foreground">Check your Outlook drafts folder for the generated email</p>
+            <Button
+              onClick={onGenerate2026 || onGenerate}
+              variant="outline"
+              className="gap-2 mt-4"
+            >
+              <Sparkles className="h-4 w-4" />
+              Generate Another
+            </Button>
+          </div>
+        )}
+
+        {/* Loading State with Live Streaming (Legacy) */}
         {isGenerating && (
           <div className="space-y-6">
             <div className="space-y-3">
