@@ -1225,6 +1225,12 @@ function EmailBuilderContent() {
   // 2026 Pipeline draft generation state
   const [is2026Generating, setIs2026Generating] = useState(false);
   const [pipeline2026Success, setPipeline2026Success] = useState(false);
+  const [pipeline2026Result, setPipeline2026Result] = useState<{
+    email_html: string;
+    to_email: string;
+    cc_emails: string | null;
+    bcc_emails: string | null;
+  } | null>(null);
 
   // 2026 Pipeline draft generation handler
   const handleGenerate2026Pipeline = async () => {
@@ -1252,6 +1258,7 @@ function EmailBuilderContent() {
 
       setIs2026Generating(true);
       setPipeline2026Success(false);
+      setPipeline2026Result(null);
 
       const payload = await buildEnhancedDraftPayload(
         contactData,
@@ -1292,6 +1299,18 @@ function EmailBuilderContent() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `Failed with status ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      
+      // Extract draft data from response
+      if (responseData.draft) {
+        setPipeline2026Result({
+          email_html: responseData.draft.Email || responseData.draft.email || '',
+          to_email: responseData.draft.to_email || '',
+          cc_emails: responseData.draft.cc_emails || null,
+          bcc_emails: responseData.draft.bcc_emails || null,
+        });
       }
 
       setPipeline2026Success(true);
@@ -1886,6 +1905,7 @@ ${draftResult.signature}`;
                 onGenerate2026={handleGenerate2026Pipeline}
                 is2026Generating={is2026Generating}
                 pipeline2026Success={pipeline2026Success}
+                pipeline2026Result={pipeline2026Result}
                 onCopyToClipboard={handleCopyToClipboard}
                 disabled={
                   !contactData || 
