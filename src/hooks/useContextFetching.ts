@@ -8,6 +8,7 @@ export interface FocusAreaDescription {
   description: string;
   sector: string;
   platformAddon: string;
+  existingPlatform: string | null;
 }
 
 /**
@@ -57,6 +58,7 @@ export async function fetchFocusAreaDescriptions(
     description: item.Description || '',
     sector: item['LG Sector'] || '',
     platformAddon: item['Platform / Add-On'] || '',
+    existingPlatform: item['Existing Platform (for Add-Ons)'] || null,
   }));
 }
 

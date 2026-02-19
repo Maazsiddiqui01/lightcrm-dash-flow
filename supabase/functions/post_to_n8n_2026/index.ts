@@ -44,24 +44,60 @@ function build2026PipelinePayload(enhanced: any): any {
     ? `G:${contact.groupContact}`
     : `I:${contact.id || ''}`;
 
-  // Focus area blocks (exclude Facility Services, map Food Manufacturing -> F&B)
-  const focusAreaBlocks = faDescriptions
-    .filter((fa: any) => {
-      const name = fa.focusArea || fa.focus_area || '';
-      return name !== 'Facility Services';
-    })
-    .map((fa: any) => {
-      const name = fa.focusArea || fa.focus_area || '';
-      const isAddon = (fa.platformType || fa.platform_type || '').toLowerCase().includes('add-on');
-      return {
-        focus_area: name,
-        focus_area_display: name === 'Food Manufacturing' ? 'F&B' : name,
-        has_addons: isAddon,
-        add_on_platforms: '',
-        add_on_description: '',
-        new_platform_description: fa.description || '',
-      };
-    });
+  // Group faDescriptions by focus area, merging New Platform + Add-On entries
+  const focusAreaMap = new Map<string, {
+    focusArea: string;
+    sector: string;
+    newPlatformDesc: string;
+    addOnPlatforms: string;
+    addOnDesc: string;
+    hasAddons: boolean;
+  }>();
+
+  for (const fa of faDescriptions) {
+    const name = fa.focusArea || fa.focus_area || '';
+    if (name === 'Facility Services') continue;
+
+    const isAddon = (fa.platformAddon || fa.platform_type || '').toLowerCase().includes('add-on');
+    
+    if (!focusAreaMap.has(name)) {
+      focusAreaMap.set(name, {
+        focusArea: name,
+        sector: fa.sector || '',
+        newPlatformDesc: '',
+        addOnPlatforms: '',
+        addOnDesc: '',
+        hasAddons: false,
+      });
+    }
+
+    const entry = focusAreaMap.get(name)!;
+    if (isAddon) {
+      entry.hasAddons = true;
+      entry.addOnDesc = fa.description || '';
+      entry.addOnPlatforms = fa.existingPlatform || fa.existing_platform || '';
+    } else {
+      entry.newPlatformDesc = fa.description || '';
+    }
+  }
+
+  // Apply focus area language override if provided
+  const faLang = enhanced.focusAreaLanguage;
+  if (faLang && faLang.useInEmail && faLang.focusArea) {
+    const entry = focusAreaMap.get(faLang.focusArea);
+    if (entry) {
+      entry.newPlatformDesc = faLang.description || entry.newPlatformDesc;
+    }
+  }
+
+  const focusAreaBlocks = Array.from(focusAreaMap.values()).map(entry => ({
+    focus_area: entry.focusArea,
+    focus_area_display: entry.focusArea === 'Food Manufacturing' ? 'F&B' : entry.focusArea,
+    has_addons: entry.hasAddons,
+    add_on_platforms: entry.addOnPlatforms,
+    add_on_description: entry.addOnDesc,
+    new_platform_description: entry.newPlatformDesc,
+  }));
 
   // Cadence fields
   const daysSince = routing.daysSinceContact || 0;

@@ -81,7 +81,7 @@ async function fetchEmailBuilderData(contactId: string) {
   }
 
   // Fetch all dependent data in parallel - using type assertions to avoid TS deep instantiation issue
-  const descriptionsQuery = supabase.from('focus_area_description').select('"LG Focus Area", "Description", "LG Sector", "Platform / Add-On"').in('"LG Focus Area"', focus_areas) as any;
+  const descriptionsQuery = supabase.from('focus_area_description').select('"LG Focus Area", "Description", "LG Sector", "Platform / Add-On", "Existing Platform (for Add-Ons)"').in('"LG Focus Area"', focus_areas) as any;
   const articlesQuery = supabase.from('articles').select('focus_area, article_link, Title').in('focus_area', focus_areas).gte('added_date', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString()) as any;
   const directoryQuery = supabase.from('lg_focus_area_directory').select('focus_area, lead1_name, lead1_email, lead2_name, lead2_email, assistant_name, assistant_email').in('focus_area', focus_areas) as any;
   const oppsQuery = supabase.from('opportunities_raw').select('deal_name, ebitda_in_ms').or(`deal_source_individual_1.eq.${contactData.full_name},deal_source_individual_2.eq.${contactData.full_name}`).eq('tier', 'Tier 1').eq('status', 'Active').order('ebitda_in_ms', { ascending: false }).limit(10) as any;
