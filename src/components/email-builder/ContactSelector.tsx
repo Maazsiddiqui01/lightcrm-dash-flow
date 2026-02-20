@@ -34,7 +34,7 @@ export function ContactSelector({ selectedContact, onContactSelect }: ContactSel
       email: quickContact.email || '',
       organization: quickContact.organization || null,
       // Provide defaults for required fields - full data will be loaded
-      first_name: quickContact.full_name.split(' ')[0] || '',
+      first_name: (quickContact.full_name || '').split(' ')[0] || '',
       focus_areas: [],
       fa_count: 0,
       fa_sectors: [],

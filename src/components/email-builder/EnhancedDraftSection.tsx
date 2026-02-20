@@ -293,7 +293,7 @@ export function EnhancedDraftSection({
                   <div className="space-y-2">
                     <Badge variant="secondary">Email Body</Badge>
                     <div className="p-4 bg-muted/20 rounded-lg border space-y-3">
-                      {parsedStream.body.split('\n\n').map((paragraph: string, idx: number) => (
+                      {(parsedStream.body || '').split('\n\n').map((paragraph: string, idx: number) => (
                         <p key={idx} className="text-sm leading-relaxed">
                           {paragraph}
                         </p>
@@ -347,7 +347,7 @@ export function EnhancedDraftSection({
                 <div className="p-4 bg-muted/20 rounded-lg border-2 space-y-4">
                   <p className="font-medium">{result.greeting},</p>
                   
-                  {result.body.split('\n\n').map((paragraph, idx) => (
+                  {(result.body || '').split('\n\n').map((paragraph, idx) => (
                     <p key={idx} className="text-sm leading-relaxed">
                       {paragraph}
                     </p>
