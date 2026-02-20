@@ -370,7 +370,7 @@ export function useContactDraftGenerator() {
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/post_to_n8n`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/post_to_n8n_2026`,
         {
           method: 'POST',
           headers: {
@@ -392,7 +392,16 @@ export function useContactDraftGenerator() {
         throw new Error(errorMessage);
       }
 
-      console.log('✅ Draft successfully posted to n8n');
+      const responseData = await response.json();
+      
+      if (responseData.draft) {
+        console.log('✅ Draft successfully created via 2026 Pipeline:', {
+          hasEmail: !!responseData.draft.email_html,
+          toEmail: responseData.draft.to_email,
+        });
+      } else {
+        console.log('✅ Draft request sent to 2026 Pipeline (async processing)');
+      }
 
       // Step 13: Success toast
       const contactName = contact.full_name || contact.email || 'Contact';
