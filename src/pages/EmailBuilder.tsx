@@ -148,7 +148,6 @@ function EmailBuilderContent() {
     'subject_line',
     'initial_greeting',
     'self_personalization',
-    'article_recommendations',
     'top_opportunities',
     'platforms',
     'suggested_talking_points',

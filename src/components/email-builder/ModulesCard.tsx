@@ -84,7 +84,7 @@ export function getModuleDefaultsFromMaster(masterKey: string, masterTemplates: 
     subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
-    article_recommendations: 'always',
+    article_recommendations: 'never',
     top_opportunities: 'always',
     platforms: 'always',
     suggested_talking_points: 'always',
@@ -101,7 +101,7 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
-    article_recommendations: 'always',
+    article_recommendations: 'never',
     top_opportunities: 'always',
     platforms: 'always',
     suggested_talking_points: 'always',
@@ -114,7 +114,7 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
-    article_recommendations: 'always',
+    article_recommendations: 'never',
     top_opportunities: 'always',
     platforms: 'always',
     suggested_talking_points: 'always',
@@ -127,7 +127,7 @@ export const MODULE_DEFAULTS: Record<string, ModuleStates> = {
     subject_line: 'always',
     initial_greeting: 'always',
     self_personalization: 'always',
-    article_recommendations: 'always',
+    article_recommendations: 'never',
     top_opportunities: 'always',
     platforms: 'always',
     suggested_talking_points: 'always',
@@ -384,7 +384,7 @@ export function ModulesCard({
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-2" role="list" aria-label="Email modules">
-                    {moduleOrder.map((moduleKey, index) => (
+                    {moduleOrder.filter(k => k !== 'article_recommendations').map((moduleKey, index) => (
                       <DraggableModuleItem
                         key={moduleKey}
                         id={moduleKey}
