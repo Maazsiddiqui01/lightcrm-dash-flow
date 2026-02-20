@@ -70,6 +70,7 @@ export function ModuleContentPreview({
   // Filter visible modules based on tri-state
   const visibleModules = useMemo(() => {
     return moduleOrder
+      .filter(key => key !== 'subject_line' && key !== 'article_recommendations')
       .map((moduleKey, index) => {
         const state = moduleStates[moduleKey];
         
