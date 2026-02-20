@@ -46,7 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 function createMinimalContactData(contactId: string, contactName: string, contactEmail: string): ContactEmailComposer {
   return {
     contact_id: contactId,
-    first_name: contactName.split(' ')[0] || contactName,
+    first_name: (contactName || '').split(' ')[0] || contactName || '',
     email: contactEmail,
     full_name: contactName,
     organization: null,
