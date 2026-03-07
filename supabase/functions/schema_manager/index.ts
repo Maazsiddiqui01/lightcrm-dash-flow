@@ -9,6 +9,7 @@ const corsHeaders = {
 // Verify authentication and check if admin
 async function verifyAuth(req: Request) {
   const authHeader = req.headers.get('Authorization');
+import { buildCorsHeaders } from "../_shared/cors.ts";
   if (!authHeader) {
     throw new Error('Missing authorization header');
   }
@@ -45,6 +46,8 @@ interface ColumnOperation {
 }
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });

@@ -1,10 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGINS") || "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-n8n-endpoint",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
 // Map of allowed endpoint keys to environment variable names
 const ENDPOINT_MAP: Record<string, string> = {
@@ -21,6 +16,9 @@ const ENDPOINT_MAP: Record<string, string> = {
 };
 
 Deno.serve(async (req) => {
+  // Build request-aware CORS headers once per request
+  const corsHeaders = buildCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -110,7 +108,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("n8n_proxy error:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
+      JSON.stringify({ error: (error as Error).message || "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -3,11 +3,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGINS') || '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 // Simple in-memory rate limiting (per user per minute)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -42,6 +39,8 @@ function checkRateLimit(userId: string): { allowed: boolean; remaining: number; 
 }
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });

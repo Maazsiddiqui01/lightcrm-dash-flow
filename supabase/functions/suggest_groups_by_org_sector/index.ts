@@ -3,6 +3,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 // Helper to generate stable suggestion ID
 function generateStableSuggestionId(organization: string, focusAreaOrSector: string, memberEmails: string[]): string {
   const sortedEmails = [...memberEmails].sort().join('_');
+import { buildCorsHeaders } from "../_shared/cors.ts";
   const baseString = `org_sector_${organization}_${focusAreaOrSector}_${sortedEmails}`;
   // Simple hash function for stable IDs
   let hash = 0;
@@ -174,12 +175,10 @@ function groupBySector(members: ContactData[]): Map<string, ContactData[]> {
   return sectorMap;
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGINS') || '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
