@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-
-const N8N_URL = 'https://inverisllc.app.n8n.cloud/webhook/Opportunities-Email';
+import { callN8nProxy } from '@/lib/n8nProxy';
 
 export async function sendOpportunityEmail(opportunityId: string) {
   // 1) fetch row from opportunities_raw (since opportunities_email_payload view may not exist yet)
@@ -19,17 +18,6 @@ export async function sendOpportunityEmail(opportunityId: string) {
     ...data,
   };
 
-  // 3) POST to n8n webhook
-  const res = await fetch(N8N_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error(`Webhook failed (${res.status}): ${txt || res.statusText}`);
-  }
-
-  return res;
+  // 3) POST to n8n via authenticated proxy
+  return callN8nProxy('opportunities-email', payload);
 }
