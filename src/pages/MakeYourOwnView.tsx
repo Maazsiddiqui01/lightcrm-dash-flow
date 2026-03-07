@@ -8,35 +8,37 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Copy, RefreshCw } from "lucide-react";
+import { callN8nProxy } from '@/lib/n8nProxy';
 
 export function MakeYourOwnView() {
   const [lastQuery, setLastQuery] = useState<{ question: string; limit: number } | null>(null);
   const [queryResults, setQueryResults] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  
-  const requestManager = useResilientRequest('https://inverisllc.app.n8n.cloud/webhook/SQL-Agent');
 
   const handleQuery = async (question: string, limit: number) => {
     console.log('MakeYourOwnView handleQuery called', { question, limit });
     setLastQuery({ question, limit });
+    setIsLoading(true);
+    setError(null);
     
-    console.log('Calling requestManager.submit with:', { question, limit });
-    const result = await requestManager.submit({ question, limit });
-    
-    if (result && !result.error) {
-      setQueryResults(Array.isArray(result) ? result : []);
+    try {
+      const result = await callN8nProxy<any>('sql-agent', { question, limit });
       
-      if (!result || (Array.isArray(result) && result.length === 0)) {
-        toast({
-          title: "Query completed",
-          description: "No results found for your query",
-        });
+      const normalized = Array.isArray(result) ? result : (result?.data || [result]);
+      setQueryResults(normalized);
+      
+      if (!normalized || normalized.length === 0) {
+        toast({ title: "Query completed", description: "No results found for your query" });
       } else {
-        toast({
-          title: "Query successful!",
-          description: `Found ${result.length.toLocaleString()} results`,
-        });
+        toast({ title: "Query successful!", description: `Found ${normalized.length.toLocaleString()} results` });
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Request failed';
+      setError(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -49,10 +51,7 @@ export function MakeYourOwnView() {
   const copyErrorDetails = (errorDetails: any) => {
     const details = JSON.stringify(errorDetails, null, 2);
     navigator.clipboard.writeText(details);
-    toast({
-      title: "Error details copied",
-      description: "Diagnostics copied to clipboard",
-    });
+    toast({ title: "Error details copied", description: "Diagnostics copied to clipboard" });
   };
 
   return (
@@ -70,54 +69,35 @@ export function MakeYourOwnView() {
         {/* Prompt Panel */}
         <SqlAgentPrompt
           onSubmit={handleQuery}
-          isLoading={requestManager.isLoading || requestManager.isProcessing}
+          isLoading={isLoading}
           initialValue={lastQuery?.question || ""}
         />
       </div>
 
       {/* Results Section */}
-      {(requestManager.isLoading || requestManager.isProcessing || requestManager.error || queryResults.length > 0) && (
+      {(isLoading || error || queryResults.length > 0) && (
         <div className="mt-4 mx-4 flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
-          {(requestManager.isLoading || requestManager.isProcessing) ? (
+          {isLoading ? (
             <div className="p-6">
-              <ProcessingStatus
-                isLoading={requestManager.isLoading}
-                isProcessing={requestManager.isProcessing}
-                getElapsedTime={requestManager.getElapsedTime}
-                onCancel={requestManager.cancel}
-              />
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <span>Processing your query...</span>
+              </div>
             </div>
-          ) : requestManager.error ? (
+          ) : error ? (
             <div className="p-6">
               <Alert variant="destructive">
                 <AlertDescription className="space-y-4">
                   <div>
                     <h3 className="font-semibold text-red-900 mb-2">Query Failed</h3>
-                    <p className="text-red-800">{requestManager.error}</p>
+                    <p className="text-red-800">{error}</p>
                   </div>
                   
                   <div className="flex items-center space-x-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRetry}
-                      className="flex items-center space-x-2"
-                    >
+                    <Button variant="outline" size="sm" onClick={handleRetry} className="flex items-center space-x-2">
                       <RefreshCw className="h-4 w-4" />
                       <span>Try Again</span>
                     </Button>
-                    
-                    {requestManager.data?.error && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyErrorDetails(requestManager.data.error)}
-                        className="flex items-center space-x-2 text-gray-600"
-                      >
-                        <Copy className="h-4 w-4" />
-                        <span>Copy Diagnostics</span>
-                      </Button>
-                    )}
                   </div>
                 </AlertDescription>
               </Alert>
