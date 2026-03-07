@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { callN8nProxy } from '@/lib/n8nProxy';
 import { EmailTemplate } from "@/hooks/useEmailTemplates";
 import { ResolvedTemplate } from "@/hooks/useResolvedTemplate";
 import type { EmailBuilderPayload } from "@/hooks/useEmailBuilderData";
@@ -130,13 +131,8 @@ export function DraftPreviewPanel({ contact, resolved, payload, template, isLoad
       
       console.log('Sending payload to n8n:', postPayload);
       
-      const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Email-Builder', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(postPayload),
-      });
+      // POST to n8n via authenticated proxy
+      const response = await callN8nProxy('email-builder', postPayload);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);

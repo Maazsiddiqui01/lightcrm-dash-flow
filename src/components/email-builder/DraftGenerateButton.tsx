@@ -7,6 +7,7 @@ import { Copy, Send, AlertTriangle } from "lucide-react";
 import { buildDraftPayload } from "@/lib/payload";
 import { buildCc } from "@/lib/buildCc";
 import { useToast } from "@/hooks/use-toast";
+import { callN8nProxy } from '@/lib/n8nProxy';
 import type { ContactEmailComposer } from "@/types/emailComposer";
 import type { ModuleStates } from "@/components/email-builder/ModulesCard";
 import type { Article } from "@/types/emailComposer";
@@ -230,12 +231,8 @@ export function DraftGenerateButton({
       logger.log('🌐 Sending payload to n8n webhook...');
       logger.log('📦 Enhanced payload:', JSON.stringify(enhancedPayload, null, 2));
 
-      // POST to n8n webhook
-      const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Email-Builder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(enhancedPayload),
-      });
+      // POST to n8n via authenticated proxy
+      const response = await callN8nProxy('email-builder', enhancedPayload);
 
       logger.log('📡 Response status:', response.status, response.statusText);
 

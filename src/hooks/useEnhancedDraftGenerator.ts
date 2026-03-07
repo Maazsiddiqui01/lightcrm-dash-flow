@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { EnhancedDraftPayload } from '@/lib/enhancedPayload';
 import { logPayloadUsage } from '@/lib/enhancedPayload';
 import { buildEmailBody, formatCompleteEmail } from '@/lib/bodyBuilder';
+import { callN8nProxy } from '@/lib/n8nProxy';
 
 interface DraftGenerationResult {
   body: string;
@@ -47,18 +48,8 @@ export function useEnhancedDraftGenerator() {
         throw new Error('Authentication required. Please log in again to continue.');
       }
 
-      // POST to n8n via edge function with streaming support
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/post_to_n8n`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ payload }),
-        }
-      );
+      // POST to n8n via authenticated proxy
+      const response = await callN8nProxy('draft-email', { payload });
 
       if (!response.ok) {
         let errorMessage = 'Failed to connect to the email generation service';

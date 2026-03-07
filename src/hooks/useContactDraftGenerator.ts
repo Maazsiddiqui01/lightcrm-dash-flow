@@ -14,6 +14,7 @@ import type { TeamMember } from '@/components/email-builder/EditableTeam';
 import { DEFAULT_MODULE_ORDER } from '@/config/moduleDefaults';
 import { MODULE_LIBRARY_MAP, SINGLE_SELECT_MODULES, MULTI_SELECT_MODULES } from '@/config/moduleCategoryMap';
 import { pickRandomPhrase, generateSeed } from '@/lib/randomization';
+import { callN8nProxy } from '@/lib/n8nProxy';
 
 /**
  * Enhanced hook for generating email drafts from the Contacts table
@@ -363,23 +364,8 @@ export function useContactDraftGenerator() {
         throw new Error(payload.qualityCheck.reason || 'Quality control failed');
       }
 
-      // Step 12: Post to n8n via edge function
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        throw new Error('Authentication required. Please log in again.');
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/post_to_n8n_2026`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.session.access_token}`,
-          },
-          body: JSON.stringify({ payload }),
-        }
-      );
+      // Step 12: Post to n8n via authenticated proxy
+      const response = await callN8nProxy('draft-email', { payload });
 
       if (!response.ok) {
         let errorMessage = 'Failed to connect to the email generation service';

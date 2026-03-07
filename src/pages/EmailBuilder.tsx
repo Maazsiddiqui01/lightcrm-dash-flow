@@ -26,6 +26,7 @@ import { GroupContactAlert } from "@/components/email-builder/GroupContactAlert"
 import { IndividualContactAlert } from "@/components/email-builder/IndividualContactAlert";
 import { OrganizationLevelAlert } from "@/components/email-builder/OrganizationLevelAlert";
 import { mergeEffectiveConfig } from "@/lib/previewMerge";
+import { callN8nProxy } from '@/lib/n8nProxy';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1280,20 +1281,7 @@ function EmailBuilderContent() {
         focusAreaLanguage && focusAreaLanguage.useInEmail ? focusAreaLanguage : undefined
       );
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Authentication required. Please log in again.');
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/post_to_n8n_2026`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ payload }),
-        }
-      );
+      const response = await callN8nProxy('draft-email', { payload });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -1544,28 +1532,13 @@ ${draftResult.signature}`;
           queueManager.updateQueueItem(contact.id, { progress: 30 });
           
           // Call edge function with correct mode
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
-            throw new Error('Authentication required. Please refresh and try again.');
-          }
-          
-          const response = await fetch(
-            'https://wjghdqkxwuyptxzdidtf.supabase.co/functions/v1/post_to_n8n',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({
-                mode: 'group', // Correct mode flag
+          const response = await callN8nProxy('draft-email', {
+                mode: 'group',
                 batchId: `b_${Date.now()}`,
                 batchIndex: contactsToProcess.indexOf(contact),
                 batchTotal: contactsToProcess.length,
                 payload,
-              }),
-            }
-          );
+          });
           
           queueManager.updateQueueItem(contact.id, { progress: 70 });
           
