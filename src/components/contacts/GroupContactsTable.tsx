@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { buildGroupEmailPayload } from "@/lib/groupEmailPayload";
+import { callN8nProxy } from '@/lib/n8nProxy';
 import { parseFlexibleDate } from "@/utils/dateUtils";
 import { EditToolbar } from "@/components/shared/EditToolbar";
 import { supabase } from "@/integrations/supabase/client";
@@ -129,17 +130,7 @@ export function GroupContactsTable() {
     try {
       const payload = buildGroupEmailPayload(group);
       
-      const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Group-Contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Webhook failed: ${response.statusText}`);
-      }
+      await callN8nProxy('group-contact', payload);
       
       toast({
         title: "Email Sent",
