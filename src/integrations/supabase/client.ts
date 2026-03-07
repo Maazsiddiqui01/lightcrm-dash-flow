@@ -1,24 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Use environment variables with hardcoded fallbacks for Lovable compatibility.
+// When migrating to Azure, remove the fallback values and rely solely on env vars.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+  || "https://wkfypffesqcncrfsfaxt.supabase.co";
 
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error(
-    'Missing Supabase environment variables. ' +
-    'Ensure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are set in your .env file. ' +
-    'See .env.example for reference.'
-  );
-}
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrZnlwZmZlc3FjbmNyZnNmYXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4OTczMjMsImV4cCI6MjA1MjQ3MzMyM30.x-xhMiIYMaFRaIEEMBYMkGcFN3FMRqrAlqwxnKtNqlo";
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-  }
-});
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
