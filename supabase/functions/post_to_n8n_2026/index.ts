@@ -21,7 +21,10 @@ async function verifyAuth(req: Request) {
   return { user, supabase };
 }
 
-const N8N_WEBHOOK_URL = 'https://inverisllc.app.n8n.cloud/webhook/2026 Pipeline';
+const N8N_WEBHOOK_URL = Deno.env.get('N8N_WEBHOOK_2026_PIPELINE');
+if (!N8N_WEBHOOK_URL) {
+  console.error('N8N_WEBHOOK_2026_PIPELINE not configured in environment secrets');
+}
 
 /**
  * Build the 2026 pipeline payload from EnhancedDraftPayload.
@@ -195,6 +198,10 @@ serve(async (req) => {
 
     const pipelinePayload = build2026PipelinePayload(payload);
     console.log('Pipeline payload built:', JSON.stringify(pipelinePayload, null, 2));
+
+    if (!N8N_WEBHOOK_URL) {
+      throw new Error('N8N_WEBHOOK_2026_PIPELINE not configured in environment secrets');
+    }
 
     // POST to 2026 Pipeline webhook
     const response = await fetch(N8N_WEBHOOK_URL, {
