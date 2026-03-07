@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { addContactNote } from '@/utils/rpcHelpers';
+import { callN8nProxy } from '@/lib/n8nProxy';
 
 export interface ContactNextStep {
   id: string;
@@ -166,42 +167,31 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
         description: "Next steps saved successfully",
       });
       
-      // Sync with Microsoft To Do via n8n webhook if addInToDo is true
+      // Sync with Microsoft To Do via n8n proxy if addInToDo is true
       if (contactName && data.content && data.addInToDo) {
         try {
-          const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Get-To-do-Contacts', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contactId: contactId,
-              contactName: contactName,
-              email: data.email,
-              organization: data.organization,
-              opportunities: data.opportunities,
-              nextSteps: data.content,
-              dueDate: data.dueDate || null,
-              addInToDo: data.addInToDo !== undefined ? data.addInToDo : true,
-            }),
+          await callN8nProxy('todo-contacts', {
+            contactId: contactId,
+            contactName: contactName,
+            email: data.email,
+            organization: data.organization,
+            opportunities: data.opportunities,
+            nextSteps: data.content,
+            dueDate: data.dueDate || null,
+            addInToDo: data.addInToDo !== undefined ? data.addInToDo : true,
           });
-          
-          if (!response.ok) {
-            console.error('Failed to sync with Microsoft To Do:', await response.text());
-          }
         } catch (error) {
           console.error('Failed to sync with Microsoft To Do:', error);
         }
       }
       
-      // Invalidate and refetch related queries with aggressive refetching
+      // Invalidate and refetch related queries
       if (contactId) {
         queryClient.invalidateQueries({ queryKey: ['contact-current-next-steps', contactId] });
         queryClient.invalidateQueries({ queryKey: ['contact-next-steps-timeline', contactId] });
         queryClient.invalidateQueries({ queryKey: ['contacts'] });
         queryClient.invalidateQueries({ queryKey: ['contacts-with-opportunities'] });
         queryClient.invalidateQueries({ queryKey: ['contact-detail', contactId] });
-        // Force immediate refetch of main contacts query
         queryClient.refetchQueries({ queryKey: ['contacts'] });
       }
     },
@@ -231,7 +221,6 @@ export function useContactNextSteps(contactId: string | undefined, contactName?:
         description: "Next step deleted successfully",
       });
       
-      // Invalidate queries to refresh data
       if (contactId) {
         queryClient.invalidateQueries({ queryKey: ['contact-next-steps-timeline', contactId] });
         queryClient.invalidateQueries({ queryKey: ['contact-current-next-steps', contactId] });
