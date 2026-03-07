@@ -1,42 +1,37 @@
-project_id = "wjghdqkxwuyptxzdidtf"
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
 
-[functions.suggest_groups_by_org_sector]
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+
+[auth.external.google]
+enabled = false
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[functions]
 verify_jwt = true
 
-[functions.column_manager]
+[functions.post_to_n8n]
+verify_jwt = false
+
+[functions.post_to_n8n_2026]
+verify_jwt = false
+
+[functions.invite_user]
 verify_jwt = true
 
 [functions.list_users]
 verify_jwt = true
 
-[functions.invite_user]
-verify_jwt = true
-
 [functions.delete_user]
-verify_jwt = true
-
-[functions.router_llm]
-verify_jwt = true
-
-[functions.template_preview_llm]
-verify_jwt = true
-
-[functions.resolve_template]
-verify_jwt = true
-
-[functions.schema_manager]
-verify_jwt = true
-
-[functions.data_normalization]
-verify_jwt = true
-
-[functions.generate_email_draft]
-verify_jwt = true
-
-[functions.post_to_n8n]
-verify_jwt = true
-
-[functions.post_to_n8n_2026]
 verify_jwt = true
 
 [functions.suggest_contact_groups]
@@ -60,5 +55,5 @@ verify_jwt = false
 [functions.ai_add_contact_note]
 verify_jwt = false
 
-[functions.ai_add_opportunity_note]
-verify_jwt = false
+[functions.n8n_proxy]
+verify_jwt = true

@@ -1,9 +1,16 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
+// Lovable-tagger is kept as optional for Lovable platform compatibility.
+// It can be safely removed when fully migrating to Azure.
+let lovableTagger: any;
+try {
+  lovableTagger = require("lovable-tagger");
+} catch {
+  // lovable-tagger not available outside Lovable — this is expected
+}
+
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -11,8 +18,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === "development" && lovableTagger?.componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {

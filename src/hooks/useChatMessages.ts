@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { callN8nProxy } from '@/lib/n8nProxy';
 
 export interface ChatMessage {
   id: string;
@@ -72,24 +73,13 @@ export function useChatMessages(conversationId: string | null) {
         content: m.content,
       }));
 
-      // Call agent webhook
-      const response = await fetch(
-        "https://inverisllc.app.n8n.cloud/webhook/Agent-Tasks",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: content,
-            conversationId,
-            userId: (await supabase.auth.getUser()).data.user?.id,
-            conversationHistory: history,
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Agent request failed");
-
-      const agentData = await response.json();
+      // Call agent webhook via authenticated proxy
+      const agentData = await callN8nProxy<any>('agent-tasks', {
+        message: content,
+        conversationId,
+        userId: (await supabase.auth.getUser()).data.user?.id,
+        conversationHistory: history,
+      });
 
       // Parse n8n webhook response format: [{ "output": "message" }]
       let assistantContent = "Sorry, I couldn't process that.";
@@ -97,12 +87,10 @@ export function useChatMessages(conversationId: string | null) {
 
       if (Array.isArray(agentData) && agentData.length > 0 && agentData[0].output) {
         assistantContent = agentData[0].output;
-        // Store raw data in metadata for potential table rendering
         if (agentData[0].data) {
           assistantMetadata = { data: agentData[0].data };
         }
       } else if (agentData.response) {
-        // Fallback to old format
         assistantContent = agentData.response;
         assistantMetadata = agentData.metadata || null;
       }

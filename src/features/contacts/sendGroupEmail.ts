@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-
-const N8N_GROUP_URL = 'https://inverisllc.app.n8n.cloud/webhook/Group-Contact';
+import { callN8nProxy } from '@/lib/n8nProxy';
 
 export async function sendGroupEmail(groupId: string) {
   // 1. Fetch full group data from get_group_contacts_view RPC
@@ -87,17 +86,6 @@ export async function sendGroupEmail(groupId: string) {
     last_updated: groupData.last_updated,
   };
   
-  // 5. POST to n8n webhook
-  const res = await fetch(N8N_GROUP_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error(`Webhook failed (${res.status}): ${txt || res.statusText}`);
-  }
-  
-  return res;
+  // 5. POST to n8n via authenticated proxy
+  return callN8nProxy('group-contact', payload);
 }

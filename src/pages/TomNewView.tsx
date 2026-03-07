@@ -18,6 +18,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
+import { callN8nProxy } from '@/lib/n8nProxy';
 
 // Token utilities for comma-separated fields
 const tokenize = (s?: string) =>
@@ -228,11 +229,7 @@ function TomNewViewContent() {
         ui_context: { source: 'tom_new_view', model_hint: 'draft-outreach', ui_version: 'v1' }
       };
 
-      await fetch('https://inverisllc.app.n8n.cloud/webhook-test/Email-Draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      await callN8nProxy('email-draft', payload);
 
       toast({ 
         title: 'Draft requested', 

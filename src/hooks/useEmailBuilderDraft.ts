@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
+import { callN8nProxy } from '@/lib/n8nProxy';
 
 export interface EmailBuilderPayload {
   contact: {
@@ -49,23 +50,10 @@ export function useEmailBuilderDraft() {
 
   return useMutation({
     mutationFn: async (payload: EmailBuilderPayload): Promise<EmailBuilderResult> => {
-      logger.log('Sending payload to n8n:', payload);
+      logger.log('Sending payload to n8n via proxy:', payload);
       
-      const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Email-Builder', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-
-      const data = await response.json();
-      return data as EmailBuilderResult;
+      const data = await callN8nProxy<EmailBuilderResult>('email-builder', payload as unknown as Record<string, unknown>);
+      return data;
     },
     onSuccess: (result) => {
       toast({

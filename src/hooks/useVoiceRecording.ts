@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { callN8nProxyFormData } from '@/lib/n8nProxy';
 
 export function useVoiceRecording() {
   const { toast } = useToast();
@@ -15,23 +16,21 @@ export function useVoiceRecording() {
       // Request high-quality audio
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          channelCount: 1, // Mono for voice (smaller file, still great quality)
-          sampleRate: 48000, // High sample rate
+          channelCount: 1,
+          sampleRate: 48000,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
         }
       });
 
-      // Determine best available codec
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : 'audio/webm';
 
-      // Create MediaRecorder with high-quality options
       const mediaRecorder = new MediaRecorder(mediaStream, {
         mimeType: mimeType,
-        audioBitsPerSecond: 128000, // 128 kbps for clear voice
+        audioBitsPerSecond: 128000,
       });
       
       mediaRecorderRef.current = mediaRecorder;
@@ -43,7 +42,7 @@ export function useVoiceRecording() {
         }
       };
 
-      mediaRecorder.start(100); // Capture data every 100ms for smoother recording
+      mediaRecorder.start(100);
       setStream(mediaStream);
       setIsRecording(true);
     } catch (error) {
@@ -65,12 +64,10 @@ export function useVoiceRecording() {
 
       mediaRecorderRef.current.onstop = async () => {
         setIsRecording(false);
-        // Use the actual mimeType from the recorder for best compatibility
         const audioBlob = new Blob(audioChunksRef.current, { 
           type: mediaRecorderRef.current?.mimeType || "audio/webm" 
         });
 
-        // Stop all tracks
         if (stream) {
           stream.getTracks().forEach((track) => track.stop());
           setStream(null);
@@ -79,28 +76,16 @@ export function useVoiceRecording() {
         try {
           setIsTranscribing(true);
 
-          // Get authenticated user
           const user = (await supabase.auth.getUser()).data.user;
           if (!user) throw new Error("Not authenticated");
 
-          // Create FormData with audio file
           const formData = new FormData();
           formData.append("audio", audioBlob, "recording.webm");
           formData.append("userId", user.id);
 
-          // Call transcription webhook with binary audio
-          const response = await fetch(
-            "https://inverisllc.app.n8n.cloud/webhook/Voice-Transcription",
-            {
-              method: "POST",
-              body: formData,
-            }
-          );
+          // Call transcription via authenticated proxy
+          const data = await callN8nProxyFormData<any>('voice-transcription', formData);
 
-          if (!response.ok) throw new Error("Transcription failed");
-
-          const data = await response.json();
-          // Parse response format: [{ "text": "transcription" }]
           const transcription = Array.isArray(data) && data[0]?.text ? data[0].text : null;
           resolve(transcription);
         } catch (error) {

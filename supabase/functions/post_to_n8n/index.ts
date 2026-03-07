@@ -27,7 +27,10 @@ async function verifyAuth(req: Request) {
   return { user, supabase };
 }
 
-const N8N_WEBHOOK_URL = 'https://inverisllc.app.n8n.cloud/webhook/Email-Builder';
+const N8N_WEBHOOK_URL = Deno.env.get('N8N_WEBHOOK_EMAIL_BUILDER');
+if (!N8N_WEBHOOK_URL) {
+  console.error('N8N_WEBHOOK_EMAIL_BUILDER not configured in environment secrets');
+}
 
 /**
  * Build the unified 2026 payload block
@@ -392,6 +395,10 @@ serve(async (req) => {
       ...(mode && { mode }),
       ...(batchId && { batchId, batchIndex, batchTotal }),
     };
+
+    if (!N8N_WEBHOOK_URL) {
+      throw new Error('N8N_WEBHOOK_EMAIL_BUILDER not configured in environment secrets');
+    }
 
     // POST to n8n webhook and stream the response
     const response = await fetch(N8N_WEBHOOK_URL, {

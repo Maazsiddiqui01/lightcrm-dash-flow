@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import type { GroupContactView } from "@/types/contact";
 import { useToast } from "@/hooks/use-toast";
 import { buildGroupEmailPayload } from "@/lib/groupEmailPayload";
+import { callN8nProxy } from '@/lib/n8nProxy';
 import { parseFlexibleDate } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -178,17 +179,7 @@ export function GroupContactDrawer({ group, open, onOpenChange, onUpdate }: Grou
     try {
       const payload = buildGroupEmailPayload(group);
       
-      const response = await fetch('https://inverisllc.app.n8n.cloud/webhook/Group-Contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Webhook failed: ${response.statusText}`);
-      }
+      await callN8nProxy('group-contact', payload);
       
       toast({
         title: "Email Sent",
