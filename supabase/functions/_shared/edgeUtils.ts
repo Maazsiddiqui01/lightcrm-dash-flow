@@ -5,9 +5,22 @@
  * Import from any edge function: import { requireApiKey, jsonOk, jsonError } from "../_shared/edgeUtils.ts";
  */
 
+/**
+ * Resolves the CORS origin dynamically.
+ * - Reads ALLOWED_ORIGINS env var (comma-separated list).
+ * - Falls back to wildcard "*" for Lovable compatibility.
+ * - When deploying to Azure, set ALLOWED_ORIGINS to your production domain(s).
+ */
+function resolveAllowedOrigin(): string {
+  const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
+  if (envOrigins) return envOrigins.split(",")[0].trim();
+  // Fallback: allow all origins for Lovable development
+  return "*";
+}
+
 export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-edge-api-key",
+  "Access-Control-Allow-Origin": resolveAllowedOrigin(),
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-edge-api-key, x-n8n-endpoint",
 };
 
 /**
