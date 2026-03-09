@@ -4952,6 +4952,9 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       unlock_contact: { Args: { p_contact_id: string }; Returns: Json }
+      util_quarter_text: { Args: { input: string }; Returns: string }
+      util_safe_timestamptz: { Args: { input: string }; Returns: string }
+      util_year_text: { Args: { input: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user" | "viewer"
