@@ -91,7 +91,7 @@ export function useKpiData() {
       const lgLeadParam = params.lg_leads.length === 1 ? params.lg_leads[0] : null;
       const focusAreaParam = params.focus_areas.length === 1 ? params.focus_areas[0] : null;
 
-      const { data, error } = await supabase.rpc('kpi_summary', {
+      const { data, error } = await (supabase.rpc as any)('kpi_summary', {
         p_start: params.start,
         p_end: params.end,
         p_focus_area: focusAreaParam,
@@ -113,7 +113,7 @@ export function useKpiData() {
       const lgLeadParam = params.lg_leads.length === 1 ? params.lg_leads[0] : null;
       const focusAreaParam = params.focus_areas.length === 1 ? params.focus_areas[0] : null;
 
-      const { data, error } = await supabase.rpc('kpi_meetings_monthly', {
+      const { data, error } = await (supabase.rpc as any)('kpi_meetings_monthly', {
         p_start: params.start,
         p_end: params.end,
         p_focus_area: focusAreaParam,
@@ -130,7 +130,7 @@ export function useKpiData() {
 
   const fetchLgLeads = useCallback(async (params: KpiFilters) => {
     try {
-      const { data, error } = await supabase.rpc('kpi_lg_hours_and_opps', {
+      const { data, error } = await (supabase.rpc as any)('kpi_lg_hours_and_opps', {
         p_start: params.start,
         p_end: params.end,
         p_default_meeting_min: 60,
