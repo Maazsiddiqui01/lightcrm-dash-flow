@@ -91,7 +91,7 @@ export function useKpiData() {
       const lgLeadParam = params.lg_leads.length === 1 ? params.lg_leads[0] : null;
       const focusAreaParam = params.focus_areas.length === 1 ? params.focus_areas[0] : null;
 
-      const { data, error } = await supabase.rpc('kpi_summary', {
+      const { data, error } = await (supabase.rpc as any)('kpi_summary', {
         p_start: params.start,
         p_end: params.end,
         p_focus_area: focusAreaParam,
