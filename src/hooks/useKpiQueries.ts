@@ -19,7 +19,7 @@ export const useKpiHeader = (filters: KpiFilters) => {
     queryFn: async () => {
       const args = toRpcArgs(filters);
       // Using existing kpi_summary function as placeholder
-      const { data, error } = await supabase.rpc('kpi_summary', {
+      const { data, error } = await (supabase.rpc as any)('kpi_summary', {
         p_start: filters.dateStart,
         p_end: filters.dateEnd,
         p_focus_area: filters.focusAreas[0] || null,
