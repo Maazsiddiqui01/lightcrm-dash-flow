@@ -83,7 +83,7 @@ export const useKpiLeadsPerformance = (filters: KpiFilters) => {
     queryKey: ['kpi-leads-performance', filters],
     queryFn: async () => {
       // Using existing kpi_lg_hours_and_opps function
-      const { data, error } = await supabase.rpc('kpi_lg_hours_and_opps', {
+      const { data, error } = await (supabase.rpc as any)('kpi_lg_hours_and_opps', {
         p_start: filters.dateStart,
         p_end: filters.dateEnd,
         p_default_meeting_min: 60,

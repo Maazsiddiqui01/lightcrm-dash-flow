@@ -130,7 +130,7 @@ export function useKpiData() {
 
   const fetchLgLeads = useCallback(async (params: KpiFilters) => {
     try {
-      const { data, error } = await supabase.rpc('kpi_lg_hours_and_opps', {
+      const { data, error } = await (supabase.rpc as any)('kpi_lg_hours_and_opps', {
         p_start: params.start,
         p_end: params.end,
         p_default_meeting_min: 60,

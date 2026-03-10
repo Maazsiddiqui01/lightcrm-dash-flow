@@ -86,7 +86,7 @@ function KPIsContent() {
           />
         </MobileStatsGrid>
 
-        <MeetingsChart data={meetingsData} loading={meetingsLoading} />
+        <MeetingsChart data={meetingsData as any} loading={meetingsLoading} />
         <KpiLgLeadsView startDate={new Date(filters.dateStart)} endDate={new Date(filters.dateEnd)} selectedLeads={[]} />
       </main>
     </div>
