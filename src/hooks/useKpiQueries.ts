@@ -56,7 +56,7 @@ export const useKpiMeetingsPerMonth = (filters: KpiFilters) => {
     queryKey: ['kpi-meetings-monthly', filters],
     queryFn: async () => {
       // Using existing kpi_meetings_monthly function 
-      const { data, error } = await supabase.rpc('kpi_meetings_monthly', {
+      const { data, error } = await (supabase.rpc as any)('kpi_meetings_monthly', {
         p_start: filters.dateStart,
         p_end: filters.dateEnd,
         p_focus_area: filters.focusAreas[0] || null,
