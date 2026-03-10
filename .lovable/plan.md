@@ -1,22 +1,34 @@
 
 
-# Fix Email Sync: contact_email_addresses → contacts_raw
+# Fix Email Builder: Module Defaults, Article Recommendations & Subject Line Preview
 
-## Problem
-When a primary email is changed directly in Supabase (via the `contact_email_addresses` table), the `contacts_raw.email_address` field does not update. The sync currently only happens through application code in `useContactEmails.ts`. This means the contacts search/table shows stale emails.
+## Issues to Fix
 
-## Fix
+### 1. Article Recommendations defaults to "Always" instead of "Never"
+The `getModuleDefaultsFromMaster()` function in `ModulesCard.tsx` (line 83-95) hardcodes ALL modules to `'always'`, overriding the intended defaults. This means article_recommendations shows as "Always" even though it should be "Never".
 
-**Single migration** that does two things:
+**Fix**: Update `getModuleDefaultsFromMaster()` to set `article_recommendations` to `'never'` (and hide it from the module list entirely).
 
-### 1. Immediate data fix
-Update John Lanza's `contacts_raw.email_address` from `jlanza@cascadiacapital.com` to `john.lanza@cantor.com` to match his current primary in `contact_email_addresses`.
+### 2. Remove Article Recommendations from the module list entirely
+Since article recommendations are disabled and excluded from payloads, the module should be hidden from the UI to avoid confusion.
 
-### 2. Prevent future occurrences — add a database trigger
-Create a trigger `sync_primary_email_to_contacts_raw` on `contact_email_addresses` that fires on INSERT or UPDATE. When a row has `is_primary = true`, it automatically updates `contacts_raw.email_address` to match. This ensures direct Supabase edits stay in sync.
+**Fix**: Filter out `article_recommendations` from the module order in `ModulesCard.tsx` rendering, the `DEFAULT_MODULE_ORDER`, and the Live Preview. Also remove it from the payload construction in `enhancedPayload.ts`.
 
-| Change | Detail |
-|--------|--------|
-| Migration SQL | UPDATE John Lanza's email + CREATE trigger function + CREATE trigger on `contact_email_addresses` |
-| No code changes needed | The trigger handles sync at the DB level |
+### 3. Subject Line shows twice in Live Preview
+In `ModuleContentPreview.tsx`, there's a dedicated Subject Line preview block at the top (lines 148-219), but `subject_line` also appears in the `visibleModules` list as module #1. This causes it to render twice.
+
+**Fix**: Exclude `subject_line` from the `visibleModules` loop since it already has its own dedicated preview section.
+
+### 4. "2026 Pipeline" subject line not persisting after add
+The user added "2026 Pipeline" as a new subject phrase but it doesn't appear in the list after saving. This is likely a query invalidation issue -- after creating a phrase, the phrase list query needs to be refreshed. The `useCreatePhrase` hook should already handle this, but we'll verify and ensure the subject list refreshes.
+
+## Technical Changes
+
+| File | Change |
+|------|--------|
+| `src/components/email-builder/ModulesCard.tsx` | Set `article_recommendations: 'never'` in `getModuleDefaultsFromMaster()` and filter it out from the rendered module list |
+| `src/config/moduleDefaults.ts` | Remove `article_recommendations` from `DEFAULT_MODULE_ORDER` |
+| `src/components/email-builder/ModuleContentPreview.tsx` | (a) Exclude `subject_line` from `visibleModules` to fix duplicate, (b) exclude `article_recommendations` from preview |
+| `src/config/moduleCategoryMap.ts` | Remove `article_recommendations` from `PHRASE_DRIVEN_MODULES` and `SINGLE_SELECT_MODULES` |
+| `src/pages/EmailBuilder.tsx` | Remove `article_recommendations` from the initial `moduleOrder` state |
 
